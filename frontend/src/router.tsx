@@ -16,6 +16,7 @@ const BrewLogAdd = lazy(() => import('./pages/BrewLogAdd'))
 const ImportWizard = lazy(() => import('./pages/ImportWizard'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
+// eslint-disable-next-line react-refresh/only-export-components
 const SuspenseWrapper = ({ children }: { children: React.ReactNode }) => (
   <Suspense fallback={<LoadingSpinner />}>
     <ErrorBoundary>{children}</ErrorBoundary>
