@@ -59,3 +59,35 @@ git checkout -b <type>/<slug>   # e.g. fix/brew-log-ordering
 - `docs/requirements/functional-spec.md` — product behaviour and entities
 - `docs/requirements/engineering_architecture.md` — system design and decisions
 - `docs/requirements/sheet-schema.md` — Google Sheets column schema
+---
+
+## Development Workflow — Squad + SpecKit First
+
+**All significant work — features, bug fixes, refactors, and infrastructure changes — follows the Squad + SpecKit workflow by default. This is a core principle across all three repositories.**
+
+### The workflow
+
+1. **Specify** — The relevant Squad agent authors the spec using `speckit.specify` (in `skarthikkrishna/coffee_tracker`)
+2. **Clarify** — `speckit.clarify` surfaces and resolves ambiguities before any code is written
+3. **Plan** — `speckit.plan` produces the implementation design
+4. **Tasks** — `speckit.tasks` generates a dependency-ordered task list
+5. **Implement** — `speckit.implement` executes the tasks
+
+### Squad agent ownership
+
+Match the work to the agent whose domain fits:
+
+| Agent | Domain |
+|---|---|
+| **Tariq** | Cross-repo sequencing, milestones, operability, CI/CD, release readiness |
+| **Maya** | Architecture decisions, security, code quality gates, technical standards |
+| **Finn** | React/TypeScript, frontend features, UI/UX, accessibility |
+| **Alex** | FastAPI, backend features, data models, auth, multi-tenancy |
+| **Priya** | User stories, acceptance criteria, product scope |
+| **Quinn** | PR review, diff analysis, code quality |
+
+Squad agent charters live in `.squad/agents/` in `skarthikkrishna/coffee_tracker`.
+
+### When it's OK to skip SpecKit
+
+Only trivial, self-contained changes (typo fixes, single-line config patches) may skip the full SpecKit flow. When in doubt, spec it first.
