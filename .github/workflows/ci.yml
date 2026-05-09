@@ -41,7 +41,7 @@ jobs:
     if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
     steps:
       - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v4
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: uv sync --frozen
@@ -53,7 +53,7 @@ jobs:
     if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
     steps:
       - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v4
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: uv sync --frozen
@@ -65,7 +65,7 @@ jobs:
     if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
     steps:
       - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v4
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: uv sync --frozen
@@ -77,7 +77,7 @@ jobs:
     if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
     steps:
       - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v4
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: uv sync --frozen
@@ -89,7 +89,7 @@ jobs:
     if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
     steps:
       - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v4
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: uv sync --frozen
@@ -101,7 +101,7 @@ jobs:
     if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
     steps:
       - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v4
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: uv sync --frozen
