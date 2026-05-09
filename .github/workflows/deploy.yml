@@ -1,0 +1,37 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+# Minimal permissions — id-token:write is required for WIF OIDC token request
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    name: Build & Deploy via Cloud Build
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to GCP via Workload Identity Federation
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_CLOUDBUILD_SA }}
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Submit Cloud Build job
+        run: |
+          gcloud builds submit \
+            --config=cloudbuild.yaml \
+            --project="${{ secrets.GCP_PROJECT_ID }}" \
+            --substitutions="_SERVICE_NAME=coffee-tracker,_REGION=us-west1,_RUNTIME_SA=${{ secrets.GCP_RUNTIME_SA }},_CLOUDBUILD_SA=${{ secrets.GCP_CLOUDBUILD_SA }},_SERVICE_URL=${{ secrets.GCP_SERVICE_URL }}" \
+            --async=false \
+            .
