@@ -25,7 +25,7 @@ def _fetch_gcp_project_id() -> str:
             _GCP_METADATA_PROJECT_URL,
             headers={"Metadata-Flavor": "Google"},
         )
-        with urllib.request.urlopen(req, timeout=0.5) as resp:
+        with urllib.request.urlopen(req, timeout=0.5) as resp:  # nosec B310  # URL is hardcoded GCP metadata endpoint, not user-supplied
             return resp.read().decode().strip()  # type: ignore[no-any-return]
     except urllib.error.URLError:
         logger.debug("GCP metadata server unreachable — not running on GCP or network not ready")

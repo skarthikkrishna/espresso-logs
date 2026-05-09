@@ -114,12 +114,12 @@ def _clear_state(request: Request) -> None:
     if import_id:
         try:
             _state_path(import_id).unlink(missing_ok=True)
-        except Exception:
+        except Exception:  # nosec B110  # best-effort cleanup; silently skip unlink failures
             pass
         for f in _IMPORT_TMP_DIR.glob(f"{_IMPORT_FILE_PREFIX}{import_id}_img_*"):
             try:
                 f.unlink(missing_ok=True)
-            except Exception:
+            except Exception:  # nosec B110  # best-effort cleanup; silently skip unlink failures
                 pass
 
 
