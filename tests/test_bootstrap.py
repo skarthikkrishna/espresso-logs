@@ -4,6 +4,7 @@ Phase 8 — Bootstrap Import Wizard unit tests.
 All tests are offline: FakeSheetsClient for repos, inline FakeLLMClient for LLM.
 Run with: SPREADSHEET_ID=dummy uv run pytest tests/test_bootstrap.py -v
 """
+
 from __future__ import annotations
 
 import io
@@ -272,10 +273,10 @@ def test_commit_rollback_on_error():
     mnt_repo = MaintenanceRepo(fake)
 
     dry_run = {
-        "Hardware":    [{c: "v" for c in HardwareRepo.COLUMNS}],
-        "Catalog":     [{c: "v" for c in CatalogRepo.COLUMNS}],
-        "Inventory":   [{c: "v" for c in InventoryRepo.COLUMNS}],
-        "Brew_Log":    [{c: "v" for c in BrewLogRepo.COLUMNS}],
+        "Hardware": [{c: "v" for c in HardwareRepo.COLUMNS}],
+        "Catalog": [{c: "v" for c in CatalogRepo.COLUMNS}],
+        "Inventory": [{c: "v" for c in InventoryRepo.COLUMNS}],
+        "Brew_Log": [{c: "v" for c in BrewLogRepo.COLUMNS}],
         "Maintenance": [{c: "v" for c in MaintenanceRepo.COLUMNS}],
     }
 
@@ -323,9 +324,9 @@ def test_dry_run_matches_commit():
     }
 
     normalize_map = {
-        "Brew_Log":  normalize_brew_log_row,
-        "Catalog":   normalize_catalog_row,
-        "Hardware":  normalize_hardware_row,
+        "Brew_Log": normalize_brew_log_row,
+        "Catalog": normalize_catalog_row,
+        "Hardware": normalize_hardware_row,
         "Inventory": normalize_inventory_row,
     }
     dry_run: dict[str, list[dict]] = {}
@@ -341,8 +342,7 @@ def test_dry_run_matches_commit():
     cal_rows = sections.get("Grinder_Calibration", [])
     if cal_rows:
         dry_run["Maintenance"] = [
-            migrate_grinder_calibration_row(row, i + 1)
-            for i, row in enumerate(cal_rows)
+            migrate_grinder_calibration_row(row, i + 1) for i, row in enumerate(cal_rows)
         ]
 
     fake = FakeSheetsClient()
@@ -409,11 +409,9 @@ def test_build_batch_mapping_prompt_contains_all_sections():
 def test_parse_batch_mapping_response_valid():
     """parse_batch_mapping_response extracts per-section mappings from valid JSON."""
     sections = {"Catalog": [{"Roaster": "Blue Bottle", "Name": "Ethiopia"}]}
-    llm_json = json.dumps({
-        "sections": {
-            "Catalog": {"mapping": {"Roaster": "Roaster", "Name": "Bean_Name"}}
-        }
-    })
+    llm_json = json.dumps(
+        {"sections": {"Catalog": {"mapping": {"Roaster": "Roaster", "Name": "Bean_Name"}}}}
+    )
     result = parse_batch_mapping_response(llm_json, sections)
     assert result["Catalog"] == {"Roaster": "Roaster", "Name": "Bean_Name"}
 
@@ -432,12 +430,14 @@ def test_parse_batch_mapping_response_missing_section_fallback():
         "Catalog": [{"Roaster": "Onyx", "Name": "Colombia"}],
         "Hardware": [{"ID": "M01", "Type": "Machine"}],
     }
-    llm_json = json.dumps({
-        "sections": {
-            "Catalog": {"mapping": {"Roaster": "Roaster", "Name": "Bean_Name"}}
-            # Hardware is missing from LLM response
+    llm_json = json.dumps(
+        {
+            "sections": {
+                "Catalog": {"mapping": {"Roaster": "Roaster", "Name": "Bean_Name"}}
+                # Hardware is missing from LLM response
+            }
         }
-    })
+    )
     result = parse_batch_mapping_response(llm_json, sections)
     assert result["Catalog"]["Roaster"] == "Roaster"
     assert result["Hardware"] == {"ID": "ID", "Type": "Type"}  # identity fallback
@@ -463,6 +463,7 @@ def test_import_state_json_roundtrip():
 
 # ── XLSX parser tests ────────────────────────────────────────────────────────
 
+
 class TestParseXlsxToSections:
     """Unit tests for parse_xlsx_to_sections using the real fixture."""
 
@@ -476,7 +477,13 @@ class TestParseXlsxToSections:
         return parse_xlsx_to_sections(xlsx_raw)
 
     def test_all_expected_sheets_present(self, sections):
-        assert set(sections) == {"Brew_Log", "Catalog", "Inventory", "Hardware", "Grinder_Calibration"}
+        assert set(sections) == {
+            "Brew_Log",
+            "Catalog",
+            "Inventory",
+            "Hardware",
+            "Grinder_Calibration",
+        }
 
     def test_brew_log_row_count(self, sections):
         assert len(sections["Brew_Log"]) == 60
@@ -549,12 +556,21 @@ class TestParseXlsxToSections:
         csv_sections = parse_legacy_csv(csv_content)
         xlsx_brew_keys = set(sections["Brew_Log"][0].keys())
         csv_brew_keys = set(csv_sections["Brew_Log"][0].keys())
-        core = {"Date", "Bag_ID", "Machine_ID", "Grinder_ID", "Dose_In_g", "Yield_Out_g", "Time_Sec"}
+        core = {
+            "Date",
+            "Bag_ID",
+            "Machine_ID",
+            "Grinder_ID",
+            "Dose_In_g",
+            "Yield_Out_g",
+            "Time_Sec",
+        }
         assert core.issubset(xlsx_brew_keys), f"Missing core keys: {core - xlsx_brew_keys}"
         assert core.issubset(csv_brew_keys), f"CSV missing core keys: {core - csv_brew_keys}"
 
 
 # ── image sourcer tests ──────────────────────────────────────────────────────
+
 
 class TestSourceBeanImage:
     """Unit tests for AI image sourcing (all network calls mocked)."""
@@ -577,7 +593,9 @@ class TestSourceBeanImage:
             mock_client.get = AsyncMock(return_value=mock_resp)
             mock_client_cls.return_value = mock_client
 
-            result = await source_bean_image("Verve", "Seabright", "https://vervecoffee.com/seabright", mock_llm)
+            result = await source_bean_image(
+                "Verve", "Seabright", "https://vervecoffee.com/seabright", mock_llm
+            )
 
         assert result == "https://example.com/bag.jpg"
         mock_llm.complete.assert_not_called()
@@ -599,7 +617,9 @@ class TestSourceBeanImage:
             mock_client.get = AsyncMock(return_value=mock_resp)
             mock_client_cls.return_value = mock_client
 
-            result = await source_bean_image("Verve", "Seabright", "https://vervecoffee.com/seabright", mock_llm)
+            result = await source_bean_image(
+                "Verve", "Seabright", "https://vervecoffee.com/seabright", mock_llm
+            )
 
         assert result == "https://cdn.vervecoffee.com/seabright.jpg"
 
@@ -667,30 +687,48 @@ class TestHasFreshLocalImagePath:
 
     def test_http_url_is_fresh(self):
         from app.routers.import_wizard import _has_fresh_local_image_path
-        assert _has_fresh_local_image_path({"Local_Image_Path": "http://cdn.example.com/bag.jpg"}) is True
+
+        assert (
+            _has_fresh_local_image_path({"Local_Image_Path": "http://cdn.example.com/bag.jpg"})
+            is True
+        )
 
     def test_https_url_is_fresh(self):
         from app.routers.import_wizard import _has_fresh_local_image_path
-        assert _has_fresh_local_image_path({"Local_Image_Path": "https://cdn.example.com/bag.jpg"}) is True
+
+        assert (
+            _has_fresh_local_image_path({"Local_Image_Path": "https://cdn.example.com/bag.jpg"})
+            is True
+        )
 
     def test_appsheet_path_is_stale(self):
         from app.routers.import_wizard import _has_fresh_local_image_path
-        assert _has_fresh_local_image_path({"Local_Image_Path": "Images/CAT100.Local_Image_Path.035745.jpg"}) is False
+
+        assert (
+            _has_fresh_local_image_path(
+                {"Local_Image_Path": "Images/CAT100.Local_Image_Path.035745.jpg"}
+            )
+            is False
+        )
 
     def test_empty_string_is_stale(self):
         from app.routers.import_wizard import _has_fresh_local_image_path
+
         assert _has_fresh_local_image_path({"Local_Image_Path": ""}) is False
 
     def test_none_value_is_stale(self):
         from app.routers.import_wizard import _has_fresh_local_image_path
+
         assert _has_fresh_local_image_path({"Local_Image_Path": None}) is False
 
     def test_missing_key_is_stale(self):
         from app.routers.import_wizard import _has_fresh_local_image_path
+
         assert _has_fresh_local_image_path({}) is False
 
     def test_whitespace_only_is_stale(self):
         from app.routers.import_wizard import _has_fresh_local_image_path
+
         assert _has_fresh_local_image_path({"Local_Image_Path": "   "}) is False
 
 
@@ -699,50 +737,62 @@ class TestIsSafeUrl:
 
     def test_public_https_url_is_safe(self):
         from app.services.image_sourcer import _is_safe_url
+
         assert _is_safe_url("https://example.com/product") is True
 
     def test_public_http_url_is_safe(self):
         from app.services.image_sourcer import _is_safe_url
+
         assert _is_safe_url("http://example.com/product") is True
 
     def test_localhost_is_blocked(self):
         from app.services.image_sourcer import _is_safe_url
+
         assert _is_safe_url("http://localhost:8080/internal") is False
 
     def test_127_0_0_1_is_blocked(self):
         from app.services.image_sourcer import _is_safe_url
+
         assert _is_safe_url("http://127.0.0.1/secret") is False
 
     def test_ipv6_loopback_is_blocked(self):
         from app.services.image_sourcer import _is_safe_url
+
         assert _is_safe_url("http://[::1]/secret") is False
 
     def test_gcp_metadata_link_local_is_blocked(self):
         from app.services.image_sourcer import _is_safe_url
+
         assert _is_safe_url("http://169.254.169.254/computeMetadata/v1/") is False
 
     def test_private_rfc1918_is_blocked(self):
         from app.services.image_sourcer import _is_safe_url
+
         assert _is_safe_url("http://192.168.1.1/admin") is False
 
     def test_10_x_x_x_is_blocked(self):
         from app.services.image_sourcer import _is_safe_url
+
         assert _is_safe_url("http://10.0.0.1/internal") is False
 
     def test_dotlocal_is_blocked(self):
         from app.services.image_sourcer import _is_safe_url
+
         assert _is_safe_url("http://myservice.local/api") is False
 
     def test_non_http_scheme_is_blocked(self):
         from app.services.image_sourcer import _is_safe_url
+
         assert _is_safe_url("ftp://example.com/file") is False
 
     def test_empty_string_is_blocked(self):
         from app.services.image_sourcer import _is_safe_url
+
         assert _is_safe_url("") is False
 
 
 # ── missing images wizard step tests ────────────────────────────────────────
+
 
 class TestMissingImagesStep:
     """Tests for the import wizard missing-images detection and upload step."""
@@ -754,13 +804,15 @@ class TestMissingImagesStep:
         from app.routers.import_wizard import _enrich_catalog_images, _IMPORT_FILE_PREFIX
 
         import_id = "test-import-001"
-        rows = [{
-            "Catalog_ID": "CAT100",
-            "Roaster": "Verve",
-            "Bean_Name": "Seabright",
-            "Product_URL": "",
-            "Local_Image_Path": "",
-        }]
+        rows = [
+            {
+                "Catalog_ID": "CAT100",
+                "Roaster": "Verve",
+                "Bean_Name": "Seabright",
+                "Product_URL": "",
+                "Local_Image_Path": "",
+            }
+        ]
 
         async def fake_source(*args, **kwargs):
             return "https://example.com/bag.jpg"
@@ -768,9 +820,11 @@ class TestMissingImagesStep:
         async def fake_fetch(url):
             return (b"fakeimagedata", "image/jpeg")
 
-        with patch("app.routers.import_wizard.source_bean_image", side_effect=fake_source), \
-             patch("app.routers.import_wizard.fetch_image_bytes", side_effect=fake_fetch), \
-             patch("app.routers.import_wizard._IMPORT_TMP_DIR", tmp_path):
+        with (
+            patch("app.routers.import_wizard.source_bean_image", side_effect=fake_source),
+            patch("app.routers.import_wizard.fetch_image_bytes", side_effect=fake_fetch),
+            patch("app.routers.import_wizard._IMPORT_TMP_DIR", tmp_path),
+        ):
             result = await _enrich_catalog_images(rows, MagicMock(), import_id)
 
         bin_path = tmp_path / f"{_IMPORT_FILE_PREFIX}{import_id}_img_CAT100.bin"
@@ -783,13 +837,15 @@ class TestMissingImagesStep:
         from unittest.mock import MagicMock, patch
         from app.routers.import_wizard import _enrich_catalog_images
 
-        rows = [{
-            "Catalog_ID": "CAT100",
-            "Roaster": "Verve",
-            "Bean_Name": "Seabright",
-            "Product_URL": "",
-            "Local_Image_Path": "https://example.com/already.jpg",
-        }]
+        rows = [
+            {
+                "Catalog_ID": "CAT100",
+                "Roaster": "Verve",
+                "Bean_Name": "Seabright",
+                "Product_URL": "",
+                "Local_Image_Path": "https://example.com/already.jpg",
+            }
+        ]
 
         with patch("app.routers.import_wizard.source_bean_image") as mock_source:
             result = await _enrich_catalog_images(rows, MagicMock(), "import-002")
@@ -799,4 +855,5 @@ class TestMissingImagesStep:
     def test_fetch_image_bytes_exported_from_image_sourcer(self):
         """fetch_image_bytes is importable from image_sourcer."""
         from app.services.image_sourcer import fetch_image_bytes
+
         assert callable(fetch_image_bytes)

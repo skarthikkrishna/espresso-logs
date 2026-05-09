@@ -1,4 +1,5 @@
 """Tests for auto image sourcing on POST /api/hardware."""
+
 from __future__ import annotations
 
 import base64
@@ -143,9 +144,9 @@ async def test_create_with_product_url_image_sourcing_fails_gracefully():
             return_value=None,
         ),
         patch(
-        "app.routers.api_hardware.source_bean_image",
-        new_callable=AsyncMock,
-        side_effect=Exception("mock failure"),
+            "app.routers.api_hardware.source_bean_image",
+            new_callable=AsyncMock,
+            side_effect=Exception("mock failure"),
         ),
     ):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:

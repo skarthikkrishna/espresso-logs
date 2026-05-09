@@ -1,4 +1,5 @@
 """Phase 15 UI smoke tests — verify no page-title-bar, correct back labels, nav stack."""
+
 import pytest
 from playwright.sync_api import Page, expect
 
@@ -12,11 +13,16 @@ def test_no_page_title_bar_on_section_pages(page: Page, base_url: str, path: str
     assert count == 0, f"{path}: found {count} page-title-bar elements; expected 0"
 
 
-@pytest.mark.parametrize("detail_path,testid", [
-    ("/brew-log", "brew-log-detail"),
-    ("/catalog", "catalog-detail"),
-])
-def test_detail_back_link_reads_back(page: Page, base_url: str, detail_path: str, testid: str) -> None:
+@pytest.mark.parametrize(
+    "detail_path,testid",
+    [
+        ("/brew-log", "brew-log-detail"),
+        ("/catalog", "catalog-detail"),
+    ],
+)
+def test_detail_back_link_reads_back(
+    page: Page, base_url: str, detail_path: str, testid: str
+) -> None:
     """FR-B-006: Detail view back links must read '← Back' not the section name."""
     # Navigate to list, click first item
     page.goto(f"{base_url}{detail_path}")
@@ -47,12 +53,15 @@ def test_catalog_to_brew_back_preserves_catalog_context(page: Page, base_url: st
         pytest.skip("No recent shots on this catalog item — cannot test nav stack")
     brew_link.click()
     page.wait_for_selector('[data-testid="brew-log-detail"]', timeout=8000)
-    assert "back=" in page.url, "Expected ?back= param in brew detail URL after clicking from catalog"
+    assert "back=" in page.url, (
+        "Expected ?back= param in brew detail URL after clicking from catalog"
+    )
 
     page.get_by_text("← Back").click()
     page.wait_for_load_state("networkidle")
-    assert page.url == catalog_detail_url, \
+    assert page.url == catalog_detail_url, (
         f"Expected return to {catalog_detail_url!r}; got {page.url!r}"
+    )
 
 
 def test_section_pages_have_visible_h1(page: Page, base_url: str) -> None:

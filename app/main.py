@@ -26,6 +26,7 @@ from app.routers import (
     api_maintenance,
 )
 
+
 class JsonFormatter(logging.Formatter):
     """Emit log records as single-line JSON for structured log ingestion."""
 
@@ -75,7 +76,9 @@ app = FastAPI(title="Coffee Tracker", lifespan=lifespan)
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "SAMEORIGIN"
@@ -160,6 +163,7 @@ if os.path.isdir(_static_dir):
             headers={"Service-Worker-Allowed": "/"},
         )
 
+
 app.include_router(auth_router)
 app.include_router(health.router)
 app.include_router(api_auth.router)
@@ -182,4 +186,6 @@ _spa_index = pathlib.Path(__file__).parent / "static" / "spa" / "index.html"
 async def spa_catch_all(full_path: str, _user: CurrentUser) -> HTMLResponse:
     if _spa_index.exists():
         return HTMLResponse(_spa_index.read_text())
-    return HTMLResponse("<html><body><p>SPA not built. Run: cd frontend && npm run build</p></body></html>")
+    return HTMLResponse(
+        "<html><body><p>SPA not built. Run: cd frontend && npm run build</p></body></html>"
+    )

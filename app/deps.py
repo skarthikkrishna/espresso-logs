@@ -101,6 +101,7 @@ def get_llm_client() -> "LLMClient":
     """FastAPI dependency that provides the configured LLMClient."""
     from app.config import settings
     from app.services.inference import get_llm_client as _factory
+
     return _factory(settings.anthropic_api_key, settings.llm_api_key)
 
 

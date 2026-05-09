@@ -122,9 +122,6 @@ async def test_callback_allowlisted_success():
     assert response.headers["location"] == "/"
 
 
-
-
-
 @pytest.mark.asyncio
 async def test_callback_non_allowlisted():
     fake_token = {

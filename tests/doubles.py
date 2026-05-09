@@ -60,7 +60,7 @@ class FakeSheetsClient:
     def delete_rows(self, tab: str, start_row: int, end_row: int) -> None:
         """Remove data rows at 1-indexed positions (row 1 = header, data from row 2)."""
         data_start = start_row - 2
-        data_end   = end_row - 2
+        data_end = end_row - 2
         rows = self._store.get(tab, [])
         del rows[max(0, data_start) : data_end + 1]
 

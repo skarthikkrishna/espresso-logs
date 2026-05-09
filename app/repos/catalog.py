@@ -22,8 +22,12 @@ class CatalogRepo(BaseRepo):
 
     TAB = _TAB
     COLUMNS = (
-        "Catalog_ID", "Roaster", "Bean_Name", "Roast_Level",
-        "Product_URL", "Local_Image_Path",
+        "Catalog_ID",
+        "Roaster",
+        "Bean_Name",
+        "Roast_Level",
+        "Product_URL",
+        "Local_Image_Path",
     )
 
     def __init__(

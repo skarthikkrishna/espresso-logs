@@ -8,9 +8,7 @@ from pydantic_settings import BaseSettings
 
 logger = logging.getLogger(__name__)
 
-_GCP_METADATA_PROJECT_URL = (
-    "http://metadata.google.internal/computeMetadata/v1/project/project-id"
-)
+_GCP_METADATA_PROJECT_URL = "http://metadata.google.internal/computeMetadata/v1/project/project-id"
 
 
 def _fetch_gcp_project_id() -> str:
@@ -46,6 +44,7 @@ class Settings(BaseSettings):
       ``APP_SECRETS`` env var containing a JSON object whose keys are the
       uppercase field names.  Individual vars always take precedence.
     """
+
     app_env: str = "development"
     log_level: str = "INFO"
     gcp_project_id: str = ""
@@ -93,8 +92,7 @@ class Settings(BaseSettings):
             parsed: dict[str, Any] = json.loads(blob)
         except (json.JSONDecodeError, TypeError) as exc:
             raise ValueError(
-                "APP_SECRETS must be a valid JSON object string. "
-                f"Failed to parse: {exc}"
+                f"APP_SECRETS must be a valid JSON object string. Failed to parse: {exc}"
             ) from exc
         for key, value in parsed.items():
             field_name = key.lower()
@@ -151,13 +149,9 @@ class Settings(BaseSettings):
                     f"Missing required environment variables for production: {', '.join(missing)}"
                 )
             if len(self.session_secret) < 32:
-                raise ValueError(
-                    "SESSION_SECRET must be at least 32 characters in production."
-                )
+                raise ValueError("SESSION_SECRET must be at least 32 characters in production.")
         elif self.session_secret and len(self.session_secret) < 32:
-            raise ValueError(
-                "SESSION_SECRET must be at least 32 characters when set."
-            )
+            raise ValueError("SESSION_SECRET must be at least 32 characters when set.")
         return self
 
 

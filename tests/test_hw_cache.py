@@ -21,18 +21,18 @@ from tests.doubles import FakeSheetsClient
 
 HARDWARE_ROWS = [
     {
-        'Hardware_ID': 'M01',
-        'Category': 'Machine',
-        'Name': 'Rocket Mozzafiato',
-        'Product_URL': '',
-        'Local_Image_Path': '',
+        "Hardware_ID": "M01",
+        "Category": "Machine",
+        "Name": "Rocket Mozzafiato",
+        "Product_URL": "",
+        "Local_Image_Path": "",
     },
     {
-        'Hardware_ID': 'G01',
-        'Category': 'Grinder',
-        'Name': 'Niche Zero',
-        'Product_URL': '',
-        'Local_Image_Path': '',
+        "Hardware_ID": "G01",
+        "Category": "Grinder",
+        "Name": "Niche Zero",
+        "Product_URL": "",
+        "Local_Image_Path": "",
     },
 ]
 
@@ -40,7 +40,7 @@ HARDWARE_ROWS = [
 @pytest.fixture
 def fake_client():
     client = FakeSheetsClient()
-    client.seed('Hardware', HARDWARE_ROWS)
+    client.seed("Hardware", HARDWARE_ROWS)
     return client
 
 
@@ -57,95 +57,102 @@ def repo(fake_client, cache):
 def test_list_populates_cache(repo, fake_client):
     rows = repo.list()
     assert len(rows) == 2
-    assert fake_client.call_count('get_all_records') == 1
+    assert fake_client.call_count("get_all_records") == 1
     repo.list()
-    assert fake_client.call_count('get_all_records') == 1
+    assert fake_client.call_count("get_all_records") == 1
 
 
 def test_list_category_filter_uses_cache(repo, fake_client):
     repo.list()
-    machines = repo.list(category='Machine')
+    machines = repo.list(category="Machine")
     assert len(machines) == 1
-    assert machines[0]['Hardware_ID'] == 'M01'
-    assert fake_client.call_count('get_all_records') == 1
+    assert machines[0]["Hardware_ID"] == "M01"
+    assert fake_client.call_count("get_all_records") == 1
 
 
 def test_get_uses_cache(repo, fake_client):
     repo.list()
-    item = repo.get('G01')
+    item = repo.get("G01")
     assert item is not None
-    assert item['Name'] == 'Niche Zero'
-    assert fake_client.call_count('get_all_records') == 1
+    assert item["Name"] == "Niche Zero"
+    assert fake_client.call_count("get_all_records") == 1
 
 
 def test_get_unknown_id_returns_none(repo):
-    assert repo.get('X99') is None
+    assert repo.get("X99") is None
 
 
 def test_upsert_invalidates_cache(repo, fake_client):
     repo.list()
-    repo.upsert({
-        'Hardware_ID': 'M01',
-        'Category': 'Machine',
-        'Name': 'Updated',
-        'Product_URL': '',
-        'Local_Image_Path': '',
-    })
+    repo.upsert(
+        {
+            "Hardware_ID": "M01",
+            "Category": "Machine",
+            "Name": "Updated",
+            "Product_URL": "",
+            "Local_Image_Path": "",
+        }
+    )
     repo.list()
     # list() → call 1; upsert() internal _fetch_all → call 2; list() cache miss → call 3
-    assert fake_client.call_count('get_all_records') == 3
+    assert fake_client.call_count("get_all_records") == 3
 
 
 def test_add_many_invalidates_cache(repo, fake_client):
     repo.list()
-    repo.add_many([{'Hardware_ID': 'B01', 'Category': 'Basket', 'Name': 'IMS 20g'}])
+    repo.add_many([{"Hardware_ID": "B01", "Category": "Basket", "Name": "IMS 20g"}])
     repo.list()
-    assert fake_client.call_count('get_all_records') == 2
+    assert fake_client.call_count("get_all_records") == 2
 
 
 def test_delete_rows_invalidates_cache(repo, fake_client):
     repo.list()
     repo.delete_rows(2, 2)
     repo.list()
-    assert fake_client.call_count('get_all_records') == 2
+    assert fake_client.call_count("get_all_records") == 2
 
 
 def test_next_id_uses_cached_data(repo, fake_client):
     repo.list()
-    next_id = repo.next_id('Machine')
-    assert next_id == 'M02'
-    assert fake_client.call_count('get_all_records') == 1
+    next_id = repo.next_id("Machine")
+    assert next_id == "M02"
+    assert fake_client.call_count("get_all_records") == 1
 
 
 # ---------------------------------------------------------------------------
 # T013 — New column regression tests
 # ---------------------------------------------------------------------------
 
+
 def test_upsert_writes_product_url_and_local_image_path():
     """upsert() correctly persists Product_URL and Local_Image_Path when COLUMNS includes them."""
-    client = FakeSheetsClient(initial={
-        "Hardware": [
-            {
-                "Hardware_ID": "M01",
-                "Category": "Machine",
-                "Name": "Rocket",
-                "Product_URL": "",
-                "Local_Image_Path": "",
-            }
-        ]
-    })
+    client = FakeSheetsClient(
+        initial={
+            "Hardware": [
+                {
+                    "Hardware_ID": "M01",
+                    "Category": "Machine",
+                    "Name": "Rocket",
+                    "Product_URL": "",
+                    "Local_Image_Path": "",
+                }
+            ]
+        }
+    )
     repo = HardwareRepo(client=client, cache=TTLCache(ttl=60.0))
 
     new_product_url = "https://breville.com/barista-express"
     new_image_path = "https://storage.googleapis.com/bucket/hardware-images/M01-abc.jpg"
 
-    repo.upsert({
-        "Hardware_ID": "M01",
-        "Category": "Machine",
-        "Name": "Rocket",
-        "Product_URL": new_product_url,
-        "Local_Image_Path": new_image_path,
-    })
+    repo.upsert(
+        {
+            "Hardware_ID": "M01",
+            "Category": "Machine",
+            "Name": "Rocket",
+            "Product_URL": new_product_url,
+            "Local_Image_Path": new_image_path,
+        }
+    )
 
     result = repo.get("M01")
     assert result is not None

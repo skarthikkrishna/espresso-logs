@@ -31,9 +31,16 @@ def _patch_image_sourcer():
     Individual tests can override with a nested patch() call.
     """
     from app.services.image_sourcer import PageContext
+
     with (
-        patch("app.routers.api_catalog.fetch_page_context", new_callable=AsyncMock, return_value=PageContext()),
+        patch(
+            "app.routers.api_catalog.fetch_page_context",
+            new_callable=AsyncMock,
+            return_value=PageContext(),
+        ),
         patch("app.routers.api_catalog.source_bean_image", new_callable=AsyncMock, return_value=""),
-        patch("app.routers.api_catalog.fetch_image_bytes", new_callable=AsyncMock, return_value=None),
+        patch(
+            "app.routers.api_catalog.fetch_image_bytes", new_callable=AsyncMock, return_value=None
+        ),
     ):
         yield

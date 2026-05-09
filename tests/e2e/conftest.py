@@ -52,7 +52,12 @@ CATALOG_ROWS = [
 ]
 
 HARDWARE_ROWS = [
-    {"Hardware_ID": "HW-M01", "Category": "Machine", "Name": "Breville Barista Express", "Image_URL": ""},
+    {
+        "Hardware_ID": "HW-M01",
+        "Category": "Machine",
+        "Name": "Breville Barista Express",
+        "Image_URL": "",
+    },
     {"Hardware_ID": "HW-G01", "Category": "Grinder", "Name": "Niche Zero", "Image_URL": ""},
     {"Hardware_ID": "HW-B01", "Category": "Basket", "Name": "IMS 20g", "Image_URL": ""},
 ]
@@ -217,16 +222,18 @@ def live_server():
 @pytest.fixture
 def auth_page(page, live_server):
     """Playwright page with session cookie pre-injected — starts authenticated."""
-    page.context.add_cookies([
-        {
-            "name": "session",
-            "value": make_session_cookie(),
-            "url": live_server,
-            "httpOnly": False,
-            "secure": False,
-            "sameSite": "Lax",
-        }
-    ])
+    page.context.add_cookies(
+        [
+            {
+                "name": "session",
+                "value": make_session_cookie(),
+                "url": live_server,
+                "httpOnly": False,
+                "secure": False,
+                "sameSite": "Lax",
+            }
+        ]
+    )
     return page
 
 
@@ -242,4 +249,3 @@ def base_url() -> str:
     Returns empty string when not set; browser tests skip themselves when empty.
     """
     return os.environ.get("E2E_BASE_URL", "").rstrip("/")
-

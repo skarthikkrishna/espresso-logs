@@ -51,13 +51,11 @@ def test_inventory_list_all_cached():
     The second call must be served from the `inventory:all` cache entry without
     hitting get_all_records() again.
     """
-    client = FakeSheetsClient(
-        {"Inventory": [_BAG_ACTIVE.copy(), _BAG_FINISHED.copy()]}
-    )
+    client = FakeSheetsClient({"Inventory": [_BAG_ACTIVE.copy(), _BAG_FINISHED.copy()]})
     cache = TTLCache(ttl=60.0)
     repo = InventoryRepo(client=client, cache=cache)
 
-    rows_first = repo.list_all()   # cache miss → Sheets read #1
+    rows_first = repo.list_all()  # cache miss → Sheets read #1
     rows_second = repo.list_all()  # cache hit  → no Sheets read
 
     assert len(rows_first) == 2

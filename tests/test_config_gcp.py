@@ -1,4 +1,5 @@
 """Tests for GCP project ID auto-detection in app.config."""
+
 from __future__ import annotations
 
 import urllib.error
@@ -69,6 +70,7 @@ class TestAutoDetectGcpProjectValidator:
 
         with patch("app.config._fetch_gcp_project_id", return_value="auto-project"):
             from app.config import Settings
+
             s = Settings()
 
         assert s.gcp_project_id == "auto-project"
@@ -81,6 +83,7 @@ class TestAutoDetectGcpProjectValidator:
 
         with patch("app.config._fetch_gcp_project_id", return_value="auto-project") as mock_fetch:
             from app.config import Settings
+
             s = Settings()
 
         # Metadata server should NOT be called when env var is already set
@@ -102,6 +105,7 @@ class TestAutoDetectGcpProjectValidator:
         with patch("app.config._fetch_gcp_project_id", return_value=""):
             with caplog.at_level(logging.WARNING, logger="app.config"):
                 from app.config import Settings
+
                 Settings()
 
         assert any("GCP project ID could not be auto-detected" in r.message for r in caplog.records)
@@ -117,6 +121,9 @@ class TestAutoDetectGcpProjectValidator:
         with patch("app.config._fetch_gcp_project_id", return_value=""):
             with caplog.at_level(logging.WARNING, logger="app.config"):
                 from app.config import Settings
+
                 Settings()
 
-        assert not any("GCP project ID could not be auto-detected" in r.message for r in caplog.records)
+        assert not any(
+            "GCP project ID could not be auto-detected" in r.message for r in caplog.records
+        )

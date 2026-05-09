@@ -100,14 +100,12 @@ class HardwareRepo(BaseRepo):
         prefix_map = {"Machine": "M", "Grinder": "G", "Basket": "B", "Storage": "S"}
         prefix = prefix_map[category]
         existing = [
-            r["Hardware_ID"]
-            for r in self.list()
-            if r.get("Hardware_ID", "").startswith(prefix)
+            r["Hardware_ID"] for r in self.list() if r.get("Hardware_ID", "").startswith(prefix)
         ]
         nums = []
         for hid in existing:
             try:
-                nums.append(int(hid[len(prefix):]))
+                nums.append(int(hid[len(prefix) :]))
             except ValueError:
                 continue
         if not nums:

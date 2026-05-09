@@ -43,6 +43,7 @@ class _RaisingLLMClient:
 
     async def complete(self, prompt: str) -> str:
         from app.services.inference import LLMError
+
         raise LLMError("simulated failure")
 
 
@@ -108,7 +109,9 @@ def test_build_prompt_includes_all_sections():
     assert "<user_data>Acidic & Bright</user_data>" in result
 
     # Verify maintenance line format: date | action | hardware_id | notes
-    assert "2025-07-05 | Re-zero | G01 | <user_data>Reset after burr replacement</user_data>" in result
+    assert (
+        "2025-07-05 | Re-zero | G01 | <user_data>Reset after burr replacement</user_data>" in result
+    )
 
     # AI_Feedback field must NOT appear (CL-001 field enumeration stops at Storage_Method)
     assert "AI_Feedback" not in result
@@ -339,7 +342,7 @@ async def test_hardware_id_filter_drops_empty_string():
 
     shot = {
         **_SHOT,
-        "Machine_ID": "",   # empty string — must be excluded from hardware_ids
+        "Machine_ID": "",  # empty string — must be excluded from hardware_ids
         "Grinder_ID": "G01",
     }
     maintenance_rows = [
@@ -362,10 +365,12 @@ async def test_hardware_id_filter_drops_empty_string():
             "Notes": "Empty ID row",
         },
     ]
-    fake_sheets = FakeSheetsClient({
-        "Brew_Log": [shot],
-        "Maintenance": maintenance_rows,
-    })
+    fake_sheets = FakeSheetsClient(
+        {
+            "Brew_Log": [shot],
+            "Maintenance": maintenance_rows,
+        }
+    )
     cache = TTLCache()
     brew_repo = BrewLogRepo(client=fake_sheets, cache=cache)
     mnt_repo = MaintenanceRepo(client=fake_sheets, cache=cache)
@@ -400,9 +405,9 @@ async def test_maintenance_date_both_bounds():
     from app.services.inference import get_ai_feedback
 
     shot_date = date(2025, 7, 14)
-    inclusive_cutoff = shot_date - timedelta(days=30)   # 2025-06-14 — INCLUDED
-    excluded_date = shot_date - timedelta(days=31)       # 2025-06-13 — EXCLUDED
-    on_shot_date = shot_date                             # 2025-07-14 — INCLUDED (upper bound)
+    inclusive_cutoff = shot_date - timedelta(days=30)  # 2025-06-14 — INCLUDED
+    excluded_date = shot_date - timedelta(days=31)  # 2025-06-13 — EXCLUDED
+    on_shot_date = shot_date  # 2025-07-14 — INCLUDED (upper bound)
 
     shot = {**_SHOT, "Date": shot_date.isoformat(), "Machine_ID": "M01", "Grinder_ID": "G01"}
     maintenance_rows = [
@@ -425,10 +430,12 @@ async def test_maintenance_date_both_bounds():
             "Notes": "On shot date itself",
         },
     ]
-    fake_sheets = FakeSheetsClient({
-        "Brew_Log": [shot],
-        "Maintenance": maintenance_rows,
-    })
+    fake_sheets = FakeSheetsClient(
+        {
+            "Brew_Log": [shot],
+            "Maintenance": maintenance_rows,
+        }
+    )
     cache = TTLCache()
     brew_repo = BrewLogRepo(client=fake_sheets, cache=cache)
     mnt_repo = MaintenanceRepo(client=fake_sheets, cache=cache)
@@ -464,10 +471,12 @@ async def test_existing_feedback_short_circuit():
 
     existing_text = "Already computed feedback from a previous call."
     shot_with_feedback = {**_SHOT, "AI_Feedback": existing_text}
-    fake_sheets = FakeSheetsClient({
-        "Brew_Log": [shot_with_feedback],
-        "Maintenance": [],
-    })
+    fake_sheets = FakeSheetsClient(
+        {
+            "Brew_Log": [shot_with_feedback],
+            "Maintenance": [],
+        }
+    )
     cache = TTLCache()
     brew_repo = BrewLogRepo(client=fake_sheets, cache=cache)
     mnt_repo = MaintenanceRepo(client=fake_sheets, cache=cache)
@@ -754,8 +763,15 @@ _FROZEN_ANCHOR = (
 
 def test_build_prompt_storage_method_in_context():
     from app.services.inference import build_prompt
-    extra = {"machine_name": "Decent", "grinder_name": "Niche Zero", "basket_name": "IMS",
-             "roast_level": "Light", "taste_summary": "Sweet", "storage_method": "Glass Tube - Frozen"}
+
+    extra = {
+        "machine_name": "Decent",
+        "grinder_name": "Niche Zero",
+        "basket_name": "IMS",
+        "roast_level": "Light",
+        "taste_summary": "Sweet",
+        "storage_method": "Glass Tube - Frozen",
+    }
     result = build_prompt(_SHOT, [], [], extra_context=extra)
     assert "## Context:" in result
     assert "  Storage Method: <user_data>Glass Tube - Frozen</user_data>" in result
@@ -763,17 +779,31 @@ def test_build_prompt_storage_method_in_context():
 
 def test_build_prompt_frozen_guard_injected():
     from app.services.inference import build_prompt
+
     for storage_val in ["Glass Tube - Frozen", "frozen", "FROZEN", "deep-frozen vault"]:
-        extra = {"machine_name": "Decent", "grinder_name": "Niche Zero", "basket_name": "IMS",
-                 "roast_level": "Light", "taste_summary": "Sweet", "storage_method": storage_val}
+        extra = {
+            "machine_name": "Decent",
+            "grinder_name": "Niche Zero",
+            "basket_name": "IMS",
+            "roast_level": "Light",
+            "taste_summary": "Sweet",
+            "storage_method": storage_val,
+        }
         result = build_prompt(_SHOT, [], [], extra_context=extra)
         assert _FROZEN_ANCHOR in result, f"Guard missing for storage_method={storage_val!r}"
 
 
 def test_build_prompt_no_frozen_guard_for_ambient():
     from app.services.inference import build_prompt
-    extra = {"machine_name": "Decent", "grinder_name": "Niche Zero", "basket_name": "IMS",
-             "roast_level": "Light", "taste_summary": "Sweet", "storage_method": "Ambient — Bag"}
+
+    extra = {
+        "machine_name": "Decent",
+        "grinder_name": "Niche Zero",
+        "basket_name": "IMS",
+        "roast_level": "Light",
+        "taste_summary": "Sweet",
+        "storage_method": "Ambient — Bag",
+    }
     result = build_prompt(_SHOT, [], [], extra_context=extra)
     assert _FROZEN_ANCHOR not in result
     assert "Storage Method" in result
@@ -781,8 +811,15 @@ def test_build_prompt_no_frozen_guard_for_ambient():
 
 def test_build_prompt_storage_method_empty_string():
     from app.services.inference import build_prompt
-    extra = {"machine_name": "Decent", "grinder_name": "Niche Zero", "basket_name": "IMS",
-             "roast_level": "Light", "taste_summary": "Sweet", "storage_method": ""}
+
+    extra = {
+        "machine_name": "Decent",
+        "grinder_name": "Niche Zero",
+        "basket_name": "IMS",
+        "roast_level": "Light",
+        "taste_summary": "Sweet",
+        "storage_method": "",
+    }
     result = build_prompt(_SHOT, [], [], extra_context=extra)
     assert "  Storage Method: <user_data></user_data>" in result
     assert _FROZEN_ANCHOR not in result
@@ -790,8 +827,15 @@ def test_build_prompt_storage_method_empty_string():
 
 def test_build_prompt_storage_method_none():
     from app.services.inference import build_prompt
-    extra = {"machine_name": "Decent", "grinder_name": "Niche Zero", "basket_name": "IMS",
-             "roast_level": "Light", "taste_summary": "Sweet", "storage_method": None}
+
+    extra = {
+        "machine_name": "Decent",
+        "grinder_name": "Niche Zero",
+        "basket_name": "IMS",
+        "roast_level": "Light",
+        "taste_summary": "Sweet",
+        "storage_method": None,
+    }
     result = build_prompt(_SHOT, [], [], extra_context=extra)
     assert "  Storage Method: <user_data></user_data>" in result
     assert _FROZEN_ANCHOR not in result
@@ -800,6 +844,7 @@ def test_build_prompt_storage_method_none():
 def test_router_extra_context_storage_method_non_empty_for_frozen():
     """SC-007 unit test — simulates what the router builds; coverage gap acknowledged."""
     from app.services.inference import build_prompt
+
     extra_context = {
         "machine_name": "Decent DE1",
         "grinder_name": "Niche Zero",
@@ -816,7 +861,14 @@ def test_router_extra_context_storage_method_non_empty_for_frozen():
 
 def test_build_prompt_grinder_in_context():
     from app.services.inference import build_prompt
-    extra = {"machine_name": "Decent", "grinder_name": "Niche Zero", "basket_name": "IMS",
-             "roast_level": "Light", "taste_summary": "Sweet", "storage_method": ""}
+
+    extra = {
+        "machine_name": "Decent",
+        "grinder_name": "Niche Zero",
+        "basket_name": "IMS",
+        "roast_level": "Light",
+        "taste_summary": "Sweet",
+        "storage_method": "",
+    }
     result = build_prompt(_SHOT, [], [], extra_context=extra)
     assert "  Grinder: Niche Zero" in result

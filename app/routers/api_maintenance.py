@@ -1,4 +1,5 @@
 """JSON maintenance endpoints."""
+
 from __future__ import annotations
 
 from datetime import date
@@ -71,11 +72,15 @@ async def api_maintenance_create(
     if hardware is None:
         raise HTTPException(status_code=404, detail="Hardware not found")
     if hardware.get("Category") == "Basket":
-        raise HTTPException(status_code=422, detail="Basket hardware has no valid maintenance action types")
+        raise HTTPException(
+            status_code=422, detail="Basket hardware has no valid maintenance action types"
+        )
 
     valid_actions = _ACTION_TYPES_BY_CATEGORY.get(hardware.get("Category", ""), [])
     if body.action_type not in valid_actions:
-        raise HTTPException(status_code=422, detail=f"Invalid action type for {hardware.get('Category')}")
+        raise HTTPException(
+            status_code=422, detail=f"Invalid action type for {hardware.get('Category')}"
+        )
 
     try:
         date.fromisoformat(body.date)

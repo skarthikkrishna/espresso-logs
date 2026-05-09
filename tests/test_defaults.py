@@ -161,6 +161,7 @@ _SHOT_C = {
 # Fixture helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_repos(brew_log_rows=None, inventory_rows=None, catalog_rows=None):
     """Return (brew_log_repo, inventory_repo, catalog_repo) backed by FakeSheetsClient."""
     client = FakeSheetsClient(
@@ -465,4 +466,3 @@ async def test_defaults_no_basket_id_regression():
     assert result["dose_in_g"] == 17.5
     assert result["grind_setting"] == 4.0
     assert "shot_eligibility" not in result
-

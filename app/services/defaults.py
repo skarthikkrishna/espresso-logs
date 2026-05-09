@@ -24,7 +24,7 @@ _FIELD_MAP = {
     "Basket_ID": "basket_id",
     "Storage_Method": "storage_method",
     "Dose_In_g": "dose_in_g",
-    "Yield_Out_g": "yield_out_g",   # BE-2: added; handled via _extract_defaults(), not ad-hoc
+    "Yield_Out_g": "yield_out_g",  # BE-2: added; handled via _extract_defaults(), not ad-hoc
     "Grind_Setting": "grind_setting",
 }
 
@@ -36,9 +36,7 @@ def _extract_defaults(shot: dict[str, Any]) -> dict[str, Any]:
     ``shot_eligibility`` is never included.
     """
     return {
-        snake: shot[col]
-        for col, snake in _FIELD_MAP.items()
-        if shot.get(col) not in (None, "")
+        snake: shot[col] for col, snake in _FIELD_MAP.items() if shot.get(col) not in (None, "")
     }
 
 

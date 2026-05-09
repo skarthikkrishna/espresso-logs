@@ -215,9 +215,7 @@ _BASKET = {"Hardware_ID": "B01", "Category": "Basket", "Name": "VST 18g"}
 
 @pytest.fixture(scope="function")
 def hw_client() -> FakeSheetsClient:
-    return FakeSheetsClient(
-        {"Hardware": [_MACHINE.copy(), _GRINDER.copy(), _BASKET.copy()]}
-    )
+    return FakeSheetsClient({"Hardware": [_MACHINE.copy(), _GRINDER.copy(), _BASKET.copy()]})
 
 
 def test_hardware_list_all(hw_client, empty_cache):
@@ -425,9 +423,7 @@ def test_list_recent_sorts_by_date_then_shot_id(empty_cache):
         "SH-20260504-02 should precede SH-20260504-01 (same date, higher sequence)"
     )
     # Earlier-dated row appears last
-    assert recent[-1]["Shot_ID"] == "SH-20260503-01", (
-        "Earlier-dated shot must appear last"
-    )
+    assert recent[-1]["Shot_ID"] == "SH-20260503-01", "Earlier-dated shot must appear last"
 
 
 def test_brew_log_list_recent_cache_hit(brew_client, empty_cache):
@@ -475,5 +471,6 @@ def test_brew_log_add_passes_pk_col(brew_client, empty_cache):
         # add() normalises the row against COLUMNS before writing — build the same
         # normalised dict so the assertion reflects the actual contract.
         from app.repos.brew_log import BrewLogRepo as _Repo
+
         normalised = {col: new_shot.get(col, "") for col in _Repo.COLUMNS}
         spy.assert_called_once_with("Brew_Log", normalised, pk_col="Shot_ID")
