@@ -11,7 +11,7 @@
     "lint": "eslint src --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "@tanstack/query-sync-storage-persister": "^5.56.0",
+    "@tanstack/query-sync-storage-persister": "^5.100.9",
     "@tanstack/react-query": "^5.56.0",
     "@tanstack/react-query-persist-client": "^5.56.0",
     "axios": "^1.7.7",
