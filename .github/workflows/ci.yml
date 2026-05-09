@@ -163,6 +163,7 @@ jobs:
   # ── Static analysis (parallel with all above) ───────────────────────────
   codeql:
     runs-on: ubuntu-latest
+    continue-on-error: true  # TODO: enable GHAS code scanning in repo settings
     needs: check-activity
     if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
     permissions:
