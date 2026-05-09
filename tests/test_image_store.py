@@ -1,4 +1,5 @@
 """Tests for app.services.image_store and SSRF protection in image_sourcer."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -11,10 +12,13 @@ class TestUploadImageToGcs:
     async def test_upload_returns_public_url(self):
         """upload_image_to_gcs returns https://storage.googleapis.com/{bucket}/{object}."""
         with patch("app.services.image_store.asyncio.to_thread") as mock_thread:
-            expected_url = "https://storage.googleapis.com/test-bucket/bean-images/CAT100-abc12345.jpg"
+            expected_url = (
+                "https://storage.googleapis.com/test-bucket/bean-images/CAT100-abc12345.jpg"
+            )
             mock_thread.return_value = expected_url
 
             from app.services.image_store import upload_image_to_gcs
+
             result = await upload_image_to_gcs(
                 b"fake", "image/jpeg", "bean-images/CAT100-abc12345.jpg", "test-bucket"
             )
@@ -169,7 +173,9 @@ class TestFetchImageBytesSSRF:
         """fetch_image_bytes returns None when DNS resolution fails."""
         from app.services.image_sourcer import fetch_image_bytes
 
-        with patch("app.services.image_sourcer.asyncio.to_thread", side_effect=Exception("DNS error")):
+        with patch(
+            "app.services.image_sourcer.asyncio.to_thread", side_effect=Exception("DNS error")
+        ):
             result = await fetch_image_bytes("https://nonexistent.example.com/img.jpg")
 
         assert result is None
@@ -180,7 +186,6 @@ class TestLocalUpload:
     async def test_local_upload_creates_file(self, tmp_path, monkeypatch):
         """_local_upload saves bytes and returns /static/uploads/ URL."""
         import os
-        from pathlib import Path
         import app.services.image_store as _store
 
         uploads_dir = tmp_path / "uploads"
@@ -201,15 +206,17 @@ class TestLocalUpload:
     async def test_local_upload_creates_dir_if_missing(self, tmp_path, monkeypatch):
         """_local_upload creates uploads dir if absent."""
         import app.services.image_store as _store
-        from pathlib import Path
 
         fake_dir = tmp_path / "static" / "uploads"
         monkeypatch.setattr(
             _store,
             "_local_upload",
-            lambda raw, ct, name: (fake_dir.mkdir(parents=True, exist_ok=True) or None) or _store._local_upload.__wrapped__(raw, ct, name)
-            if hasattr(_store._local_upload, "__wrapped__")
-            else None,
+            lambda raw, ct, name: (
+                (fake_dir.mkdir(parents=True, exist_ok=True) or None)
+                or _store._local_upload.__wrapped__(raw, ct, name)
+                if hasattr(_store._local_upload, "__wrapped__")
+                else None
+            ),
         )
         # Simple: just confirm mkdir(exist_ok=True) does not raise when dir is absent
         fake_dir.mkdir(parents=True, exist_ok=True)

@@ -1,16 +1,26 @@
 """JSON brew log endpoints."""
+
 from __future__ import annotations
 
 import asyncio
 import logging
 from datetime import date
-from typing import List
+from typing import Any, List
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from app.deps import CurrentUser, get_brew_log_repo, get_catalog_repo, get_hardware_repo, get_idempotency_store, get_inventory_repo, get_llm_client, get_maintenance_repo
+from app.deps import (
+    CurrentUser,
+    get_brew_log_repo,
+    get_catalog_repo,
+    get_hardware_repo,
+    get_idempotency_store,
+    get_inventory_repo,
+    get_llm_client,
+    get_maintenance_repo,
+)
 from app.models.api import BrewLogEntryOut, FeedbackOut
 from app.repos.brew_log import BrewLogRepo
 from app.repos.catalog import CatalogRepo
@@ -19,7 +29,7 @@ from app.repos.inventory import InventoryRepo
 from app.repos.maintenance import MaintenanceRepo
 from app.services.idempotency_store import IdempotencyStore
 from app.services.ids import make_shot_id
-from app.services.inference import get_ai_feedback
+from app.services.inference import LLMClient, get_ai_feedback
 
 logger = logging.getLogger(__name__)
 
@@ -37,29 +47,29 @@ def _build_lookups(
     inventory_repo: InventoryRepo,
     catalog_repo: CatalogRepo,
     hardware_repo: HardwareRepo,
-) -> tuple[dict, dict, dict]:
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     """Pre-fetch all lookup tables once; return (bags, catalog, hardware) dicts.
 
     Duplicate PKs use first-row-wins semantics (insertion order preserved).
     """
-    bags: dict = {}
+    bags: dict[str, Any] = {}
     for r in inventory_repo.list_all():
         bags.setdefault(r["Bag_ID"], r)
-    catalog: dict = {}
+    catalog: dict[str, Any] = {}
     for r in catalog_repo.list():
         catalog.setdefault(r["Catalog_ID"], r)
-    hardware: dict = {}
+    hardware: dict[str, Any] = {}
     for r in hardware_repo.list():
         hardware.setdefault(r["Hardware_ID"], r)
     return bags, catalog, hardware
 
 
 def _resolve_names_from_dicts(
-    shot: dict,
-    bags: dict,
-    catalog: dict,
-    hardware: dict,
-) -> dict:
+    shot: dict[str, Any],
+    bags: dict[str, Any],
+    catalog: dict[str, Any],
+    hardware: dict[str, Any],
+) -> dict[str, Any]:
     """Resolve display names from pre-fetched lookup dicts (zero Sheets reads)."""
     bag_id = shot.get("Bag_ID") or ""
     bag_row = bags.get(bag_id, {})
@@ -83,7 +93,7 @@ def _resolve_names_from_dicts(
     }
 
 
-def _shot_to_out(shot: dict, names: dict) -> BrewLogEntryOut:
+def _shot_to_out(shot: dict[str, Any], names: dict[str, Any]) -> BrewLogEntryOut:
     return BrewLogEntryOut(
         shot_id=shot.get("Shot_ID", ""),
         date=shot.get("Date", ""),
@@ -96,7 +106,9 @@ def _shot_to_out(shot: dict, names: dict) -> BrewLogEntryOut:
         dose_in_g=_float(shot.get("Dose_In_g")),
         yield_out_g=_float(shot.get("Yield_Out_g")),
         time_sec=_float(shot.get("Time_Sec")),
-        grind_setting=str(shot["Grind_Setting"]) if shot.get("Grind_Setting") not in (None, "") else None,
+        grind_setting=str(shot["Grind_Setting"])
+        if shot.get("Grind_Setting") not in (None, "")
+        else None,
         shot_eligibility=shot.get("Shot_Eligibility") or None,
         taste_summary=shot.get("Taste_Summary") or None,
         user_notes=shot.get("User_Notes") or None,
@@ -114,10 +126,7 @@ async def api_brew_log_list(
 ) -> list[BrewLogEntryOut]:
     shots = brew_log_repo.list_recent(20)
     bags, catalog, hardware = _build_lookups(inventory_repo, catalog_repo, hardware_repo)
-    return [
-        _shot_to_out(s, _resolve_names_from_dicts(s, bags, catalog, hardware))
-        for s in shots
-    ]
+    return [_shot_to_out(s, _resolve_names_from_dicts(s, bags, catalog, hardware)) for s in shots]
 
 
 @router.get("/brew-log/{shot_id}/feedback", response_model=FeedbackOut)
@@ -175,7 +184,7 @@ async def api_brew_log_create(
     catalog_repo: CatalogRepo = Depends(get_catalog_repo),
     hardware_repo: HardwareRepo = Depends(get_hardware_repo),
     maintenance_repo: MaintenanceRepo = Depends(get_maintenance_repo),
-    llm_client=Depends(get_llm_client),
+    llm_client: LLMClient = Depends(get_llm_client),
     store: IdempotencyStore = Depends(get_idempotency_store),
 ) -> BrewLogEntryOut:
     shot_date = date.today()
@@ -216,15 +225,17 @@ async def api_brew_log_create(
     bags, catalog, hardware = _build_lookups(inventory_repo, catalog_repo, hardware_repo)
     names = _resolve_names_from_dicts(row, bags, catalog, hardware)
     extra_context = {
-        "machine_name":   names.get("machine_name") or "",
-        "grinder_name":   names.get("grinder_name") or "",
-        "basket_name":    names.get("basket_name") or "",
-        "roast_level":    names.get("roast_level") or "",
-        "taste_summary":  body.taste_summary,
+        "machine_name": names.get("machine_name") or "",
+        "grinder_name": names.get("grinder_name") or "",
+        "basket_name": names.get("basket_name") or "",
+        "roast_level": names.get("roast_level") or "",
+        "taste_summary": body.taste_summary,
         "storage_method": body.storage_method or "",
     }
     asyncio.create_task(
-        get_ai_feedback(shot_id, brew_log_repo, maintenance_repo, llm_client, extra_context=extra_context)
+        get_ai_feedback(
+            shot_id, brew_log_repo, maintenance_repo, llm_client, extra_context=extra_context
+        )
     )
 
     shot_out = _shot_to_out(row, names)

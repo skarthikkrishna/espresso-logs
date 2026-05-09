@@ -1,4 +1,5 @@
 """JSON auth endpoints — session user info and logout."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Request

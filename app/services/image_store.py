@@ -4,6 +4,7 @@ Dispatcher logic:
   - If ``bucket`` is falsy OR ``settings.gcp_project_id`` is empty → local storage
   - Otherwise → GCS upload
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -27,8 +28,10 @@ async def upload_image_to_gcs(
     Uses ADC (Application Default Credentials) — project is resolved automatically
     by the GCS client from the environment. Wraps sync SDK in asyncio.to_thread.
     """
+
     def _sync_upload() -> str:
-        from google.cloud import storage  # type: ignore[import]
+        from google.cloud import storage  # type: ignore[import-untyped]
+
         client = storage.Client()
         bucket = client.bucket(bucket_name)
         blob = bucket.blob(object_name)

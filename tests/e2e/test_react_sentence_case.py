@@ -14,12 +14,12 @@ from playwright.sync_api import Page
 
 # Known Title Case strings that must NOT appear in visible UI
 _TITLE_CASE_VIOLATIONS = [
-    "Brew Log",     # must be "Brew log"
-    "Add Shot",     # must be "Add shot"
-    "Brew Date",    # must be "Brew date"
+    "Brew Log",  # must be "Brew log"
+    "Add Shot",  # must be "Add shot"
+    "Brew Date",  # must be "Brew date"
     "Roast Level",  # must be "Roast level"
     "Shot Parameters",  # must be "Shot parameters"
-    "Brew History",     # must be "Brew history"
+    "Brew History",  # must be "Brew history"
     "Maintenance Log",  # must be "Maintenance log"
 ]
 
@@ -85,8 +85,9 @@ def test_nav_labels_are_sentence_case(auth_page: Page, live_server: str) -> None
     sidebar = auth_page.locator('[data-testid="sidebar"]')
     expected_labels = ["Home", "Brew log", "Catalog", "Hardware", "Import"]
     for label in expected_labels:
-        assert sidebar.get_by_text(label, exact=True).count() >= 1, \
+        assert sidebar.get_by_text(label, exact=True).count() >= 1, (
             f"Nav label {label!r} not found in sidebar (wrong case?)"
+        )
 
 
 def test_no_ids_on_any_page(auth_page: Page, live_server: str) -> None:

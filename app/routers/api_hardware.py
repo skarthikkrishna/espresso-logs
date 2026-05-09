@@ -5,11 +5,12 @@ Deployment prerequisite: The live Google Sheet's Hardware tab must have
 header row **before** this code is deployed to production.  Without these
 columns gspread will silently drop those fields from any upsert() call.
 """
+
 from __future__ import annotations
 
 import logging
 import uuid
-from typing import List
+from typing import Any, List
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -22,6 +23,7 @@ from app.repos.hardware import HardwareRepo
 from app.repos.maintenance import MaintenanceRepo
 from app.services.image_sourcer import fetch_image_bytes, fetch_page_context, source_bean_image
 from app.services.image_store import upload_image
+from app.services.inference import LLMClient
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +39,7 @@ _ACTION_TYPES_BY_CATEGORY = {
 }
 
 
-def _hw_to_out(row: dict) -> HardwareItemOut:
+def _hw_to_out(row: dict[str, Any]) -> HardwareItemOut:
     return HardwareItemOut(
         hardware_id=row.get("Hardware_ID", ""),
         category=row.get("Category", ""),
@@ -46,7 +48,7 @@ def _hw_to_out(row: dict) -> HardwareItemOut:
     )
 
 
-def _maint_to_out(row: dict, hardware_name: str) -> MaintenanceEventOut:
+def _maint_to_out(row: dict[str, Any], hardware_name: str) -> MaintenanceEventOut:
     return MaintenanceEventOut(
         maintenance_id=row.get("Maintenance_ID", ""),
         hardware_id=row.get("Hardware_ID", ""),
@@ -61,7 +63,7 @@ def _maint_to_out(row: dict, hardware_name: str) -> MaintenanceEventOut:
 @router.get("/hardware/action-types")
 async def api_hardware_action_types(
     user: CurrentUser,
-) -> dict:
+) -> dict[str, Any]:
     return {"action_types": _ACTION_TYPES_BY_CATEGORY}
 
 
@@ -105,7 +107,7 @@ async def api_hardware_create(
     body: _HardwareCreateBody,
     user: CurrentUser,
     hardware_repo: HardwareRepo = Depends(get_hardware_repo),
-    llm_client=Depends(get_llm_client),
+    llm_client: LLMClient = Depends(get_llm_client),
 ) -> HardwareItemOut:
     if body.category not in _CATEGORIES:
         raise HTTPException(status_code=422, detail="Invalid category")
@@ -117,7 +119,7 @@ async def api_hardware_create(
             raise HTTPException(status_code=422, detail="product_url must be http or https")
 
     hardware_id = hardware_repo.next_id(body.category)
-    row: dict = {
+    row: dict[str, Any] = {
         "Hardware_ID": hardware_id,
         "Category": body.category,
         "Name": body.name.strip(),

@@ -185,9 +185,7 @@ async def test_brew_log_list_reads_each_repo_exactly_once():
     }
 
     with _OverrideContext(overrides):
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as client:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             client.cookies.set("session", _AUTHED_COOKIE)
             resp = await client.get("/api/brew-log")
 
@@ -230,9 +228,7 @@ async def test_brew_log_list_handles_missing_bag_id():
     }
 
     with _OverrideContext(overrides):
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as client:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             client.cookies.set("session", _AUTHED_COOKIE)
             resp = await client.get("/api/brew-log")
 
@@ -274,9 +270,7 @@ async def test_brew_log_list_handles_missing_hardware_ids():
     }
 
     with _OverrideContext(overrides):
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as client:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             client.cookies.set("session", _AUTHED_COOKIE)
             resp = await client.get("/api/brew-log")
 
@@ -313,9 +307,7 @@ async def test_brew_log_detail_reads_each_repo_exactly_once():
     }
 
     with _OverrideContext(overrides):
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as client:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             client.cookies.set("session", _AUTHED_COOKIE)
             resp = await client.get("/api/brew-log/SH-001")
 
@@ -358,9 +350,7 @@ async def test_brew_log_create_pre_fetches_lookups():
     }
 
     with _OverrideContext(overrides):
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as client:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             client.cookies.set("session", _AUTHED_COOKIE)
             resp = await client.post(
                 "/api/brew-log",

@@ -1,8 +1,9 @@
 """JSON dashboard endpoint."""
+
 from __future__ import annotations
 
 from datetime import date
-from typing import List
+from typing import Any, List
 
 from fastapi import APIRouter, Depends
 
@@ -28,7 +29,7 @@ async def api_dashboard(
     # Build in-memory lookup dicts to avoid per-bag Sheets calls
     all_catalog = {row["Catalog_ID"]: row for row in catalog_repo.list()}
 
-    shots_by_bag: dict[str, list] = {}
+    shots_by_bag: dict[str, list[dict[str, Any]]] = {}
     for shot in brew_log_repo.list():
         bag_id = shot.get("Bag_ID", "")
         if bag_id:
@@ -54,7 +55,7 @@ async def api_dashboard(
             s = shots[0]
             try:
                 days = (date.today() - date.fromisoformat(s["Date"])).days
-            except Exception:
+            except Exception:  # nosec B110  # date parse failure is non-fatal; days stays 0
                 pass
 
             def _float(v: object) -> float | None:

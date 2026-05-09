@@ -34,16 +34,18 @@ async def test_defaults_level1(client):
 async def test_defaults_level2_same_roaster(client, fake_client):
     """No shot for bag; shot for same-roaster bag → level-2 fields."""
     # Add a new bag with same roaster (CAT001 = Verve) but no shots
-    fake_client._store["Inventory"].append({
-        "Bag_ID": "Ve20250601M",
-        "Beans": "Verve-NewBag",
-        "RoastDate": "2025-06-01",
-        "RoastLevel": "Medium",
-        "Display_Name": "Verve-NewBag",
-        "Catalog_ID": "CAT001",  # same Verve catalog
-        "Status": "Active",
-        "Storage_Method": "",
-    })
+    fake_client._store["Inventory"].append(
+        {
+            "Bag_ID": "Ve20250601M",
+            "Beans": "Verve-NewBag",
+            "RoastDate": "2025-06-01",
+            "RoastLevel": "Medium",
+            "Display_Name": "Verve-NewBag",
+            "Catalog_ID": "CAT001",  # same Verve catalog
+            "Status": "Active",
+            "Storage_Method": "",
+        }
+    )
     response = await client.get("/api/defaults?bag_id=Ve20250601M")
     assert response.status_code == 200
     data = response.json()
@@ -59,16 +61,18 @@ async def test_defaults_level2_same_roaster(client, fake_client):
 async def test_defaults_level3_same_roast_level(client, fake_client):
     """No shots for bag; no same-roaster bag; same roast level → level-3."""
     # Add a bag with no catalog (so level-2 skipped) and same RoastLevel="Medium"
-    fake_client._store["Inventory"].append({
-        "Bag_ID": "XX20250601M",
-        "Beans": "UnknownBeans",
-        "RoastDate": "2025-06-01",
-        "RoastLevel": "Medium",
-        "Display_Name": "Unknown — Jun 01 — Medium",
-        "Catalog_ID": "",  # no catalog → level 2 skipped
-        "Status": "Active",
-        "Storage_Method": "",
-    })
+    fake_client._store["Inventory"].append(
+        {
+            "Bag_ID": "XX20250601M",
+            "Beans": "UnknownBeans",
+            "RoastDate": "2025-06-01",
+            "RoastLevel": "Medium",
+            "Display_Name": "Unknown — Jun 01 — Medium",
+            "Catalog_ID": "",  # no catalog → level 2 skipped
+            "Status": "Active",
+            "Storage_Method": "",
+        }
+    )
     response = await client.get("/api/defaults?bag_id=XX20250601M")
     assert response.status_code == 200
     data = response.json()
@@ -84,20 +88,21 @@ async def test_defaults_level4_empty(client, fake_client):
     # Clear brew log
     fake_client._store["Brew_Log"] = []
     # Add a new bag with no catalog and no roast level match
-    fake_client._store["Inventory"].append({
-        "Bag_ID": "ZZ20250601D",
-        "Beans": "Dark-Solo",
-        "RoastDate": "2025-06-01",
-        "RoastLevel": "Dark",
-        "Display_Name": "Dark-Solo",
-        "Catalog_ID": "",
-        "Status": "Active",
-        "Storage_Method": "",
-    })
+    fake_client._store["Inventory"].append(
+        {
+            "Bag_ID": "ZZ20250601D",
+            "Beans": "Dark-Solo",
+            "RoastDate": "2025-06-01",
+            "RoastLevel": "Dark",
+            "Display_Name": "Dark-Solo",
+            "Catalog_ID": "",
+            "Status": "Active",
+            "Storage_Method": "",
+        }
+    )
     # Clear all active bags to avoid level-3 match
     fake_client._store["Inventory"] = [
-        b for b in fake_client._store["Inventory"]
-        if b["Bag_ID"] == "ZZ20250601D"
+        b for b in fake_client._store["Inventory"] if b["Bag_ID"] == "ZZ20250601D"
     ]
     response = await client.get("/api/defaults?bag_id=ZZ20250601D")
     assert response.status_code == 200

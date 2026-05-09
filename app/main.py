@@ -1,11 +1,13 @@
 import logging
 import os
+import pathlib
 import re
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
@@ -24,6 +26,7 @@ from app.routers import (
     api_inventory,
     api_maintenance,
 )
+
 
 class JsonFormatter(logging.Formatter):
     """Emit log records as single-line JSON for structured log ingestion."""
@@ -65,7 +68,7 @@ logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):  # noqa: ARG001
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
     logger.info("Coffee Tracker starting up (env=%s)", settings.app_env)
     yield
 
@@ -74,7 +77,9 @@ app = FastAPI(title="Coffee Tracker", lifespan=lifespan)
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request, call_next):
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "SAMEORIGIN"
@@ -103,7 +108,7 @@ if settings.app_env != "production":
 
 
 @app.exception_handler(403)
-async def forbidden_handler(request: Request, exc) -> HTMLResponse:  # noqa: ANN001
+async def forbidden_handler(request: Request, exc: Exception) -> HTMLResponse:
     return HTMLResponse(
         """<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -159,6 +164,7 @@ if os.path.isdir(_static_dir):
             headers={"Service-Worker-Allowed": "/"},
         )
 
+
 app.include_router(auth_router)
 app.include_router(health.router)
 app.include_router(api_auth.router)
@@ -172,8 +178,6 @@ app.include_router(api_defaults.router)
 app.include_router(defaults_router.router)
 app.include_router(import_wizard.router)
 
-import pathlib
-
 _spa_index = pathlib.Path(__file__).parent / "static" / "spa" / "index.html"
 
 
@@ -181,4 +185,6 @@ _spa_index = pathlib.Path(__file__).parent / "static" / "spa" / "index.html"
 async def spa_catch_all(full_path: str, _user: CurrentUser) -> HTMLResponse:
     if _spa_index.exists():
         return HTMLResponse(_spa_index.read_text())
-    return HTMLResponse("<html><body><p>SPA not built. Run: cd frontend && npm run build</p></body></html>")
+    return HTMLResponse(
+        "<html><body><p>SPA not built. Run: cd frontend && npm run build</p></body></html>"
+    )

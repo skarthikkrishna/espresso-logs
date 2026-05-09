@@ -18,11 +18,13 @@ See Also
 * ``app/deps.py`` — ``get_idempotency_store()`` singleton factory
 * ``app/routers/api_brew_log.py`` — usage point
 """
+
 from __future__ import annotations
 
 import asyncio
 import time
 from collections.abc import Callable
+from typing import Any
 
 _DEFAULT_TTL_SECONDS: float = 300.0
 
@@ -48,14 +50,14 @@ class IdempotencyStore:
     ) -> None:
         self.ttl = ttl
         self._now = now
-        self._cache: dict[str, dict] = {}
+        self._cache: dict[str, dict[str, Any]] = {}
         self._lock = asyncio.Lock()
 
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
 
-    async def check_and_set_sentinel(self, key: str) -> dict | None:
+    async def check_and_set_sentinel(self, key: str) -> dict[str, Any] | None:
         """Acquire lock, evict expired entries, then check cache.
 
         Returns:
@@ -72,7 +74,7 @@ class IdempotencyStore:
             entry = self._cache.get(key)
             if entry is not None and not entry["in_flight"]:
                 # Complete cache hit — return stored response
-                return entry["response"]
+                return entry["response"]  # type: ignore[no-any-return]
             if entry is not None and entry["in_flight"]:
                 # In-flight sentinel present; caller proceeds to add().
                 # PK guard in FakeSheetsClient / RealSheetsClient is the backstop.
@@ -81,7 +83,7 @@ class IdempotencyStore:
             self._cache[key] = {"response": None, "ts": self._now(), "in_flight": True}
             return None
 
-    async def store(self, key: str, response: dict) -> None:
+    async def store(self, key: str, response: dict[str, Any]) -> None:
         """Replace the in-flight sentinel (or any existing entry) with the final response.
 
         Preserves the original ``ts`` timestamp so that TTL is measured from

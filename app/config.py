@@ -1,16 +1,14 @@
 import json
 import logging
-import urllib.request
-from typing import Optional
+import urllib.request  # noqa: F401  # needed: tests patch app.config.urllib.request.urlopen
+from typing import Any, Optional
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings
 
 logger = logging.getLogger(__name__)
 
-_GCP_METADATA_PROJECT_URL = (
-    "http://metadata.google.internal/computeMetadata/v1/project/project-id"
-)
+_GCP_METADATA_PROJECT_URL = "http://metadata.google.internal/computeMetadata/v1/project/project-id"
 
 
 def _fetch_gcp_project_id() -> str:
@@ -28,8 +26,8 @@ def _fetch_gcp_project_id() -> str:
             _GCP_METADATA_PROJECT_URL,
             headers={"Metadata-Flavor": "Google"},
         )
-        with urllib.request.urlopen(req, timeout=0.5) as resp:
-            return resp.read().decode().strip()
+        with urllib.request.urlopen(req, timeout=0.5) as resp:  # nosec B310  # URL is hardcoded GCP metadata endpoint, not user-supplied
+            return resp.read().decode().strip()  # type: ignore[no-any-return]
     except urllib.error.URLError:
         logger.debug("GCP metadata server unreachable — not running on GCP or network not ready")
         return ""
@@ -46,6 +44,7 @@ class Settings(BaseSettings):
       ``APP_SECRETS`` env var containing a JSON object whose keys are the
       uppercase field names.  Individual vars always take precedence.
     """
+
     app_env: str = "development"
     log_level: str = "INFO"
     gcp_project_id: str = ""
@@ -76,7 +75,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="before")
     @classmethod
-    def _load_app_secrets(cls, data: dict) -> dict:
+    def _load_app_secrets(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Load secrets from APP_SECRETS JSON blob (Cloud Run) before individual fields.
 
         Individual env vars take precedence over blob values — if both are set, the
@@ -90,11 +89,10 @@ class Settings(BaseSettings):
         if not blob:
             return data
         try:
-            parsed: dict = json.loads(blob)
+            parsed: dict[str, Any] = json.loads(blob)
         except (json.JSONDecodeError, TypeError) as exc:
             raise ValueError(
-                "APP_SECRETS must be a valid JSON object string. "
-                f"Failed to parse: {exc}"
+                f"APP_SECRETS must be a valid JSON object string. Failed to parse: {exc}"
             ) from exc
         for key, value in parsed.items():
             field_name = key.lower()
@@ -151,14 +149,10 @@ class Settings(BaseSettings):
                     f"Missing required environment variables for production: {', '.join(missing)}"
                 )
             if len(self.session_secret) < 32:
-                raise ValueError(
-                    "SESSION_SECRET must be at least 32 characters in production."
-                )
+                raise ValueError("SESSION_SECRET must be at least 32 characters in production.")
         elif self.session_secret and len(self.session_secret) < 32:
-            raise ValueError(
-                "SESSION_SECRET must be at least 32 characters when set."
-            )
+            raise ValueError("SESSION_SECRET must be at least 32 characters when set.")
         return self
 
 
-settings = Settings()
+settings = Settings()  # type: ignore[call-arg]

@@ -9,6 +9,7 @@ Tests FR-001 through FR-011:
   - Multiple distinct keys each produce independent writes
   - Duplicate 200 response has the expected payload shape
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -140,10 +141,9 @@ def _remove_overrides() -> None:
 # Helper: build an authenticated AsyncClient
 # ---------------------------------------------------------------------------
 
+
 def _client_ctx():
-    return AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    )
+    return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
 
 
 # ===========================================================================
@@ -238,31 +238,25 @@ async def test_concurrent_duplicates_single_write():
         _remove_overrides()
 
     statuses = sorted(r.status_code for r in responses)
-    assert statuses == [201, 201], (
-        f"Expected both 201 (in-flight sentinel path), got {statuses}"
-    )
+    assert statuses == [201, 201], f"Expected both 201 (in-flight sentinel path), got {statuses}"
 
     # repo.add() must have been called once per concurrent request
-    assert add_call_count[0] == 2, (
-        f"Expected add() called 2 times, got {add_call_count[0]}"
-    )
+    assert add_call_count[0] == 2, f"Expected add() called 2 times, got {add_call_count[0]}"
 
     # FakeSheetsClient PK guard: only 1 row persisted despite 2 add() calls
     brew_log_rows = fake._store.get("Brew_Log", [])
-    assert len(brew_log_rows) == 1, (
-        f"Expected exactly 1 row in Brew_Log, got {len(brew_log_rows)}"
-    )
+    assert len(brew_log_rows) == 1, f"Expected exactly 1 row in Brew_Log, got {len(brew_log_rows)}"
 
 
 async def test_ttl_expiry_treats_as_fresh():
     """After TTL expires the same key is treated as a brand-new request (201 again)."""
-    from app.deps import get_idempotency_store
 
     # Inject a controllable clock into a fresh IdempotencyStore
     fake_now: list[float] = [0.0]
     short_ttl_store = IdempotencyStore(ttl=10.0, now=lambda: fake_now[0])
 
     from app.deps import get_idempotency_store as _dep_fn
+
     app.dependency_overrides[_dep_fn] = lambda: short_ttl_store
 
     fake = _make_fake_client()
@@ -288,14 +282,10 @@ async def test_ttl_expiry_treats_as_fresh():
         app.dependency_overrides.pop(_dep_fn, None)
         _remove_overrides()
 
-    assert r2.status_code == 201, (
-        f"Expected 201 (fresh after TTL expiry), got {r2.status_code}"
-    )
+    assert r2.status_code == 201, f"Expected 201 (fresh after TTL expiry), got {r2.status_code}"
     # Two rows written — one per fresh request
     brew_log_rows = fake._store.get("Brew_Log", [])
-    assert len(brew_log_rows) == 2, (
-        f"Expected 2 rows after TTL expiry, got {len(brew_log_rows)}"
-    )
+    assert len(brew_log_rows) == 2, f"Expected 2 rows after TTL expiry, got {len(brew_log_rows)}"
 
 
 async def test_fail_open_no_key():
@@ -304,9 +294,9 @@ async def test_fail_open_no_key():
     _install_overrides(fake)
 
     sub_cases = [
-        {**_POST_BODY_BASE},                         # key field absent entirely
+        {**_POST_BODY_BASE},  # key field absent entirely
         {**_POST_BODY_BASE, "idempotency_key": None},  # explicit null
-        {**_POST_BODY_BASE, "idempotency_key": ""},    # empty string
+        {**_POST_BODY_BASE, "idempotency_key": ""},  # empty string
     ]
 
     try:
@@ -355,12 +345,11 @@ async def test_write_failure_no_cache_entry():
 
                 # First POST — add() raises → 500; nothing cached
                 r1 = await client.post("/api/brew-log", json=body)
-                assert r1.status_code == 500, (
-                    f"Expected 500 on write failure, got {r1.status_code}"
-                )
+                assert r1.status_code == 500, f"Expected 500 on write failure, got {r1.status_code}"
 
                 # Idempotency store must NOT have a completed cache entry
                 from app.deps import get_idempotency_store
+
                 store = get_idempotency_store()
                 entry = store._cache.get("write-fail-key-xyz")
                 assert entry is None or entry.get("in_flight") is True, (
@@ -376,9 +365,7 @@ async def test_write_failure_no_cache_entry():
     finally:
         _remove_overrides()
 
-    assert r2.status_code == 201, (
-        f"Expected 201 on retry after write failure, got {r2.status_code}"
-    )
+    assert r2.status_code == 201, f"Expected 201 on retry after write failure, got {r2.status_code}"
 
 
 async def test_multi_unique_keys_all_written():
@@ -405,9 +392,7 @@ async def test_multi_unique_keys_all_written():
     assert statuses == [201, 201, 201], f"Expected all 201, got {statuses}"
     # Each key results in a distinct row written to Brew_Log
     brew_log_rows = fake._store.get("Brew_Log", [])
-    assert len(brew_log_rows) == 3, (
-        f"Expected 3 rows for 3 unique keys, got {len(brew_log_rows)}"
-    )
+    assert len(brew_log_rows) == 3, f"Expected 3 rows for 3 unique keys, got {len(brew_log_rows)}"
 
 
 async def test_duplicate_response_payload_shape():

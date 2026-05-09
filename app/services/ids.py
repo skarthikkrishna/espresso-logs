@@ -48,9 +48,7 @@ def roast_level_code(level: str) -> str:
         return _ROAST_LEVEL_MAP[level]
     except KeyError:
         valid = ", ".join(f"'{k}'" for k in _ROAST_LEVEL_MAP)
-        raise ValueError(
-            f"Unknown roast level {level!r}. Valid values: {valid}"
-        ) from None
+        raise ValueError(f"Unknown roast level {level!r}. Valid values: {valid}") from None
 
 
 # ---------------------------------------------------------------------------
@@ -75,9 +73,7 @@ def make_shot_id(shot_date: date, bag_id: str, existing_ids: list[str]) -> str:
     prefix = f"SH-{date_str}-"
     pattern = re.compile(rf"^{re.escape(prefix)}(\d+)$")
     existing_seqs = [
-        int(m.group(1))
-        for sid in existing_ids
-        if (m := pattern.match(sid)) is not None
+        int(m.group(1)) for sid in existing_ids if (m := pattern.match(sid)) is not None
     ]
     seq = max(existing_seqs, default=0) + 1
     return f"{prefix}{seq:02d}"

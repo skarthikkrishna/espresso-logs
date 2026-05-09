@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel
 
 
@@ -63,7 +65,7 @@ class DashboardBagOut(BaseModel):
     display_name: str
     roast_level: str | None = None
     days_since_last_shot: int | None = None
-    last_shot: dict | None = None
+    last_shot: dict[str, Any] | None = None
 
 
 class CatalogDetailOut(BaseModel):

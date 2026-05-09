@@ -26,7 +26,6 @@ from __future__ import annotations
 
 import json
 
-import pytest
 from playwright.sync_api import Page, Route, expect
 
 
@@ -64,18 +63,14 @@ def _intercept_hardware_list_empty(page: Page) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_add_hardware_per_category_button_opens_modal(
-    auth_page: Page, live_server: str
-) -> None:
+def test_add_hardware_per_category_button_opens_modal(auth_page: Page, live_server: str) -> None:
     """Clicking the per-category '+ Add' button opens the Add Hardware modal."""
     _go_hardware(auth_page, live_server)
     auth_page.get_by_label("Add Machine").click()
     expect(auth_page.get_by_role("heading", name="Add hardware")).to_be_visible()
 
 
-def test_add_hardware_category_prepopulated(
-    auth_page: Page, live_server: str
-) -> None:
+def test_add_hardware_category_prepopulated(auth_page: Page, live_server: str) -> None:
     """Opening the modal via '+ Add Machine' pre-selects Machine in the category dropdown."""
     _go_hardware(auth_page, live_server)
     auth_page.get_by_label("Add Machine").click()
@@ -85,9 +80,7 @@ def test_add_hardware_category_prepopulated(
     expect(category_select).to_have_value("Machine")
 
 
-def test_add_hardware_grinder_category_prepopulated(
-    auth_page: Page, live_server: str
-) -> None:
+def test_add_hardware_grinder_category_prepopulated(auth_page: Page, live_server: str) -> None:
     """Opening the modal via '+ Add Grinder' pre-selects Grinder."""
     _go_hardware(auth_page, live_server)
     auth_page.get_by_label("Add Grinder").click()
@@ -96,9 +89,7 @@ def test_add_hardware_grinder_category_prepopulated(
     expect(category_select).to_have_value("Grinder")
 
 
-def test_add_hardware_save_disabled_without_name(
-    auth_page: Page, live_server: str
-) -> None:
+def test_add_hardware_save_disabled_without_name(auth_page: Page, live_server: str) -> None:
     """Save button is disabled when category is chosen but the name field is empty."""
     _go_hardware(auth_page, live_server)
     auth_page.get_by_label("Add Machine").click()
@@ -108,9 +99,7 @@ def test_add_hardware_save_disabled_without_name(
     expect(save_btn).to_be_disabled()
 
 
-def test_add_hardware_save_disabled_without_category(
-    auth_page: Page, live_server: str
-) -> None:
+def test_add_hardware_save_disabled_without_category(auth_page: Page, live_server: str) -> None:
     """Save button is disabled when a name is entered but no category is chosen."""
     _go_hardware(auth_page, live_server)
     auth_page.get_by_label("Add Basket").click()
@@ -123,9 +112,7 @@ def test_add_hardware_save_disabled_without_category(
     expect(save_btn).to_be_disabled()
 
 
-def test_add_hardware_cancel_closes_modal(
-    auth_page: Page, live_server: str
-) -> None:
+def test_add_hardware_cancel_closes_modal(auth_page: Page, live_server: str) -> None:
     """Cancel button dismisses the Add Hardware modal."""
     _go_hardware(auth_page, live_server)
     auth_page.get_by_label("Add Machine").click()
@@ -139,9 +126,7 @@ def test_add_hardware_cancel_closes_modal(
 # ---------------------------------------------------------------------------
 
 
-def test_hardware_empty_state_cta_renders(
-    auth_page: Page, live_server: str
-) -> None:
+def test_hardware_empty_state_cta_renders(auth_page: Page, live_server: str) -> None:
     """When no hardware exists the empty-state message and CTA button are shown."""
     _intercept_hardware_list_empty(auth_page)
     auth_page.goto(live_server + "/hardware")
@@ -151,9 +136,7 @@ def test_hardware_empty_state_cta_renders(
     expect(auth_page.get_by_role("button", name="Add hardware")).to_be_visible()
 
 
-def test_hardware_empty_state_cta_opens_add_modal(
-    auth_page: Page, live_server: str
-) -> None:
+def test_hardware_empty_state_cta_opens_add_modal(auth_page: Page, live_server: str) -> None:
     """The empty-state 'Add hardware' CTA opens the Add Hardware modal."""
     _intercept_hardware_list_empty(auth_page)
     auth_page.goto(live_server + "/hardware")
@@ -167,35 +150,25 @@ def test_hardware_empty_state_cta_opens_add_modal(
 # ---------------------------------------------------------------------------
 
 
-def test_log_maintenance_button_visible_for_machine(
-    auth_page: Page, live_server: str
-) -> None:
+def test_log_maintenance_button_visible_for_machine(auth_page: Page, live_server: str) -> None:
     """'Log maintenance' button appears in the Machine detail panel."""
     _go_hardware(auth_page, live_server)
     auth_page.get_by_text("Breville Barista Express").first.click()
     panel = auth_page.locator('[data-testid="hardware-detail-panel"]')
     panel.wait_for(state="visible", timeout=6000)
-    expect(panel.get_by_role("button", name="Log maintenance")).to_be_visible(
-        timeout=6000
-    )
+    expect(panel.get_by_role("button", name="Log maintenance")).to_be_visible(timeout=6000)
 
 
-def test_log_maintenance_button_visible_for_grinder(
-    auth_page: Page, live_server: str
-) -> None:
+def test_log_maintenance_button_visible_for_grinder(auth_page: Page, live_server: str) -> None:
     """'Log maintenance' button appears in the Grinder detail panel."""
     _go_hardware(auth_page, live_server)
     auth_page.get_by_text("Niche Zero").first.click()
     panel = auth_page.locator('[data-testid="hardware-detail-panel"]')
     panel.wait_for(state="visible", timeout=6000)
-    expect(panel.get_by_role("button", name="Log maintenance")).to_be_visible(
-        timeout=6000
-    )
+    expect(panel.get_by_role("button", name="Log maintenance")).to_be_visible(timeout=6000)
 
 
-def test_log_maintenance_button_absent_for_basket(
-    auth_page: Page, live_server: str
-) -> None:
+def test_log_maintenance_button_absent_for_basket(auth_page: Page, live_server: str) -> None:
     """'Log maintenance' button is NOT present in the Basket detail panel."""
     _go_hardware(auth_page, live_server)
     auth_page.get_by_text("IMS 20g").first.click()
@@ -203,14 +176,10 @@ def test_log_maintenance_button_absent_for_basket(
     panel.wait_for(state="visible", timeout=6000)
     auth_page.wait_for_timeout(500)
     btn_count = panel.get_by_role("button", name="Log maintenance").count()
-    assert btn_count == 0, (
-        "Log maintenance button must not appear for Basket category"
-    )
+    assert btn_count == 0, "Log maintenance button must not appear for Basket category"
 
 
-def test_log_maintenance_modal_opens_for_machine(
-    auth_page: Page, live_server: str
-) -> None:
+def test_log_maintenance_modal_opens_for_machine(auth_page: Page, live_server: str) -> None:
     """Clicking 'Log maintenance' for a Machine opens the modal."""
     _go_hardware(auth_page, live_server)
     auth_page.get_by_text("Breville Barista Express").first.click()
@@ -222,9 +191,7 @@ def test_log_maintenance_modal_opens_for_machine(
     auth_page.get_by_role("button", name="Cancel").click()
 
 
-def test_log_maintenance_action_types_machine(
-    auth_page: Page, live_server: str
-) -> None:
+def test_log_maintenance_action_types_machine(auth_page: Page, live_server: str) -> None:
     """Machine action-type dropdown includes Backflush/Descale and excludes Re-zero."""
     _go_hardware(auth_page, live_server)
     auth_page.get_by_text("Breville Barista Express").first.click()
@@ -246,9 +213,7 @@ def test_log_maintenance_action_types_machine(
     auth_page.get_by_role("button", name="Cancel").click()
 
 
-def test_log_maintenance_action_types_grinder(
-    auth_page: Page, live_server: str
-) -> None:
+def test_log_maintenance_action_types_grinder(auth_page: Page, live_server: str) -> None:
     """Grinder action-type dropdown includes Re-zero and excludes Machine actions."""
     _go_hardware(auth_page, live_server)
     auth_page.get_by_text("Niche Zero").first.click()
@@ -273,18 +238,14 @@ def test_log_maintenance_action_types_grinder(
 # ---------------------------------------------------------------------------
 
 
-def test_edit_hardware_button_opens_modal(
-    auth_page: Page, live_server: str
-) -> None:
+def test_edit_hardware_button_opens_modal(auth_page: Page, live_server: str) -> None:
     """The EDIT button on a hardware card opens the Edit Hardware modal."""
     _go_hardware(auth_page, live_server)
     auth_page.locator('[data-testid="hardware-card"]').first.get_by_text("EDIT").click()
     expect(auth_page.get_by_role("heading", name="Edit hardware")).to_be_visible()
 
 
-def test_edit_hardware_modal_prefilled_with_current_name(
-    auth_page: Page, live_server: str
-) -> None:
+def test_edit_hardware_modal_prefilled_with_current_name(auth_page: Page, live_server: str) -> None:
     """The Edit modal name field is pre-filled with the current hardware name."""
     _go_hardware(auth_page, live_server)
     first_card = auth_page.locator('[data-testid="hardware-card"]').first
@@ -301,9 +262,7 @@ def test_edit_hardware_modal_prefilled_with_current_name(
     auth_page.get_by_role("button", name="Cancel").click()
 
 
-def test_edit_hardware_save_disabled_with_empty_name(
-    auth_page: Page, live_server: str
-) -> None:
+def test_edit_hardware_save_disabled_with_empty_name(auth_page: Page, live_server: str) -> None:
     """Save changes button is disabled when the name field is cleared."""
     _go_hardware(auth_page, live_server)
     auth_page.locator('[data-testid="hardware-card"]').first.get_by_text("EDIT").click()
@@ -320,9 +279,7 @@ def test_edit_hardware_save_disabled_with_empty_name(
 # ---------------------------------------------------------------------------
 
 
-def test_add_hardware_creates_item_and_auto_selects(
-    auth_page: Page, live_server: str
-) -> None:
+def test_add_hardware_creates_item_and_auto_selects(auth_page: Page, live_server: str) -> None:
     """Saving a new item creates it, closes the modal, and auto-selects it in the panel."""
     _go_hardware(auth_page, live_server)
     count_before = auth_page.locator('[data-testid="hardware-card"]').count()
@@ -333,9 +290,7 @@ def test_add_hardware_creates_item_and_auto_selects(
     auth_page.get_by_role("button", name="Save hardware").click()
 
     # Modal closes
-    expect(
-        auth_page.get_by_role("heading", name="Add hardware")
-    ).not_to_be_visible(timeout=6000)
+    expect(auth_page.get_by_role("heading", name="Add hardware")).not_to_be_visible(timeout=6000)
 
     # List grows (cache invalidation via React Query)
     auth_page.wait_for_timeout(600)
@@ -354,9 +309,7 @@ def test_add_hardware_creates_item_and_auto_selects(
     )
 
 
-def test_cache_invalidation_after_add_storage(
-    auth_page: Page, live_server: str
-) -> None:
+def test_cache_invalidation_after_add_storage(auth_page: Page, live_server: str) -> None:
     """Adding a Storage item updates the list immediately (cache invalidation)."""
     _go_hardware(auth_page, live_server)
     count_before = auth_page.locator('[data-testid="hardware-card"]').count()
@@ -365,9 +318,7 @@ def test_cache_invalidation_after_add_storage(
     auth_page.locator(".modal input[type='text']").fill("Fellow Atmos Canister")
     auth_page.get_by_role("button", name="Save hardware").click()
 
-    expect(
-        auth_page.get_by_role("heading", name="Add hardware")
-    ).not_to_be_visible(timeout=6000)
+    expect(auth_page.get_by_role("heading", name="Add hardware")).not_to_be_visible(timeout=6000)
     auth_page.wait_for_timeout(600)
 
     count_after = auth_page.locator('[data-testid="hardware-card"]').count()
@@ -377,9 +328,7 @@ def test_cache_invalidation_after_add_storage(
     expect(auth_page.get_by_text("Fellow Atmos Canister").first).to_be_visible(timeout=6000)
 
 
-def test_edit_hardware_updates_list_without_reload(
-    auth_page: Page, live_server: str
-) -> None:
+def test_edit_hardware_updates_list_without_reload(auth_page: Page, live_server: str) -> None:
     """Editing a hardware item reflects the new name in the list without a page reload."""
     _go_hardware(auth_page, live_server)
 
@@ -400,9 +349,7 @@ def test_edit_hardware_updates_list_without_reload(
     auth_page.get_by_role("button", name="Save changes").click()
 
     # Modal closes
-    expect(
-        auth_page.get_by_role("heading", name="Edit hardware")
-    ).not_to_be_visible(timeout=6000)
+    expect(auth_page.get_by_role("heading", name="Edit hardware")).not_to_be_visible(timeout=6000)
 
     # Updated name visible in the list (React Query cache invalidation)
     auth_page.wait_for_timeout(500)

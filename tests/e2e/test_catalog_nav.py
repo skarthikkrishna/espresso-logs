@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import re
 
-import pytest
 from playwright.sync_api import Page, expect
 
 # Patterns that must NEVER appear in visible text
@@ -77,7 +76,9 @@ def test_catalog_back_link_returns_to_list(auth_page: Page, live_server: str) ->
     auth_page.wait_for_selector('[data-testid="catalog-detail"]', timeout=8000)
     auth_page.get_by_text("← Back").click()
     auth_page.wait_for_selector('[data-testid="catalog-grid"]', timeout=6000)
-    assert auth_page.url.rstrip("/").endswith("/catalog"), f"Expected /catalog URL, got {auth_page.url}"
+    assert auth_page.url.rstrip("/").endswith("/catalog"), (
+        f"Expected /catalog URL, got {auth_page.url}"
+    )
 
 
 def test_sidebar_persists_on_catalog_navigation(auth_page: Page, live_server: str) -> None:

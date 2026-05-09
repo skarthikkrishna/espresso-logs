@@ -1,11 +1,12 @@
 """JSON catalog endpoints."""
+
 from __future__ import annotations
 
 import json
 import logging
 import uuid
 from datetime import date
-from typing import List
+from typing import Any, List
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
@@ -13,8 +14,15 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from app.config import settings
-from app.deps import CurrentUser, get_brew_log_repo, get_catalog_repo, get_hardware_repo, get_inventory_repo, get_llm_client
-from app.services.inference import LLMError
+from app.deps import (
+    CurrentUser,
+    get_brew_log_repo,
+    get_catalog_repo,
+    get_hardware_repo,
+    get_inventory_repo,
+    get_llm_client,
+)
+from app.services.inference import LLMClient
 from app.models.api import BrewLogEntryOut, CatalogDetailOut, CatalogItemOut, InventoryBagOut
 from app.repos.brew_log import BrewLogRepo
 from app.repos.catalog import CatalogRepo
@@ -31,7 +39,7 @@ router = APIRouter(prefix="/api", tags=["catalog"])
 _ROAST_LEVELS = ["Light", "Light / Medium", "Medium", "Medium / Dark", "Dark"]
 
 
-def _next_catalog_id(existing: list[dict]) -> str:
+def _next_catalog_id(existing: list[dict[str, Any]]) -> str:
     nums = []
     for row in existing:
         cid = row.get("Catalog_ID", "")
@@ -43,7 +51,7 @@ def _next_catalog_id(existing: list[dict]) -> str:
     return f"CAT{(max(nums, default=99) + 1):03d}"
 
 
-def _catalog_to_out(row: dict) -> CatalogItemOut:
+def _catalog_to_out(row: dict[str, Any]) -> CatalogItemOut:
     return CatalogItemOut(
         catalog_id=row.get("Catalog_ID", ""),
         roaster=row.get("Roaster", ""),
@@ -54,7 +62,7 @@ def _catalog_to_out(row: dict) -> CatalogItemOut:
     )
 
 
-def _bag_to_out(row: dict, display_name: str) -> InventoryBagOut:
+def _bag_to_out(row: dict[str, Any], display_name: str) -> InventoryBagOut:
     return InventoryBagOut(
         bag_id=row.get("Bag_ID", ""),
         display_name=display_name,
@@ -67,7 +75,14 @@ def _bag_to_out(row: dict, display_name: str) -> InventoryBagOut:
     )
 
 
-def _shot_to_out(shot: dict, bag_display: str, roast_level: str | None, machine_name: str | None, grinder_name: str | None, basket_name: str | None) -> BrewLogEntryOut:
+def _shot_to_out(
+    shot: dict[str, Any],
+    bag_display: str,
+    roast_level: str | None,
+    machine_name: str | None,
+    grinder_name: str | None,
+    basket_name: str | None,
+) -> BrewLogEntryOut:
     def _float(v: object) -> float | None:
         try:
             return float(v)  # type: ignore[arg-type]
@@ -86,7 +101,9 @@ def _shot_to_out(shot: dict, bag_display: str, roast_level: str | None, machine_
         dose_in_g=_float(shot.get("Dose_In_g")),
         yield_out_g=_float(shot.get("Yield_Out_g")),
         time_sec=_float(shot.get("Time_Sec")),
-        grind_setting=str(shot["Grind_Setting"]) if shot.get("Grind_Setting") not in (None, "") else None,
+        grind_setting=str(shot["Grind_Setting"])
+        if shot.get("Grind_Setting") not in (None, "")
+        else None,
         shot_eligibility=shot.get("Shot_Eligibility") or None,
         taste_summary=shot.get("Taste_Summary") or None,
         user_notes=shot.get("User_Notes") or None,
@@ -119,13 +136,13 @@ async def api_catalog_detail(
     all_bags = inventory_repo.list(status=None)
     linked_bags = [b for b in all_bags if b.get("Catalog_ID") == catalog_id]
 
-    linked_shots: list[dict] = []
+    linked_shots: list[dict[str, Any]] = []
     for bag in linked_bags:
         linked_shots.extend(brew_log_repo.list_for_bag(bag["Bag_ID"]))
     linked_shots.sort(key=lambda s: s.get("Date", ""), reverse=True)
     linked_shots = linked_shots[:10]
 
-    hw_cache: dict[str, dict | None] = {}
+    hw_cache: dict[str, dict[str, Any] | None] = {}
 
     def _hw(hw_id: str | None) -> str | None:
         if not hw_id:
@@ -180,7 +197,7 @@ async def api_catalog_create(
     body: _CatalogCreateBody,
     user: CurrentUser,
     catalog_repo: CatalogRepo = Depends(get_catalog_repo),
-    llm_client=Depends(get_llm_client),
+    llm_client: LLMClient = Depends(get_llm_client),
 ) -> CatalogItemOut:
     errors: list[str] = []
     if not body.roaster.strip():
@@ -232,7 +249,9 @@ async def api_catalog_create(
                 else:
                     ext = "jpg"
                 obj_name = f"bean-images/{catalog_id}-{uuid.uuid4().hex[:8]}.{ext}"
-                image_path = await upload_image(img_bytes, content_type, obj_name, settings.assets_bucket)
+                image_path = await upload_image(
+                    img_bytes, content_type, obj_name, settings.assets_bucket
+                )
                 # Only mutate row after the Sheets upsert succeeds — if upsert raises,
                 # the response must not claim an image_path that wasn't persisted.
                 catalog_repo.upsert({**row, "Local_Image_Path": image_path})
@@ -305,7 +324,7 @@ _EMPTY_INFER = InferCatalogOut(roaster="", bean_name="", roast_level="", image_p
 async def api_catalog_infer(
     body: _InferCatalogBody,
     user: CurrentUser,
-    llm_client=Depends(get_llm_client),
+    llm_client: LLMClient = Depends(get_llm_client),
 ) -> InferCatalogOut:
     """Infer catalog fields from a product URL using page scrape + LLM.
 
@@ -366,7 +385,9 @@ async def api_catalog_infer(
     # Source image — reuse the pre-fetched page context to skip a second HTTP call.
     image_path: str | None = None
     try:
-        sourced = await source_bean_image(roaster, bean_name, body.url, llm_client, page_ctx=page_ctx)
+        sourced = await source_bean_image(
+            roaster, bean_name, body.url, llm_client, page_ctx=page_ctx
+        )
         image_path = sourced or None
     except Exception as exc:
         logger.warning("catalog infer image source failed for url=%r: %s", body.url, exc)

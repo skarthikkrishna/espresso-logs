@@ -2,7 +2,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import date, timedelta
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
 
 import httpx
 
@@ -32,7 +32,9 @@ class GeminiClient:
     # This is required by the Gemini v1beta REST API (no Bearer alternative).
     # If HTTPX_LOG_LEVEL=TRACE is set in the environment, the full URL including
     # the key will appear in logs. Verify run.tf does not export HTTPX_LOG_LEVEL.
-    _URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+    _URL = (
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+    )
 
     def __init__(self, api_key: str) -> None:
         self._api_key = api_key
@@ -60,7 +62,9 @@ class GeminiClient:
                 except httpx.RequestError as exc:
                     raise LLMError(f"Gemini request failed: {exc}") from exc
         try:
-            return response.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+            return cast(
+                str, response.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+            )
         except (KeyError, IndexError, ValueError) as exc:
             raise LLMError("Gemini response missing expected fields") from exc
 
@@ -91,7 +95,7 @@ class AnthropicClient:
             except httpx.RequestError as exc:
                 raise LLMError(f"Anthropic request failed: {exc}") from exc
         try:
-            return response.json()["content"][0]["text"].strip()
+            return cast(str, response.json()["content"][0]["text"].strip())
         except (KeyError, IndexError, ValueError) as exc:
             raise LLMError("Anthropic response missing expected fields") from exc
 
@@ -147,19 +151,30 @@ _SYSTEM_INSTRUCTION = (
 
 
 def build_prompt(
-    shot: dict,
-    history: list[dict],
-    maintenance: list[dict],
-    extra_context: dict | None = None,
+    shot: dict[str, Any],
+    history: list[dict[str, Any]],
+    maintenance: list[dict[str, Any]],
+    extra_context: dict[str, Any] | None = None,
 ) -> str:
     lines: list[str] = []
 
     # Current shot section
     lines.append("## Current Shot:")
     _USER_CONTROLLED = {"User_Notes", "Taste_Summary", "Shot_Eligibility", "Storage_Method"}
-    for key in ("Date", "Bag_ID", "Machine_ID", "Grinder_ID", "Dose_In_g",
-                "Yield_Out_g", "Time_Sec", "Grind_Setting", "Shot_Eligibility",
-                "Taste_Summary", "User_Notes", "Storage_Method"):
+    for key in (
+        "Date",
+        "Bag_ID",
+        "Machine_ID",
+        "Grinder_ID",
+        "Dose_In_g",
+        "Yield_Out_g",
+        "Time_Sec",
+        "Grind_Setting",
+        "Shot_Eligibility",
+        "Taste_Summary",
+        "User_Notes",
+        "Storage_Method",
+    ):
         val = shot.get(key, "")
         if key == "User_Notes":
             val = str(val)[:60] if val else ""
@@ -176,7 +191,7 @@ def build_prompt(
         lines.append(f"  Basket: {extra_context.get('basket_name', '')}")
         lines.append(f"  Roast Level: {extra_context.get('roast_level', '')}")
         lines.append(f"  Compass Zone: {extra_context.get('taste_summary', '')}")
-        storage_val = extra_context.get('storage_method') or ''
+        storage_val = extra_context.get("storage_method") or ""
         lines.append(f"  Storage Method: <user_data>{storage_val}</user_data>")
 
     # History section
@@ -184,9 +199,9 @@ def build_prompt(
         lines.append("## Shot History (last 5, non-Reject, most recent first):")
         for h in history[:5]:
             lines.append(
-                f"  {h.get('Date','')} | {h.get('Dose_In_g','')}g\u2192"
-                f"{h.get('Yield_Out_g','')}g/{h.get('Time_Sec','')}s | "
-                f"Grind {h.get('Grind_Setting','')} | <user_data>{h.get('Taste_Summary','')}</user_data>"
+                f"  {h.get('Date', '')} | {h.get('Dose_In_g', '')}g\u2192"
+                f"{h.get('Yield_Out_g', '')}g/{h.get('Time_Sec', '')}s | "
+                f"Grind {h.get('Grind_Setting', '')} | <user_data>{h.get('Taste_Summary', '')}</user_data>"
             )
 
     # Maintenance section
@@ -195,8 +210,7 @@ def build_prompt(
         for m in maintenance[:10]:
             note = str(m.get("Notes", ""))[:80]
             line = (
-                f"  {m.get('Date','')} | {m.get('Action_Type','')} | "
-                f"{m.get('Hardware_ID','')}"
+                f"  {m.get('Date', '')} | {m.get('Action_Type', '')} | {m.get('Hardware_ID', '')}"
             )
             if note:
                 line += f" | <user_data>{note}</user_data>"
@@ -228,7 +242,7 @@ async def get_ai_feedback(
     brew_log_repo: "BrewLogRepo",
     maintenance_repo: "MaintenanceRepo",
     llm_client: LLMClient,
-    extra_context: dict | None = None,
+    extra_context: dict[str, Any] | None = None,
 ) -> str:
     # Step 1: fetch shot
     shot = brew_log_repo.get(shot_id)
@@ -238,23 +252,25 @@ async def get_ai_feedback(
     # Step 2 (CL-004): short-circuit if feedback already set
     existing = shot.get("AI_Feedback")
     if existing:
-        return existing
+        return cast(str, existing)
 
     # Step 3: fetch non-Reject shot history for this bag (exclude current shot)
     raw_history = brew_log_repo.list_for_bag(shot["Bag_ID"])
     history = [
-        s for s in raw_history
+        s
+        for s in raw_history
         if s.get("Shot_Eligibility") != "Reject" and s.get("Shot_ID") != shot_id
     ]
     history.sort(key=lambda s: s.get("Date", ""), reverse=True)
 
     # Step 4 (Maya P1-A + P1-B): fetch and filter maintenance events
     hardware_ids = {
-        hid for hid in [shot.get("Machine_ID"), shot.get("Grinder_ID")]
+        hid
+        for hid in [shot.get("Machine_ID"), shot.get("Grinder_ID")]
         if hid  # drops both None and ""
     }
     if not hardware_ids:
-        maintenance_events: list[dict] = []
+        maintenance_events: list[dict[str, Any]] = []
     else:
         try:
             shot_date = date.fromisoformat(shot["Date"])
@@ -279,7 +295,9 @@ async def get_ai_feedback(
     try:
         prompt = build_prompt(shot, history, maintenance_events, extra_context=extra_context)
     except ValueError:
-        logger.warning("Prompt budget exceeded for shot %s — using empty maintenance context", shot_id)
+        logger.warning(
+            "Prompt budget exceeded for shot %s — using empty maintenance context", shot_id
+        )
         try:
             prompt = build_prompt(shot, history, [], extra_context=extra_context)
         except ValueError:

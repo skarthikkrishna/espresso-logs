@@ -109,7 +109,9 @@ def test_detail_hides_notes_section_when_empty(auth_page: Page, live_server: str
     assert count == 0, f"notes-section should not render for empty User_Notes, found {count}"
 
 
-@pytest.mark.skip(reason="No Reject shot in fixture data — BREW_LOG_ROWS has no Shot_Eligibility='Reject'")
+@pytest.mark.skip(
+    reason="No Reject shot in fixture data — BREW_LOG_ROWS has no Shot_Eligibility='Reject'"
+)
 def test_detail_reject_eligibility_badge_colour(auth_page: Page, live_server: str) -> None:
     """Reject shot shows eligibility-badge with error/red colour class.
 
