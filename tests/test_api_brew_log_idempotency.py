@@ -250,7 +250,6 @@ async def test_concurrent_duplicates_single_write():
 
 async def test_ttl_expiry_treats_as_fresh():
     """After TTL expires the same key is treated as a brand-new request (201 again)."""
-    from app.deps import get_idempotency_store
 
     # Inject a controllable clock into a fresh IdempotencyStore
     fake_now: list[float] = [0.0]

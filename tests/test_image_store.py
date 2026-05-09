@@ -186,7 +186,6 @@ class TestLocalUpload:
     async def test_local_upload_creates_file(self, tmp_path, monkeypatch):
         """_local_upload saves bytes and returns /static/uploads/ URL."""
         import os
-        from pathlib import Path
         import app.services.image_store as _store
 
         uploads_dir = tmp_path / "uploads"
@@ -207,7 +206,6 @@ class TestLocalUpload:
     async def test_local_upload_creates_dir_if_missing(self, tmp_path, monkeypatch):
         """_local_upload creates uploads dir if absent."""
         import app.services.image_store as _store
-        from pathlib import Path
 
         fake_dir = tmp_path / "static" / "uploads"
         monkeypatch.setattr(
