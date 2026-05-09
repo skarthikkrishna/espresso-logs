@@ -9,6 +9,8 @@ Schema columns (in order):
 
 from __future__ import annotations
 
+from typing import Any, List
+
 from app.repos.base import BaseRepo, TTLCache
 from app.repos.sheets_client import SheetsClientProtocol
 
@@ -38,7 +40,7 @@ class BrewLogRepo(BaseRepo):
     # Write
     # ------------------------------------------------------------------
 
-    def add(self, row: dict) -> None:
+    def add(self, row: dict[str, Any]) -> None:
         """Append a new shot row; invalidates the recent-shots cache.
 
         Normalises *row* against COLUMNS so the positional write to Sheets
@@ -49,7 +51,7 @@ class BrewLogRepo(BaseRepo):
         self._client.append_row(_TAB, normalised, pk_col=_PK)
         self._cache.invalidate(_CACHE_KEY_RECENT)
 
-    def add_many(self, rows: list[dict]) -> None:
+    def add_many(self, rows: List[dict[str, Any]]) -> None:
         """Bulk-append multiple shot rows (bootstrapping)."""
         if not rows:
             return
@@ -78,22 +80,22 @@ class BrewLogRepo(BaseRepo):
     # Read
     # ------------------------------------------------------------------
 
-    def get(self, shot_id: str) -> dict | None:
+    def get(self, shot_id: str) -> dict[str, Any] | None:
         """Return the shot with *shot_id*, or ``None``."""
         for row in self._fetch_cached(_CACHE_KEY_RECENT, _TAB):
             if row.get(_PK) == shot_id:
                 return row
         return None
 
-    def list(self) -> list[dict]:
+    def list(self) -> List[dict[str, Any]]:
         """Return all brew log entries (cached for 60s)."""
         return self._fetch_cached(_CACHE_KEY_RECENT, _TAB)
 
-    def list_for_bag(self, bag_id: str) -> list[dict]:
+    def list_for_bag(self, bag_id: str) -> List[dict[str, Any]]:
         """Return all shots for *bag_id*, using the shared recent cache."""
         return [r for r in self._fetch_cached(_CACHE_KEY_RECENT, _TAB) if r.get("Bag_ID") == bag_id]
 
-    def list_recent(self, n: int = 20) -> list[dict]:
+    def list_recent(self, n: int = 20) -> List[dict[str, Any]]:
         """Return the *n* most-recent shots across all bags, sorted by Date desc.
 
         Results are cached for 60s.
@@ -102,7 +104,7 @@ class BrewLogRepo(BaseRepo):
         sorted_rows = sorted(all_rows, key=lambda r: (r.get("Date", ""), r.get("Shot_ID", "")), reverse=True)
         return sorted_rows[:n]
 
-    def list_existing_ids(self) -> list[str]:
+    def list_existing_ids(self) -> List[str]:
         """Return all Shot_IDs with a guaranteed-fresh read, bypassing the TTL cache.
 
         Used by the POST route to reduce stale-cache ID collisions.  Note: the

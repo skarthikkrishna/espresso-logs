@@ -13,6 +13,7 @@ import logging
 import re
 import uuid
 from dataclasses import dataclass, field
+from typing import Any
 
 import openpyxl  # type: ignore
 
@@ -75,7 +76,7 @@ CANONICAL_COLUMNS: dict[str, list[str]] = {
 }
 
 
-def parse_legacy_csv(content: str) -> dict[str, list[dict]]:
+def parse_legacy_csv(content: str) -> dict[str, list[dict[str, Any]]]:
     """Split multi-section CSV on ##SheetName markers.
 
     Raises ImportParseError if no section markers or ##Brew_Log is absent.
@@ -84,7 +85,7 @@ def parse_legacy_csv(content: str) -> dict[str, list[dict]]:
     markers = list(_SECTION_RE.finditer(content))
     if not markers:
         raise ImportParseError("No sections found in CSV")
-    sections: dict[str, list[dict]] = {}
+    sections: dict[str, list[dict[str, Any]]] = {}
     for i, match in enumerate(markers):
         name = match.group(1)
         start = match.end() + 1
@@ -100,7 +101,7 @@ def parse_legacy_csv(content: str) -> dict[str, list[dict]]:
     return sections
 
 
-def parse_xlsx_to_sections(raw: bytes) -> dict[str, list[dict]]:
+def parse_xlsx_to_sections(raw: bytes) -> dict[str, list[dict[str, Any]]]:
     """Parse an XLSX file into sections matching parse_legacy_csv's output format.
 
     Each worksheet tab name becomes a section key. The first non-empty row of
@@ -117,7 +118,7 @@ def parse_xlsx_to_sections(raw: bytes) -> dict[str, list[dict]]:
         if not sheet_names:
             raise ImportParseError("XLSX file contains no sheets")
 
-        sections: dict[str, list[dict]] = {}
+        sections: dict[str, list[dict[str, Any]]] = {}
         for name in sheet_names:
             ws = wb[name]
             all_rows = list(ws.iter_rows(values_only=True))
@@ -146,7 +147,7 @@ def parse_xlsx_to_sections(raw: bytes) -> dict[str, list[dict]]:
                     return str(int(v))
                 return str(v)
 
-            rows: list[dict] = []
+            rows: list[dict[str, Any]] = []
             for row in all_rows[header_idx + 1:]:
                 # Skip completely empty rows
                 if all(v is None or str(v).strip() == "" for v in row):
@@ -181,7 +182,7 @@ def build_mapping_prompt(
     sheet_name: str,
     legacy_columns: list[str],
     canonical_columns: list[str],
-    sample_rows: list[dict],
+    sample_rows: list[dict[str, Any]],
 ) -> str:
     """Build the LLM header-mapping prompt (<=1024 bytes encoded).
 
@@ -226,7 +227,7 @@ def parse_mapping_response(llm_response: str) -> dict[str, str | None]:
 
 
 def build_batch_mapping_prompt(
-    sections: dict[str, list[dict]],
+    sections: dict[str, list[dict[str, Any]]],
 ) -> str:
     """Build a single LLM prompt mapping all sections at once (one API call).
 
@@ -264,7 +265,7 @@ def build_batch_mapping_prompt(
 
 def parse_batch_mapping_response(
     llm_response: str,
-    sections: dict[str, list[dict]],
+    sections: dict[str, list[dict[str, Any]]],
 ) -> dict[str, dict[str, str | None]]:
     """Extract per-section mappings from a batched LLM response.
 
@@ -293,7 +294,7 @@ def parse_batch_mapping_response(
 
 
 def find_enum_divergences(
-    rows: list[dict],
+    rows: list[dict[str, Any]],
     column_mapping: dict[str, str | None],
 ) -> dict[str, list[str]]:
     """Find legacy enum values that cannot be auto-resolved.
@@ -318,9 +319,9 @@ def find_enum_divergences(
     return {k: sorted(v) for k, v in divergences.items() if v}
 
 
-def normalize_brew_log_row(row: dict, column_mapping: dict, confirmed_enum_maps: dict) -> dict:
+def normalize_brew_log_row(row: dict[str, Any], column_mapping: dict[str, Any], confirmed_enum_maps: dict[str, Any]) -> dict[str, Any]:
     """Rename legacy keys -> canonical; discard None-mapped; normalize date + enums."""
-    out: dict = {}
+    out: dict[str, Any] = {}
     for legacy_key, value in row.items():
         canonical_key = column_mapping.get(legacy_key)
         if canonical_key is None:
@@ -352,7 +353,7 @@ def normalize_brew_log_row(row: dict, column_mapping: dict, confirmed_enum_maps:
     return out
 
 
-def normalize_catalog_row(row: dict, column_mapping: dict, confirmed_enum_maps: dict) -> dict:
+def normalize_catalog_row(row: dict[str, Any], column_mapping: dict[str, Any], confirmed_enum_maps: dict[str, Any]) -> dict[str, Any]:
     """Rename legacy keys -> canonical; normalize Roast_Level enum."""
     out = {
         canonical: row[legacy]
@@ -369,7 +370,7 @@ def normalize_catalog_row(row: dict, column_mapping: dict, confirmed_enum_maps: 
     return out
 
 
-def normalize_inventory_row(row: dict, column_mapping: dict, confirmed_enum_maps: dict) -> dict:
+def normalize_inventory_row(row: dict[str, Any], column_mapping: dict[str, Any], confirmed_enum_maps: dict[str, Any]) -> dict[str, Any]:
     """Rename legacy keys -> canonical; normalize RoastLevel enum.
 
     Note: Legacy column is 'RoastLevel'; canonical column is also 'RoastLevel'.
@@ -389,7 +390,7 @@ def normalize_inventory_row(row: dict, column_mapping: dict, confirmed_enum_maps
     return out
 
 
-def normalize_hardware_row(row: dict, column_mapping: dict, confirmed_enum_maps: dict) -> dict:  # noqa: ARG001
+def normalize_hardware_row(row: dict[str, Any], column_mapping: dict[str, Any], confirmed_enum_maps: dict[str, Any]) -> dict[str, Any]:  # noqa: ARG001
     """Rename legacy keys -> canonical (no enum normalization for Hardware)."""
     return {
         canonical: row[legacy]
@@ -398,7 +399,7 @@ def normalize_hardware_row(row: dict, column_mapping: dict, confirmed_enum_maps:
     }
 
 
-def migrate_grinder_calibration_row(row: dict, sequence: int) -> dict:
+def migrate_grinder_calibration_row(row: dict[str, Any], sequence: int) -> dict[str, Any]:
     """Convert a legacy Grinder_Calibration row to a Maintenance row."""
     return {
         "Maintenance_ID": f"MNT{sequence:03d}",
@@ -413,8 +414,8 @@ def migrate_grinder_calibration_row(row: dict, sequence: int) -> dict:
 class ImportState:
     """Holds the full wizard state serialised into the session cookie."""
 
-    sections:            dict[str, list[dict]]
-    column_mappings:     dict[str, dict]
+    sections:            dict[str, list[dict[str, Any]]]
+    column_mappings:     dict[str, dict[str, Any]]
     enum_divergences:    dict[str, list[str]]
-    confirmed_enum_maps: dict[str, dict]
-    dry_run_preview:     dict[str, list[dict]] = field(default_factory=dict)
+    confirmed_enum_maps: dict[str, dict[str, Any]]
+    dry_run_preview:     dict[str, list[dict[str, Any]]] = field(default_factory=dict)

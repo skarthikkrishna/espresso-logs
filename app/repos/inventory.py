@@ -7,6 +7,8 @@ Schema columns (in order):
 
 from __future__ import annotations
 
+from typing import Any, List
+
 from app.repos.base import BaseRepo, TTLCache
 from app.repos.sheets_client import SheetsClientProtocol
 
@@ -36,7 +38,7 @@ class InventoryRepo(BaseRepo):
     # Read
     # ------------------------------------------------------------------
 
-    def list(self, status: str | None = "Active") -> list[dict]:
+    def list(self, status: str | None = "Active") -> List[dict[str, Any]]:
         """Return inventory rows.
 
         Args:
@@ -49,11 +51,11 @@ class InventoryRepo(BaseRepo):
         # All rows — not cached
         return self._fetch_all(_TAB)
 
-    def list_all(self) -> list[dict]:
+    def list_all(self) -> List[dict[str, Any]]:
         """Return every inventory row regardless of status (TTL-cached 60 s)."""
         return self._fetch_cached(_CACHE_KEY_ALL, _TAB)
 
-    def get(self, bag_id: str) -> dict | None:
+    def get(self, bag_id: str) -> dict[str, Any] | None:
         """Return the bag with *bag_id*, or ``None``."""
         for row in self._fetch_all(_TAB):
             if row.get(_PK) == bag_id:
@@ -64,7 +66,7 @@ class InventoryRepo(BaseRepo):
     # Write
     # ------------------------------------------------------------------
 
-    def upsert(self, row: dict) -> None:
+    def upsert(self, row: dict[str, Any]) -> None:
         """Insert or update an inventory row; invalidates both active-bag and all-bag caches."""
         pk_val = row[_PK]
         existing = self._fetch_all(_TAB)
@@ -76,7 +78,7 @@ class InventoryRepo(BaseRepo):
         self._cache.invalidate(_CACHE_KEY_ACTIVE)
         self._cache.invalidate(_CACHE_KEY_ALL)
 
-    def add_many(self, rows: list[dict]) -> None:
+    def add_many(self, rows: List[dict[str, Any]]) -> None:
         """Bulk-append multiple inventory rows (bootstrapping)."""
         if not rows:
             return

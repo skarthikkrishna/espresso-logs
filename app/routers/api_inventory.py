@@ -1,7 +1,7 @@
 """JSON inventory endpoints."""
 from __future__ import annotations
 
-from typing import List
+from typing import Any, List
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -13,16 +13,16 @@ from app.repos.inventory import InventoryRepo
 router = APIRouter(prefix="/api", tags=["inventory"])
 
 
-def _resolve_display_name(bag: dict, catalog_repo: CatalogRepo) -> str:
+def _resolve_display_name(bag: dict[str, Any], catalog_repo: CatalogRepo) -> str:
     cat_id = bag.get("Catalog_ID")
     if cat_id:
         cat = catalog_repo.get(cat_id)
         if cat:
             return f"{cat['Roaster']} — {cat['Bean_Name']}"
-    return bag.get("Display_Name") or bag.get("Beans", bag.get("Bag_ID", ""))
+    return str(bag.get("Display_Name") or bag.get("Beans", bag.get("Bag_ID", "")))
 
 
-def _bag_to_out(bag: dict, display_name: str) -> InventoryBagOut:
+def _bag_to_out(bag: dict[str, Any], display_name: str) -> InventoryBagOut:
     return InventoryBagOut(
         bag_id=bag.get("Bag_ID", ""),
         display_name=display_name,

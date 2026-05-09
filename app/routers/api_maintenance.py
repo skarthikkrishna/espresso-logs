@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import List
+from typing import Any, List
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -22,7 +22,7 @@ _ACTION_TYPES_BY_CATEGORY = {
 }
 
 
-def _maint_to_out(row: dict, hardware_name: str) -> MaintenanceEventOut:
+def _maint_to_out(row: dict[str, Any], hardware_name: str) -> MaintenanceEventOut:
     return MaintenanceEventOut(
         maintenance_id=row.get("Maintenance_ID", ""),
         hardware_id=row.get("Hardware_ID", ""),
@@ -42,7 +42,7 @@ async def api_maintenance_list(
 ) -> list[MaintenanceEventOut]:
     events = maintenance_repo.list(hardware_id=hardware_id)
     events = sorted(events, key=lambda e: e.get("Date", ""), reverse=True)
-    hw_cache: dict[str, dict | None] = {}
+    hw_cache: dict[str, dict[str, Any] | None] = {}
 
     def _hw_name(hw_id: str) -> str:
         if hw_id not in hw_cache:

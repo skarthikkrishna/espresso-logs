@@ -1,6 +1,7 @@
 import logging
+from typing import Any
 
-from authlib.integrations.starlette_client import OAuth
+from authlib.integrations.starlette_client import OAuth  # type: ignore[import-untyped]
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
@@ -34,7 +35,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.get("/login")
-async def login(request: Request):
+async def login(request: Request) -> Any:
     """Initiate Google OAuth flow; redirects the browser to Google's consent screen."""
     # Use an explicit URI when set (required on Cloud Run to ensure https:// scheme).
     # Falls back to Starlette's url_for for local development.
@@ -43,7 +44,7 @@ async def login(request: Request):
 
 
 @router.get("/callback", name="auth_callback")
-async def auth_callback(request: Request):
+async def auth_callback(request: Request) -> RedirectResponse:
     """Handle Google OAuth callback; sets session cookie on success or redirects on failure.
 
     Validates the returned token, checks the email against ``ALLOWLIST``, and
@@ -69,7 +70,7 @@ async def auth_callback(request: Request):
 
 
 @router.get("/logout")
-async def logout(request: Request):
+async def logout(request: Request) -> RedirectResponse:
     """Clear the user session and redirect to the login page."""
     request.session.clear()
     return RedirectResponse(url="/auth/login", status_code=302)

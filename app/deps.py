@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import threading
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING, Annotated, Any, cast
 
 if TYPE_CHECKING:
     from app.services.inference import LLMClient
@@ -22,15 +22,15 @@ class _RequiresLogin(Exception):
     """Raised by require_user when no authenticated session is present."""
 
 
-async def _get_current_user(request: Request) -> dict:
+async def _get_current_user(request: Request) -> dict[str, Any]:
     user = request.session.get("user")
     if not user:
         raise _RequiresLogin()
-    return user
+    return cast(dict[str, Any], user)
 
 
 require_user = Depends(_get_current_user)
-CurrentUser = Annotated[dict, require_user]
+CurrentUser = Annotated[dict[str, Any], require_user]
 
 # ---------------------------------------------------------------------------
 # Sheets client singleton (double-checked lock)

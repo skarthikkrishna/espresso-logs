@@ -2,7 +2,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import date, timedelta
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
 
 import httpx
 
@@ -60,7 +60,7 @@ class GeminiClient:
                 except httpx.RequestError as exc:
                     raise LLMError(f"Gemini request failed: {exc}") from exc
         try:
-            return response.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+            return cast(str, response.json()["candidates"][0]["content"]["parts"][0]["text"].strip())
         except (KeyError, IndexError, ValueError) as exc:
             raise LLMError("Gemini response missing expected fields") from exc
 
@@ -91,7 +91,7 @@ class AnthropicClient:
             except httpx.RequestError as exc:
                 raise LLMError(f"Anthropic request failed: {exc}") from exc
         try:
-            return response.json()["content"][0]["text"].strip()
+            return cast(str, response.json()["content"][0]["text"].strip())
         except (KeyError, IndexError, ValueError) as exc:
             raise LLMError("Anthropic response missing expected fields") from exc
 
@@ -147,10 +147,10 @@ _SYSTEM_INSTRUCTION = (
 
 
 def build_prompt(
-    shot: dict,
-    history: list[dict],
-    maintenance: list[dict],
-    extra_context: dict | None = None,
+    shot: dict[str, Any],
+    history: list[dict[str, Any]],
+    maintenance: list[dict[str, Any]],
+    extra_context: dict[str, Any] | None = None,
 ) -> str:
     lines: list[str] = []
 
@@ -228,7 +228,7 @@ async def get_ai_feedback(
     brew_log_repo: "BrewLogRepo",
     maintenance_repo: "MaintenanceRepo",
     llm_client: LLMClient,
-    extra_context: dict | None = None,
+    extra_context: dict[str, Any] | None = None,
 ) -> str:
     # Step 1: fetch shot
     shot = brew_log_repo.get(shot_id)
@@ -238,7 +238,7 @@ async def get_ai_feedback(
     # Step 2 (CL-004): short-circuit if feedback already set
     existing = shot.get("AI_Feedback")
     if existing:
-        return existing
+        return cast(str, existing)
 
     # Step 3: fetch non-Reject shot history for this bag (exclude current shot)
     raw_history = brew_log_repo.list_for_bag(shot["Bag_ID"])
@@ -254,7 +254,7 @@ async def get_ai_feedback(
         if hid  # drops both None and ""
     }
     if not hardware_ids:
-        maintenance_events: list[dict] = []
+        maintenance_events: list[dict[str, Any]] = []
     else:
         try:
             shot_date = date.fromisoformat(shot["Date"])

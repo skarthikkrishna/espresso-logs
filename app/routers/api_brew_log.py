@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import date
-from typing import List
+from typing import Any, List
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
@@ -19,7 +19,7 @@ from app.repos.inventory import InventoryRepo
 from app.repos.maintenance import MaintenanceRepo
 from app.services.idempotency_store import IdempotencyStore
 from app.services.ids import make_shot_id
-from app.services.inference import get_ai_feedback
+from app.services.inference import LLMClient, get_ai_feedback
 
 logger = logging.getLogger(__name__)
 
@@ -37,29 +37,29 @@ def _build_lookups(
     inventory_repo: InventoryRepo,
     catalog_repo: CatalogRepo,
     hardware_repo: HardwareRepo,
-) -> tuple[dict, dict, dict]:
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     """Pre-fetch all lookup tables once; return (bags, catalog, hardware) dicts.
 
     Duplicate PKs use first-row-wins semantics (insertion order preserved).
     """
-    bags: dict = {}
+    bags: dict[str, Any] = {}
     for r in inventory_repo.list_all():
         bags.setdefault(r["Bag_ID"], r)
-    catalog: dict = {}
+    catalog: dict[str, Any] = {}
     for r in catalog_repo.list():
         catalog.setdefault(r["Catalog_ID"], r)
-    hardware: dict = {}
+    hardware: dict[str, Any] = {}
     for r in hardware_repo.list():
         hardware.setdefault(r["Hardware_ID"], r)
     return bags, catalog, hardware
 
 
 def _resolve_names_from_dicts(
-    shot: dict,
-    bags: dict,
-    catalog: dict,
-    hardware: dict,
-) -> dict:
+    shot: dict[str, Any],
+    bags: dict[str, Any],
+    catalog: dict[str, Any],
+    hardware: dict[str, Any],
+) -> dict[str, Any]:
     """Resolve display names from pre-fetched lookup dicts (zero Sheets reads)."""
     bag_id = shot.get("Bag_ID") or ""
     bag_row = bags.get(bag_id, {})
@@ -83,7 +83,7 @@ def _resolve_names_from_dicts(
     }
 
 
-def _shot_to_out(shot: dict, names: dict) -> BrewLogEntryOut:
+def _shot_to_out(shot: dict[str, Any], names: dict[str, Any]) -> BrewLogEntryOut:
     return BrewLogEntryOut(
         shot_id=shot.get("Shot_ID", ""),
         date=shot.get("Date", ""),
@@ -175,7 +175,7 @@ async def api_brew_log_create(
     catalog_repo: CatalogRepo = Depends(get_catalog_repo),
     hardware_repo: HardwareRepo = Depends(get_hardware_repo),
     maintenance_repo: MaintenanceRepo = Depends(get_maintenance_repo),
-    llm_client=Depends(get_llm_client),
+    llm_client: LLMClient = Depends(get_llm_client),
     store: IdempotencyStore = Depends(get_idempotency_store),
 ) -> BrewLogEntryOut:
     shot_date = date.today()

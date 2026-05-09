@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 import gspread
 import gspread.exceptions
@@ -27,13 +27,13 @@ logger = logging.getLogger(__name__)
 class SheetsClientProtocol(Protocol):
     """Structural interface satisfied by both RealSheetsClient and FakeSheetsClient."""
 
-    def get_all_records(self, tab: str) -> list[dict]: ...  # noqa: D102
+    def get_all_records(self, tab: str) -> list[dict[str, Any]]: ...  # noqa: D102
 
-    def append_row(self, tab: str, row: dict, pk_col: str | None = None) -> None: ...  # noqa: D102
+    def append_row(self, tab: str, row: dict[str, Any], pk_col: str | None = None) -> None: ...  # noqa: D102
 
-    def update_row(self, tab: str, pk_col: str, pk_val: str, row: dict) -> None: ...  # noqa: D102
+    def update_row(self, tab: str, pk_col: str, pk_val: str, row: dict[str, Any]) -> None: ...  # noqa: D102
 
-    def append_rows(self, tab: str, values: list[list]) -> None: ...  # noqa: D102
+    def append_rows(self, tab: str, values: list[list[Any]]) -> None: ...  # noqa: D102
 
     def delete_rows(self, tab: str, start_row: int, end_row: int) -> None: ...  # noqa: D102
 
@@ -104,18 +104,18 @@ class RealSheetsClient:
         return self._tab_locks[tab]
 
     def _worksheet(self, tab: str) -> gspread.Worksheet:
-        return _with_retry(lambda: self._get_spreadsheet().worksheet(tab))
+        return _with_retry(lambda: self._get_spreadsheet().worksheet(tab))  # type: ignore[no-any-return]
 
     # ------------------------------------------------------------------
     # SheetsClientProtocol implementation
     # ------------------------------------------------------------------
 
-    def get_all_records(self, tab: str) -> list[dict]:
+    def get_all_records(self, tab: str) -> list[dict[str, Any]]:
         """Return all rows from *tab* as a list of dicts (header row is the key)."""
         ws = self._worksheet(tab)
-        return _with_retry(lambda: ws.get_all_records())  # type: ignore[return-value]
+        return _with_retry(lambda: ws.get_all_records())  # type: ignore[no-any-return]
 
-    def append_row(self, tab: str, row: dict, pk_col: str | None = None) -> None:
+    def append_row(self, tab: str, row: dict[str, Any], pk_col: str | None = None) -> None:
         """Append *row* to *tab*, writing headers first if the sheet is empty.
 
         If *pk_col* is provided, retry attempts check whether a row with that
@@ -149,12 +149,12 @@ class RealSheetsClient:
                             return
                 _first_call[0] = False
                 if not ws.row_values(1):
-                    ws.append_row(list(row.keys()), value_input_option="USER_ENTERED")
-                ws.append_row(list(row.values()), value_input_option="USER_ENTERED")
+                    ws.append_row(list(row.keys()), value_input_option="USER_ENTERED")  # type: ignore[arg-type]
+                ws.append_row(list(row.values()), value_input_option="USER_ENTERED")  # type: ignore[arg-type]
 
             _with_retry(_do_append)
 
-    def update_row(self, tab: str, pk_col: str, pk_val: str, row: dict) -> None:
+    def update_row(self, tab: str, pk_col: str, pk_val: str, row: dict[str, Any]) -> None:
         """Find the row where *pk_col* == *pk_val* and overwrite it with *row*.
 
         Uses ``get_all_values()`` (not ``get_all_records()``) so blank rows in
@@ -177,18 +177,18 @@ class RealSheetsClient:
             if record.get(pk_col) == pk_val:
                 ordered_vals = [row.get(h, "") for h in headers]
                 _with_retry(
-                    lambda i=offset, v=ordered_vals: ws.update(  # type: ignore[misc]
+                    lambda i=offset, v=ordered_vals: ws.update(
                         f"A{i}",
-                        [v],
-                        value_input_option="USER_ENTERED",
+                        [v],  # type: ignore[arg-type]
+                        value_input_option="USER_ENTERED",  # type: ignore[arg-type]
                     )
                 )
                 return
         raise KeyError(f"Row with {pk_col}={pk_val!r} not found in tab '{tab}'")
 
-    def append_rows(self, tab: str, values: list[list]) -> None:
+    def append_rows(self, tab: str, values: list[list[Any]]) -> None:
         ws = self._worksheet(tab)
-        _with_retry(lambda: ws.append_rows(values, value_input_option="RAW"))
+        _with_retry(lambda: ws.append_rows(values, value_input_option="RAW"))  # type: ignore[arg-type]
 
     def delete_rows(self, tab: str, start_row: int, end_row: int) -> None:
         ws = self._worksheet(tab)

@@ -62,9 +62,9 @@ CANONICAL_ENUM_VALUES_FOR_TEMPLATE: dict[str, list[str]] = {
 # ---------------------------------------------------------------------------
 
 
-def _compute_dry_run(state: ImportState) -> dict[str, list[dict]]:
+def _compute_dry_run(state: ImportState) -> dict[str, list[dict[str, Any]]]:
     """Normalize all rows; migrate Grinder_Calibration; return preview dict."""
-    preview: dict[str, list[dict]] = {}
+    preview: dict[str, list[dict[str, Any]]] = {}
     normalize_map = {
         "Brew_Log":  normalize_brew_log_row,
         "Catalog":   normalize_catalog_row,
@@ -156,16 +156,16 @@ def _has_fresh_local_image_path(row: dict[str, Any]) -> bool:
 
 
 async def _enrich_catalog_images(
-    catalog_rows: list[dict],
+    catalog_rows: list[dict[str, Any]],
     llm_client: Any,
     import_id: str,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Source image for each catalog row; download bytes to /tmp.
 
     tmp path: /tmp/coffee_import_{import_id}_img_{catalog_id}.bin
     All rows are processed concurrently (asyncio.gather).
     """
-    async def _enrich_one(row: dict) -> dict:
+    async def _enrich_one(row: dict[str, Any]) -> dict[str, Any]:
         if _has_fresh_local_image_path(row):
             return row
         roaster = row.get("Roaster", "")

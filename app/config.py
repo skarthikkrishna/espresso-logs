@@ -1,7 +1,7 @@
 import json
 import logging
 import urllib.request
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings
@@ -29,7 +29,7 @@ def _fetch_gcp_project_id() -> str:
             headers={"Metadata-Flavor": "Google"},
         )
         with urllib.request.urlopen(req, timeout=0.5) as resp:
-            return resp.read().decode().strip()
+            return resp.read().decode().strip()  # type: ignore[no-any-return]
     except urllib.error.URLError:
         logger.debug("GCP metadata server unreachable — not running on GCP or network not ready")
         return ""
@@ -76,7 +76,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="before")
     @classmethod
-    def _load_app_secrets(cls, data: dict) -> dict:
+    def _load_app_secrets(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Load secrets from APP_SECRETS JSON blob (Cloud Run) before individual fields.
 
         Individual env vars take precedence over blob values — if both are set, the
@@ -90,7 +90,7 @@ class Settings(BaseSettings):
         if not blob:
             return data
         try:
-            parsed: dict = json.loads(blob)
+            parsed: dict[str, Any] = json.loads(blob)
         except (json.JSONDecodeError, TypeError) as exc:
             raise ValueError(
                 "APP_SECRETS must be a valid JSON object string. "
@@ -161,4 +161,4 @@ class Settings(BaseSettings):
         return self
 
 
-settings = Settings()
+settings = Settings()  # type: ignore[call-arg]
