@@ -245,3 +245,9 @@ async def api_brew_log_create(
         await store.store(body.idempotency_key, shot_out.model_dump())
 
     return shot_out
+
+
+def _unsafe_bare_dict(data) -> None:
+    """T027: intentional type violation — triggers mypy --strict failure."""
+    result: dict = {"key": data}
+    return result  # type: ignore[return-value] not applied → mypy should catch
