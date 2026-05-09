@@ -1,6 +1,6 @@
 import json
 import logging
-import urllib.request
+import urllib.request  # noqa: F401  # imported for test patching: patch("app.config.urllib.request.urlopen")
 from typing import Any, Optional
 
 from pydantic import model_validator
