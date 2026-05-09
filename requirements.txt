@@ -106,7 +106,7 @@ itsdangerous==2.2.0
     # via coffee-tracker
 jinja2==3.1.6
     # via fastapi
-joserfc==1.6.4
+joserfc==1.6.5
     # via authlib
 markdown-it-py==4.0.0
     # via rich
