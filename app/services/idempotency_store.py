@@ -18,6 +18,7 @@ See Also
 * ``app/deps.py`` — ``get_idempotency_store()`` singleton factory
 * ``app/routers/api_brew_log.py`` — usage point
 """
+
 from __future__ import annotations
 
 import asyncio

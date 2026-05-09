@@ -1,4 +1,5 @@
 """AI-powered bean bag image sourcing for the bootstrap import wizard."""
+
 from __future__ import annotations
 
 import asyncio
@@ -96,7 +97,9 @@ class PageContext:
 
     @property
     def has_content(self) -> bool:
-        return bool(self.og_title or self.og_description or self.meta_description or self.page_title)
+        return bool(
+            self.og_title or self.og_description or self.meta_description or self.page_title
+        )
 
 
 async def fetch_page_context(url: str) -> PageContext:
@@ -194,7 +197,9 @@ async def source_bean_image(
             logger.warning("LLM image lookup failed for %r / %r: %s", roaster, bean_name, exc)
 
     except Exception as exc:  # noqa: BLE001
-        logger.warning("source_bean_image unexpected error for %r / %r: %s", roaster, bean_name, exc)
+        logger.warning(
+            "source_bean_image unexpected error for %r / %r: %s", roaster, bean_name, exc
+        )
 
     return ""
 
@@ -241,7 +246,9 @@ async def fetch_image_bytes(url: str) -> tuple[bytes, str] | None:
                 raw_ct = resp.headers.get("content-type", "")
                 content_type = raw_ct.split(";")[0].strip().lower()
                 if content_type not in _ALLOWED_CONTENT_TYPES:
-                    logger.warning("fetch_image_bytes: rejected content-type %r for %s", content_type, url)
+                    logger.warning(
+                        "fetch_image_bytes: rejected content-type %r for %s", content_type, url
+                    )
                     return None
                 chunks: list[bytes] = []
                 total = 0

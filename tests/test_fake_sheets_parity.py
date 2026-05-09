@@ -17,6 +17,7 @@ from tests.doubles import FakeSheetsClient
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _brew_row(shot_id: str, date: str = "2025-01-01", ai: str = "") -> dict:
     return {"Shot_ID": shot_id, "Date": date, "AI_Feedback": ai}
 

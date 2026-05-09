@@ -1,4 +1,5 @@
 """JSON catalog endpoints."""
+
 from __future__ import annotations
 
 import json
@@ -13,7 +14,14 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from app.config import settings
-from app.deps import CurrentUser, get_brew_log_repo, get_catalog_repo, get_hardware_repo, get_inventory_repo, get_llm_client
+from app.deps import (
+    CurrentUser,
+    get_brew_log_repo,
+    get_catalog_repo,
+    get_hardware_repo,
+    get_inventory_repo,
+    get_llm_client,
+)
 from app.services.inference import LLMClient, LLMError
 from app.models.api import BrewLogEntryOut, CatalogDetailOut, CatalogItemOut, InventoryBagOut
 from app.repos.brew_log import BrewLogRepo
@@ -67,7 +75,14 @@ def _bag_to_out(row: dict[str, Any], display_name: str) -> InventoryBagOut:
     )
 
 
-def _shot_to_out(shot: dict[str, Any], bag_display: str, roast_level: str | None, machine_name: str | None, grinder_name: str | None, basket_name: str | None) -> BrewLogEntryOut:
+def _shot_to_out(
+    shot: dict[str, Any],
+    bag_display: str,
+    roast_level: str | None,
+    machine_name: str | None,
+    grinder_name: str | None,
+    basket_name: str | None,
+) -> BrewLogEntryOut:
     def _float(v: object) -> float | None:
         try:
             return float(v)  # type: ignore[arg-type]
@@ -86,7 +101,9 @@ def _shot_to_out(shot: dict[str, Any], bag_display: str, roast_level: str | None
         dose_in_g=_float(shot.get("Dose_In_g")),
         yield_out_g=_float(shot.get("Yield_Out_g")),
         time_sec=_float(shot.get("Time_Sec")),
-        grind_setting=str(shot["Grind_Setting"]) if shot.get("Grind_Setting") not in (None, "") else None,
+        grind_setting=str(shot["Grind_Setting"])
+        if shot.get("Grind_Setting") not in (None, "")
+        else None,
         shot_eligibility=shot.get("Shot_Eligibility") or None,
         taste_summary=shot.get("Taste_Summary") or None,
         user_notes=shot.get("User_Notes") or None,
@@ -232,7 +249,9 @@ async def api_catalog_create(
                 else:
                     ext = "jpg"
                 obj_name = f"bean-images/{catalog_id}-{uuid.uuid4().hex[:8]}.{ext}"
-                image_path = await upload_image(img_bytes, content_type, obj_name, settings.assets_bucket)
+                image_path = await upload_image(
+                    img_bytes, content_type, obj_name, settings.assets_bucket
+                )
                 # Only mutate row after the Sheets upsert succeeds — if upsert raises,
                 # the response must not claim an image_path that wasn't persisted.
                 catalog_repo.upsert({**row, "Local_Image_Path": image_path})
@@ -366,7 +385,9 @@ async def api_catalog_infer(
     # Source image — reuse the pre-fetched page context to skip a second HTTP call.
     image_path: str | None = None
     try:
-        sourced = await source_bean_image(roaster, bean_name, body.url, llm_client, page_ctx=page_ctx)
+        sourced = await source_bean_image(
+            roaster, bean_name, body.url, llm_client, page_ctx=page_ctx
+        )
         image_path = sourced or None
     except Exception as exc:
         logger.warning("catalog infer image source failed for url=%r: %s", body.url, exc)

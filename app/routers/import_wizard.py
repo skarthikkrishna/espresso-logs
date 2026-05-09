@@ -1,4 +1,5 @@
 """Bootstrap Import Wizard router."""
+
 from __future__ import annotations
 
 import asyncio
@@ -50,7 +51,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(dependencies=[require_user])
 
 
-
 # Template-friendly sorted-list version of CANONICAL_ENUM_VALUES
 CANONICAL_ENUM_VALUES_FOR_TEMPLATE: dict[str, list[str]] = {
     k: sorted(v) for k, v in CANONICAL_ENUM_VALUES.items()
@@ -66,9 +66,9 @@ def _compute_dry_run(state: ImportState) -> dict[str, list[dict[str, Any]]]:
     """Normalize all rows; migrate Grinder_Calibration; return preview dict."""
     preview: dict[str, list[dict[str, Any]]] = {}
     normalize_map = {
-        "Brew_Log":  normalize_brew_log_row,
-        "Catalog":   normalize_catalog_row,
-        "Hardware":  normalize_hardware_row,
+        "Brew_Log": normalize_brew_log_row,
+        "Catalog": normalize_catalog_row,
+        "Hardware": normalize_hardware_row,
         "Inventory": normalize_inventory_row,
     }
     for section_name, rows in state.sections.items():
@@ -78,15 +78,11 @@ def _compute_dry_run(state: ImportState) -> dict[str, list[dict[str, Any]]]:
         if norm_fn is None:
             continue
         mapping = state.column_mappings.get(section_name, {})
-        preview[section_name] = [
-            norm_fn(row, mapping, state.confirmed_enum_maps)
-            for row in rows
-        ]
+        preview[section_name] = [norm_fn(row, mapping, state.confirmed_enum_maps) for row in rows]
     cal_rows = state.sections.get("Grinder_Calibration", [])
     if cal_rows:
         preview["Maintenance"] = [
-            migrate_grinder_calibration_row(row, i + 1)
-            for i, row in enumerate(cal_rows)
+            migrate_grinder_calibration_row(row, i + 1) for i, row in enumerate(cal_rows)
         ]
     return preview
 
@@ -129,9 +125,7 @@ def _save_state(request: Request, state: ImportState) -> None:
     if not import_id:
         import_id = str(uuid.uuid4())
         request.session["import_id"] = import_id
-    _state_path(import_id).write_text(
-        json.dumps(dataclasses.asdict(state)), encoding="utf-8"
-    )
+    _state_path(import_id).write_text(json.dumps(dataclasses.asdict(state)), encoding="utf-8")
 
 
 def _clear_state(request: Request) -> None:
@@ -165,6 +159,7 @@ async def _enrich_catalog_images(
     tmp path: /tmp/coffee_import_{import_id}_img_{catalog_id}.bin
     All rows are processed concurrently (asyncio.gather).
     """
+
     async def _enrich_one(row: dict[str, Any]) -> dict[str, Any]:
         if _has_fresh_local_image_path(row):
             return row
@@ -179,7 +174,9 @@ async def _enrich_catalog_images(
             result = await fetch_image_bytes(image_url)
             if result and catalog_id:
                 img_bytes, content_type = result
-                tmp_path = _IMPORT_TMP_DIR / f"{_IMPORT_FILE_PREFIX}{import_id}_img_{catalog_id}.bin"
+                tmp_path = (
+                    _IMPORT_TMP_DIR / f"{_IMPORT_FILE_PREFIX}{import_id}_img_{catalog_id}.bin"
+                )
                 tmp_path.write_bytes(img_bytes)
                 ct_path = _IMPORT_TMP_DIR / f"{_IMPORT_FILE_PREFIX}{import_id}_img_{catalog_id}.ct"
                 ct_path.write_text(content_type, encoding="utf-8")

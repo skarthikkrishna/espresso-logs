@@ -1,4 +1,5 @@
 """JSON defaults endpoint — smart pre-fill by bag_id path param."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query
@@ -30,7 +31,13 @@ async def api_get_defaults(
         grinder_id=defaults_dict.get("grinder_id"),
         basket_id=defaults_dict.get("basket_id"),
         storage_method=defaults_dict.get("storage_method"),
-        dose_in_g=str(defaults_dict["dose_in_g"]) if defaults_dict.get("dose_in_g") is not None else None,
-        yield_out_g=str(defaults_dict["yield_out_g"]) if defaults_dict.get("yield_out_g") is not None else None,
-        grind_setting=str(defaults_dict["grind_setting"]) if defaults_dict.get("grind_setting") is not None else None,
+        dose_in_g=str(defaults_dict["dose_in_g"])
+        if defaults_dict.get("dose_in_g") is not None
+        else None,
+        yield_out_g=str(defaults_dict["yield_out_g"])
+        if defaults_dict.get("yield_out_g") is not None
+        else None,
+        grind_setting=str(defaults_dict["grind_setting"])
+        if defaults_dict.get("grind_setting") is not None
+        else None,
     )

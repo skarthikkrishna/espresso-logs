@@ -5,6 +5,7 @@ Deployment prerequisite: The live Google Sheet's Hardware tab must have
 header row **before** this code is deployed to production.  Without these
 columns gspread will silently drop those fields from any upsert() call.
 """
+
 from __future__ import annotations
 
 import logging

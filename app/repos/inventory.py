@@ -23,8 +23,14 @@ class InventoryRepo(BaseRepo):
 
     TAB = _TAB
     COLUMNS = (
-        "Bag_ID", "Beans", "RoastDate", "RoastLevel", "Display_Name",
-        "Catalog_ID", "Status", "Storage_Method",
+        "Bag_ID",
+        "Beans",
+        "RoastDate",
+        "RoastLevel",
+        "Display_Name",
+        "Catalog_ID",
+        "Status",
+        "Storage_Method",
     )
 
     def __init__(

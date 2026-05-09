@@ -22,9 +22,7 @@ oauth.register(
 def _load_allowlist() -> frozenset[str]:
     raw = settings.allowlist_emails or ""
     return frozenset(
-        e.lower().strip()
-        for part in raw.replace(",", "\n").splitlines()
-        if (e := part.strip())
+        e.lower().strip() for part in raw.replace(",", "\n").splitlines() if (e := part.strip())
     )
 
 

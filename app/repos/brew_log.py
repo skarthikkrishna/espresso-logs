@@ -24,9 +24,21 @@ class BrewLogRepo(BaseRepo):
 
     TAB = _TAB
     COLUMNS = (
-        "Shot_ID", "Date", "Bag_ID", "Machine_ID", "Grinder_ID", "Basket_ID",
-        "Dose_In_g", "Yield_Out_g", "Time_Sec", "Grind_Setting",
-        "Shot_Eligibility", "Taste_Summary", "User_Notes", "AI_Feedback", "Storage_Method",
+        "Shot_ID",
+        "Date",
+        "Bag_ID",
+        "Machine_ID",
+        "Grinder_ID",
+        "Basket_ID",
+        "Dose_In_g",
+        "Yield_Out_g",
+        "Time_Sec",
+        "Grind_Setting",
+        "Shot_Eligibility",
+        "Taste_Summary",
+        "User_Notes",
+        "AI_Feedback",
+        "Storage_Method",
     )
 
     def __init__(
@@ -101,7 +113,9 @@ class BrewLogRepo(BaseRepo):
         Results are cached for 60s.
         """
         all_rows = self._fetch_cached(_CACHE_KEY_RECENT, _TAB)
-        sorted_rows = sorted(all_rows, key=lambda r: (r.get("Date", ""), r.get("Shot_ID", "")), reverse=True)
+        sorted_rows = sorted(
+            all_rows, key=lambda r: (r.get("Date", ""), r.get("Shot_ID", "")), reverse=True
+        )
         return sorted_rows[:n]
 
     def list_existing_ids(self) -> List[str]:

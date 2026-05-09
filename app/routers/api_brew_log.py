@@ -1,4 +1,5 @@
 """JSON brew log endpoints."""
+
 from __future__ import annotations
 
 import asyncio
@@ -10,7 +11,16 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from app.deps import CurrentUser, get_brew_log_repo, get_catalog_repo, get_hardware_repo, get_idempotency_store, get_inventory_repo, get_llm_client, get_maintenance_repo
+from app.deps import (
+    CurrentUser,
+    get_brew_log_repo,
+    get_catalog_repo,
+    get_hardware_repo,
+    get_idempotency_store,
+    get_inventory_repo,
+    get_llm_client,
+    get_maintenance_repo,
+)
 from app.models.api import BrewLogEntryOut, FeedbackOut
 from app.repos.brew_log import BrewLogRepo
 from app.repos.catalog import CatalogRepo
@@ -96,7 +106,9 @@ def _shot_to_out(shot: dict[str, Any], names: dict[str, Any]) -> BrewLogEntryOut
         dose_in_g=_float(shot.get("Dose_In_g")),
         yield_out_g=_float(shot.get("Yield_Out_g")),
         time_sec=_float(shot.get("Time_Sec")),
-        grind_setting=str(shot["Grind_Setting"]) if shot.get("Grind_Setting") not in (None, "") else None,
+        grind_setting=str(shot["Grind_Setting"])
+        if shot.get("Grind_Setting") not in (None, "")
+        else None,
         shot_eligibility=shot.get("Shot_Eligibility") or None,
         taste_summary=shot.get("Taste_Summary") or None,
         user_notes=shot.get("User_Notes") or None,
@@ -114,10 +126,7 @@ async def api_brew_log_list(
 ) -> list[BrewLogEntryOut]:
     shots = brew_log_repo.list_recent(20)
     bags, catalog, hardware = _build_lookups(inventory_repo, catalog_repo, hardware_repo)
-    return [
-        _shot_to_out(s, _resolve_names_from_dicts(s, bags, catalog, hardware))
-        for s in shots
-    ]
+    return [_shot_to_out(s, _resolve_names_from_dicts(s, bags, catalog, hardware)) for s in shots]
 
 
 @router.get("/brew-log/{shot_id}/feedback", response_model=FeedbackOut)
@@ -216,15 +225,17 @@ async def api_brew_log_create(
     bags, catalog, hardware = _build_lookups(inventory_repo, catalog_repo, hardware_repo)
     names = _resolve_names_from_dicts(row, bags, catalog, hardware)
     extra_context = {
-        "machine_name":   names.get("machine_name") or "",
-        "grinder_name":   names.get("grinder_name") or "",
-        "basket_name":    names.get("basket_name") or "",
-        "roast_level":    names.get("roast_level") or "",
-        "taste_summary":  body.taste_summary,
+        "machine_name": names.get("machine_name") or "",
+        "grinder_name": names.get("grinder_name") or "",
+        "basket_name": names.get("basket_name") or "",
+        "roast_level": names.get("roast_level") or "",
+        "taste_summary": body.taste_summary,
         "storage_method": body.storage_method or "",
     }
     asyncio.create_task(
-        get_ai_feedback(shot_id, brew_log_repo, maintenance_repo, llm_client, extra_context=extra_context)
+        get_ai_feedback(
+            shot_id, brew_log_repo, maintenance_repo, llm_client, extra_context=extra_context
+        )
     )
 
     shot_out = _shot_to_out(row, names)

@@ -45,9 +45,7 @@ class SheetsClientProtocol(Protocol):
 
 def _build_spreadsheet(spreadsheet_id: str) -> gspread.Spreadsheet:
     """Authenticate via ADC and open the spreadsheet by key."""
-    credentials, _ = google.auth.default(
-        scopes=["https://www.googleapis.com/auth/spreadsheets"]
-    )
+    credentials, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/spreadsheets"])
     gc = gspread.Client(auth=credentials)
     return gc.open_by_key(spreadsheet_id)
 
@@ -144,7 +142,8 @@ class RealSheetsClient:
                         if pk_val in existing_pks:
                             logger.info(
                                 "append_row: %s=%r already present — skipping duplicate write",
-                                pk_col, pk_val,
+                                pk_col,
+                                pk_val,
                             )
                             return
                 _first_call[0] = False
@@ -193,4 +192,3 @@ class RealSheetsClient:
     def delete_rows(self, tab: str, start_row: int, end_row: int) -> None:
         ws = self._worksheet(tab)
         _with_retry(lambda: ws.delete_rows(start_row, end_row))
-

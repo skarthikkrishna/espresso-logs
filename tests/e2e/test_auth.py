@@ -34,12 +34,8 @@ def test_anonymous_root_redirects_to_google(page: Page, base_url: str) -> None:
 def test_login_page_reaches_google_sign_in(page: Page, base_url: str) -> None:
     """GET /auth/login must redirect to the Google OAuth consent page."""
     page.goto(base_url + "/auth/login")
-    assert "accounts.google.com" in page.url, (
-        f"Expected Google OAuth URL, got: {page.url}"
-    )
+    assert "accounts.google.com" in page.url, f"Expected Google OAuth URL, got: {page.url}"
     # Google's sign-in page includes identifiable text even before interaction.
     page.wait_for_load_state("networkidle")
     content = page.content()
-    assert "Sign in" in content or "Google" in content, (
-        "Google sign-in page content not found"
-    )
+    assert "Sign in" in content or "Google" in content, "Google sign-in page content not found"
