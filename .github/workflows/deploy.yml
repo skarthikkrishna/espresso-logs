@@ -33,5 +33,5 @@ jobs:
             --config=cloudbuild.yaml \
             --project="${{ secrets.GCP_PROJECT_ID }}" \
             --gcs-source-staging-dir="gs://${{ secrets.GCP_PROJECT_ID }}-cloudbuild-source/source" \
-            --substitutions="_SERVICE_NAME=coffee-tracker,_REGION=us-west1,_RUNTIME_SA=${{ secrets.GCP_RUNTIME_SA }},_CLOUDBUILD_SA=${{ secrets.GCP_CLOUDBUILD_SA }},_SERVICE_URL=${{ secrets.GCP_SERVICE_URL }}" \
+            --substitutions="_SERVICE_NAME=coffee-tracker,_REGION=us-west1,_COMMIT_SHA=${{ github.sha }},_RUNTIME_SA=${{ secrets.GCP_RUNTIME_SA }},_CLOUDBUILD_SA=${{ secrets.GCP_CLOUDBUILD_SA }},_SERVICE_URL=${{ secrets.GCP_SERVICE_URL }}" \
             .
