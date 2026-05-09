@@ -10,6 +10,8 @@ Implements a 4-level fallback chain:
 
 from __future__ import annotations
 
+from typing import Any
+
 from app.repos.brew_log import BrewLogRepo
 from app.repos.catalog import CatalogRepo
 from app.repos.inventory import InventoryRepo
@@ -22,21 +24,19 @@ _FIELD_MAP = {
     "Basket_ID": "basket_id",
     "Storage_Method": "storage_method",
     "Dose_In_g": "dose_in_g",
-    "Yield_Out_g": "yield_out_g",   # BE-2: added; handled via _extract_defaults(), not ad-hoc
+    "Yield_Out_g": "yield_out_g",  # BE-2: added; handled via _extract_defaults(), not ad-hoc
     "Grind_Setting": "grind_setting",
 }
 
 
-def _extract_defaults(shot: dict) -> dict:
+def _extract_defaults(shot: dict[str, Any]) -> dict[str, Any]:
     """Extract equipment/dose fields from a shot row (sheet column names → snake_case).
 
     Omits any field whose value is None or empty string.
     ``shot_eligibility`` is never included.
     """
     return {
-        snake: shot[col]
-        for col, snake in _FIELD_MAP.items()
-        if shot.get(col) not in (None, "")
+        snake: shot[col] for col, snake in _FIELD_MAP.items() if shot.get(col) not in (None, "")
     }
 
 
@@ -46,7 +46,7 @@ async def get_defaults(
     inventory_repo: InventoryRepo,
     catalog_repo: CatalogRepo,
     basket_id: str | None = None,  # ← NEW (T008): Level 0 basket-specific lookup
-) -> dict:
+) -> dict[str, Any]:
     """Return smart pre-fill defaults for *bag_id* using a 4-level fallback chain.
 
     Args:
@@ -98,7 +98,7 @@ async def get_defaults(
             roaster = catalog.get("Roaster")
             if roaster:
                 active_bags = inventory_repo.list()  # defaults to status="Active"
-                all_shots: list[dict] = []
+                all_shots: list[dict[str, Any]] = []
                 for active_bag in active_bags:
                     other_cat_id = active_bag.get("Catalog_ID")
                     if other_cat_id:

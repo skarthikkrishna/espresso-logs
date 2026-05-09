@@ -6,6 +6,8 @@ Schema columns (in order): Maintenance_ID, Hardware_ID, Date, Action_Type, Notes
 
 from __future__ import annotations
 
+from typing import Any, List
+
 from app.repos.base import BaseRepo, TTLCache
 from app.repos.sheets_client import SheetsClientProtocol
 
@@ -31,14 +33,14 @@ class MaintenanceRepo(BaseRepo):
     # Read
     # ------------------------------------------------------------------
 
-    def list(self, hardware_id: str | None = None) -> list[dict]:
+    def list(self, hardware_id: str | None = None) -> List[dict[str, Any]]:
         """Return maintenance rows, optionally filtered by *hardware_id* (cached for 60s)."""
         rows = self._fetch_cached(_CACHE_KEY, _TAB)
         if hardware_id is not None:
             rows = [r for r in rows if r.get("Hardware_ID") == hardware_id]
         return rows
 
-    def get(self, maintenance_id: str) -> dict | None:
+    def get(self, maintenance_id: str) -> dict[str, Any] | None:
         """Return the maintenance event with *maintenance_id*, or ``None``."""
         for row in self.list():
             if row.get(_PK) == maintenance_id:
@@ -49,12 +51,12 @@ class MaintenanceRepo(BaseRepo):
     # Write
     # ------------------------------------------------------------------
 
-    def add(self, row: dict) -> None:
+    def add(self, row: dict[str, Any]) -> None:
         """Append a new maintenance event row; invalidates the list cache."""
         self._client.append_row(_TAB, row)
         self._cache.invalidate(_CACHE_KEY)
 
-    def add_many(self, rows: list[dict]) -> None:
+    def add_many(self, rows: List[dict[str, Any]]) -> None:
         """Bulk-append multiple maintenance rows (bootstrapping)."""
         if not rows:
             return

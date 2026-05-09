@@ -1,4 +1,5 @@
 """Unit tests for POST /api/catalog/infer route."""
+
 import pytest
 from unittest.mock import AsyncMock, patch
 from httpx import AsyncClient, ASGITransport
@@ -13,20 +14,24 @@ from app.services.image_sourcer import PageContext
 # Fake LLM clients
 # ---------------------------------------------------------------------------
 
+
 class _FakeLLMSuccess:
     """Returns valid JSON with text inference fields populated."""
+
     async def complete(self, prompt: str, max_tokens: int = 512) -> str:
         return '{"roaster": "Blue Bottle", "bean_name": "Giant Steps", "roast_level": "Medium"}'
 
 
 class _FakeLLMFailure:
     """Raises LLMError to simulate network/API failure."""
+
     async def complete(self, prompt: str, max_tokens: int = 512) -> str:
         raise LLMError("LLM unavailable")
 
 
 class _FakeLLMEmpty:
     """Returns JSON with all empty strings (inference found nothing)."""
+
     async def complete(self, prompt: str, max_tokens: int = 512) -> str:
         return '{"roaster": "", "bean_name": "", "roast_level": ""}'
 
@@ -35,10 +40,13 @@ class _FakeLLMEmpty:
 # Auth helper — copy pattern from test_api.py
 # ---------------------------------------------------------------------------
 
+
 def _make_authed_cookie() -> str:
     """Create a valid signed session cookie for test user."""
-    import base64, json as _json
+    import base64
+    import json as _json
     from itsdangerous import TimestampSigner
+
     _TEST_SECRET = "dev-insecure-secret-for-testing-only"
     payload = _json.dumps({"user": {"email": "test@example.com", "name": "Test"}})
     b64 = base64.b64encode(payload.encode()).decode()
@@ -53,6 +61,7 @@ _AUTHED_COOKIE = _make_authed_cookie()
 # Fixture to reset dependency overrides
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(autouse=True)
 def _reset_overrides():
     yield
@@ -62,6 +71,7 @@ def _reset_overrides():
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_catalog_infer_success():
@@ -148,8 +158,16 @@ async def test_catalog_infer_uses_page_text_for_roast_level():
 
     app.dependency_overrides[get_llm_client] = lambda: _CapturingLLM()
     with (
-        patch("app.routers.api_catalog.fetch_page_context", new_callable=AsyncMock, return_value=rich_ctx),
-        patch("app.routers.api_catalog.source_bean_image", new_callable=AsyncMock, return_value="https://cdn.vervecoffee.com/bag.jpg"),
+        patch(
+            "app.routers.api_catalog.fetch_page_context",
+            new_callable=AsyncMock,
+            return_value=rich_ctx,
+        ),
+        patch(
+            "app.routers.api_catalog.source_bean_image",
+            new_callable=AsyncMock,
+            return_value="https://cdn.vervecoffee.com/bag.jpg",
+        ),
     ):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp = await client.post(
@@ -164,5 +182,6 @@ async def test_catalog_infer_uses_page_text_for_roast_level():
     assert data["image_path"] == "https://cdn.vervecoffee.com/bag.jpg"
     # Confirm the LLM received real page text, not just the URL
     assert len(captured_prompts) == 1
-    assert "light roast" in captured_prompts[0].lower() or "seabright" in captured_prompts[0].lower()
-
+    assert (
+        "light roast" in captured_prompts[0].lower() or "seabright" in captured_prompts[0].lower()
+    )

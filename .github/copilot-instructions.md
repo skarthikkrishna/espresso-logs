@@ -1,8 +1,6 @@
 # GitHub Copilot Instructions — espresso-logs
 
-This is the **application repository** for Espresso Logs (FastAPI + React).
-`.specify/` in this repo targets **application feature specs** — not product-level PM specs.
-For product-level specs, see [skarthikkrishna/coffee_tracker](https://github.com/skarthikkrishna/coffee_tracker).
+This is the **application repository** for Espresso Logs — an open-source coffee tracking app built with FastAPI and React.
 
 Reusable prompt templates for common subagent tasks live in `.github/copilot-prompts/`:
 
@@ -59,3 +57,34 @@ git checkout -b <type>/<slug>   # e.g. fix/brew-log-ordering
 - `docs/requirements/functional-spec.md` — product behaviour and entities
 - `docs/requirements/engineering_architecture.md` — system design and decisions
 - `docs/requirements/sheet-schema.md` — Google Sheets column schema
+
+---
+
+## Development Workflow — Squad + SpecKit First
+
+**All significant work — features, bug fixes, and refactors — follows the Squad + SpecKit workflow by default.**
+
+### The workflow
+
+1. **Specify** — The relevant Squad agent authors the spec using `speckit.specify`
+2. **Clarify** — `speckit.clarify` surfaces and resolves ambiguities before any code is written
+3. **Plan** — `speckit.plan` produces the implementation design
+4. **Tasks** — `speckit.tasks` generates a dependency-ordered task list
+5. **Implement** — `speckit.implement` executes the tasks
+
+### Squad agent ownership
+
+Match the work to the agent whose domain fits:
+
+| Agent | Domain |
+|---|---|
+| **Tariq** | Cross-repo sequencing, milestones, operability, CI/CD, release readiness |
+| **Maya** | Architecture decisions, security, code quality gates, technical standards |
+| **Finn** | React/TypeScript, frontend features, UI/UX, accessibility |
+| **Alex** | FastAPI, backend features, data models, auth, multi-tenancy |
+| **Priya** | User stories, acceptance criteria, product scope |
+| **Quinn** | PR review, diff analysis, code quality |
+
+### When it's OK to skip SpecKit
+
+Only trivial, self-contained changes (typo fixes, single-line config patches) may skip the full SpecKit flow. When in doubt, spec it first.

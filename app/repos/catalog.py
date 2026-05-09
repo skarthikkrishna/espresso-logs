@@ -7,6 +7,8 @@ Schema columns (in order):
 
 from __future__ import annotations
 
+from typing import Any, List
+
 from app.repos.base import BaseRepo, TTLCache
 from app.repos.sheets_client import SheetsClientProtocol
 
@@ -20,8 +22,12 @@ class CatalogRepo(BaseRepo):
 
     TAB = _TAB
     COLUMNS = (
-        "Catalog_ID", "Roaster", "Bean_Name", "Roast_Level",
-        "Product_URL", "Local_Image_Path",
+        "Catalog_ID",
+        "Roaster",
+        "Bean_Name",
+        "Roast_Level",
+        "Product_URL",
+        "Local_Image_Path",
     )
 
     def __init__(
@@ -35,11 +41,11 @@ class CatalogRepo(BaseRepo):
     # Read
     # ------------------------------------------------------------------
 
-    def list(self) -> list[dict]:
+    def list(self) -> List[dict[str, Any]]:
         """Return all catalog entries (cached for 60s)."""
         return self._fetch_cached(_CACHE_KEY, _TAB)
 
-    def get(self, catalog_id: str) -> dict | None:
+    def get(self, catalog_id: str) -> dict[str, Any] | None:
         """Return the catalog entry with *catalog_id*, or ``None``."""
         for row in self.list():
             if row.get(_PK) == catalog_id:
@@ -50,7 +56,7 @@ class CatalogRepo(BaseRepo):
     # Write
     # ------------------------------------------------------------------
 
-    def upsert(self, row: dict) -> None:
+    def upsert(self, row: dict[str, Any]) -> None:
         """Insert or update a catalog row; invalidates the list cache."""
         pk_val = row[_PK]
         existing = self._fetch_all(_TAB)
@@ -61,7 +67,7 @@ class CatalogRepo(BaseRepo):
             self._client.append_row(_TAB, row)
         self._cache.invalidate(_CACHE_KEY)
 
-    def add_many(self, rows: list[dict]) -> None:
+    def add_many(self, rows: List[dict[str, Any]]) -> None:
         """Bulk-append multiple catalog rows (bootstrapping)."""
         if not rows:
             return

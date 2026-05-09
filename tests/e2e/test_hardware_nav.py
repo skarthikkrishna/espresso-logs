@@ -73,7 +73,9 @@ def test_hardware_detail_shows_no_ids(auth_page: Page, live_server: str) -> None
     auth_page.goto(live_server + "/hardware")
     auth_page.wait_for_selector('[data-testid="hardware-card"]', timeout=8000)
     auth_page.locator('[data-testid="hardware-card"]').first.click()
-    auth_page.locator('[data-testid="hardware-detail-panel"]').wait_for(state="visible", timeout=6000)
+    auth_page.locator('[data-testid="hardware-detail-panel"]').wait_for(
+        state="visible", timeout=6000
+    )
     _assert_no_hw_ids(auth_page, "HardwareDetail")
 
 
@@ -104,4 +106,6 @@ def test_sidebar_persists_on_hardware_page(auth_page: Page, live_server: str) ->
     # Click a card
     auth_page.locator('[data-testid="hardware-card"]').first.click()
     auth_page.wait_for_timeout(500)
-    assert auth_page.locator('[data-testid="sidebar"]').count() == 1, "Sidebar disappeared after hardware card click"
+    assert auth_page.locator('[data-testid="sidebar"]').count() == 1, (
+        "Sidebar disappeared after hardware card click"
+    )

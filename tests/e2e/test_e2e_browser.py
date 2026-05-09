@@ -303,9 +303,7 @@ async def test_extraction_compass_in_brew_form() -> None:
     )
 
     # data-shots attribute holds the serialised shot history
-    assert "data-shots=" in html, (
-        "Expected data-shots attribute on compass-chart canvas"
-    )
+    assert "data-shots=" in html, "Expected data-shots attribute on compass-chart canvas"
 
     # Shot coordinates from _SHOT_1 should appear in the JSON
     # _SHOT_1 has Time_Sec=28, Yield_Out_g=36.0 → compass_data = [{"x": 28, "y": 36.0}]
@@ -352,7 +350,7 @@ async def test_zero_to_first_shot_flow_asgi_steps() -> None:
                 _HARDWARE_BASKET.copy(),
             ],
             "Inventory": [_BAG_ACTIVE.copy()],
-            "Brew_Log": [],        # no shots yet — first shot scenario
+            "Brew_Log": [],  # no shots yet — first shot scenario
             "Catalog": [_CATALOG_VERVE.copy()],
             "Maintenance": [],
         }
@@ -379,9 +377,7 @@ async def test_zero_to_first_shot_flow_asgi_steps() -> None:
             assert "Ve20250201M" in bags.text or "Verve-Seabright" in bags.text, (
                 "Active bag not visible in /dashboard/bags fragment"
             )
-            assert "No shots yet" in bags.text, (
-                "Expected 'No shots yet' empty state for first shot"
-            )
+            assert "No shots yet" in bags.text, "Expected 'No shots yet' empty state for first shot"
 
             # Step 5 — Open Log Shot modal for the bag (no prior shots → level-4 defaults)
             modal = await ac.get("/brew-log/new?bag_id=Ve20250201M")
@@ -493,15 +489,11 @@ def test_authenticated_dashboard_nav_visible(page, browser_context) -> None:
     assert "accounts.google.com" not in page.url, (
         "Session cookie injection failed — still redirected to Google"
     )
-    assert "/auth/login" not in page.url, (
-        "Session cookie injection failed — still on login page"
-    )
+    assert "/auth/login" not in page.url, "Session cookie injection failed — still on login page"
 
     # Brand visible in sidebar
     sidebar_text = page.locator(".app-sidebar").text_content() or ""
-    assert "Espresso" in sidebar_text, (
-        "Expected 'Espresso' brand text in sidebar"
-    )
+    assert "Espresso" in sidebar_text, "Expected 'Espresso' brand text in sidebar"
 
     # At least one nav anchor is visible
     nav_links = page.locator(".app-sidebar nav a")

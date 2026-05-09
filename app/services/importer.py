@@ -4,6 +4,7 @@ Bootstrap Import Wizard — pure import service functions.
 All functions in this module are pure (no side effects, no network calls).
 The router (import_wizard.py) is responsible for I/O and session management.
 """
+
 from __future__ import annotations
 
 import csv
@@ -13,6 +14,7 @@ import logging
 import re
 import uuid
 from dataclasses import dataclass, field
+from typing import Any
 
 import openpyxl  # type: ignore
 
@@ -29,53 +31,83 @@ class ImportParseError(Exception):
 
 KNOWN_ENUM_MAPS: dict[str, dict[str, str]] = {
     "Shot_Eligibility": {
-        "OK with Milk":      "Passable",
+        "OK with Milk": "Passable",
         "Passable Espresso": "Passable",
-        "Good":              "Good Espresso",
-        "Reject":            "Reject",
-        "Good Espresso":     "Good Espresso",
-        "God Shot":          "God Shot",
+        "Good": "Good Espresso",
+        "Reject": "Reject",
+        "Good Espresso": "Good Espresso",
+        "God Shot": "God Shot",
     },
     "Taste_Summary": {
-        "Weak and Sour":        "Weak & Sour",
+        "Weak and Sour": "Weak & Sour",
         "Balanced and Neutral": "Sweet & Balanced",
-        "Too acidic":           "Acidic & Bright",
-        "Too bitter":           "Harsh & Bitter",
+        "Too acidic": "Acidic & Bright",
+        "Too bitter": "Harsh & Bitter",
     },
     "Roast_Level": {
-        "Medium-Dark":  "Medium / Dark",
+        "Medium-Dark": "Medium / Dark",
         "Light/Medium": "Light / Medium",
     },
 }
 
 CANONICAL_ENUM_VALUES: dict[str, frozenset[str]] = {
-    "Shot_Eligibility": frozenset({
-        "Reject", "Passable", "Good Espresso", "God Shot"
-    }),
-    "Taste_Summary": frozenset({
-        "Weak & Sour", "Acidic & Bright", "Sweet & Balanced",
-        "Complex & Syrupy", "Harsh & Bitter", "Strong & Muddy", "Salty / Channeled"
-    }),
-    "Roast_Level": frozenset({
-        "Light", "Light / Medium", "Medium", "Medium / Dark", "Dark"
-    }),
+    "Shot_Eligibility": frozenset({"Reject", "Passable", "Good Espresso", "God Shot"}),
+    "Taste_Summary": frozenset(
+        {
+            "Weak & Sour",
+            "Acidic & Bright",
+            "Sweet & Balanced",
+            "Complex & Syrupy",
+            "Harsh & Bitter",
+            "Strong & Muddy",
+            "Salty / Channeled",
+        }
+    ),
+    "Roast_Level": frozenset({"Light", "Light / Medium", "Medium", "Medium / Dark", "Dark"}),
 }
 
 CANONICAL_COLUMNS: dict[str, list[str]] = {
-    "Brew_Log":  ["Shot_ID", "Date", "Bag_ID", "Machine_ID", "Grinder_ID", "Basket_ID",
-                  "Dose_In_g", "Yield_Out_g", "Time_Sec", "Grind_Setting",
-                  "Shot_Eligibility", "Taste_Summary", "User_Notes", "AI_Feedback",
-                  "Storage_Method"],
-    "Catalog":   ["Catalog_ID", "Roaster", "Bean_Name", "Roast_Level",
-                  "Product_URL", "Local_Image_Path"],
-    "Hardware":  ["Hardware_ID", "Category", "Name"],
-    "Inventory": ["Bag_ID", "Beans", "RoastDate", "RoastLevel", "Display_Name",
-                  "Catalog_ID", "Status", "Storage_Method"],
+    "Brew_Log": [
+        "Shot_ID",
+        "Date",
+        "Bag_ID",
+        "Machine_ID",
+        "Grinder_ID",
+        "Basket_ID",
+        "Dose_In_g",
+        "Yield_Out_g",
+        "Time_Sec",
+        "Grind_Setting",
+        "Shot_Eligibility",
+        "Taste_Summary",
+        "User_Notes",
+        "AI_Feedback",
+        "Storage_Method",
+    ],
+    "Catalog": [
+        "Catalog_ID",
+        "Roaster",
+        "Bean_Name",
+        "Roast_Level",
+        "Product_URL",
+        "Local_Image_Path",
+    ],
+    "Hardware": ["Hardware_ID", "Category", "Name"],
+    "Inventory": [
+        "Bag_ID",
+        "Beans",
+        "RoastDate",
+        "RoastLevel",
+        "Display_Name",
+        "Catalog_ID",
+        "Status",
+        "Storage_Method",
+    ],
     "Maintenance": ["Maintenance_ID", "Hardware_ID", "Date", "Action_Type", "Notes"],
 }
 
 
-def parse_legacy_csv(content: str) -> dict[str, list[dict]]:
+def parse_legacy_csv(content: str) -> dict[str, list[dict[str, Any]]]:
     """Split multi-section CSV on ##SheetName markers.
 
     Raises ImportParseError if no section markers or ##Brew_Log is absent.
@@ -84,7 +116,7 @@ def parse_legacy_csv(content: str) -> dict[str, list[dict]]:
     markers = list(_SECTION_RE.finditer(content))
     if not markers:
         raise ImportParseError("No sections found in CSV")
-    sections: dict[str, list[dict]] = {}
+    sections: dict[str, list[dict[str, Any]]] = {}
     for i, match in enumerate(markers):
         name = match.group(1)
         start = match.end() + 1
@@ -100,7 +132,7 @@ def parse_legacy_csv(content: str) -> dict[str, list[dict]]:
     return sections
 
 
-def parse_xlsx_to_sections(raw: bytes) -> dict[str, list[dict]]:
+def parse_xlsx_to_sections(raw: bytes) -> dict[str, list[dict[str, Any]]]:
     """Parse an XLSX file into sections matching parse_legacy_csv's output format.
 
     Each worksheet tab name becomes a section key. The first non-empty row of
@@ -117,7 +149,7 @@ def parse_xlsx_to_sections(raw: bytes) -> dict[str, list[dict]]:
         if not sheet_names:
             raise ImportParseError("XLSX file contains no sheets")
 
-        sections: dict[str, list[dict]] = {}
+        sections: dict[str, list[dict[str, Any]]] = {}
         for name in sheet_names:
             ws = wb[name]
             all_rows = list(ws.iter_rows(values_only=True))
@@ -146,8 +178,8 @@ def parse_xlsx_to_sections(raw: bytes) -> dict[str, list[dict]]:
                     return str(int(v))
                 return str(v)
 
-            rows: list[dict] = []
-            for row in all_rows[header_idx + 1:]:
+            rows: list[dict[str, Any]] = []
+            for row in all_rows[header_idx + 1 :]:
                 # Skip completely empty rows
                 if all(v is None or str(v).strip() == "" for v in row):
                     continue
@@ -168,8 +200,7 @@ def parse_xlsx_to_sections(raw: bytes) -> dict[str, list[dict]]:
         # Date and Bag_ID are empty — they are not actual brew log entries.
         brew = sections["Brew_Log"]
         sections["Brew_Log"] = [
-            r for r in brew
-            if r.get("Date", "").strip() and r.get("Bag_ID", "").strip()
+            r for r in brew if r.get("Date", "").strip() and r.get("Bag_ID", "").strip()
         ]
 
         return sections
@@ -181,7 +212,7 @@ def build_mapping_prompt(
     sheet_name: str,
     legacy_columns: list[str],
     canonical_columns: list[str],
-    sample_rows: list[dict],
+    sample_rows: list[dict[str, Any]],
 ) -> str:
     """Build the LLM header-mapping prompt (<=1024 bytes encoded).
 
@@ -190,8 +221,7 @@ def build_mapping_prompt(
     rows = sample_rows[:3]
     for attempt in range(len(rows) + 1):
         truncated = [
-            {k: str(v)[:80] for k, v in row.items()}
-            for row in rows[:max(1, len(rows) - attempt)]
+            {k: str(v)[:80] for k, v in row.items()} for row in rows[: max(1, len(rows) - attempt)]
         ]
         prompt = (
             "You are mapping legacy database columns to a canonical schema.\n\n"
@@ -200,11 +230,11 @@ def build_mapping_prompt(
             f"Canonical columns: {json.dumps(canonical_columns)}\n"
             "Sample rows (first 3, values truncated to 80 chars):\n"
             f"{json.dumps(truncated, indent=2)}\n\n"
-            'Return ONLY a JSON object in this exact format — no prose, no markdown fences:\n'
+            "Return ONLY a JSON object in this exact format — no prose, no markdown fences:\n"
             '{"mapping": {"<legacy_col>": "<canonical_col_or_null>", ...}}\n\n'
             "Rules:\n"
             "- Map every legacy column to the most likely canonical column name.\n"
-            "- Use JSON null (not the string \"null\") when no canonical column matches.\n"
+            '- Use JSON null (not the string "null") when no canonical column matches.\n'
             "- Do not invent canonical column names; use only those in the Canonical columns list."
         )
         if len(prompt.encode()) <= 1024:
@@ -226,7 +256,7 @@ def parse_mapping_response(llm_response: str) -> dict[str, str | None]:
 
 
 def build_batch_mapping_prompt(
-    sections: dict[str, list[dict]],
+    sections: dict[str, list[dict[str, Any]]],
 ) -> str:
     """Build a single LLM prompt mapping all sections at once (one API call).
 
@@ -237,12 +267,12 @@ def build_batch_mapping_prompt(
         "You are mapping legacy spreadsheet columns to canonical schema columns.",
         "Map each section's legacy columns to the canonical columns provided.",
         "",
-        'Return ONLY a JSON object — no prose, no markdown fences — in this exact format:',
+        "Return ONLY a JSON object — no prose, no markdown fences — in this exact format:",
         '{"sections": {"<section>": {"mapping": {"<legacy_col>": "<canonical_col_or_null>"}}, ...}}',
         "",
         "Rules:",
         "- Map every legacy column to the most likely canonical column name.",
-        "- Use JSON null (not the string \"null\") when no canonical column matches.",
+        '- Use JSON null (not the string "null") when no canonical column matches.',
         "- Do not invent canonical column names; use only those listed per section.",
         "",
     ]
@@ -264,7 +294,7 @@ def build_batch_mapping_prompt(
 
 def parse_batch_mapping_response(
     llm_response: str,
-    sections: dict[str, list[dict]],
+    sections: dict[str, list[dict[str, Any]]],
 ) -> dict[str, dict[str, str | None]]:
     """Extract per-section mappings from a batched LLM response.
 
@@ -293,7 +323,7 @@ def parse_batch_mapping_response(
 
 
 def find_enum_divergences(
-    rows: list[dict],
+    rows: list[dict[str, Any]],
     column_mapping: dict[str, str | None],
 ) -> dict[str, list[str]]:
     """Find legacy enum values that cannot be auto-resolved.
@@ -318,9 +348,11 @@ def find_enum_divergences(
     return {k: sorted(v) for k, v in divergences.items() if v}
 
 
-def normalize_brew_log_row(row: dict, column_mapping: dict, confirmed_enum_maps: dict) -> dict:
+def normalize_brew_log_row(
+    row: dict[str, Any], column_mapping: dict[str, Any], confirmed_enum_maps: dict[str, Any]
+) -> dict[str, Any]:
     """Rename legacy keys -> canonical; discard None-mapped; normalize date + enums."""
-    out: dict = {}
+    out: dict[str, Any] = {}
     for legacy_key, value in row.items():
         canonical_key = column_mapping.get(legacy_key)
         if canonical_key is None:
@@ -336,7 +368,9 @@ def normalize_brew_log_row(row: dict, column_mapping: dict, confirmed_enum_maps:
                 mm, dd, yyyy = m.group(1), m.group(2), m.group(3)
                 out["Date"] = f"{yyyy}-{mm}-{dd}"
             else:
-                logger.warning("Unrecognized date format %r in Brew_Log row; writing as-is", date_val)
+                logger.warning(
+                    "Unrecognized date format %r in Brew_Log row; writing as-is", date_val
+                )
     for enum_col in ("Shot_Eligibility", "Taste_Summary"):
         if enum_col not in out:
             continue
@@ -352,7 +386,9 @@ def normalize_brew_log_row(row: dict, column_mapping: dict, confirmed_enum_maps:
     return out
 
 
-def normalize_catalog_row(row: dict, column_mapping: dict, confirmed_enum_maps: dict) -> dict:
+def normalize_catalog_row(
+    row: dict[str, Any], column_mapping: dict[str, Any], confirmed_enum_maps: dict[str, Any]
+) -> dict[str, Any]:
     """Rename legacy keys -> canonical; normalize Roast_Level enum."""
     out = {
         canonical: row[legacy]
@@ -369,7 +405,9 @@ def normalize_catalog_row(row: dict, column_mapping: dict, confirmed_enum_maps: 
     return out
 
 
-def normalize_inventory_row(row: dict, column_mapping: dict, confirmed_enum_maps: dict) -> dict:
+def normalize_inventory_row(
+    row: dict[str, Any], column_mapping: dict[str, Any], confirmed_enum_maps: dict[str, Any]
+) -> dict[str, Any]:
     """Rename legacy keys -> canonical; normalize RoastLevel enum.
 
     Note: Legacy column is 'RoastLevel'; canonical column is also 'RoastLevel'.
@@ -389,7 +427,9 @@ def normalize_inventory_row(row: dict, column_mapping: dict, confirmed_enum_maps
     return out
 
 
-def normalize_hardware_row(row: dict, column_mapping: dict, confirmed_enum_maps: dict) -> dict:  # noqa: ARG001
+def normalize_hardware_row(
+    row: dict[str, Any], column_mapping: dict[str, Any], confirmed_enum_maps: dict[str, Any]
+) -> dict[str, Any]:  # noqa: ARG001
     """Rename legacy keys -> canonical (no enum normalization for Hardware)."""
     return {
         canonical: row[legacy]
@@ -398,14 +438,14 @@ def normalize_hardware_row(row: dict, column_mapping: dict, confirmed_enum_maps:
     }
 
 
-def migrate_grinder_calibration_row(row: dict, sequence: int) -> dict:
+def migrate_grinder_calibration_row(row: dict[str, Any], sequence: int) -> dict[str, Any]:
     """Convert a legacy Grinder_Calibration row to a Maintenance row."""
     return {
         "Maintenance_ID": f"MNT{sequence:03d}",
-        "Hardware_ID":    row["Grinder_ID"],
-        "Date":           row["Date"],
-        "Action_Type":    "Re-zero",
-        "Notes":          row.get("Notes", ""),
+        "Hardware_ID": row["Grinder_ID"],
+        "Date": row["Date"],
+        "Action_Type": "Re-zero",
+        "Notes": row.get("Notes", ""),
     }
 
 
@@ -413,8 +453,8 @@ def migrate_grinder_calibration_row(row: dict, sequence: int) -> dict:
 class ImportState:
     """Holds the full wizard state serialised into the session cookie."""
 
-    sections:            dict[str, list[dict]]
-    column_mappings:     dict[str, dict]
-    enum_divergences:    dict[str, list[str]]
-    confirmed_enum_maps: dict[str, dict]
-    dry_run_preview:     dict[str, list[dict]] = field(default_factory=dict)
+    sections: dict[str, list[dict[str, Any]]]
+    column_mappings: dict[str, dict[str, Any]]
+    enum_divergences: dict[str, list[str]]
+    confirmed_enum_maps: dict[str, dict[str, Any]]
+    dry_run_preview: dict[str, list[dict[str, Any]]] = field(default_factory=dict)

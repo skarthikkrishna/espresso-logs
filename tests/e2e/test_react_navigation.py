@@ -16,15 +16,15 @@ from __future__ import annotations
 import re
 
 import pytest
-from playwright.sync_api import Page, expect
+from playwright.sync_api import Page
 
 # All ID patterns that must NEVER appear in visible body text
 _ALL_ID_PATTERNS = [
-    re.compile(r"CAT\d{3}"),        # catalog IDs
-    re.compile(r"BAG-[A-Z0-9]+"),   # bag IDs
-    re.compile(r"HW-[A-Z0-9]+"),    # hardware IDs
-    re.compile(r"SHOT-\d+"),        # shot IDs
-    re.compile(r"MAINT-\d+"),       # maintenance IDs
+    re.compile(r"CAT\d{3}"),  # catalog IDs
+    re.compile(r"BAG-[A-Z0-9]+"),  # bag IDs
+    re.compile(r"HW-[A-Z0-9]+"),  # hardware IDs
+    re.compile(r"SHOT-\d+"),  # shot IDs
+    re.compile(r"MAINT-\d+"),  # maintenance IDs
 ]
 
 _NAV_ROUTES = ["/", "/catalog", "/hardware", "/brew-log", "/import"]
@@ -133,8 +133,9 @@ def test_brew_log_detail_shows_names(auth_page: Page, live_server: str) -> None:
     _assert_no_ids(auth_page, "brew-log detail")
     # Hardware names must be visible
     text = _body_text(auth_page)
-    assert "Breville Barista Express" in text or "Niche Zero" in text, \
+    assert "Breville Barista Express" in text or "Niche Zero" in text, (
         "Expected hardware names in brew log detail"
+    )
 
 
 def test_brew_log_detail_back_link(auth_page: Page, live_server: str) -> None:

@@ -4,6 +4,7 @@ Tests for all /api/* routes — Phase 10 React frontend rewrite.
 Auth pattern mirrors test_auth.py: sign a session cookie with the known
 test secret and inject via dependency_overrides.
 """
+
 from __future__ import annotations
 
 import base64
@@ -658,7 +659,14 @@ async def test_api_defaults_by_bag_authenticated():
     status, data = await _authed("GET", "/api/defaults/BB-2024-01-L-001")
     assert status == 200
     # DefaultsOut fields — all optional
-    for key in ("machine_id", "grinder_id", "basket_id", "storage_method", "dose_in_g", "grind_setting"):
+    for key in (
+        "machine_id",
+        "grinder_id",
+        "basket_id",
+        "storage_method",
+        "dose_in_g",
+        "grind_setting",
+    ):
         assert key in data
 
 
@@ -775,7 +783,9 @@ async def test_api_brew_log_create_extra_context_passed_to_ai_feedback():
     app.dependency_overrides[get_sheets_client] = lambda: fake
     captured: dict = {}
 
-    async def _mock_feedback(shot_id, brew_log_repo, maintenance_repo, llm_client, extra_context=None):
+    async def _mock_feedback(
+        shot_id, brew_log_repo, maintenance_repo, llm_client, extra_context=None
+    ):
         captured["extra_context"] = extra_context
         return "mocked feedback"
 

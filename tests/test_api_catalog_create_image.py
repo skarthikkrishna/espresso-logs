@@ -1,4 +1,5 @@
 """Tests for auto image sourcing on POST /api/catalog."""
+
 from __future__ import annotations
 
 import base64
@@ -33,6 +34,7 @@ _AUTHED_COOKIE = _make_session_cookie({"user": _TEST_USER})
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 class _FakeLLMNoOp:
     async def complete(self, prompt: str, max_tokens: int = 512) -> str:
         return '{"roaster": "", "bean_name": "", "roast_level": ""}'
@@ -41,6 +43,7 @@ class _FakeLLMNoOp:
 @pytest.fixture(autouse=True)
 def _reset_overrides():
     from tests.doubles import FakeSheetsClient
+
     fake = FakeSheetsClient()
     app.dependency_overrides[get_sheets_client] = lambda: fake
     app.dependency_overrides[get_llm_client] = lambda: _FakeLLMNoOp()
@@ -54,6 +57,7 @@ def _reset_overrides():
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_create_with_product_url_sources_and_uploads_image():
