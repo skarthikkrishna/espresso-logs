@@ -22,7 +22,7 @@ from app.deps import (
     get_inventory_repo,
     get_llm_client,
 )
-from app.services.inference import LLMClient, LLMError
+from app.services.inference import LLMClient
 from app.models.api import BrewLogEntryOut, CatalogDetailOut, CatalogItemOut, InventoryBagOut
 from app.repos.brew_log import BrewLogRepo
 from app.repos.catalog import CatalogRepo

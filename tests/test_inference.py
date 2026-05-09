@@ -636,7 +636,7 @@ async def test_get_ai_feedback_prompt_double_overflow_returns_graceful():
 
 @pytest.mark.asyncio
 async def test_fallback_llm_uses_primary_when_healthy():
-    from app.services.inference import FallbackLLMClient, LLMClient
+    from app.services.inference import FallbackLLMClient
 
     class _Primary:
         async def complete(self, prompt: str, max_tokens: int = 512) -> str:

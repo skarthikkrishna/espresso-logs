@@ -1,5 +1,6 @@
 import logging
 import os
+import pathlib
 import re
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
@@ -176,8 +177,6 @@ app.include_router(api_maintenance.router)
 app.include_router(api_defaults.router)
 app.include_router(defaults_router.router)
 app.include_router(import_wizard.router)
-
-import pathlib
 
 _spa_index = pathlib.Path(__file__).parent / "static" / "spa" / "index.html"
 

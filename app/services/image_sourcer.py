@@ -7,7 +7,7 @@ import ipaddress
 import logging
 import re
 import socket
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urljoin, urlparse
 

@@ -16,7 +16,7 @@ from __future__ import annotations
 import re
 
 import pytest
-from playwright.sync_api import Page, expect
+from playwright.sync_api import Page
 
 # All ID patterns that must NEVER appear in visible body text
 _ALL_ID_PATTERNS = [

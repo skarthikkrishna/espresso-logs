@@ -43,7 +43,8 @@ class _FakeLLMEmpty:
 
 def _make_authed_cookie() -> str:
     """Create a valid signed session cookie for test user."""
-    import base64, json as _json
+    import base64
+    import json as _json
     from itsdangerous import TimestampSigner
 
     _TEST_SECRET = "dev-insecure-secret-for-testing-only"

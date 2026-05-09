@@ -1,6 +1,5 @@
 import json
 import logging
-import urllib.request
 from typing import Any, Optional
 
 from pydantic import model_validator

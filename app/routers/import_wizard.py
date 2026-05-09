@@ -6,44 +6,24 @@ import asyncio
 import dataclasses
 import json
 import logging
-import os
-import re
 import tempfile
 import uuid
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Request
 from app.deps import (
-    get_brew_log_repo,
-    get_catalog_repo,
-    get_hardware_repo,
-    get_inventory_repo,
-    get_maintenance_repo,
-    get_llm_client,
     require_user,
 )
 from app.services.image_sourcer import source_bean_image, fetch_image_bytes
-from app.services.image_store import upload_image_to_gcs
-from app.config import settings
-from app.services.inference import LLMError
 from app.services.importer import (
-    ImportParseError,
     ImportState,
-    CANONICAL_COLUMNS,
     CANONICAL_ENUM_VALUES,
-    build_batch_mapping_prompt,
-    build_mapping_prompt,
-    find_enum_divergences,
     migrate_grinder_calibration_row,
     normalize_brew_log_row,
     normalize_catalog_row,
     normalize_hardware_row,
     normalize_inventory_row,
-    parse_batch_mapping_response,
-    parse_legacy_csv,
-    parse_mapping_response,
-    parse_xlsx_to_sections,
 )
 
 logger = logging.getLogger(__name__)

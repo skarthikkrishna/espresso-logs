@@ -800,7 +800,7 @@ class TestMissingImagesStep:
     @pytest.mark.asyncio
     async def test_enrich_catalog_images_stores_bytes_in_tmp(self, tmp_path, monkeypatch):
         """_enrich_catalog_images stores downloaded bytes in tmp bin file."""
-        from unittest.mock import AsyncMock, MagicMock, patch
+        from unittest.mock import MagicMock, patch
         from app.routers.import_wizard import _enrich_catalog_images, _IMPORT_FILE_PREFIX
 
         import_id = "test-import-001"
@@ -825,7 +825,7 @@ class TestMissingImagesStep:
             patch("app.routers.import_wizard.fetch_image_bytes", side_effect=fake_fetch),
             patch("app.routers.import_wizard._IMPORT_TMP_DIR", tmp_path),
         ):
-            result = await _enrich_catalog_images(rows, MagicMock(), import_id)
+            await _enrich_catalog_images(rows, MagicMock(), import_id)
 
         bin_path = tmp_path / f"{_IMPORT_FILE_PREFIX}{import_id}_img_CAT100.bin"
         assert bin_path.exists(), "Expected bin file to be written to tmp"
@@ -848,7 +848,7 @@ class TestMissingImagesStep:
         ]
 
         with patch("app.routers.import_wizard.source_bean_image") as mock_source:
-            result = await _enrich_catalog_images(rows, MagicMock(), "import-002")
+            await _enrich_catalog_images(rows, MagicMock(), "import-002")
 
         mock_source.assert_not_called()
 
