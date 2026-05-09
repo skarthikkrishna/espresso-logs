@@ -1,0 +1,140 @@
+# Required Cloud Build substitution variables (set in trigger config):
+#   _REGION        — GCP region (e.g. us-west1)
+#   _RUNTIME_SA    — Cloud Run runtime service account email
+#   _CLOUDBUILD_SA — Cloud Build service account email
+#   _SERVICE_URL   — Deployed Cloud Run service URL (e.g. https://my-app-xxx.a.run.app)
+# Built-in substitution used: $PROJECT_ID (automatically set by Cloud Build)
+steps:
+  # Step 1: Confirm uv is available (ghcr.io/astral-sh/uv image has uv pre-installed)
+  - name: 'ghcr.io/astral-sh/uv:0.7.0'
+    id: 'check-uv'
+    args: ['--version']
+
+  # Step 2: Install all project dependencies (frozen — never modifies uv.lock)
+  # Uses python3.12-bookworm-slim (has uv + Python 3.12 + glibc). Entrypoint must be
+  # set explicitly to 'uv' — the python variant image defaults to the python3 entrypoint.
+  - name: 'ghcr.io/astral-sh/uv:python3.12-bookworm-slim'
+    id: 'sync'
+    entrypoint: uv
+    args: ['sync', '--frozen']
+    dir: /workspace
+
+  # Step 3: Run unit + integration test suite (smoke tests run post-deploy in Step 8)
+  - name: 'ghcr.io/astral-sh/uv:python3.12-bookworm-slim'
+    id: 'test'
+    entrypoint: uv
+    args: ['run', 'pytest', 'tests/', '-v', '--ignore=tests/e2e/', '-m', 'not smoke']
+    env:
+      - 'SPREADSHEET_ID=dummy'
+
+  # Step 3b: Install frontend npm dependencies
+  - name: 'node:20-slim'
+    id: 'npm-install'
+    entrypoint: npm
+    args: ['ci', '--prefix', 'frontend']
+    waitFor: ['test']
+
+  # Step 3c: Build React SPA (outputs to app/static/spa/ via vite.config.ts outDir)
+  - name: 'node:20-slim'
+    id: 'npm-build'
+    entrypoint: npm
+    args: ['run', 'build', '--prefix', 'frontend']
+    waitFor: ['npm-install']
+
+  # Step 4: Build container image and tag with commit SHA + latest
+  # Using Docker directly (not gcloud run deploy --source) to avoid nested Cloud Build jobs
+  # which would require acting as the Compute Engine default SA.
+  # Multi-stage Dockerfile also builds the SPA internally (self-contained for local docker build).
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build'
+    waitFor: ['npm-build']
+    args:
+      - build
+      - '-t'
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/$_SERVICE_NAME:$COMMIT_SHA'
+      - '-t'
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/$_SERVICE_NAME:latest'
+      - '.'
+
+  # Step 5: Push both tags to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push'
+    args:
+      - push
+      - '--all-tags'
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/$_SERVICE_NAME'
+
+  # Step 6: Deploy pre-built image to Cloud Run (no nested build — avoids Compute SA dependency)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    id: 'deploy'
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - '$_SERVICE_NAME'
+      - '--image=$_REGION-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/$_SERVICE_NAME:$COMMIT_SHA'
+      - '--region=$_REGION'
+      - '--service-account=$_RUNTIME_SA'
+      # --allow-unauthenticated is intentionally omitted. Grant roles/run.invoker
+      # to specific household Google accounts via Terraform (see infra/terraform/iam.tf).
+      - '--min-instances=0'
+      - '--max-instances=2'
+      - '--cpu=1'
+      - '--memory=512Mi'
+      - '--set-env-vars=APP_ENV=production,OAUTH_REDIRECT_URI=$_SERVICE_URL/auth/callback'
+      # Cloud Run injects APP_SECRETS as a single Secret Manager secret (JSON blob).
+      # config.py parses the blob at startup — individual env vars take precedence.
+      # To add a new secret: update the APP_SECRETS JSON blob value in Secret Manager.
+      - '--set-secrets=APP_SECRETS=APP_SECRETS:latest'
+
+  # Steps 7+8: E2E smoke tests.
+  #
+  # Playwright install and auth tests run in the SAME container so that system
+  # libraries installed by `playwright install --with-deps` (e.g. libglib-2.0.so.0)
+  # are available when Chromium launches.  A separate step runs the ASGI bootstrap
+  # smoke tests in an isolated pytest session to prevent Playwright's session-scoped
+  # browser fixture from contaminating the asyncio event loop used by httpx tests.
+  #
+  # OPERATOR ACTION REQUIRED: Set the _SERVICE_URL substitution variable in the
+  # Cloud Build trigger settings before the auth step can run in CI.
+  #   GCP Console → Cloud Build → Triggers → [trigger name] → Edit
+  #     → Substitution variables → Add: _SERVICE_URL = <Cloud Run service URL>
+  #   Example value: https://coffee-tracker-jc5sn35peq-uw.a.run.app
+  #
+  # Without this variable E2E_BASE_URL will be empty and the Playwright auth tests
+  # will be skipped.
+
+  # Step 7: Auth E2E smoke (Playwright + live service)
+  # Installs Chromium + system deps in the same container, then runs auth tests.
+  - name: 'ghcr.io/astral-sh/uv:python3.12-bookworm-slim'
+    id: 'e2e-auth-smoke'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        uv run playwright install chromium --with-deps &&
+        uv run pytest tests/e2e/test_auth.py -m smoke -v --override-ini=asyncio_mode=strict
+    dir: /workspace
+    env:
+      - 'E2E_BASE_URL=$_SERVICE_URL'
+
+
+# Declare images so Cloud Build registers them in the build record
+images:
+  - '$_REGION-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/$_SERVICE_NAME:$COMMIT_SHA'
+  - '$_REGION-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/$_SERVICE_NAME:latest'
+
+# Build runs as the dedicated Cloud Build SA (not the Compute Engine default SA — DEV-001 fix)
+serviceAccount: 'projects/$PROJECT_ID/serviceAccounts/$_CLOUDBUILD_SA'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+# Default values for user-defined substitution variables.
+# Override these in the Cloud Build trigger settings for a different deployment.
+substitutions:
+  _SERVICE_NAME: coffee-tracker   # override per trigger in Cloud Build console
+  _REGION: us-west1
+  _RUNTIME_SA: <SET_IN_TRIGGER>
+  _CLOUDBUILD_SA: <SET_IN_TRIGGER>
+  _SERVICE_URL: ''
