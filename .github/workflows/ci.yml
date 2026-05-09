@@ -1,0 +1,202 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * *'   # Daily at 06:00 UTC
+  workflow_dispatch:       # Manual trigger
+
+env:
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  # ── Daily activity guard ────────────────────────────────────────────────
+  # All analysis jobs declare needs: check-activity and a job-level if condition.
+  # Using exit 0 inside a run step does NOT stop subsequent steps — guard must be
+  # at the job level (review-brief.md B3).
+  check-activity:
+    runs-on: ubuntu-latest
+    outputs:
+      should-run: ${{ steps.check.outputs.should-run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check for recent commits
+        id: check
+        run: |
+          COUNT=$(git log --since="24 hours ago" --oneline | wc -l)
+          if [ "$COUNT" -gt "0" ]; then
+            echo "should-run=true" >> $GITHUB_OUTPUT
+          else
+            echo "should-run=false" >> $GITHUB_OUTPUT
+            echo "No commits in last 24h — skipping scheduled analysis"
+          fi
+
+  # ── Python jobs (all parallel) ─────────────────────────────────────────
+  lint:
+    runs-on: ubuntu-latest
+    needs: check-activity
+    if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: uv sync --frozen
+      - run: uv run ruff check app/ tests/
+
+  format:
+    runs-on: ubuntu-latest
+    needs: check-activity
+    if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: uv sync --frozen
+      - run: uv run ruff format --check app/ tests/
+
+  typecheck:
+    runs-on: ubuntu-latest
+    needs: check-activity
+    if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: uv sync --frozen
+      - run: uv run mypy app/ --strict
+
+  security:
+    runs-on: ubuntu-latest
+    needs: check-activity
+    if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: uv sync --frozen
+      - run: uv run bandit -r app/ -ll
+
+  dependencies:
+    runs-on: ubuntu-latest
+    needs: check-activity
+    if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: uv sync --frozen
+      - run: uv run pip-audit    # PyPA-maintained; OSV database; no auth required
+
+  test:
+    runs-on: ubuntu-latest
+    needs: check-activity
+    if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: uv sync --frozen
+      - run: uv run pytest tests/ --cov=app --cov-report=xml --cov-fail-under=80 --ignore=tests/e2e/
+        env:
+          SPREADSHEET_ID: dummy
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+  # ── Frontend jobs (parallel with Python) ───────────────────────────────
+  fe-lint:
+    runs-on: ubuntu-latest
+    needs: check-activity
+    if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm run lint -- --max-warnings 0
+
+  fe-test:
+    runs-on: ubuntu-latest
+    needs: check-activity
+    if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm test
+
+  fe-build:
+    runs-on: ubuntu-latest
+    needs: check-activity
+    if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm run build
+
+  # ── Static analysis (parallel with all above) ───────────────────────────
+  codeql:
+    runs-on: ubuntu-latest
+    needs: check-activity
+    if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: python,javascript
+          queries: security-and-quality
+      - uses: github/codeql-action/autobuild@v3
+      - uses: github/codeql-action/analyze@v3
+
+  semgrep:
+    runs-on: ubuntu-latest
+    needs: check-activity
+    if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
+    container:
+      image: semgrep/semgrep:latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: semgrep --config=p/python --config=p/typescript --config=p/react --config=p/secrets --error .
+
+  # ── Permanent secret scanning gate (12th required check) ────────────────
+  gitleaks:
+    runs-on: ubuntu-latest
+    needs: check-activity
+    if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

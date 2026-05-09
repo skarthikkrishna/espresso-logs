@@ -1,0 +1,70 @@
+##Brew_Log
+Date,Bag_ID,Machine_ID,Grinder_ID,Basket_ID,Calibration_ID,Dose_In_g,Yield_Out_g,Time_Sec,Grind_Setting,Shot_Eligibility,Taste_Summary,User_Notes,Flavor_Compass
+05/04/2025,En20250415L,M01,G01,B01,CAL_01,17,43,32,18.75,Reject,Weak and Sour,Thin extraction. Needs work.,
+05/04/2025,En20250415L,M01,G01,B01,CAL_01,18,36,38,18,OK with Milk,Balanced and Sour,Thicker but still sour.,
+05/05/2025,En20250415L,M01,G01,B01,CAL_01,15.7,38,32,17.75,Passable Espresso,Balanced and Neutral,More balanced. Acceptable.,
+05/05/2025,En20250415L,M01,G01,B01,CAL_01,15.5,40,43,17.5,OK with Milk,Balanced and Sour,Still acidic finish.,
+05/05/2025,En20250415L,M01,G01,B01,CAL_01,15.5,40.1,32,17.75,Passable Espresso,Balanced and Sour,Most passable so far.,
+05/06/2025,En20250415L,M01,G01,B01,CAL_01,15.6,40,35,17.75,OK with Milk,Balanced and Bitter,Stopped early. More bitter.,
+05/06/2025,En20250415L,M01,G01,B01,CAL_01,15.5,37.6,23,17.5,Good Espresso,Balanced and Neutral,Precision basket made a difference.,
+05/07/2025,En20250415L,M01,G01,B01,CAL_01,15.3,46,40,17,Passable Espresso,Balanced and Sour,Experiment paid off partially.,
+05/07/2025,En20250415L,M01,G01,B01,CAL_01,15.2,48.4,35,17,OK with Milk,Balanced and Sour,Machine did not hold programming.,
+05/07/2025,En20250415L,M01,G01,B01,CAL_01,15,45.2,42,17,OK with Milk,Strong and Bitter,Over-extracted. Soupy puck.,
+05/06/2025,Ve20250201M,M01,G01,B01,CAL_01,18.1,38.5,33,13,Reject,Weak and Sour,Grind too coarse.,
+05/08/2025,Ve20250201M,M01,G01,B01,CAL_01,15.3,44.6,43,17,OK with Milk,Balanced and Sour,Not fully dialled yet.,
+05/09/2025,Ve20250201M,M01,G01,B01,CAL_01,17,42.2,35,13.75,Passable Espresso,Balanced and Sour,Good body slightly sour.,
+05/10/2025,Ve20250201M,M01,G01,B01,CAL_01,17,43,34,13.75,Good Espresso,Balanced and Neutral,Nice extraction. Good balance.,
+05/11/2025,Ve20250201M,M01,G01,B01,CAL_01,17.2,44,35,13.5,Good Espresso,Balanced and Neutral,Consistent pull. Well dialled.,
+01/15/2024,Sr20240101M,M01,G01,B01,CAL_02,17,43,32,14.5,Passable Espresso,Balanced and Sour,First pull on new bag.,
+01/16/2024,Sr20240101M,M01,G01,B01,CAL_02,17,45,34,14.75,OK with Milk,Balanced and Neutral,Finer grind. Better extraction.,
+01/17/2024,Sr20240101M,M01,G01,B01,CAL_02,16.5,44,33,15,Good Espresso,Balanced and Neutral,Sweet and clean shot.,
+01/18/2024,Sr20240101M,M01,G01,B01,CAL_02,16,42,30,15.25,Good Espresso,Balanced and Neutral,Consistent. Good sweetness.,
+01/19/2024,Sr20240101M,M01,G01,B01,CAL_02,16,43,31,15.25,God Shot,Balanced and Neutral,Perfect shot. Complex and sweet.,
+02/01/2024,Bl20240125L,M01,G01,B01,CAL_02,15.5,38,30,18,Reject,Too acidic,Light roast. Very bright.,
+02/02/2024,Bl20240125L,M01,G01,B01,CAL_02,15.5,40,35,17.5,Passable Espresso,Balanced and Sour,Getting closer.,
+02/03/2024,Bl20240125L,M01,G01,B01,CAL_02,15.8,41,36,17.25,Good Espresso,Balanced and Neutral,Best shot so far. Juicy.,
+02/04/2024,Bl20240125L,M01,G01,B01,CAL_02,15.8,42,36,17,Good Espresso,Balanced and Neutral,Consistent. Light floral notes.,
+02/05/2024,Bl20240125L,M01,G01,B01,CAL_02,16,43,37,17,Good Espresso,Balanced and Neutral,Fully dialled. Very enjoyable.,
+02/20/2024,Pk20240210M,M01,G01,B02,CAL_02,18,40,31,13.5,Passable Espresso,Balanced and Bitter,Dark roast. Dense puck.,
+02/21/2024,Pk20240210M,M01,G01,B02,CAL_02,18,42,33,14,OK with Milk,Strong and Neutral,Rich body. Works as milk drink.,
+02/22/2024,Pk20240210M,M01,G01,B02,CAL_02,18,43,34,14,Good Espresso,Balanced and Neutral,Better balance with coarser grind.,
+02/23/2024,Pk20240210M,M01,G01,B02,CAL_02,18,44,35,14.25,Good Espresso,Balanced and Neutral,Smooth and rich. Good crema.,
+02/24/2024,Pk20240210M,M01,G01,B02,CAL_02,17.5,43,34,14.5,God Shot,Balanced and Neutral,Perfect pull. Incredible sweetness.,
+
+##Catalog
+Catalog_ID,Roaster,Bean_Name,Roast_Level,Product_URL,Local_Image_Path
+CAT200,Sunrise Roasters,Ethiopian Yirgacheffe,Light,https://example.com/yirgacheffe,
+CAT201,Blue Mountain Co.,Colombian Supremo,Medium,https://example.com/colombian-supremo,
+CAT202,Peak Brew Co.,Sumatra Mandheling,Dark,https://example.com/sumatra-mandheling,
+CAT203,Velvet Grounds,Kenyan AA,Light / Medium,https://example.com/kenyan-aa,
+CAT204,Sunrise Roasters,Brazil Santos,Medium,https://example.com/brazil-santos,
+CAT205,Blue Mountain Co.,Rwanda Bourbon,Light,https://example.com/rwanda-bourbon,
+CAT206,Peak Brew Co.,Guatemala Antigua,Medium / Dark,https://example.com/guatemala-antigua,
+CAT207,Velvet Grounds,Costa Rica Tarrazu,Light / Medium,https://example.com/costa-rica,
+CAT208,Sunrise Roasters,Peru Sacred Valley,Medium,https://example.com/peru,
+CAT209,Blue Mountain Co.,Panama Gesha,Light,https://example.com/gesha,
+
+##Inventory
+Bag_ID,Beans,RoastDate,RoastLevel,Display_Name,Catalog_ID,Status
+Sr20240101M,Sunrise Roasters - Colombian Supremo,01/01/2024,Medium,Sunrise Roasters - Colombia - Jan 01 - Med,CAT201,Finished
+Bl20240125L,Blue Mountain Co. - Ethiopian Yirgacheffe,01/25/2024,Light,Blue Mountain - Yirgacheffe - Jan 25 - Light,CAT200,Finished
+Pk20240210M,Peak Brew Co. - Sumatra Mandheling,02/10/2024,Dark,Peak Brew - Sumatra - Feb 10 - Dark,CAT202,Finished
+Ve20240301M,Velvet Grounds - Kenyan AA,03/01/2024,Light / Medium,Velvet Grounds - Kenyan AA - Mar 01 - LM,CAT203,Finished
+Sr20240315L,Sunrise Roasters - Ethiopia,03/15/2024,Light,Sunrise Roasters - Ethiopia - Mar 15 - Light,CAT200,Finished
+Kn20240401M,Blue Mountain Co. - Kenyan AA,04/01/2024,Light / Medium,Blue Mountain - Kenyan AA - Apr 01 - LM,CAT203,Finished
+Co20240415M,Peak Brew Co. - Colombian Supremo,04/15/2024,Medium,Peak Brew - Colombia - Apr 15 - Med,CAT201,Finished
+Su20240501L,Velvet Grounds - Sumatra Mandheling,05/01/2024,Dark,Velvet Grounds - Sumatra - May 01 - Dark,CAT202,Finished
+Br20240515D,Sunrise Roasters - Brazil Santos,05/15/2024,Medium,Sunrise Roasters - Brazil - May 15 - Med,CAT204,Active
+
+##Hardware
+Hardware_ID,Category,Name
+M01,Machine,Sample Espresso Machine
+G01,Grinder,Sample Burr Grinder
+B01,Basket,Stock Double
+B02,Basket,Precision IMS Basket
+
+##Grinder_Calibration
+Cal_ID,Grinder_ID,Date,Notes
+CAL_01,G01,2024-01-01,Initial setup
+CAL_02,G01,2024-02-15,Check-up after 6 weeks
+CAL_03,G01,2024-03-10,Re-zero after cleaning

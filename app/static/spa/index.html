@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en" data-theme="espresso-dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/static/icons/icon-192.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1a1209" />
+    <title>Coffee Tracker</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- Playfair Display + Inter fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload"
+          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap"
+          as="style"
+          onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    </noscript>
+  <!-- Pre-mount background: ensures dark background from first paint, before React mounts -->
+  <style>
+    html, body {
+      background: #1a1209;
+      margin: 0;
+    }
+  </style>
+    <script type="module" crossorigin src="/static/spa/assets/index-B3BxI0gh.js"></script>
+    <link rel="stylesheet" crossorigin href="/static/spa/assets/index-dZaLrLvr.css">
+  </head>
+  <body>
+    <div id="root">
+      <div id="pre-mount-loader" style="display:flex;align-items:center;justify-content:center;height:100vh;width:100%;background:#1a1209;">
+        <div style="width:32px;height:32px;border:3px solid rgba(217,119,6,0.2);border-top-color:#d97706;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+      </div>
+    </div>
+    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+  </body>
+</html>

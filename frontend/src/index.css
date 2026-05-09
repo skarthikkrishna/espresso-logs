@@ -1,0 +1,222 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: #1a1209;
+  color: #f5e6d3;
+}
+
+/* Narrow to h1 + h2 only — h3-h6 should use Inter */
+h1, h2, .font-display {
+  font-family: var(--font-display);
+}
+
+/* Page transition: class-toggled on route change, no DOM unmount */
+.page-content {
+  opacity: 1;
+  transition: none;
+}
+.page-content.page-enter {
+  animation: page-fade-in 120ms ease-out both;
+  -webkit-animation: page-fade-in 120ms ease-out both;
+}
+
+@keyframes page-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@-webkit-keyframes page-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-content.page-enter { animation: none; -webkit-animation: none; }
+}
+
+/* Full-bleed background photo */
+.app-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(6, 4, 2, 0.32), rgba(8, 5, 2, 0.48)),
+    /* @vite-ignore */
+    url('/static/img/hero-dashboard.jpg');
+  background-size: cover;
+  background-position: center 40%;
+  transition: background-image 300ms ease;
+}
+
+/* Per-page background overrides */
+.app-bg.bg-dashboard {
+  background-image:
+    linear-gradient(rgba(6, 4, 2, 0.32), rgba(8, 5, 2, 0.48)),
+    /* @vite-ignore */
+    url('/static/img/hero-dashboard.jpg');
+  background-position: center 40%;
+}
+.app-bg.bg-brew-log {
+  background-image:
+    linear-gradient(rgba(8, 5, 2, 0.45), rgba(8, 5, 2, 0.62)),
+    /* @vite-ignore */
+    url('/static/img/hero-brew.jpg');
+  background-position: center 40%;
+}
+.app-bg.bg-catalog {
+  background-image:
+    linear-gradient(rgba(8, 5, 2, 0.40), rgba(8, 5, 2, 0.52)),
+    /* @vite-ignore */
+    url('/static/img/hero-catalog.jpg');
+  background-position: center 55%;
+}
+.app-bg.bg-hardware {
+  background-image:
+    linear-gradient(rgba(8, 5, 2, 0.40), rgba(8, 5, 2, 0.52)),
+    /* @vite-ignore */
+    url('/static/img/hero-hardware.jpg');
+  background-position: center 20%;
+}
+
+/* Frosted glass main content panel */
+#main-content {
+  position: relative;
+  z-index: 1;
+  background: rgba(14, 9, 4, 0.38);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow:
+    inset  1px 0 0 rgba(200, 134, 10, 0.10),
+    inset -1px 0 0 rgba(200, 134, 10, 0.10),
+    0 0 80px rgba(0, 0, 0, 0.30);
+}
+
+/* Frosted glass card */
+.glass-card {
+  position: relative;
+  z-index: 1;
+  background: rgba(16, 11, 6, 0.48);
+  border: 1px solid rgba(200, 134, 10, 0.12);
+  border-radius: 0.75rem;
+}
+
+/* ── Liquid Glass Card — Catalog & Hardware cards ──────────────────────── */
+.liquid-card {
+  position: relative;
+  background: rgba(14, 9, 5, 0.50);
+  border: 1px solid rgba(200, 134, 10, 0.10);
+  border-radius: 1rem;
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 200ms ease, border-color 200ms ease, transform 150ms ease;
+  text-decoration: none;
+  display: block;
+}
+.liquid-card:hover {
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(200, 134, 10, 0.25),
+    inset 0 1px 0 rgba(255, 200, 80, 0.06);
+  border-color: rgba(200, 134, 10, 0.30);
+  transform: translateY(-1px);
+}
+
+.liquid-card-figure {
+  height: 11rem;
+  overflow: hidden;
+  border-radius: 1rem 1rem 0 0;
+  background: linear-gradient(
+    180deg,
+    rgba(28, 20, 12, 0.92) 0%,
+    rgba(14, 10, 6, 0.96) 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  box-shadow: inset 0 -12px 24px rgba(4, 2, 1, 0.70);
+}
+
+.liquid-card-figure.hardware {
+  height: 10rem;
+  background: linear-gradient(
+    180deg,
+    rgba(22, 16, 10, 0.94) 0%,
+    rgba(12, 8, 4, 0.97) 100%
+  );
+}
+
+.liquid-card-monogram {
+  font-family: var(--font-display, 'Playfair Display', Georgia, serif);
+  font-size: 3rem;
+  font-weight: 700;
+  color: rgba(253, 230, 138, 0.40);
+  transition: color 150ms ease;
+  line-height: 1;
+}
+.liquid-card:hover .liquid-card-monogram {
+  color: rgba(253, 230, 138, 0.62);
+}
+
+.liquid-card-icon {
+  width: 4rem;
+  height: 4rem;
+  color: rgba(200, 190, 180, 0.55);
+  transition: color 150ms ease;
+}
+.liquid-card:hover .liquid-card-icon {
+  color: rgba(220, 210, 200, 0.75);
+}
+
+.liquid-card-body {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* ── Frosted brew-log row cards ─────────────────────────────────────────── */
+.frosted-brew-card {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: rgba(14, 9, 4, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: background 150ms ease, border-color 150ms ease;
+  cursor: pointer;
+  text-align: left;
+}
+.frosted-brew-card:hover {
+  background: rgba(14, 9, 4, 0.60);
+  border-color: rgba(200, 134, 10, 0.20);
+}
+
+@media (min-width: 768px) {
+  .frosted-brew-card {
+    padding: 1.25rem 1.5rem;
+  }
+}
+
+/* Sentence-case override for DaisyUI file-input placeholder text */
+input[type="file"]::file-selector-button {
+  text-transform: none;
+}
+
+@keyframes compassPing {
+  0%   { transform: scale(1);   opacity: 0.5; }
+  70%  { transform: scale(1.6); opacity: 0;   }
+  100% { transform: scale(1.6); opacity: 0;   }
+}
+.compass-ping {
+  animation: compassPing 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
