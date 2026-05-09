@@ -55,7 +55,7 @@ async def api_dashboard(
             s = shots[0]
             try:
                 days = (date.today() - date.fromisoformat(s["Date"])).days
-            except Exception:
+            except Exception:  # nosec B110  # date parse failure is non-fatal; days stays 0
                 pass
 
             def _float(v: object) -> float | None:
