@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import List
+from typing import Any, List
 
 from fastapi import APIRouter, Depends
 
@@ -28,7 +28,7 @@ async def api_dashboard(
     # Build in-memory lookup dicts to avoid per-bag Sheets calls
     all_catalog = {row["Catalog_ID"]: row for row in catalog_repo.list()}
 
-    shots_by_bag: dict[str, list] = {}
+    shots_by_bag: dict[str, list[dict[str, Any]]] = {}
     for shot in brew_log_repo.list():
         bag_id = shot.get("Bag_ID", "")
         if bag_id:

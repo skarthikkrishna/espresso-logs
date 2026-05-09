@@ -7,6 +7,7 @@ import logging
 import re
 import socket
 from dataclasses import dataclass, field
+from typing import Any
 from urllib.parse import urljoin, urlparse
 
 import httpx
@@ -145,7 +146,7 @@ async def source_bean_image(
     roaster: str,
     bean_name: str,
     product_url: str,
-    llm_client,  # LLMClient protocol — import avoided to prevent circular deps
+    llm_client: Any,  # LLMClient protocol — import avoided to prevent circular deps
     page_ctx: PageContext | None = None,
 ) -> str:
     """Return a direct image URL for the given bean, or "" if none found.
@@ -188,7 +189,7 @@ async def source_bean_image(
             llm_response = await llm_client.complete(prompt)
             candidate = llm_response.strip()
             if candidate.startswith("http") and _IMAGE_EXT_RE.search(candidate):
-                return candidate
+                return candidate  # type: ignore[no-any-return]
         except Exception as exc:  # noqa: BLE001
             logger.warning("LLM image lookup failed for %r / %r: %s", roaster, bean_name, exc)
 

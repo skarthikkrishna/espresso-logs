@@ -8,6 +8,7 @@ import threading
 import time
 from abc import ABC
 from dataclasses import dataclass, field
+from typing import Any
 
 from app.repos.sheets_client import SheetsClientProtocol
 
@@ -22,7 +23,7 @@ _DEFAULT_TTL = 60.0  # seconds
 class CacheEntry:
     """One cached result set."""
 
-    data: list[dict]
+    data: list[dict[str, Any]]
     fetched_at: float = field(default_factory=time.monotonic)
 
 
@@ -33,14 +34,14 @@ class TTLCache:
         self._ttl = ttl
         self._store: dict[str, CacheEntry] = {}
 
-    def get(self, key: str) -> list[dict] | None:
+    def get(self, key: str) -> list[dict[str, Any]] | None:
         """Return a shallow copy of cached data if fresh, else ``None``."""
         entry = self._store.get(key)
         if entry is None or (time.monotonic() - entry.fetched_at) > self._ttl:
             return None
         return [row.copy() for row in entry.data]
 
-    def set(self, key: str, data: list[dict]) -> None:
+    def set(self, key: str, data: list[dict[str, Any]]) -> None:
         """Store a copy of *data* under *key*."""
         self._store[key] = CacheEntry(data=[row.copy() for row in data])
 
@@ -85,11 +86,11 @@ class BaseRepo(ABC):
         self._client = client
         self._cache = cache if cache is not None else get_process_cache()
 
-    def _fetch_all(self, tab: str | None = None) -> list[dict]:
+    def _fetch_all(self, tab: str | None = None) -> list[dict[str, Any]]:
         """Return all rows for *tab* (defaulting to ``self.TAB``), bypassing cache."""
         return self._client.get_all_records(tab or self.TAB)
 
-    def _fetch_cached(self, cache_key: str, tab: str | None = None) -> list[dict]:
+    def _fetch_cached(self, cache_key: str, tab: str | None = None) -> list[dict[str, Any]]:
         """Return rows from cache if fresh, otherwise fetch and populate cache."""
         cached = self._cache.get(cache_key)
         if cached is not None:
