@@ -93,9 +93,11 @@ This is not optional. It applies to:
 - Feature requests of any size
 - Bug fixes and review feedback responses
 - File edits (single-line or multi-file)
+- Refactors and renames
 - API or data model changes
 - Frontend component and routing changes
 - Test additions and CI configuration changes
+- Repository documentation and contributing guide changes
 
 **Copilot does not decide whether Squad is needed. A Squad agent decides.**
 
