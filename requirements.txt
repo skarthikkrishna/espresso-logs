@@ -32,7 +32,7 @@ colorama==0.4.6 ; sys_platform == 'win32'
     # via
     #   click
     #   uvicorn
-cryptography==47.0.0
+cryptography==48.0.0
     # via
     #   authlib
     #   google-auth
