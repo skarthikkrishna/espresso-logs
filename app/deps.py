@@ -82,6 +82,8 @@ class _DualWriteCatalogRepo:
         return self._sheets.get(catalog_id)
 
     def _fetch_all(self) -> builtins.list[dict[str, Any]]:
+        # _fetch_all is called directly by api_catalog.py for cache-busting reads.
+        # Reads come from Sheets through M3 — delegating to the Sheets repo is correct.
         return self._sheets._fetch_all()
 
     async def upsert(self, row: dict[str, Any]) -> None:

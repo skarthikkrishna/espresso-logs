@@ -31,7 +31,11 @@ class SqlCatalogRepo:
             origin=row.get("Origin"),
             process=row.get("Process"),
             roast_level=row.get("Roast_Level"),
-            notes=row.get("Catalog_ID"),  # cross-reference until M5
+            # FIXME(M4): notes column stores Catalog_ID as a Sheets cross-reference.
+            # When M4 switches reads to Postgres, callers expecting tasting notes here
+            # will receive the ID string instead. Resolve before M4 by either adding a
+            # dedicated `sheets_catalog_id` column or clearing this field in M4 migration.
+            notes=row.get("Catalog_ID"),
         )
         self._db.add(bean)
         await self._db.commit()

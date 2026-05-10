@@ -55,8 +55,8 @@ class SqlBrewLogRepo:
         for row in rows:
             await self.add(row)
 
-    async def update_feedback(self, shot_id: str, ai_feedback: str) -> None:
-        """No-op in M2 — AI feedback write-back not wired to SQL yet."""
+    def update_feedback(self, shot_id: str, ai_feedback: str) -> None:
+        """No-op in M2 — AI feedback write-back not wired to SQL yet (deferred to M4)."""
 
     def delete_rows(self, start_row: int, end_row: int) -> None:
         """No-op."""
