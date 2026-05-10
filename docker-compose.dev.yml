@@ -1,0 +1,23 @@
+# Local development database — start with: docker compose -f docker-compose.dev.yml up db
+# No GCP credentials required. Cloud SQL Auth Proxy is NOT needed for local development.
+# See plan.md §8.1 for the full local development runbook.
+services:
+  db:
+    image: postgres:15
+    container_name: espresso-logs-db
+    environment:
+      POSTGRES_USER: espresso
+      POSTGRES_PASSWORD: espresso
+      POSTGRES_DB: espresso_logs
+    ports:
+      - "5432:5432"
+    volumes:
+      - espresso_logs_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U espresso"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  espresso_logs_data:
