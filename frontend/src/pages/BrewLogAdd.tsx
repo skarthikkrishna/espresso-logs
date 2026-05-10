@@ -77,6 +77,7 @@ export default function BrewLogAdd() {
   useEffect(() => {
     if (!bagId) return
     dirtyFields.current = new Set()
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Controlled reset: bagId is the sole dep; none of these setters modify bagId, so no cascade.
     setDoseG('')
     setYieldG('')
     setGrindSetting('')
@@ -101,6 +102,7 @@ export default function BrewLogAdd() {
     // These fields are set once when bag defaults load and are not typically
     // edited mid-flight. Basket is the exception: changing basket re-triggers
     // the defaults query, so a dirty-field guard is required below.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- One-way defaults hydration: storage/machine/grinder setters don't affect the query key; setBasketId is bounded by a dirty-field guard and a stable API response, so no cascade loop.
     if (defaults.storage_method) setStorageMethod(defaults.storage_method)
     if (defaults.machine_id) setMachineId(defaults.machine_id)
     if (defaults.grinder_id) setGrinderId(defaults.grinder_id)
