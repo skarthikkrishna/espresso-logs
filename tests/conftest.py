@@ -1,7 +1,7 @@
 """Root test configuration — sets required env vars before any app module is imported."""
 
 import os
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -12,6 +12,43 @@ os.environ.setdefault("SPREADSHEET_ID", "fake-spreadsheet-id-for-tests")
 # Override the session secret so tests can sign cookies with the known test secret,
 # regardless of any .env file present in the repo root.
 os.environ["SESSION_SECRET"] = "dev-insecure-secret-for-testing-only"
+
+# M2: provide a dummy DATABASE_URL so get_engine() does not raise RuntimeError.
+# Unit tests never actually connect — SQL write failures are caught by the
+# dual-write try/except in deps.py, and the session is only created lazily.
+os.environ.setdefault(
+    "DATABASE_URL",
+    "postgresql+asyncpg://espresso:espresso@localhost:5432/espresso_logs_unit_test",
+)
+
+
+@pytest.fixture(autouse=True)
+def _patch_get_db():
+    """Override DB session creation so unit tests never attempt a real Postgres connection.
+
+    M2 introduced a Depends(get_db) on every repo factory. Some tests call
+    app.dependency_overrides.clear(), removing any get_db override. This fixture
+    patches get_session_factory at the module level instead — it survives
+    dependency_overrides.clear() and prevents SQLAlchemy from creating real
+    connections (which would interfere with tests that also patch asyncio.create_task).
+    """
+    from contextlib import asynccontextmanager
+
+    mock_session = MagicMock()
+    mock_session.add = MagicMock()
+    mock_session.commit = AsyncMock()
+    mock_session.refresh = AsyncMock()
+    mock_session.rollback = AsyncMock()
+
+    @asynccontextmanager
+    async def _fake_cm():
+        yield mock_session
+
+    def _fake_get_session_factory():
+        return lambda: _fake_cm()
+
+    with patch("app.models.base.get_session_factory", _fake_get_session_factory):
+        yield
 
 
 @pytest.fixture(autouse=True)

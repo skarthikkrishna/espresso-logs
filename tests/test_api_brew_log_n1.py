@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import base64
 import json
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -129,7 +129,7 @@ def _make_mock_brew_log_repo(shots=None):
     shots = shots if shots is not None else [_SHOT_ROW.copy()]
     repo.list_recent.return_value = shots
     repo.get.return_value = shots[0] if shots else None
-    repo.add.return_value = None
+    repo.add = AsyncMock(return_value=None)
     return repo
 
 
