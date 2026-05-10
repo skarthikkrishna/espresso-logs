@@ -67,6 +67,10 @@ class Settings(BaseSettings):
     anthropic_api_key: Optional[str] = None  # ANTHROPIC_API_KEY secret in Secret Manager
     llm_api_key: Optional[str] = None  # LLM_API_KEY secret — Gemini fallback key
 
+    # Phase M1 — Postgres data layer (future M4+)
+    database_url: Optional[str] = None  # DATABASE_URL — only used when use_postgres=True
+    use_postgres: bool = False  # USE_POSTGRES — controls Sheets vs Postgres backend
+
     # APP_SECRETS JSON blob (Cloud Run): single Secret Manager secret containing all
     # secret values as a JSON object. config.py parses it at startup via _load_app_secrets.
     app_secrets: Optional[str] = None
@@ -132,18 +136,22 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _require_secrets_in_production(self) -> "Settings":
-        """Validate that all required secrets are set when running in production."""
+        """Validate that all required secrets are set when running in production.
+
+        ALLOWLIST_EMAILS is only required when use_postgres=False (Sheets-backed auth).
+        When use_postgres=True (M4+), the household invitation system replaces the allowlist.
+        """
         if self.app_env == "production":
-            missing = [
-                name
-                for name, value in {
-                    "SESSION_SECRET": self.session_secret,
-                    "GOOGLE_OAUTH_CLIENT_ID": self.google_oauth_client_id,
-                    "GOOGLE_OAUTH_CLIENT_SECRET": self.google_oauth_client_secret,
-                    "ALLOWLIST_EMAILS": self.allowlist_emails,
-                }.items()
-                if not value
-            ]
+            required: dict[str, str | None] = {
+                "SESSION_SECRET": self.session_secret,
+                "GOOGLE_OAUTH_CLIENT_ID": self.google_oauth_client_id,
+                "GOOGLE_OAUTH_CLIENT_SECRET": self.google_oauth_client_secret,
+            }
+            # ALLOWLIST_EMAILS is only required in Sheets-backed mode (use_postgres=False).
+            # When use_postgres=True (M4+), household invitations replace the allowlist.
+            if not self.use_postgres:
+                required["ALLOWLIST_EMAILS"] = self.allowlist_emails
+            missing = [name for name, value in required.items() if not value]
             if missing:
                 raise ValueError(
                     f"Missing required environment variables for production: {', '.join(missing)}"
