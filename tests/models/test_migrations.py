@@ -57,7 +57,7 @@ def sync_engine(alembic_cfg):
         with engine.connect():
             pass
         return engine
-    except Exception:
+    except ImportError:
         # Fallback: try without driver specification
         sync_url2 = database_url.replace("postgresql+asyncpg://", "postgresql://", 1)
         engine = sa.create_engine(sync_url2)

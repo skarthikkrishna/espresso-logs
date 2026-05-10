@@ -25,35 +25,40 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     op.create_foreign_key(
-        "catalog_household_fk", "catalog", "households", ["household_id"], ["id"]
+        "fk_catalog_household_id", "catalog", "households", ["household_id"], ["id"],
+        ondelete="CASCADE",
     )
     op.create_foreign_key(
-        "brew_log_household_fk", "brew_log", "households", ["household_id"], ["id"]
+        "fk_brew_log_household_id", "brew_log", "households", ["household_id"], ["id"],
+        ondelete="CASCADE",
     )
     op.create_foreign_key(
-        "inventory_bags_household_fk",
+        "fk_inventory_bags_household_id",
         "inventory_bags",
         "households",
         ["household_id"],
         ["id"],
+        ondelete="CASCADE",
     )
     op.create_foreign_key(
-        "hardware_household_fk", "hardware", "households", ["household_id"], ["id"]
+        "fk_hardware_household_id", "hardware", "households", ["household_id"], ["id"],
+        ondelete="CASCADE",
     )
     op.create_foreign_key(
-        "maintenance_log_household_fk",
+        "fk_maintenance_log_household_id",
         "maintenance_log",
         "households",
         ["household_id"],
         ["id"],
+        ondelete="CASCADE",
     )
 
 
 def downgrade() -> None:
-    op.drop_constraint("maintenance_log_household_fk", "maintenance_log", type_="foreignkey")
-    op.drop_constraint("hardware_household_fk", "hardware", type_="foreignkey")
+    op.drop_constraint("fk_maintenance_log_household_id", "maintenance_log", type_="foreignkey")
+    op.drop_constraint("fk_hardware_household_id", "hardware", type_="foreignkey")
     op.drop_constraint(
-        "inventory_bags_household_fk", "inventory_bags", type_="foreignkey"
+        "fk_inventory_bags_household_id", "inventory_bags", type_="foreignkey"
     )
-    op.drop_constraint("brew_log_household_fk", "brew_log", type_="foreignkey")
-    op.drop_constraint("catalog_household_fk", "catalog", type_="foreignkey")
+    op.drop_constraint("fk_brew_log_household_id", "brew_log", type_="foreignkey")
+    op.drop_constraint("fk_catalog_household_id", "catalog", type_="foreignkey")

@@ -1,7 +1,7 @@
 """SQLAlchemy ORM model for the `catalog` table.
 
-household_id is declared as a plain UUID column (no FK constraint).
-The FK constraint is added in Alembic migration 0002 (see plan.md R-2).
+household_id carries a FK constraint to households(id) with ondelete="CASCADE",
+matching the constraint added in Alembic migration 0002 (see plan.md R-2).
 """
 from __future__ import annotations
 
@@ -22,7 +22,9 @@ class CatalogBean(Base):
         server_default=sa.text("gen_random_uuid()"),
     )
     household_id: Mapped[sa.UUID] = mapped_column(
-        sa.UUID(as_uuid=True), nullable=False  # FK added in migration 0002
+        sa.UUID(as_uuid=True),
+        sa.ForeignKey("households.id", ondelete="CASCADE"),
+        nullable=False,
     )
     roaster: Mapped[str] = mapped_column(sa.Text, nullable=False)
     bean_name: Mapped[str] = mapped_column(sa.Text, nullable=False)

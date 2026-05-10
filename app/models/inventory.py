@@ -18,7 +18,9 @@ class InventoryBag(Base):
         server_default=sa.text("gen_random_uuid()"),
     )
     household_id: Mapped[sa.UUID] = mapped_column(
-        sa.UUID(as_uuid=True), nullable=False  # FK added in migration 0002
+        sa.UUID(as_uuid=True),
+        sa.ForeignKey("households.id", ondelete="CASCADE"),
+        nullable=False,
     )
     catalog_id: Mapped[sa.UUID | None] = mapped_column(
         sa.UUID(as_uuid=True),

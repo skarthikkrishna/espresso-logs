@@ -108,7 +108,7 @@ def upgrade() -> None:
         sa.CheckConstraint("role IN ('admin', 'member')", name="household_members_role_check"),
         sa.ForeignKeyConstraint(["household_id"], ["households.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
-        sa.ForeignKeyConstraint(["invited_by"], ["household_members.id"]),
+        sa.ForeignKeyConstraint(["invited_by"], ["household_members.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint(
             "household_id", "user_id", name="uq_household_members_household_user"

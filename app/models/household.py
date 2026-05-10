@@ -61,7 +61,7 @@ class HouseholdMember(Base):
     role: Mapped[str] = mapped_column(sa.Text, nullable=False)
     invited_by: Mapped[sa.UUID | None] = mapped_column(
         sa.UUID(as_uuid=True),
-        sa.ForeignKey("household_members.id"),
+        sa.ForeignKey("household_members.id", ondelete="SET NULL"),
         nullable=True,
     )
     joined_at: Mapped[sa.DateTime] = mapped_column(

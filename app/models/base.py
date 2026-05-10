@@ -1,17 +1,16 @@
 """SQLAlchemy async engine, session factory, and declarative base.
 
 This module provides the ORM foundation for the Postgres data layer (Phase M4+).
-The engine factory is lazy — it is never called at import time, ensuring that
-importing app/models/ does not crash when DATABASE_URL is absent (USE_POSTGRES=false).
+The engine and session factory are module-level singletons — created once on first
+use and reused across all requests. This prevents connection pool exhaustion under
+USE_POSTGRES=true.
 
 See plan.md §AD-M1-01 for the engine startup guard rationale.
 """
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
-from typing import Optional
 
-import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -26,34 +25,40 @@ class Base(DeclarativeBase):
     pass
 
 
-def get_engine(database_url: Optional[str] = None):
-    """Create and return an async SQLAlchemy engine.
+_engine = None
+_session_factory = None
 
-    Args:
-        database_url: Connection string. Reads from settings if not provided.
+
+def get_engine():
+    """Return the shared async SQLAlchemy engine, creating it on first call.
 
     Raises:
         RuntimeError: When DATABASE_URL is not configured.
     """
-    from app.config import settings  # lazy import to avoid circular dep at module level
+    global _engine
+    if _engine is None:
+        from app.config import get_settings  # lazy import to avoid circular dep at module level
 
-    url = database_url or settings.database_url
-    if not url:
-        raise RuntimeError(
-            "DATABASE_URL is not configured. "
-            "Set USE_POSTGRES=true and provide a valid DATABASE_URL."
+        settings = get_settings()
+        if not settings.database_url:
+            raise RuntimeError(
+                "DATABASE_URL is not set. Cannot create database engine."
+            )
+        _engine = create_async_engine(
+            settings.database_url,
+            pool_size=5,
+            max_overflow=5,
+            echo=False,
         )
-    return create_async_engine(
-        url,
-        pool_size=5,
-        max_overflow=5,
-        echo=False,
-    )
+    return _engine
 
 
-def get_session_factory(database_url: Optional[str] = None) -> async_sessionmaker[AsyncSession]:
-    """Return an async session factory bound to the engine."""
-    return async_sessionmaker(get_engine(database_url), expire_on_commit=False)
+def get_session_factory() -> async_sessionmaker[AsyncSession]:
+    """Return the shared async session factory, creating it on first call."""
+    global _session_factory
+    if _session_factory is None:
+        _session_factory = async_sessionmaker(get_engine(), expire_on_commit=False)
+    return _session_factory
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
@@ -65,6 +70,5 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         async def list_items(db: AsyncSession = Depends(get_db)):
             ...
     """
-    factory = get_session_factory()
-    async with factory() as session:
+    async with get_session_factory()() as session:
         yield session
