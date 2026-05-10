@@ -223,7 +223,7 @@ async def api_catalog_create(
         "Product_URL": (body.product_url or "").strip(),
         "Local_Image_Path": "",
     }
-    catalog_repo.upsert(row)
+    await catalog_repo.upsert(row)
 
     # Auto-source and upload image from product URL.
     # Use the pre-sourced URL from the infer step if available (avoids re-fetching og:image);
@@ -254,7 +254,7 @@ async def api_catalog_create(
                 )
                 # Only mutate row after the Sheets upsert succeeds — if upsert raises,
                 # the response must not claim an image_path that wasn't persisted.
-                catalog_repo.upsert({**row, "Local_Image_Path": image_path})
+                await catalog_repo.upsert({**row, "Local_Image_Path": image_path})
                 row["Local_Image_Path"] = image_path
         except Exception as exc:
             logger.warning("image upload failed for %r: %s", catalog_id, exc)
@@ -313,7 +313,7 @@ async def api_catalog_update(
         "Roast_Level": body.roast_level,
         "Product_URL": (body.product_url or "").strip(),
     }
-    catalog_repo.upsert(updated)
+    await catalog_repo.upsert(updated)
     return _catalog_to_out(updated)
 
 
@@ -439,7 +439,7 @@ async def api_catalog_add_bag(
         "Status": "Active",
         "Storage_Method": body.storage_method or "",
     }
-    inventory_repo.upsert(row)
+    await inventory_repo.upsert(row)
     return _bag_to_out(row, display_name)
 
 
@@ -460,5 +460,5 @@ async def api_catalog_upload_image(
     image_path = await upload_image(img_bytes, content_type, obj_name, settings.assets_bucket)
     fresh = catalog_repo.get(catalog_id)
     if fresh is not None:
-        catalog_repo.upsert({**fresh, "Local_Image_Path": image_path})
+        await catalog_repo.upsert({**fresh, "Local_Image_Path": image_path})
     return JSONResponse({"image_path": image_path})
