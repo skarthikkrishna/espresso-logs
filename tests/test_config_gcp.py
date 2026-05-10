@@ -103,12 +103,12 @@ class TestAutoDetectGcpProjectValidator:
         monkeypatch.setenv("ALLOWLIST_EMAILS", "user@example.com")
 
         with patch("app.config._fetch_gcp_project_id", return_value=""):
-            with caplog.at_level(logging.WARNING):
+            with caplog.at_level(logging.WARNING, logger="app.config"):
                 from app.config import Settings
 
                 Settings()
 
-        assert "GCP project ID could not be auto-detected" in caplog.text
+        assert any("GCP project ID could not be auto-detected" in r.message for r in caplog.records)
 
     def test_no_warning_in_dev_when_project_undetected(self, monkeypatch, caplog):
         """No warning logged in non-production when GCP project ID is absent."""
