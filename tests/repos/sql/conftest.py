@@ -33,15 +33,24 @@ def _ensure_schema() -> None:  # type: ignore[misc]
 
     Guarantees that tables exist even if the migration round-trip test ran
     first and left the database in the downgraded (empty) state.
-    Skips silently if DATABASE_URL is not configured (unit-test-only runs).
+    Skips silently if DATABASE_URL is not configured or the migration fails
+    (tests that need a real DB will fail on their own with a clear error).
     """
     if not os.environ.get("DATABASE_URL"):
         return
-    subprocess.run(
+    result = subprocess.run(
         ["uv", "run", "alembic", "upgrade", "head"],
-        check=True,
         capture_output=True,
     )
+    if result.returncode != 0:
+        import warnings
+
+        warnings.warn(
+            f"alembic upgrade head failed (returncode={result.returncode}); "
+            "SQL repo tests will fail if the schema is not applied.\n"
+            f"stderr: {result.stderr.decode()[:500]}",
+            stacklevel=1,
+        )
 
 
 @pytest.fixture
