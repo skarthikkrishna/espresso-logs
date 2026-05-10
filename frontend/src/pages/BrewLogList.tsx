@@ -19,9 +19,10 @@ export default function BrewLogList() {
 
   useEffect(() => {
     if (toastParam === 'shot-saved') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- URL-to-state bridge: setSearchParams clears the trigger param in the same batch so toastParam is null on the next render; no cascade risk.
+      /* eslint-disable react-hooks/set-state-in-effect -- URL-to-state bridge: setSearchParams clears the trigger param in the same batch so toastParam is null on the next render; no cascade risk. */
       setToast('Shot saved!')
       setSearchParams({}, { replace: true })
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [toastParam, setSearchParams])
 
