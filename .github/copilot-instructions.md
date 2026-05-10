@@ -85,6 +85,29 @@ Match the work to the agent whose domain fits:
 | **Priya** | User stories, acceptance criteria, product scope |
 | **Quinn** | PR review, diff analysis, code quality |
 
-### When it's OK to skip SpecKit
+### Squad-First Mandate — No Exceptions
 
-Only trivial, self-contained changes (typo fixes, single-line config patches) may skip the full SpecKit flow. When in doubt, spec it first.
+**Every request to Copilot CLI — regardless of scope, size, or apparent triviality — requires Squad involvement before any action is taken.**
+
+This is not optional. It applies to:
+- Feature requests of any size
+- Bug fixes and review feedback responses
+- File edits (single-line or multi-file)
+- Refactors and renames
+- API or data model changes
+- Frontend component and routing changes
+- Test additions and CI configuration changes
+- Repository documentation and contributing guide changes
+
+**Copilot does not decide whether Squad is needed. A Squad agent decides.**
+
+The routing sequence is always:
+1. User makes a request → Copilot routes to the relevant Squad agent
+2. Squad agent assesses the request and recommends one of:
+   - **SpecKit required** — Squad agent invokes the appropriate SpecKit phase (`speckit.specify`, `speckit.clarify`, `speckit.plan`, `speckit.tasks`, or `speckit.implement`)
+   - **Direct implementation permitted** — Squad agent explicitly classifies the work as self-contained and scoped, and gives the green light with rationale
+3. Only after Step 2 does implementation or editing proceed
+
+**SpecKit is invoked on the Squad agent's recommendation, not Copilot's unilateral judgment.** If a Squad agent does not give an explicit green light for direct implementation, SpecKit is the default path.
+
+Non-feature work (CI workflow changes, dependency updates, process changes) follows the same rule: the relevant Squad agent (typically Tariq for CI/process, Maya for engineering standards) recommends whether SpecKit applies based on scope and impact.
