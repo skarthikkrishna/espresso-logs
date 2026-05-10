@@ -17,10 +17,7 @@ class RefreshToken(Base):
     """Persisted refresh token (hash only — raw token discarded after issue)."""
 
     __tablename__ = "refresh_tokens"
-    __table_args__ = (
-        sa.Index("ix_refresh_tokens_user_id", "user_id"),
-        sa.Index("ix_refresh_tokens_token_hash", "token_hash"),
-    )
+    __table_args__ = (sa.Index("ix_refresh_tokens_user_id", "user_id"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),

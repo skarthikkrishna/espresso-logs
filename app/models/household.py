@@ -119,10 +119,7 @@ class GuestToken(Base):
     """A guest access token granting read-only access to a household's data."""
 
     __tablename__ = "guest_tokens"
-    __table_args__ = (
-        sa.Index("ix_guest_tokens_household_id", "household_id"),
-        sa.Index("ix_guest_tokens_token", "token"),
-    )
+    __table_args__ = (sa.Index("ix_guest_tokens_household_id", "household_id"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),

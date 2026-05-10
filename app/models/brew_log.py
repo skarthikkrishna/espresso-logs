@@ -30,8 +30,8 @@ class BrewLog(Base):
         nullable=True,
     )
     brew_method: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
-    dose_g: Mapped[float | None] = mapped_column(sa.Numeric(5, 1), nullable=True)
-    yield_g: Mapped[float | None] = mapped_column(sa.Numeric(5, 1), nullable=True)
+    dose_g: Mapped[float | None] = mapped_column(sa.Numeric(5, 1, asdecimal=False), nullable=True)
+    yield_g: Mapped[float | None] = mapped_column(sa.Numeric(5, 1, asdecimal=False), nullable=True)
     time_sec: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)
     rating: Mapped[int | None] = mapped_column(sa.SmallInteger, nullable=True)
     notes: Mapped[str | None] = mapped_column(sa.Text, nullable=True)

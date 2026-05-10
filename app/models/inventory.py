@@ -30,7 +30,7 @@ class InventoryBag(Base):
         nullable=True,
     )
     roast_date: Mapped[sa.Date | None] = mapped_column(sa.Date, nullable=True)
-    weight_g: Mapped[float | None] = mapped_column(sa.Numeric(7, 1), nullable=True)
+    weight_g: Mapped[float | None] = mapped_column(sa.Numeric(7, 1, asdecimal=False), nullable=True)
     purchase_url: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     notes: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     created_at: Mapped[sa.DateTime] = mapped_column(

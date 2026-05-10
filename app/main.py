@@ -2,6 +2,7 @@ import logging
 import os
 import pathlib
 import re
+import sys
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
@@ -55,13 +56,14 @@ class _RedactApiKey(logging.Filter):
 
 
 def _configure_logging() -> None:
-    handler = logging.StreamHandler()
+    handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(JsonFormatter())
     root = logging.getLogger()
-    # Use addHandler rather than replacing root.handlers wholesale — replacing would
-    # evict pytest's LogCaptureHandler during test collection, breaking caplog capture.
-    root.addHandler(handler)
-    root.setLevel(getattr(logging, settings.log_level.upper(), logging.INFO))
+    # Idempotent: skip if a JsonFormatter handler is already present (guards against
+    # duplicate handlers when the module is imported more than once, e.g. in tests).
+    if not any(isinstance(h.formatter, JsonFormatter) for h in root.handlers):
+        root.setLevel(getattr(logging, settings.log_level.upper(), logging.INFO))
+        root.addHandler(handler)
     logging.getLogger("httpx").addFilter(_RedactApiKey())
 
 

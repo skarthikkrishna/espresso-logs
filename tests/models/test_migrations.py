@@ -16,7 +16,8 @@ import pytest
 import sqlalchemy as sa
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import inspect
+from collections.abc import Generator
+from sqlalchemy import Engine, inspect
 
 
 EXPECTED_TABLES = {
@@ -47,8 +48,14 @@ def alembic_cfg() -> Config:
 
 
 @pytest.fixture(scope="module")
-def sync_engine(alembic_cfg):
-    """Synchronous engine for schema inspection (uses psycopg2 or pg8000 fallback)."""
+def sync_engine(alembic_cfg) -> Generator[Engine, None, None]:
+    """Synchronous engine for schema inspection.
+
+    Creates a psycopg2-compatible engine from DATABASE_URL (converting the
+    asyncpg scheme) for use with SQLAlchemy ``inspect()`` during Alembic
+    migration round-trip tests.  The engine is disposed after the module's
+    tests complete.
+    """
     database_url = os.environ.get("DATABASE_URL", "")
     # Convert asyncpg URL to synchronous for SQLAlchemy inspect
     sync_url = database_url.replace("postgresql+asyncpg://", "postgresql+psycopg2://", 1)
@@ -57,12 +64,12 @@ def sync_engine(alembic_cfg):
         # Test connection
         with engine.connect():
             pass
-        return engine
     except ImportError:
         # Fallback: try without driver specification
         sync_url2 = database_url.replace("postgresql+asyncpg://", "postgresql://", 1)
         engine = sa.create_engine(sync_url2)
-        return engine
+    yield engine
+    engine.dispose()
 
 
 def get_table_names(engine) -> set[str]:

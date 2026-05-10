@@ -182,7 +182,6 @@ def upgrade() -> None:
         sa.UniqueConstraint("token"),
     )
     op.create_index("ix_guest_tokens_household_id", "guest_tokens", ["household_id"])
-    op.create_index("ix_guest_tokens_token", "guest_tokens", ["token"])
 
     # 6. refresh_tokens — FK → users
     op.create_table(
@@ -213,7 +212,6 @@ def upgrade() -> None:
         sa.UniqueConstraint("token_hash"),
     )
     op.create_index("ix_refresh_tokens_user_id", "refresh_tokens", ["user_id"])
-    op.create_index("ix_refresh_tokens_token_hash", "refresh_tokens", ["token_hash"])
 
     # 7. catalog — household_id is a plain UUID column (NO FK to households yet)
     op.create_table(
@@ -358,10 +356,8 @@ def downgrade() -> None:
     op.drop_table("inventory_bags")
     op.drop_table("brew_log")
     op.drop_table("catalog")
-    op.drop_index("ix_refresh_tokens_token_hash", "refresh_tokens")
     op.drop_index("ix_refresh_tokens_user_id", "refresh_tokens")
     op.drop_table("refresh_tokens")
-    op.drop_index("ix_guest_tokens_token", "guest_tokens")
     op.drop_index("ix_guest_tokens_household_id", "guest_tokens")
     op.drop_table("guest_tokens")
     op.drop_table("pending_invitations")
