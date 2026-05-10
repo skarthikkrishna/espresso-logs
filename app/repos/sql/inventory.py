@@ -1,4 +1,5 @@
 """SqlInventoryRepo — Postgres write mirror for the inventory_bags entity (M2)."""
+
 from __future__ import annotations
 
 import builtins

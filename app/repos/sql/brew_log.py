@@ -1,4 +1,5 @@
 """SqlBrewLogRepo — Postgres write mirror for the brew_log entity (M2)."""
+
 from __future__ import annotations
 
 import builtins
