@@ -58,7 +58,9 @@ def _configure_logging() -> None:
     handler = logging.StreamHandler()
     handler.setFormatter(JsonFormatter())
     root = logging.getLogger()
-    root.handlers = [handler]
+    # Use addHandler rather than replacing root.handlers wholesale — replacing would
+    # evict pytest's LogCaptureHandler during test collection, breaking caplog capture.
+    root.addHandler(handler)
     root.setLevel(getattr(logging, settings.log_level.upper(), logging.INFO))
     logging.getLogger("httpx").addFilter(_RedactApiKey())
 
