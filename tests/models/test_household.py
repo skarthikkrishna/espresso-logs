@@ -52,6 +52,8 @@ def test_guest_token_has_household_id_index() -> None:
     assert "ix_guest_tokens_household_id" in index_names
 
 
-def test_guest_token_has_token_index() -> None:
-    index_names = {i.name for i in GuestToken.__table__.indexes}
-    assert "ix_guest_tokens_token" in index_names
+def test_guest_token_token_is_unique() -> None:
+    # UNIQUE constraint on token creates an implicit Postgres index;
+    # the explicit ix_guest_tokens_token was redundant and has been removed.
+    col = GuestToken.__table__.columns["token"]
+    assert col.unique

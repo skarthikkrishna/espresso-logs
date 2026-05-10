@@ -32,6 +32,8 @@ def test_user_id_index_exists() -> None:
     assert "ix_refresh_tokens_user_id" in index_names
 
 
-def test_token_hash_index_exists() -> None:
+def test_token_hash_has_no_redundant_index() -> None:
+    # UNIQUE constraint on token_hash creates an implicit Postgres index;
+    # the explicit ix_refresh_tokens_token_hash was redundant and has been removed.
     index_names = {i.name for i in RefreshToken.__table__.indexes}
-    assert "ix_refresh_tokens_token_hash" in index_names
+    assert "ix_refresh_tokens_token_hash" not in index_names
