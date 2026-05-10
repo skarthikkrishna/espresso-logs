@@ -90,10 +90,8 @@ class TestAutoDetectGcpProjectValidator:
         mock_fetch.assert_not_called()
         assert s.gcp_project_id == "explicit-project"
 
-    def test_warns_in_production_when_project_undetected(self, monkeypatch, caplog):
+    def test_warns_in_production_when_project_undetected(self, monkeypatch):
         """Logs a warning when running in production with no GCP project ID."""
-        import logging
-
         monkeypatch.delenv("GCP_PROJECT_ID", raising=False)
         monkeypatch.setenv("SPREADSHEET_ID", "dummy")
         monkeypatch.setenv("APP_ENV", "production")
@@ -102,13 +100,16 @@ class TestAutoDetectGcpProjectValidator:
         monkeypatch.setenv("GOOGLE_OAUTH_CLIENT_SECRET", "csecret")
         monkeypatch.setenv("ALLOWLIST_EMAILS", "user@example.com")
 
-        with patch("app.config._fetch_gcp_project_id", return_value=""):
-            with caplog.at_level(logging.WARNING, logger="app.config"):
-                from app.config import Settings
+        with (
+            patch("app.config._fetch_gcp_project_id", return_value=""),
+            patch("app.config.logger") as mock_logger,
+        ):
+            from app.config import Settings
 
-                Settings()
+            Settings()
 
-        assert any("GCP project ID could not be auto-detected" in r.message for r in caplog.records)
+        warning_messages = [str(call.args[0]) for call in mock_logger.warning.call_args_list]
+        assert any("GCP project ID could not be auto-detected" in msg for msg in warning_messages)
 
     def test_no_warning_in_dev_when_project_undetected(self, monkeypatch, caplog):
         """No warning logged in non-production when GCP project ID is absent."""
