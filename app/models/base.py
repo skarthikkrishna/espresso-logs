@@ -13,6 +13,7 @@ from __future__ import annotations
 from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
@@ -26,11 +27,11 @@ class Base(DeclarativeBase):
     pass
 
 
-_engine = None
-_session_factory = None
+_engine: AsyncEngine | None = None
+_session_factory: async_sessionmaker[AsyncSession] | None = None
 
 
-def get_engine():
+def get_engine() -> AsyncEngine:
     """Return the shared async SQLAlchemy engine, creating it on first call.
 
     Raises:
@@ -38,9 +39,8 @@ def get_engine():
     """
     global _engine
     if _engine is None:
-        from app.config import get_settings  # lazy import to avoid circular dep at module level
+        from app.config import settings  # lazy import to avoid circular dep at module level
 
-        settings = get_settings()
         if not settings.database_url:
             raise RuntimeError("DATABASE_URL is not set. Cannot create database engine.")
         _engine = create_async_engine(
@@ -57,6 +57,7 @@ def get_session_factory() -> async_sessionmaker[AsyncSession]:
     global _session_factory
     if _session_factory is None:
         _session_factory = async_sessionmaker(get_engine(), expire_on_commit=False)
+    assert _session_factory is not None
     return _session_factory
 
 
