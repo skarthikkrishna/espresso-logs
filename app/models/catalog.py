@@ -3,8 +3,10 @@
 household_id carries a FK constraint to households(id) with ondelete="CASCADE",
 matching the constraint added in Alembic migration 0002 (see plan.md R-2).
 """
+
 from __future__ import annotations
 
+import uuid
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -16,12 +18,12 @@ class CatalogBean(Base):
 
     __tablename__ = "catalog"
 
-    id: Mapped[sa.UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
         primary_key=True,
         server_default=sa.text("gen_random_uuid()"),
     )
-    household_id: Mapped[sa.UUID] = mapped_column(
+    household_id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
         sa.ForeignKey("households.id", ondelete="CASCADE"),
         nullable=False,

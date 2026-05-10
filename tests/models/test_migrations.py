@@ -7,6 +7,7 @@ It is NOT a unit test. It verifies:
 
 DATABASE_URL is read from the environment (set by CI job from T020).
 """
+
 from __future__ import annotations
 
 import os

@@ -1,6 +1,8 @@
 """SQLAlchemy ORM model for the `inventory_bags` table."""
+
 from __future__ import annotations
 
+import uuid
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -12,17 +14,17 @@ class InventoryBag(Base):
 
     __tablename__ = "inventory_bags"
 
-    id: Mapped[sa.UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
         primary_key=True,
         server_default=sa.text("gen_random_uuid()"),
     )
-    household_id: Mapped[sa.UUID] = mapped_column(
+    household_id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
         sa.ForeignKey("households.id", ondelete="CASCADE"),
         nullable=False,
     )
-    catalog_id: Mapped[sa.UUID | None] = mapped_column(
+    catalog_id: Mapped[uuid.UUID | None] = mapped_column(
         sa.UUID(as_uuid=True),
         sa.ForeignKey("catalog.id"),
         nullable=True,

@@ -3,6 +3,7 @@
 Unit tests — no database connection required.
 Verifies that each entity model declares household_id and uses the correct table name.
 """
+
 from __future__ import annotations
 
 import pytest

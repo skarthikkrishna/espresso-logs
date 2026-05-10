@@ -3,8 +3,10 @@
 Tables: households, household_members, pending_invitations, guest_tokens.
 Role constraint uses canonical term 'admin' (not 'manager') per DEC-T01.
 """
+
 from __future__ import annotations
 
+import uuid
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -16,7 +18,7 @@ class Household(Base):
 
     __tablename__ = "households"
 
-    id: Mapped[sa.UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
         primary_key=True,
         server_default=sa.text("gen_random_uuid()"),
@@ -27,7 +29,7 @@ class Household(Base):
         nullable=False,
         server_default=sa.text("now()"),
     )
-    created_by: Mapped[sa.UUID] = mapped_column(
+    created_by: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
         sa.ForeignKey("users.id"),
         nullable=False,
@@ -43,23 +45,23 @@ class HouseholdMember(Base):
         sa.UniqueConstraint("household_id", "user_id", name="uq_household_members_household_user"),
     )
 
-    id: Mapped[sa.UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
         primary_key=True,
         server_default=sa.text("gen_random_uuid()"),
     )
-    household_id: Mapped[sa.UUID] = mapped_column(
+    household_id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
         sa.ForeignKey("households.id", ondelete="CASCADE"),
         nullable=False,
     )
-    user_id: Mapped[sa.UUID] = mapped_column(
+    user_id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
         sa.ForeignKey("users.id"),
         nullable=False,
     )
     role: Mapped[str] = mapped_column(sa.Text, nullable=False)
-    invited_by: Mapped[sa.UUID | None] = mapped_column(
+    invited_by: Mapped[uuid.UUID | None] = mapped_column(
         sa.UUID(as_uuid=True),
         sa.ForeignKey("household_members.id", ondelete="SET NULL"),
         nullable=True,
@@ -76,24 +78,24 @@ class PendingInvitation(Base):
 
     __tablename__ = "pending_invitations"
 
-    id: Mapped[sa.UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
         primary_key=True,
         server_default=sa.text("gen_random_uuid()"),
     )
-    household_id: Mapped[sa.UUID] = mapped_column(
+    household_id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
         sa.ForeignKey("households.id", ondelete="CASCADE"),
         nullable=False,
     )
     invited_email: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
-    token: Mapped[sa.UUID] = mapped_column(
+    token: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
         nullable=False,
         unique=True,
         server_default=sa.text("gen_random_uuid()"),
     )
-    invited_by_user_id: Mapped[sa.UUID] = mapped_column(
+    invited_by_user_id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
         sa.ForeignKey("users.id"),
         nullable=False,
@@ -122,23 +124,23 @@ class GuestToken(Base):
         sa.Index("ix_guest_tokens_token", "token"),
     )
 
-    id: Mapped[sa.UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
         primary_key=True,
         server_default=sa.text("gen_random_uuid()"),
     )
-    household_id: Mapped[sa.UUID] = mapped_column(
+    household_id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
         sa.ForeignKey("households.id", ondelete="CASCADE"),
         nullable=False,
     )
-    token: Mapped[sa.UUID] = mapped_column(
+    token: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
         nullable=False,
         unique=True,
         server_default=sa.text("gen_random_uuid()"),
     )
-    created_by_user_id: Mapped[sa.UUID] = mapped_column(
+    created_by_user_id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
         sa.ForeignKey("users.id"),
         nullable=False,

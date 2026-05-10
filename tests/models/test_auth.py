@@ -2,6 +2,7 @@
 
 Unit tests — no database connection required.
 """
+
 from __future__ import annotations
 
 from app.models.auth import RefreshToken

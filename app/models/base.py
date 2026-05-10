@@ -7,6 +7,7 @@ USE_POSTGRES=true.
 
 See plan.md §AD-M1-01 for the engine startup guard rationale.
 """
+
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
@@ -41,9 +42,7 @@ def get_engine():
 
         settings = get_settings()
         if not settings.database_url:
-            raise RuntimeError(
-                "DATABASE_URL is not set. Cannot create database engine."
-            )
+            raise RuntimeError("DATABASE_URL is not set. Cannot create database engine.")
         _engine = create_async_engine(
             settings.database_url,
             pool_size=5,

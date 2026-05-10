@@ -2,6 +2,7 @@
 
 Unit tests — no database connection required.
 """
+
 from __future__ import annotations
 
 from app.models.household import GuestToken, Household, HouseholdMember, PendingInvitation
@@ -42,10 +43,7 @@ def test_household_member_role_check_includes_admin_and_member() -> None:
 
 
 def test_household_member_unique_constraint() -> None:
-    constraint_names = {
-        c.name
-        for c in HouseholdMember.__table__.constraints
-    }
+    constraint_names = {c.name for c in HouseholdMember.__table__.constraints}
     assert "uq_household_members_household_user" in constraint_names
 
 

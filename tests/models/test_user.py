@@ -3,9 +3,9 @@
 These tests are unit tests — they do NOT require a database connection.
 They verify the model's metadata (columns, constraints) are declared correctly.
 """
+
 from __future__ import annotations
 
-import sqlalchemy as sa
 
 from app.models.user import User
 
