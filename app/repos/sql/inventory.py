@@ -1,7 +1,7 @@
 """SqlInventoryRepo — Postgres write mirror for the inventory_bags entity (M2)."""
-
 from __future__ import annotations
 
+import builtins
 import datetime
 import logging
 from typing import Any
@@ -48,11 +48,11 @@ class SqlInventoryRepo:
     def delete_rows(self, start_row: int, end_row: int) -> None:
         """No-op."""
 
-    def list(self, status: str | None = "Active") -> list[dict[str, Any]]:
+    def list(self, status: str | None = "Active") -> builtins.list[dict[str, Any]]:
         """Not used in M2 (reads come from Sheets). Returns empty list."""
         return []
 
-    def list_all(self) -> list[dict[str, Any]]:
+    def list_all(self) -> builtins.list[dict[str, Any]]:
         """Not used in M2. Returns empty list."""
         return []
 

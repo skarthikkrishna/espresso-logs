@@ -96,6 +96,6 @@ async def api_maintenance_create(
         "Action_Type": body.action_type,
         "Notes": body.notes,
     }
-    await maintenance_repo.add(row)
+    await maintenance_repo.add(row)  # type: ignore[misc, func-returns-value]
     hardware_name = hardware.get("Name", body.hardware_id)
     return _maint_to_out(row, hardware_name)

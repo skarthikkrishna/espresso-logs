@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import builtins
 import logging
 import threading
 from typing import TYPE_CHECKING, Annotated, Any, cast
@@ -74,13 +75,13 @@ class _DualWriteCatalogRepo:
         self._sheets = sheets
         self._sql = sql
 
-    def list(self) -> list[dict[str, Any]]:
+    def list(self) -> builtins.list[dict[str, Any]]:
         return self._sheets.list()
 
     def get(self, catalog_id: str) -> dict[str, Any] | None:
         return self._sheets.get(catalog_id)
 
-    def _fetch_all(self) -> list[dict[str, Any]]:
+    def _fetch_all(self) -> builtins.list[dict[str, Any]]:
         return self._sheets._fetch_all()
 
     async def upsert(self, row: dict[str, Any]) -> None:
@@ -98,7 +99,7 @@ class _DualWriteCatalogRepo:
                 },
             )
 
-    async def add_many(self, rows: list[dict[str, Any]]) -> None:
+    async def add_many(self, rows: builtins.list[dict[str, Any]]) -> None:
         self._sheets.add_many(rows)
         for row in rows:
             try:
@@ -125,16 +126,16 @@ class _DualWriteBrewLogRepo:
         self._sheets = sheets
         self._sql = sql
 
-    def list(self) -> list[dict[str, Any]]:
+    def list(self) -> builtins.list[dict[str, Any]]:
         return self._sheets.list()
 
-    def list_recent(self, n: int = 20) -> list[dict[str, Any]]:
+    def list_recent(self, n: int = 20) -> builtins.list[dict[str, Any]]:
         return self._sheets.list_recent(n)
 
-    def list_for_bag(self, bag_id: str) -> list[dict[str, Any]]:
+    def list_for_bag(self, bag_id: str) -> builtins.list[dict[str, Any]]:
         return self._sheets.list_for_bag(bag_id)
 
-    def list_existing_ids(self) -> list[str]:
+    def list_existing_ids(self) -> builtins.list[str]:
         return self._sheets.list_existing_ids()
 
     def get(self, shot_id: str) -> dict[str, Any] | None:
@@ -155,7 +156,7 @@ class _DualWriteBrewLogRepo:
                 },
             )
 
-    async def add_many(self, rows: list[dict[str, Any]]) -> None:
+    async def add_many(self, rows: builtins.list[dict[str, Any]]) -> None:
         self._sheets.add_many(rows)
         for row in rows:
             try:
@@ -185,10 +186,10 @@ class _DualWriteInventoryRepo:
         self._sheets = sheets
         self._sql = sql
 
-    def list(self, status: str | None = "Active") -> list[dict[str, Any]]:
+    def list(self, status: str | None = "Active") -> builtins.list[dict[str, Any]]:
         return self._sheets.list(status=status)
 
-    def list_all(self) -> list[dict[str, Any]]:
+    def list_all(self) -> builtins.list[dict[str, Any]]:
         return self._sheets.list_all()
 
     def get(self, bag_id: str) -> dict[str, Any] | None:
@@ -209,7 +210,7 @@ class _DualWriteInventoryRepo:
                 },
             )
 
-    async def add_many(self, rows: list[dict[str, Any]]) -> None:
+    async def add_many(self, rows: builtins.list[dict[str, Any]]) -> None:
         self._sheets.add_many(rows)
         for row in rows:
             try:
@@ -236,7 +237,7 @@ class _DualWriteHardwareRepo:
         self._sheets = sheets
         self._sql = sql
 
-    def list(self, category: str | None = None) -> list[dict[str, Any]]:
+    def list(self, category: str | None = None) -> builtins.list[dict[str, Any]]:
         return self._sheets.list(category=category)
 
     def get(self, hardware_id: str) -> dict[str, Any] | None:
@@ -260,7 +261,7 @@ class _DualWriteHardwareRepo:
                 },
             )
 
-    async def add_many(self, rows: list[dict[str, Any]]) -> None:
+    async def add_many(self, rows: builtins.list[dict[str, Any]]) -> None:
         self._sheets.add_many(rows)
         for row in rows:
             try:
@@ -287,7 +288,7 @@ class _DualWriteMaintenanceRepo:
         self._sheets = sheets
         self._sql = sql
 
-    def list(self, hardware_id: str | None = None) -> list[dict[str, Any]]:
+    def list(self, hardware_id: str | None = None) -> builtins.list[dict[str, Any]]:
         return self._sheets.list(hardware_id=hardware_id)
 
     def get(self, maintenance_id: str) -> dict[str, Any] | None:
@@ -308,7 +309,7 @@ class _DualWriteMaintenanceRepo:
                 },
             )
 
-    async def add_many(self, rows: list[dict[str, Any]]) -> None:
+    async def add_many(self, rows: builtins.list[dict[str, Any]]) -> None:
         self._sheets.add_many(rows)
         for row in rows:
             try:

@@ -119,6 +119,9 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: uv sync --frozen
+      - run: uv run alembic upgrade head
+        env:
+          DATABASE_URL: postgresql+asyncpg://espresso:espresso@localhost:5432/espresso_logs
       - run: uv run pytest tests/ --cov=app --cov-report=xml --cov-fail-under=80 --ignore=tests/e2e/
         env:
           SPREADSHEET_ID: dummy
