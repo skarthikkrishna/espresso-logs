@@ -35,7 +35,12 @@ class SqlBrewLogRepo:
         self._db = db
 
     async def add(self, row: dict[str, Any]) -> None:
-        """Append a brew log row. household_id intentionally NULL (M5)."""
+        """Append a brew log row. household_id intentionally NULL (M5).
+
+        FIXME(M4): Shot_ID (Sheets primary key) is not stored — add a
+        sheets_shot_id TEXT column + backfill migration before enabling
+        Postgres reads in M4 (needed for get(shot_id) and list_for_bag(bag_id)).
+        """
         entry = BrewLog(
             brew_method=row.get("Brew_Method"),
             dose_g=_to_float(row.get("Dose_In_g")),
@@ -53,7 +58,10 @@ class SqlBrewLogRepo:
             await self.add(row)
 
     def update_feedback(self, shot_id: str, ai_feedback: str) -> None:
-        """No-op in M2 — AI feedback write-back not wired to SQL yet (deferred to M4)."""
+        """No-op in M2 — AI feedback write-back not wired to SQL yet.
+
+        FIXME(M4): implement UPDATE SET ai_feedback = :ai_feedback WHERE sheets_shot_id = :shot_id.
+        """
 
     def delete_rows(self, start_row: int, end_row: int) -> None:
         """No-op."""

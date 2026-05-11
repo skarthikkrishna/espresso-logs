@@ -29,7 +29,14 @@ class SqlInventoryRepo:
         self._db = db
 
     async def upsert(self, row: dict[str, Any]) -> None:
-        """Insert an inventory bag row. household_id intentionally NULL (M5)."""
+        """Insert an inventory bag row. household_id intentionally NULL (M5).
+
+        FIXME(M4): Bag_ID (Sheets primary key) is not stored — add a
+        sheets_bag_id TEXT column + backfill migration before enabling
+        Postgres reads in M4 (needed for get(bag_id) queries).
+        Also: "Beans" field stored in notes column — remap to a dedicated
+        beans_name column in M4.
+        """
         bag = InventoryBag(
             roast_date=_to_date(row.get("RoastDate")),
             notes=row.get("Beans"),
