@@ -118,7 +118,9 @@ async def test_validation_passed_output(db_engine: Any) -> None:  # type: ignore
     """Seed catalog rows then validate they match checksums."""
     from scripts._mapping import CATALOG_TABLE, bulk_upsert, from_sheets_dict_catalog
 
-    HH = "00000000-0000-0000-0000-000000000002"
+    # household_id=None: catalog.household_id is nullable (migration 0003).
+    # CI postgres starts empty; no household row is seeded. Using None avoids
+    # the FK dependency while still validating checksum correctness.
     catalog_row: dict[str, Any] = {
         "Catalog_ID": "VAL-001",
         "Roaster": "Validation Roaster",
@@ -130,7 +132,7 @@ async def test_validation_passed_output(db_engine: Any) -> None:  # type: ignore
         "Process": "",
         "Notes": "",
     }
-    mapped = from_sheets_dict_catalog(catalog_row, household_id=HH)
+    mapped = from_sheets_dict_catalog(catalog_row, household_id=None)
     await bulk_upsert(db_engine, CATALOG_TABLE, [mapped])
 
     import sqlalchemy as sa
