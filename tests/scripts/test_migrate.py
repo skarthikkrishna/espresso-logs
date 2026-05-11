@@ -220,10 +220,13 @@ def test_from_sheets_dict_missing_required_field_raises_value_error() -> None:
 async def test_bulk_upsert_idempotency(db_engine: Any) -> None:  # type: ignore[misc]
     from scripts._mapping import CATALOG_TABLE, bulk_upsert
 
+    # household_id=None: catalog.household_id is nullable (migration 0003).
+    # Using None avoids an FK dependency on a seeded households row — CI postgres
+    # starts empty and runs DDL only, so no household is guaranteed to exist.
     rows: list[dict[str, Any]] = [
         {
             "sheets_id": "IDEM-001",
-            "household_id": HH,
+            "household_id": None,
             "roaster": "Idempotency Roaster",
             "bean_name": "Idempotency Bean",
             "roast_level": "Medium",
