@@ -3,6 +3,7 @@ name: Deploy
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 # Minimal permissions — id-token:write is required for WIF OIDC token request
 permissions:
