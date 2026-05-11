@@ -126,7 +126,7 @@ async def api_hardware_create(
         "Product_URL": (body.product_url or "").strip(),
         "Local_Image_Path": "",
     }
-    hardware_repo.upsert(row)
+    await hardware_repo.upsert(row)  # type: ignore[misc, func-returns-value]
 
     # Auto-source and upload image from product URL (non-fatal — item is always created).
     if body.product_url:
@@ -148,7 +148,7 @@ async def api_hardware_create(
                     image_path = await upload_image(
                         img_bytes, content_type, obj_name, settings.assets_bucket
                     )
-                    hardware_repo.upsert({**row, "Local_Image_Path": image_path})
+                    await hardware_repo.upsert({**row, "Local_Image_Path": image_path})  # type: ignore[misc, func-returns-value]
                     row["Local_Image_Path"] = image_path
         except Exception as exc:  # noqa: BLE001
             logger.warning("image pipeline failed for hardware %r: %s", hardware_id, exc)
@@ -178,5 +178,5 @@ async def api_hardware_update(
     updated["Name"] = body.name.strip()
     if body.category and body.category in _CATEGORIES:
         updated["Category"] = body.category
-    hardware_repo.upsert(updated)
+    await hardware_repo.upsert(updated)  # type: ignore[misc, func-returns-value]
     return _hw_to_out(updated)

@@ -27,8 +27,9 @@ from app.models.base import Base
 config = context.config
 
 # Set up Python logging from alembic.ini [loggers] section.
+# disable_existing_loggers=False preserves application loggers (e.g. caplog in tests).
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 # Metadata for autogenerate support.
 target_metadata = Base.metadata

@@ -103,9 +103,9 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_USER: espresso
-          POSTGRES_PASSWORD: espresso
-          POSTGRES_DB: espresso_logs
+          POSTGRES_USER: ${{ vars.CI_DB_USER }}
+          POSTGRES_PASSWORD: ${{ vars.CI_DB_PASSWORD }}
+          POSTGRES_DB: ${{ vars.CI_DB_NAME }}
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -119,10 +119,13 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: uv sync --frozen
+      - run: uv run alembic upgrade head
+        env:
+          DATABASE_URL: postgresql+asyncpg://${{ vars.CI_DB_USER }}:${{ vars.CI_DB_PASSWORD }}@localhost:5432/${{ vars.CI_DB_NAME }}
       - run: uv run pytest tests/ --cov=app --cov-report=xml --cov-fail-under=80 --ignore=tests/e2e/
         env:
           SPREADSHEET_ID: dummy
-          DATABASE_URL: postgresql+asyncpg://espresso:espresso@localhost:5432/espresso_logs
+          DATABASE_URL: postgresql+asyncpg://${{ vars.CI_DB_USER }}:${{ vars.CI_DB_PASSWORD }}@localhost:5432/${{ vars.CI_DB_NAME }}
       - uses: actions/upload-artifact@v7
         if: always()
         with:

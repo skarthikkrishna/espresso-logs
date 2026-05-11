@@ -19,10 +19,11 @@ class MaintenanceLog(Base):
         primary_key=True,
         server_default=sa.text("gen_random_uuid()"),
     )
-    household_id: Mapped[uuid.UUID] = mapped_column(
+    # nullable=True for M2-M4: household_id is populated in M5.
+    household_id: Mapped[uuid.UUID | None] = mapped_column(
         sa.UUID(as_uuid=True),
         sa.ForeignKey("households.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
     )
     hardware_id: Mapped[uuid.UUID | None] = mapped_column(
         sa.UUID(as_uuid=True),
