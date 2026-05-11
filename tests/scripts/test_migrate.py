@@ -315,7 +315,9 @@ async def test_dry_run_writes_nothing() -> None:
             new_callable=AsyncMock,
             return_value=__import__("uuid").UUID(HH),
         ) as mock_ensure_hh,
-        patch("scripts.migrate_sheets_to_postgres.bulk_upsert", new_callable=AsyncMock) as mock_bulk,
+        patch(
+            "scripts.migrate_sheets_to_postgres.bulk_upsert", new_callable=AsyncMock
+        ) as mock_bulk,
     ):
         await main(["--dry-run"])
 

@@ -153,7 +153,16 @@ async def main() -> None:
                 )
                 checksum_errors += 1
 
-        status = "✓" if (count_match and checksum_errors == 0 and mapping_errors == 0 and duplicate_count == 0) else "✗"
+        status = (
+            "✓"
+            if (
+                count_match
+                and checksum_errors == 0
+                and mapping_errors == 0
+                and duplicate_count == 0
+            )
+            else "✗"
+        )
         if not count_match or checksum_errors > 0 or mapping_errors > 0 or duplicate_count > 0:
             overall_pass = False
 
