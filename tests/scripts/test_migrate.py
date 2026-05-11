@@ -303,6 +303,7 @@ async def test_dry_run_writes_nothing() -> None:
     mock_engine.dispose = AsyncMock()
 
     with (
+        patch.dict(os.environ, {"SPREADSHEET_ID": "dummy", "DATABASE_URL": "dummy"}),
         patch("scripts.migrate_sheets_to_postgres.RealSheetsClient", return_value=mock_sheets),
         patch("scripts.migrate_sheets_to_postgres.create_async_engine", return_value=mock_engine),
         patch(
@@ -368,6 +369,7 @@ async def test_entity_filter() -> None:
         return len(rows)
 
     with (
+        patch.dict(os.environ, {"SPREADSHEET_ID": "dummy", "DATABASE_URL": "dummy"}),
         patch("scripts.migrate_sheets_to_postgres.RealSheetsClient", return_value=mock_sheets),
         patch("scripts.migrate_sheets_to_postgres.create_async_engine", return_value=mock_engine),
         patch(
