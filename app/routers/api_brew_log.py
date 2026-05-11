@@ -219,7 +219,7 @@ async def api_brew_log_create(
         "User_Notes": body.user_notes,
         "Storage_Method": body.storage_method,
     }
-    brew_log_repo.add(row)
+    await brew_log_repo.add(row)  # type: ignore[misc, func-returns-value]
 
     # Fire-and-forget AI feedback
     bags, catalog, hardware = _build_lookups(inventory_repo, catalog_repo, hardware_repo)
