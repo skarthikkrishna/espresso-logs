@@ -7,9 +7,10 @@ from typing import Any
 
 import pytest
 
-# Ensure env vars are set before any module-level code reads them
+# SPREADSHEET_ID must be present for subprocess-based env-var tests that
+# strip it from the environment explicitly. Do NOT set DATABASE_URL here —
+# it would bypass the skip guard in tests/models/test_migrations.py.
 os.environ.setdefault("SPREADSHEET_ID", "test-spreadsheet-id")
-os.environ.setdefault("DATABASE_URL", "test-database-url")
 
 MOCK_CATALOG_ROWS: list[dict[str, Any]] = [
     {
