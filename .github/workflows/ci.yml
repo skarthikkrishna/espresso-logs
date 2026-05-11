@@ -3,9 +3,8 @@ name: CI
 on:
   pull_request:
     branches: [main]
-  schedule:
-    - cron: '0 6 * * *'   # Daily at 06:00 UTC
   workflow_dispatch:       # Manual trigger
+  # schedule removed: was burning ~120 min/day on private repo during active development
 
 env:
   PYTHON_VERSION: '3.12'
