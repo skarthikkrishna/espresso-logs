@@ -91,6 +91,7 @@ class _DualWriteCatalogRepo:
         try:
             await self._sql.upsert(row)
         except Exception as exc:
+            await self._sql._db.rollback()
             _dw_log.warning(
                 "Postgres write failed",
                 extra={
@@ -107,6 +108,7 @@ class _DualWriteCatalogRepo:
             try:
                 await self._sql.upsert(row)
             except Exception as exc:
+                await self._sql._db.rollback()
                 _dw_log.warning(
                     "Postgres write failed (add_many)",
                     extra={
@@ -148,6 +150,7 @@ class _DualWriteBrewLogRepo:
         try:
             await self._sql.add(row)
         except Exception as exc:
+            await self._sql._db.rollback()
             _dw_log.warning(
                 "Postgres write failed",
                 extra={
@@ -164,6 +167,7 @@ class _DualWriteBrewLogRepo:
             try:
                 await self._sql.add(row)
             except Exception as exc:
+                await self._sql._db.rollback()
                 _dw_log.warning(
                     "Postgres write failed (add_many)",
                     extra={
@@ -202,6 +206,7 @@ class _DualWriteInventoryRepo:
         try:
             await self._sql.upsert(row)
         except Exception as exc:
+            await self._sql._db.rollback()
             _dw_log.warning(
                 "Postgres write failed",
                 extra={
@@ -218,6 +223,7 @@ class _DualWriteInventoryRepo:
             try:
                 await self._sql.upsert(row)
             except Exception as exc:
+                await self._sql._db.rollback()
                 _dw_log.warning(
                     "Postgres write failed (add_many)",
                     extra={
@@ -253,6 +259,7 @@ class _DualWriteHardwareRepo:
         try:
             await self._sql.upsert(row)
         except Exception as exc:
+            await self._sql._db.rollback()
             _dw_log.warning(
                 "Postgres write failed",
                 extra={
@@ -269,6 +276,7 @@ class _DualWriteHardwareRepo:
             try:
                 await self._sql.upsert(row)
             except Exception as exc:
+                await self._sql._db.rollback()
                 _dw_log.warning(
                     "Postgres write failed (add_many)",
                     extra={
@@ -301,6 +309,7 @@ class _DualWriteMaintenanceRepo:
         try:
             await self._sql.add(row)
         except Exception as exc:
+            await self._sql._db.rollback()
             _dw_log.warning(
                 "Postgres write failed",
                 extra={
@@ -317,6 +326,7 @@ class _DualWriteMaintenanceRepo:
             try:
                 await self._sql.add(row)
             except Exception as exc:
+                await self._sql._db.rollback()
                 _dw_log.warning(
                     "Postgres write failed (add_many)",
                     extra={

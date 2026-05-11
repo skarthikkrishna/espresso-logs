@@ -4,15 +4,11 @@ from __future__ import annotations
 
 import builtins
 import datetime
-import logging
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.inventory import InventoryBag
-
-log = logging.getLogger(__name__)
-
 
 def _to_date(val: Any) -> datetime.date | None:
     try:

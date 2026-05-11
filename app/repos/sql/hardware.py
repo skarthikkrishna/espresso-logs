@@ -2,15 +2,11 @@
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.hardware import Hardware
-
-log = logging.getLogger(__name__)
-
 
 class SqlHardwareRepo:
     """Write-only SQL mirror for Hardware rows.

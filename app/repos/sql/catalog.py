@@ -2,15 +2,11 @@
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.catalog import CatalogBean
-
-log = logging.getLogger(__name__)
-
 
 class SqlCatalogRepo:
     """Write-only SQL mirror for CatalogBean rows.

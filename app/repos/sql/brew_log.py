@@ -3,15 +3,11 @@
 from __future__ import annotations
 
 import builtins
-import logging
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.brew_log import BrewLog
-
-log = logging.getLogger(__name__)
-
 
 def _to_float(val: Any) -> float | None:
     try:

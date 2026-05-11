@@ -13,15 +13,6 @@ os.environ.setdefault("SPREADSHEET_ID", "fake-spreadsheet-id-for-tests")
 # regardless of any .env file present in the repo root.
 os.environ["SESSION_SECRET"] = "dev-insecure-secret-for-testing-only"
 
-# M2: provide a dummy DATABASE_URL so get_engine() does not raise RuntimeError.
-# Unit tests never actually connect — SQL write failures are caught by the
-# dual-write try/except in deps.py, and the session is only created lazily.
-os.environ.setdefault(
-    "DATABASE_URL",
-    "postgresql+asyncpg://espresso:espresso@localhost:5432/espresso_logs_unit_test",
-)
-
-
 @pytest.fixture(autouse=True)
 def _patch_get_db():
     """Override DB session creation so unit tests never attempt a real Postgres connection.
