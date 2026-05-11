@@ -72,12 +72,15 @@ async def main(argv: list[str] | None = None) -> None:
     engine = create_async_engine(database_url, echo=False)
     sheets = RealSheetsClient(spreadsheet_id)
 
-    system_user_id = await ensure_system_user(engine)
-    household_id = await ensure_default_household(engine, system_user_id)
-    hh_str = str(household_id)
+    if not args.dry_run:
+        system_user_id = await ensure_system_user(engine)
+        household_id = await ensure_default_household(engine, system_user_id)
+        hh_str = str(household_id)
+    else:
+        hh_str = "00000000-0000-0000-0000-000000000000"
 
     entity_filter: set[str] | None = set(args.entities) if args.entities else None
-    results: dict[str, tuple[int, int]] = {}
+    results: dict[str, tuple[int, int, int]] = {}
 
     # ── Catalog ──────────────────────────────────────────────────────────────
     if entity_filter is None or "Catalog" in entity_filter:
@@ -93,8 +96,12 @@ async def main(argv: list[str] | None = None) -> None:
                 catalog_errors += 1
         upserted_catalog = 0
         if not args.dry_run:
-            upserted_catalog = await bulk_upsert(engine, CATALOG_TABLE, mapped_catalog)
-        results["Catalog"] = (len(mapped_catalog), upserted_catalog)
+            try:
+                upserted_catalog = await bulk_upsert(engine, CATALOG_TABLE, mapped_catalog)
+            except Exception as exc:
+                print(f"  [Catalog] upsert failed: {exc}", file=sys.stderr)
+                catalog_errors += 1
+        results["Catalog"] = (len(mapped_catalog), upserted_catalog, catalog_errors)
         print(
             f"  mapped={len(mapped_catalog)}, errors={catalog_errors}, upserted={upserted_catalog}"
         )
@@ -130,8 +137,12 @@ async def main(argv: list[str] | None = None) -> None:
                 inv_errors += 1
         upserted_inv = 0
         if not args.dry_run:
-            upserted_inv = await bulk_upsert(engine, INVENTORY_BAGS_TABLE, mapped_inv)
-        results["Inventory"] = (len(mapped_inv), upserted_inv)
+            try:
+                upserted_inv = await bulk_upsert(engine, INVENTORY_BAGS_TABLE, mapped_inv)
+            except Exception as exc:
+                print(f"  [Inventory] upsert failed: {exc}", file=sys.stderr)
+                inv_errors += 1
+        results["Inventory"] = (len(mapped_inv), upserted_inv, inv_errors)
         print(f"  mapped={len(mapped_inv)}, errors={inv_errors}, upserted={upserted_inv}")
 
     # ── Hardware ──────────────────────────────────────────────────────────────
@@ -148,8 +159,12 @@ async def main(argv: list[str] | None = None) -> None:
                 hw_errors += 1
         upserted_hw = 0
         if not args.dry_run:
-            upserted_hw = await bulk_upsert(engine, HARDWARE_TABLE, mapped_hw)
-        results["Hardware"] = (len(mapped_hw), upserted_hw)
+            try:
+                upserted_hw = await bulk_upsert(engine, HARDWARE_TABLE, mapped_hw)
+            except Exception as exc:
+                print(f"  [Hardware] upsert failed: {exc}", file=sys.stderr)
+                hw_errors += 1
+        results["Hardware"] = (len(mapped_hw), upserted_hw, hw_errors)
         print(f"  mapped={len(mapped_hw)}, errors={hw_errors}, upserted={upserted_hw}")
 
     # Build hardware lookup (needed by Maintenance mapper)
@@ -183,8 +198,12 @@ async def main(argv: list[str] | None = None) -> None:
                 maint_errors += 1
         upserted_maint = 0
         if not args.dry_run:
-            upserted_maint = await bulk_upsert(engine, MAINTENANCE_LOG_TABLE, mapped_maint)
-        results["Maintenance"] = (len(mapped_maint), upserted_maint)
+            try:
+                upserted_maint = await bulk_upsert(engine, MAINTENANCE_LOG_TABLE, mapped_maint)
+            except Exception as exc:
+                print(f"  [Maintenance] upsert failed: {exc}", file=sys.stderr)
+                maint_errors += 1
+        results["Maintenance"] = (len(mapped_maint), upserted_maint, maint_errors)
         print(f"  mapped={len(mapped_maint)}, errors={maint_errors}, upserted={upserted_maint}")
 
     # ── Brew_Log ──────────────────────────────────────────────────────────────
@@ -201,8 +220,12 @@ async def main(argv: list[str] | None = None) -> None:
                 brew_errors += 1
         upserted_brew = 0
         if not args.dry_run:
-            upserted_brew = await bulk_upsert(engine, BREW_LOG_TABLE, mapped_brew)
-        results["Brew_Log"] = (len(mapped_brew), upserted_brew)
+            try:
+                upserted_brew = await bulk_upsert(engine, BREW_LOG_TABLE, mapped_brew)
+            except Exception as exc:
+                print(f"  [Brew_Log] upsert failed: {exc}", file=sys.stderr)
+                brew_errors += 1
+        results["Brew_Log"] = (len(mapped_brew), upserted_brew, brew_errors)
         print(f"  mapped={len(mapped_brew)}, errors={brew_errors}, upserted={upserted_brew}")
 
     await engine.dispose()
@@ -210,9 +233,12 @@ async def main(argv: list[str] | None = None) -> None:
     # ── Summary ───────────────────────────────────────────────────────────────
     print("\n── MIGRATION SUMMARY ────────────────────────────────────────────────")
     all_pass = True
-    for entity, (mapped_count, upserted_count) in results.items():
+    for entity, (mapped_count, upserted_count, error_count) in results.items():
         dry = " (DRY RUN)" if args.dry_run else ""
-        print(f"  {entity}: {mapped_count} mapped, {upserted_count} upserted{dry} — PASS")
+        if error_count > 0:
+            all_pass = False
+        status = "PASS" if error_count == 0 else "FAIL"
+        print(f"  {entity}: {mapped_count} mapped, {upserted_count} upserted{dry} — {status}")
     print("─────────────────────────────────────────────────────────────────────")
     if all_pass:
         print("MIGRATION COMPLETE")

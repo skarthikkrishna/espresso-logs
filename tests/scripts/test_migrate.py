@@ -309,17 +309,19 @@ async def test_dry_run_writes_nothing() -> None:
             "scripts.migrate_sheets_to_postgres.ensure_system_user",
             new_callable=AsyncMock,
             return_value=__import__("uuid").UUID(HH),
-        ),
+        ) as mock_ensure_user,
         patch(
             "scripts.migrate_sheets_to_postgres.ensure_default_household",
             new_callable=AsyncMock,
             return_value=__import__("uuid").UUID(HH),
-        ),
-        patch("scripts._mapping.bulk_upsert", new_callable=AsyncMock) as mock_bulk,
+        ) as mock_ensure_hh,
+        patch("scripts.migrate_sheets_to_postgres.bulk_upsert", new_callable=AsyncMock) as mock_bulk,
     ):
         await main(["--dry-run"])
 
     mock_bulk.assert_not_called()
+    mock_ensure_user.assert_not_called()
+    mock_ensure_hh.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

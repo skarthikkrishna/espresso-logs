@@ -106,14 +106,25 @@ async def main() -> None:
     for entity_name, tab_name, mapper, table in entities:
         raw = sheets.get_all_records(tab_name)
         sheets_rows: dict[str, dict[str, Any]] = {}
+        mapping_errors = 0
+        duplicate_count = 0
         for i, row in enumerate(raw):
             try:
                 mapped = mapper(row)
                 sid = mapped.get("sheets_id")
                 if sid:
-                    sheets_rows[str(sid)] = mapped
+                    sid_str = str(sid)
+                    if sid_str in sheets_rows:
+                        print(
+                            f"  [{entity_name} row {i}] DUPLICATE sheets_id={sid_str}",
+                            file=sys.stderr,
+                        )
+                        duplicate_count += 1
+                    else:
+                        sheets_rows[sid_str] = mapped
             except (ValueError, KeyError) as exc:
                 print(f"  [{entity_name} row {i}] mapping error: {exc}", file=sys.stderr)
+                mapping_errors += 1
 
         async with engine.connect() as conn:
             pg_result = await conn.execute(
@@ -142,14 +153,20 @@ async def main() -> None:
                 )
                 checksum_errors += 1
 
-        status = "✓" if (count_match and checksum_errors == 0) else "✗"
-        if not count_match or checksum_errors > 0:
+        status = "✓" if (count_match and checksum_errors == 0 and mapping_errors == 0 and duplicate_count == 0) else "✗"
+        if not count_match or checksum_errors > 0 or mapping_errors > 0 or duplicate_count > 0:
             overall_pass = False
 
         count_note = f" (sheets={sheets_count}, pg={pg_count})" if not count_match else ""
+        extra_parts: list[str] = []
+        if mapping_errors > 0:
+            extra_parts.append(f"{mapping_errors} mapping errors")
+        if duplicate_count > 0:
+            extra_parts.append(f"{duplicate_count} duplicates")
+        extra_note = ", " + ", ".join(extra_parts) if extra_parts else ""
         print(
             f"{status} {entity_name}: {pg_count} rows — {checksum_errors} checksum errors"
-            f"{count_note}"
+            f"{count_note}{extra_note}"
         )
 
     await engine.dispose()

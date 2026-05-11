@@ -43,7 +43,9 @@ uv run alembic current
 uv run python scripts/migrate_sheets_to_postgres.py --dry-run
 ```
 
-Review output. No rows are written in dry-run mode.
+Review output. In dry-run mode, seeding is skipped entirely (no `ensure_system_user` or
+`ensure_default_household` calls) and no Postgres writes of any kind occur. Placeholder UUIDs
+are used internally for mapping; all per-entity mapped/error counts are still reported.
 
 ### Step 3 — Run the backfill (full)
 
