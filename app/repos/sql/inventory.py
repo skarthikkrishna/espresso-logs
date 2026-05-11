@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.inventory import InventoryBag
 
+
 def _to_date(val: Any) -> datetime.date | None:
     try:
         return datetime.date.fromisoformat(str(val)) if val not in (None, "") else None

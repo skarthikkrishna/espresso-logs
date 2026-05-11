@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.catalog import CatalogBean
 
+
 class SqlCatalogRepo:
     """Write-only SQL mirror for CatalogBean rows.
 

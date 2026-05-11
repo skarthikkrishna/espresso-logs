@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.maintenance import MaintenanceLog
 
+
 class SqlMaintenanceRepo:
     """Write-only SQL mirror for MaintenanceLog rows.
 

@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.hardware import Hardware
 
+
 class SqlHardwareRepo:
     """Write-only SQL mirror for Hardware rows.
 

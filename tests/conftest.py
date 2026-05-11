@@ -13,6 +13,7 @@ os.environ.setdefault("SPREADSHEET_ID", "fake-spreadsheet-id-for-tests")
 # regardless of any .env file present in the repo root.
 os.environ["SESSION_SECRET"] = "dev-insecure-secret-for-testing-only"
 
+
 @pytest.fixture(autouse=True)
 def _patch_get_db():
     """Override DB session creation so unit tests never attempt a real Postgres connection.

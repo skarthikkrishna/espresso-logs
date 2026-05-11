@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.brew_log import BrewLog
 
+
 def _to_float(val: Any) -> float | None:
     try:
         return float(val) if val not in (None, "", "N/A") else None
