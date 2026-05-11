@@ -25,9 +25,15 @@ ROAST_LEVEL_ENUM: frozenset[str] = frozenset(
 )
 INVENTORY_STATUS_ENUM: frozenset[str] = frozenset({"Active", "Finished"})
 STORAGE_METHOD_ENUM: frozenset[str] = frozenset(
-    {"Freezer", "Fridge", "Pantry", "Airtight Container", "Valve Bag", "Open Bag", "Mylar Bag"}
+    {
+        "Freezer", "Fridge", "Pantry", "Airtight Container", "Valve Bag", "Open Bag", "Mylar Bag",
+        # Extended values found in production Sheets data
+        "Frozen — Bag", "Frozen — Glass Tube", "Frozen — Knodos Glass Tube",
+    }
 )
-HARDWARE_CATEGORY_ENUM: frozenset[str] = frozenset({"Machine", "Grinder", "Basket"})
+HARDWARE_CATEGORY_ENUM: frozenset[str] = frozenset(
+    {"Machine", "Grinder", "Basket", "Storage"}
+)
 MAINTENANCE_ACTION_ENUM: frozenset[str] = frozenset(
     {"Re-zero", "Backflush", "Descale", "Steam Wand Clean"}
 )
@@ -35,7 +41,12 @@ SHOT_ELIGIBILITY_ENUM: frozenset[str] = frozenset(
     {"Reject", "Passable", "Good Espresso", "God Shot"}
 )
 TASTE_SUMMARY_ENUM: frozenset[str] = frozenset(
-    {"Sour", "Bitter", "Balanced", "Fruity", "Nutty", "Chocolatey", "Floral"}
+    {
+        "Sour", "Bitter", "Balanced", "Fruity", "Nutty", "Chocolatey", "Floral",
+        # Extended values found in production Sheets data
+        "Weak & Sour", "Sweet & Balanced", "Salty / Channeled",
+        "Harsh & Bitter", "Strong & Muddy",
+    }
 )
 
 # ---------------------------------------------------------------------------
@@ -150,10 +161,20 @@ def _nullable(val: str) -> str | None:
 
 
 def _validate_enum(value: str, enum_set: frozenset[str], field_name: str) -> str:
-    """Validate value is in enum_set, raise ValueError if not."""
-    if value not in enum_set:
-        raise ValueError(f"{field_name}={value!r} not in {sorted(enum_set)}")
-    return value
+    """Validate value is in enum_set (case-insensitive match, returns canonical form)."""
+    if value in enum_set:
+        return value
+    lower_map = {v.lower(): v for v in enum_set}
+    if value.lower() in lower_map:
+        return lower_map[value.lower()]
+    raise ValueError(f"{field_name}={value!r} not in {sorted(enum_set)}")
+
+
+def _validate_enum_nullable(value: str, enum_set: frozenset[str], field_name: str) -> str | None:
+    """Like _validate_enum but returns None for empty string."""
+    if not value:
+        return None
+    return _validate_enum(value, enum_set, field_name)
 
 
 def _parse_float(val: str, field_name: str) -> float | None:
@@ -164,6 +185,12 @@ def _parse_float(val: str, field_name: str) -> float | None:
         return float(val)
     except ValueError:
         raise ValueError(f"{field_name}={val!r} is not a valid float")
+
+
+def _parse_float_1dp(val: str, field_name: str) -> float | None:
+    """Parse a float rounded to 1 decimal place, matching NUMERIC(5,1) DB columns."""
+    result = _parse_float(val, field_name)
+    return round(result, 1) if result is not None else None
 
 
 def _parse_int(val: str, field_name: str) -> int | None:
@@ -363,14 +390,14 @@ def from_sheets_dict_brew_log(
         "machine_id": _nullable(str(row.get("Machine_ID", "")).strip()),
         "grinder_id": _nullable(str(row.get("Grinder_ID", "")).strip()),
         "basket_id": _nullable(str(row.get("Basket_ID", "")).strip()),
-        "dose_g": _parse_float(str(row.get("Dose_In_g", "")).strip(), "Dose_In_g"),
-        "yield_g": _parse_float(str(row.get("Yield_Out_g", "")).strip(), "Yield_Out_g"),
+        "dose_g": _parse_float_1dp(str(row.get("Dose_In_g", "")).strip(), "Dose_In_g"),
+        "yield_g": _parse_float_1dp(str(row.get("Yield_Out_g", "")).strip(), "Yield_Out_g"),
         "time_sec": _parse_int(str(row.get("Time_Sec", "")).strip(), "Time_Sec"),
-        "grind_setting": _parse_float(str(row.get("Grind_Setting", "")).strip(), "Grind_Setting"),
+        "grind_setting": _parse_float_1dp(str(row.get("Grind_Setting", "")).strip(), "Grind_Setting"),
         "shot_eligibility": _validate_enum(
             str(row.get("Shot_Eligibility", "")).strip(), SHOT_ELIGIBILITY_ENUM, "Shot_Eligibility"
         ),
-        "taste_summary": _validate_enum(
+        "taste_summary": _validate_enum_nullable(
             str(row.get("Taste_Summary", "")).strip(), TASTE_SUMMARY_ENUM, "Taste_Summary"
         ),
         "notes": _nullable(str(row.get("User_Notes", "")).strip()),

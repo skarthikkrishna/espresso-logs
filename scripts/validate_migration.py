@@ -26,6 +26,7 @@ from scripts._mapping import (
     HARDWARE_TABLE,
     INVENTORY_BAGS_TABLE,
     MAINTENANCE_LOG_TABLE,
+    _CHECKSUM_EXCLUDE,
     from_sheets_dict_brew_log,
     from_sheets_dict_catalog,
     from_sheets_dict_hardware,
@@ -145,7 +146,11 @@ async def main() -> None:
                 checksum_errors += 1
                 continue
             s_checksum = row_checksum(sheets_row)
-            p_checksum = row_checksum(pg_rows[sid])
+            # Restrict PG row to only keys the Sheets mapper explicitly sets.
+            # Pre-existing columns (e.g. notes, weight_g) are not managed by M3.
+            mapper_keys = {k for k in sheets_row if k not in _CHECKSUM_EXCLUDE}
+            pg_filtered = {k: pg_rows[sid][k] for k in mapper_keys if k in pg_rows[sid]}
+            p_checksum = row_checksum(pg_filtered)
             if s_checksum != p_checksum:
                 print(
                     f"  [{entity_name}] CHECKSUM MISMATCH sheets_id={sid}",
