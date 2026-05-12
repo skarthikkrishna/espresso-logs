@@ -61,14 +61,24 @@ def get_session_factory() -> async_sessionmaker[AsyncSession]:
     return _session_factory
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """FastAPI dependency: yield an async database session.
+async def get_db() -> AsyncGenerator[AsyncSession | None, None]:
+    """FastAPI dependency: yield an async database session, or None when Postgres is disabled.
+
+    When ``USE_POSTGRES=False`` (the current Sheets-backed mode), yields ``None``
+    immediately so no Postgres connection is opened and no idle pool connections are
+    held. Callers (deps.py factory functions) must handle ``None`` and skip SQL repo
+    instantiation accordingly.
 
     Usage::
 
         @router.get("/items")
-        async def list_items(db: AsyncSession = Depends(get_db)):
+        async def list_items(db: AsyncSession | None = Depends(get_db)):
             ...
     """
+    from app.config import settings  # lazy import to avoid circular dep at module level
+
+    if not settings.use_postgres:
+        yield None
+        return
     async with get_session_factory()() as session:
         yield session
