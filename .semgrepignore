@@ -1,0 +1,8 @@
+# Generated SPA build artifacts — minified/bundled vendor code, not source
+app/static/spa/
+
+# Frontend build output (gitignored but belt-and-suspenders)
+frontend/dist/
+
+# Test fixtures
+tests/

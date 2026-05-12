@@ -213,7 +213,7 @@ async def api_catalog_create(
     if errors:
         raise HTTPException(status_code=422, detail=errors)
 
-    existing = catalog_repo.list()
+    existing = catalog_repo._fetch_all()
     catalog_id = _next_catalog_id(existing)
     row = {
         "Catalog_ID": catalog_id,
@@ -223,9 +223,8 @@ async def api_catalog_create(
         "Product_URL": (body.product_url or "").strip(),
         "Local_Image_Path": "",
     }
-    await catalog_repo.upsert(row)  # type: ignore[misc, func-returns-value]
 
-    # Auto-source and upload image from product URL.
+    # Auto-source and upload image from product URL before writing to Sheets.
     # Use the pre-sourced URL from the infer step if available (avoids re-fetching og:image);
     # otherwise scrape og:image directly from product_url.
     img_cdn_url = (body.source_image_url or "").strip()
@@ -252,13 +251,12 @@ async def api_catalog_create(
                 image_path = await upload_image(
                     img_bytes, content_type, obj_name, settings.assets_bucket
                 )
-                # Only mutate row after the Sheets upsert succeeds — if upsert raises,
-                # the response must not claim an image_path that wasn't persisted.
-                await catalog_repo.upsert({**row, "Local_Image_Path": image_path})  # type: ignore[misc, func-returns-value]
                 row["Local_Image_Path"] = image_path
         except Exception as exc:
             logger.warning("image upload failed for %r: %s", catalog_id, exc)
 
+    # Single upsert — image path (if any) is already staged in row before writing.
+    await catalog_repo.upsert(row)  # type: ignore[misc, func-returns-value]
     return _catalog_to_out(row)
 
 

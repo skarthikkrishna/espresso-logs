@@ -23,6 +23,7 @@ queryClient.prefetchQuery({ queryKey: ['hardware'], queryFn: listHardware })
 
 const persister = createSyncStoragePersister({
   storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+  key: `REACT_QUERY_OFFLINE_CACHE_${__BUILD_HASH__}`,
 })
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
