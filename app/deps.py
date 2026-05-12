@@ -69,9 +69,13 @@ def get_sheets_client() -> RealSheetsClient:
 
 
 class _DualWriteCatalogRepo:
-    """Dual-write wrapper: writes to Sheets first, then Postgres; reads from Sheets."""
+    """Dual-write wrapper: writes to Sheets first, then Postgres; reads from Sheets.
 
-    def __init__(self, sheets: CatalogRepo, sql: SqlCatalogRepo) -> None:
+    When ``sql`` is ``None`` (i.e. ``USE_POSTGRES=False``), all write operations
+    go to Sheets only — no Postgres connection is opened.
+    """
+
+    def __init__(self, sheets: CatalogRepo, sql: SqlCatalogRepo | None) -> None:
         self._sheets = sheets
         self._sql = sql
 
@@ -88,6 +92,8 @@ class _DualWriteCatalogRepo:
 
     async def upsert(self, row: dict[str, Any]) -> None:
         self._sheets.upsert(row)
+        if self._sql is None:
+            return
         try:
             await self._sql.upsert(row)
         except Exception as exc:
@@ -104,6 +110,8 @@ class _DualWriteCatalogRepo:
 
     async def add_many(self, rows: builtins.list[dict[str, Any]]) -> None:
         self._sheets.add_many(rows)
+        if self._sql is None:
+            return
         for row in rows:
             try:
                 await self._sql.upsert(row)
@@ -124,9 +132,13 @@ class _DualWriteCatalogRepo:
 
 
 class _DualWriteBrewLogRepo:
-    """Dual-write wrapper for BrewLog: Sheets-first, Postgres-second; reads from Sheets."""
+    """Dual-write wrapper for BrewLog: Sheets-first, Postgres-second; reads from Sheets.
 
-    def __init__(self, sheets: BrewLogRepo, sql: SqlBrewLogRepo) -> None:
+    When ``sql`` is ``None`` (i.e. ``USE_POSTGRES=False``), all write operations
+    go to Sheets only.
+    """
+
+    def __init__(self, sheets: BrewLogRepo, sql: SqlBrewLogRepo | None) -> None:
         self._sheets = sheets
         self._sql = sql
 
@@ -147,6 +159,8 @@ class _DualWriteBrewLogRepo:
 
     async def add(self, row: dict[str, Any]) -> None:
         self._sheets.add(row)
+        if self._sql is None:
+            return
         try:
             await self._sql.add(row)
         except Exception as exc:
@@ -163,6 +177,8 @@ class _DualWriteBrewLogRepo:
 
     async def add_many(self, rows: builtins.list[dict[str, Any]]) -> None:
         self._sheets.add_many(rows)
+        if self._sql is None:
+            return
         for row in rows:
             try:
                 await self._sql.add(row)
@@ -186,9 +202,13 @@ class _DualWriteBrewLogRepo:
 
 
 class _DualWriteInventoryRepo:
-    """Dual-write wrapper for InventoryBag: Sheets-first, Postgres-second; reads from Sheets."""
+    """Dual-write wrapper for InventoryBag: Sheets-first, Postgres-second; reads from Sheets.
 
-    def __init__(self, sheets: InventoryRepo, sql: SqlInventoryRepo) -> None:
+    When ``sql`` is ``None`` (i.e. ``USE_POSTGRES=False``), all write operations
+    go to Sheets only.
+    """
+
+    def __init__(self, sheets: InventoryRepo, sql: SqlInventoryRepo | None) -> None:
         self._sheets = sheets
         self._sql = sql
 
@@ -203,6 +223,8 @@ class _DualWriteInventoryRepo:
 
     async def upsert(self, row: dict[str, Any]) -> None:
         self._sheets.upsert(row)
+        if self._sql is None:
+            return
         try:
             await self._sql.upsert(row)
         except Exception as exc:
@@ -219,6 +241,8 @@ class _DualWriteInventoryRepo:
 
     async def add_many(self, rows: builtins.list[dict[str, Any]]) -> None:
         self._sheets.add_many(rows)
+        if self._sql is None:
+            return
         for row in rows:
             try:
                 await self._sql.upsert(row)
@@ -239,9 +263,13 @@ class _DualWriteInventoryRepo:
 
 
 class _DualWriteHardwareRepo:
-    """Dual-write wrapper for Hardware: Sheets-first, Postgres-second; reads from Sheets."""
+    """Dual-write wrapper for Hardware: Sheets-first, Postgres-second; reads from Sheets.
 
-    def __init__(self, sheets: HardwareRepo, sql: SqlHardwareRepo) -> None:
+    When ``sql`` is ``None`` (i.e. ``USE_POSTGRES=False``), all write operations
+    go to Sheets only.
+    """
+
+    def __init__(self, sheets: HardwareRepo, sql: SqlHardwareRepo | None) -> None:
         self._sheets = sheets
         self._sql = sql
 
@@ -256,6 +284,8 @@ class _DualWriteHardwareRepo:
 
     async def upsert(self, row: dict[str, Any]) -> None:
         self._sheets.upsert(row)
+        if self._sql is None:
+            return
         try:
             await self._sql.upsert(row)
         except Exception as exc:
@@ -272,6 +302,8 @@ class _DualWriteHardwareRepo:
 
     async def add_many(self, rows: builtins.list[dict[str, Any]]) -> None:
         self._sheets.add_many(rows)
+        if self._sql is None:
+            return
         for row in rows:
             try:
                 await self._sql.upsert(row)
@@ -292,9 +324,13 @@ class _DualWriteHardwareRepo:
 
 
 class _DualWriteMaintenanceRepo:
-    """Dual-write wrapper for MaintenanceLog: Sheets-first, Postgres-second; reads from Sheets."""
+    """Dual-write wrapper for MaintenanceLog: Sheets-first, Postgres-second; reads from Sheets.
 
-    def __init__(self, sheets: MaintenanceRepo, sql: SqlMaintenanceRepo) -> None:
+    When ``sql`` is ``None`` (i.e. ``USE_POSTGRES=False``), all write operations
+    go to Sheets only.
+    """
+
+    def __init__(self, sheets: MaintenanceRepo, sql: SqlMaintenanceRepo | None) -> None:
         self._sheets = sheets
         self._sql = sql
 
@@ -306,6 +342,8 @@ class _DualWriteMaintenanceRepo:
 
     async def add(self, row: dict[str, Any]) -> None:
         self._sheets.add(row)
+        if self._sql is None:
+            return
         try:
             await self._sql.add(row)
         except Exception as exc:
@@ -322,6 +360,8 @@ class _DualWriteMaintenanceRepo:
 
     async def add_many(self, rows: builtins.list[dict[str, Any]]) -> None:
         self._sheets.add_many(rows)
+        if self._sql is None:
+            return
         for row in rows:
             try:
                 await self._sql.add(row)
@@ -349,55 +389,55 @@ class _DualWriteMaintenanceRepo:
 async def get_catalog_repo(
     client: Annotated[SheetsClientProtocol, Depends(get_sheets_client)],
     cache: TTLCache = Depends(get_process_cache),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession | None = Depends(get_db),
 ) -> _DualWriteCatalogRepo:
     """FastAPI dependency providing a dual-write CatalogRepo wrapper."""
     sheets = CatalogRepo(client=client, cache=cache)
-    sql = SqlCatalogRepo(db=db)
+    sql = SqlCatalogRepo(db=db) if db is not None else None
     return _DualWriteCatalogRepo(sheets=sheets, sql=sql)
 
 
 async def get_inventory_repo(
     client: Annotated[SheetsClientProtocol, Depends(get_sheets_client)],
     cache: TTLCache = Depends(get_process_cache),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession | None = Depends(get_db),
 ) -> _DualWriteInventoryRepo:
     """FastAPI dependency providing a dual-write InventoryRepo wrapper."""
     sheets = InventoryRepo(client=client, cache=cache)
-    sql = SqlInventoryRepo(db=db)
+    sql = SqlInventoryRepo(db=db) if db is not None else None
     return _DualWriteInventoryRepo(sheets=sheets, sql=sql)
 
 
 async def get_hardware_repo(
     client: Annotated[SheetsClientProtocol, Depends(get_sheets_client)],
     cache: TTLCache = Depends(get_process_cache),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession | None = Depends(get_db),
 ) -> _DualWriteHardwareRepo:
     """FastAPI dependency providing a dual-write HardwareRepo wrapper."""
     sheets = HardwareRepo(client=client, cache=cache)
-    sql = SqlHardwareRepo(db=db)
+    sql = SqlHardwareRepo(db=db) if db is not None else None
     return _DualWriteHardwareRepo(sheets=sheets, sql=sql)
 
 
 async def get_maintenance_repo(
     client: Annotated[SheetsClientProtocol, Depends(get_sheets_client)],
     cache: TTLCache = Depends(get_process_cache),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession | None = Depends(get_db),
 ) -> _DualWriteMaintenanceRepo:
     """FastAPI dependency providing a dual-write MaintenanceRepo wrapper."""
     sheets = MaintenanceRepo(client=client, cache=cache)
-    sql = SqlMaintenanceRepo(db=db)
+    sql = SqlMaintenanceRepo(db=db) if db is not None else None
     return _DualWriteMaintenanceRepo(sheets=sheets, sql=sql)
 
 
 async def get_brew_log_repo(
     client: Annotated[SheetsClientProtocol, Depends(get_sheets_client)],
     cache: TTLCache = Depends(get_process_cache),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession | None = Depends(get_db),
 ) -> _DualWriteBrewLogRepo:
     """FastAPI dependency providing a dual-write BrewLogRepo wrapper."""
     sheets = BrewLogRepo(client=client, cache=cache)
-    sql = SqlBrewLogRepo(db=db)
+    sql = SqlBrewLogRepo(db=db) if db is not None else None
     return _DualWriteBrewLogRepo(sheets=sheets, sql=sql)
 
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, List
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 
 from app.deps import CurrentUser, get_catalog_repo, get_inventory_repo
 from app.models.api import InventoryBagOut
@@ -64,3 +65,31 @@ async def api_inventory_detail(
     if bag is None:
         raise HTTPException(status_code=404, detail="Bag not found")
     return _bag_to_out(bag, _resolve_display_name(bag, catalog_repo))
+
+
+_VALID_PATCH_STATUSES = {"Active", "Finished"}
+
+
+class _BagPatchBody(BaseModel):
+    status: str
+
+
+@router.patch("/inventory/{bag_id}", response_model=InventoryBagOut)
+async def api_inventory_patch(
+    bag_id: str,
+    body: _BagPatchBody,
+    user: CurrentUser,
+    inventory_repo: InventoryRepo = Depends(get_inventory_repo),
+    catalog_repo: CatalogRepo = Depends(get_catalog_repo),
+) -> InventoryBagOut:
+    if body.status not in _VALID_PATCH_STATUSES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"status must be one of: {sorted(_VALID_PATCH_STATUSES)}",
+        )
+    bag = inventory_repo.get(bag_id)
+    if bag is None:
+        raise HTTPException(status_code=404, detail="Bag not found")
+    updated = {**bag, "Status": body.status}
+    await inventory_repo.upsert(updated)  # type: ignore[misc, func-returns-value]
+    return _bag_to_out(updated, _resolve_display_name(updated, catalog_repo))
