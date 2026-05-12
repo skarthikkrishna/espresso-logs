@@ -602,6 +602,48 @@ async def test_api_inventory_detail_not_found():
     assert status == 404
 
 
+@pytest.mark.asyncio
+async def test_api_inventory_patch_unauthenticated():
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test", follow_redirects=False
+    ) as client:
+        resp = await client.patch("/api/inventory/BB-2024-01-L-001", json={"status": "Finished"})
+    assert resp.status_code in (401, 302, 307)
+
+
+@pytest.mark.asyncio
+async def test_api_inventory_patch_finish_bag():
+    status, data = await _authed(
+        "PATCH", "/api/inventory/BB-2024-01-L-001", json={"status": "Finished"}
+    )
+    assert status == 200
+    assert data["bag_id"] == "BB-2024-01-L-001"
+    assert data["status"] == "Finished"
+
+
+@pytest.mark.asyncio
+async def test_api_inventory_patch_set_active():
+    status, data = await _authed(
+        "PATCH", "/api/inventory/BB-2024-01-L-001", json={"status": "Active"}
+    )
+    assert status == 200
+    assert data["status"] == "Active"
+
+
+@pytest.mark.asyncio
+async def test_api_inventory_patch_invalid_status():
+    status, data = await _authed(
+        "PATCH", "/api/inventory/BB-2024-01-L-001", json={"status": "Discarded"}
+    )
+    assert status == 422
+
+
+@pytest.mark.asyncio
+async def test_api_inventory_patch_not_found():
+    status, data = await _authed("PATCH", "/api/inventory/BAG999", json={"status": "Finished"})
+    assert status == 404
+
+
 # ===========================================================================
 # /api/maintenance
 # ===========================================================================
