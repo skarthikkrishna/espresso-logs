@@ -1,10 +1,36 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  --font-display: 'Playfair Display', Georgia, serif;
-  --font-body:    'Inter', system-ui, sans-serif;
+/* ── DaisyUI v5 + Tailwind v4 ──────────────────────────────────────────── */
+@plugin "daisyui" {
+  themes: espresso-dark --default;
+}
+
+@plugin "daisyui/theme" {
+  name: "espresso-dark";
+  default: true;
+  color-scheme: dark;
+  --color-primary: #d97706;
+  --color-primary-content: #ffffff;
+  --color-secondary: #92400e;
+  --color-secondary-content: #ffffff;
+  --color-accent: #f59e0b;
+  --color-accent-content: #1a1209;
+  --color-neutral: #2d1f0e;
+  --color-neutral-content: #f5e6d3;
+  --color-base-100: #1a1209;
+  --color-base-200: #22160b;
+  --color-base-300: #2d1f0e;
+  --color-base-content: #f5e6d3;
+  --color-info: #3b82f6;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+}
+
+/* ── Custom font families (Tailwind v4 @theme creates utility classes) ─── */
+@theme {
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-body: Inter, system-ui, sans-serif;
 }
 
 body {
