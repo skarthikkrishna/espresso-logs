@@ -35,8 +35,10 @@ not started by Playwright; CI must point at a deployed environment.
 ## Test data (seed)
 
 `seed.ts` creates `PW_TEST_`-prefixed records via the API before each test that
-needs them. No DELETE endpoints exist yet — seeded records accumulate in the
-backing store and must be cleaned manually or via a maintenance script.
+needs them.  After each test, `teardownSeedData` calls `DELETE /api/e2e/cleanup`
+to remove the seeded records.  This endpoint is only available when the backend
+is running with `E2E_AUTH_BYPASS=1`; teardown failures are logged as warnings
+and do not fail the test.
 
 ## Defects covered
 

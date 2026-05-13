@@ -4,7 +4,9 @@
  */
 import { test, expect } from '@playwright/test';
 
-test('placeholder — config smoke check', async ({ page }) => {
+test('app loads and renders navigation', async ({ page }) => {
   await page.goto('./');
-  await expect(page).not.toBeNull();
+  // Sidebar brand text is always rendered on desktop viewport; confirms React mounted and routing works
+  await expect(page.getByText('Coffee Tracker')).toBeVisible();
+  await expect(page.locator('#main-content')).toBeVisible();
 });
