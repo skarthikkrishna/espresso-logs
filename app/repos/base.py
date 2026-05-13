@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import threading
 import time
-from abc import ABC
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -98,3 +98,7 @@ class BaseRepo(ABC):
         data = self._fetch_all(tab)
         self._cache.set(cache_key, data)
         return data
+
+    @abstractmethod
+    def delete_rows(self, start_row: int, end_row: int) -> None:
+        """Delete spreadsheet rows from *start_row* to *end_row* (inclusive, 1-indexed)."""

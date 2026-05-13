@@ -20,7 +20,10 @@ from app.repos.hardware import HardwareRepo
 from app.repos.inventory import InventoryRepo
 from app.repos.maintenance import MaintenanceRepo
 from app.repos.sheets_client import RealSheetsClient, SheetsClientProtocol
-from app.testing.fake_sheets import FakeSheetsClient as _FakeSheetsClient, make_e2e_sheets_client as _make_e2e_sheets_client
+from app.testing.fake_sheets import (
+    FakeSheetsClient as _FakeSheetsClient,
+    make_e2e_sheets_client as _make_e2e_sheets_client,
+)
 from app.repos.sql.brew_log import SqlBrewLogRepo
 from app.repos.sql.catalog import SqlCatalogRepo
 from app.repos.sql.hardware import SqlHardwareRepo
@@ -36,8 +39,7 @@ _E2E_AUTH_BYPASS = os.environ.get("E2E_AUTH_BYPASS") == "1"
 
 if _E2E_AUTH_BYPASS and os.environ.get("APP_ENV") == "production":
     raise RuntimeError(
-        "E2E_AUTH_BYPASS must not be set in production — "
-        "it bypasses all authentication globally."
+        "E2E_AUTH_BYPASS must not be set in production — it bypasses all authentication globally."
     )
 
 
@@ -78,7 +80,9 @@ def get_sheets_client() -> RealSheetsClient | _FakeSheetsClient:
                 if _E2E_AUTH_BYPASS:
                     _sheets_client = _make_e2e_sheets_client()
                 else:
-                    from app.config import settings  # local import avoids circular deps at module load
+                    from app.config import (
+                        settings,
+                    )  # local import avoids circular deps at module load
 
                     _sheets_client = RealSheetsClient(settings.spreadsheet_id)
     return _sheets_client

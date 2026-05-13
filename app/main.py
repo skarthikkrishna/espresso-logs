@@ -187,6 +187,7 @@ app.include_router(import_wizard.router)
 # E2E-only cleanup endpoint — only mounted when auth bypass is active (never in production)
 if _E2E_AUTH_BYPASS:
     from app.routers import api_e2e
+
     app.include_router(api_e2e.router)
 
 _spa_index = pathlib.Path(__file__).parent / "static" / "spa" / "index.html"

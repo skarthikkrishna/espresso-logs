@@ -10,6 +10,8 @@ unit/integration tests continue to import from their canonical location.
 
 from __future__ import annotations
 
+from typing import Any
+
 
 class FakeSheetsClient:
     """In-memory Sheets client.
@@ -18,25 +20,25 @@ class FakeSheetsClient:
     * ``call_counts`` / ``append_rows_call_counts`` are spy counters.
     """
 
-    def __init__(self, initial: dict[str, list[dict]] | None = None) -> None:
-        self._store: dict[str, list[dict]] = {
+    def __init__(self, initial: dict[str, list[dict[str, Any]]] | None = None) -> None:
+        self._store: dict[str, list[dict[str, Any]]] = {
             k: [row.copy() for row in v] for k, v in (initial or {}).items()
         }
         self.call_counts: dict[str, int] = {}
         self.append_rows_call_counts: dict[str, int] = {}
 
-    def get_all_records(self, tab: str) -> list[dict]:
+    def get_all_records(self, tab: str) -> list[dict[str, Any]]:
         self.call_counts[tab] = self.call_counts.get(tab, 0) + 1
         return [row.copy() for row in self._store.get(tab, [])]
 
-    def append_row(self, tab: str, row: dict, pk_col: str | None = None) -> None:
+    def append_row(self, tab: str, row: dict[str, Any], pk_col: str | None = None) -> None:
         if pk_col is not None:
             pk_val = row[pk_col]
             if any(r.get(pk_col) == pk_val for r in self._store.get(tab, [])):
                 return
         self._store.setdefault(tab, []).append(row.copy())
 
-    def update_row(self, tab: str, pk_col: str, pk_val: str, row: dict) -> None:
+    def update_row(self, tab: str, pk_col: str, pk_val: str, row: dict[str, Any]) -> None:
         rows = self._store.get(tab, [])
         headers = list(rows[0].keys()) if rows else list(row.keys())
         for i, r in enumerate(rows):
@@ -45,7 +47,7 @@ class FakeSheetsClient:
                 return
         raise KeyError(f"Row with {pk_col}={pk_val!r} not found in {tab}")
 
-    def append_rows(self, tab: str, values: list[list]) -> None:
+    def append_rows(self, tab: str, values: list[list[Any]]) -> None:
         self.append_rows_call_counts[tab] = self.append_rows_call_counts.get(tab, 0) + 1
         existing = self._store.get(tab, [])
         if existing:
@@ -62,7 +64,7 @@ class FakeSheetsClient:
         rows = self._store.get(tab, [])
         del rows[max(0, data_start) : data_end + 1]
 
-    def seed(self, tab: str, rows: list[dict]) -> None:
+    def seed(self, tab: str, rows: list[dict[str, Any]]) -> None:
         """Overwrite the in-memory store for *tab*."""
         self._store[tab] = [row.copy() for row in rows]
 
@@ -77,7 +79,7 @@ class FakeSheetsClient:
 # All IDs use an "E2E_" prefix so any accidental prod leak is identifiable.
 # ---------------------------------------------------------------------------
 
-E2E_SEED: dict[str, list[dict]] = {
+E2E_SEED: dict[str, list[dict[str, Any]]] = {
     "Catalog": [
         {
             "Catalog_ID": "E2E_CAT001",
