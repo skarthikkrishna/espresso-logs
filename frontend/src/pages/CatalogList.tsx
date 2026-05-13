@@ -21,7 +21,7 @@ export default function CatalogList() {
     <div className="p-4">
       <div className="glass-card card-bevel p-6 text-center">
         <p className="text-amber-200 font-medium">Couldn't load catalog</p>
-        <button onClick={() => refetch()} className="btn btn-sm btn-outline border-amber-600 text-amber-200 mt-3">Retry</button>
+        <button onClick={() => refetch()} className="btn btn-sm btn-outline border-amber-600 text-amber-200 mt-3 btn-bevel">Retry</button>
       </div>
     </div>
   )
@@ -122,7 +122,7 @@ export default function CatalogList() {
       {createPortal(
         <button
           onClick={() => setModalOpen(true)}
-          className="btn btn-circle btn-lg fixed bottom-20 right-4 md:bottom-6 bg-amber-600 hover:bg-amber-500 border-none text-white shadow-xl z-50"
+          className="btn btn-circle btn-lg btn-primary btn-bevel fixed bottom-20 right-4 md:bottom-6 z-50"
           aria-label="Add bean"
         >
           +

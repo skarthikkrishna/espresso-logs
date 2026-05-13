@@ -94,7 +94,7 @@ export default function CatalogDetail() {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={imageUploading || editSaving}
-                className="btn btn-xs absolute -bottom-2 -right-2 bg-amber-700 hover:bg-amber-600 border-none text-white"
+                className="btn btn-xs btn-primary btn-bevel absolute -bottom-2 -right-2"
                 aria-label="Replace image"
               >
                 {imageUploading ? <span className="loading loading-spinner loading-xs" /> : 'Replace'}

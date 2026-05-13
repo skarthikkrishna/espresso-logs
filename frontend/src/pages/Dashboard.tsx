@@ -34,7 +34,7 @@ export default function Dashboard() {
       <div className="glass-card card-bevel p-6 text-center">
         <p className="text-amber-200 font-medium">Couldn't load dashboard</p>
         <p className="text-amber-400/70 text-sm mt-1">{(error as Error)?.message}</p>
-        <button onClick={() => refetch()} className="btn btn-sm btn-outline border-amber-600 text-amber-200 mt-3">
+        <button onClick={() => refetch()} className="btn btn-sm btn-outline border-amber-600 text-amber-200 mt-3 btn-bevel">
           Retry
         </button>
       </div>
@@ -77,7 +77,7 @@ export default function Dashboard() {
             <p className="text-sm text-amber-200/70 mb-4">Add a bean to the catalog to get started.</p>
             <Link
               to="/catalog"
-              className="btn bg-amber-600 hover:bg-amber-500 border-none text-white"
+              className="btn btn-primary btn-bevel no-underline"
             >
               Go to catalog →
             </Link>
@@ -145,7 +145,7 @@ export default function Dashboard() {
       {createPortal(
         <button
           aria-label="Log a shot"
-          className="btn btn-circle btn-lg bg-amber-600 hover:bg-amber-500 fixed bottom-20 right-4 z-50 lg:hidden"
+          className="btn btn-circle btn-lg btn-primary btn-bevel fixed bottom-20 right-4 z-50 lg:hidden"
           onClick={() => navigate('/brew-log/add')}
         >
           <span aria-hidden="true">+</span>

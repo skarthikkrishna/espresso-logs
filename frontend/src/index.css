@@ -300,11 +300,14 @@ input[type="file"]::file-selector-button {
 /* ── Bevel button treatment ─────────────────────────────────────────────── */
 .btn-bevel {
   box-shadow: var(--btn-rest-shadow);
-  border-radius: var(--bevel-radius);
   overflow: hidden;
   text-decoration: none;
   -webkit-tap-highlight-color: transparent;
   transition: box-shadow 150ms ease, opacity 100ms ease;
+}
+/* Preserve btn-circle's 50% radius — only apply bevel-radius to non-circular buttons */
+.btn-bevel:not(.btn-circle) {
+  border-radius: var(--bevel-radius);
 }
 .btn-bevel:hover:not(:disabled) {
   box-shadow: var(--btn-hover-shadow);
