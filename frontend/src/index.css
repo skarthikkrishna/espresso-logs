@@ -220,3 +220,14 @@ input[type="file"]::file-selector-button {
 .compass-ping {
   animation: compassPing 2s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
+
+/* Safari UA text-decoration reset — spec-029 D4 */
+.btn {
+  text-decoration: none;
+}
+
+/* Safari flex-column label layout fix — spec-029 D5 */
+.form-control > .label {
+  display: block;
+  width: 100%;
+}
