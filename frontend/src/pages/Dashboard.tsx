@@ -59,7 +59,7 @@ export default function Dashboard() {
       <div className="flex justify-end">
         <button
           onClick={() => navigate('/brew-log/add')}
-          className="btn btn-primary btn-sm"
+          className="btn btn-primary btn-sm no-underline"
         >
           + Log Shot
         </button>
