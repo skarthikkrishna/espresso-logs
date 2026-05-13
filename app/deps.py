@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import builtins
 import logging
+import os
 import threading
 from typing import TYPE_CHECKING, Annotated, Any, cast
 
@@ -28,12 +29,18 @@ from app.services.idempotency_store import IdempotencyStore
 
 _dw_log = logging.getLogger("app.deps.dual_write")
 
+# E2E_AUTH_BYPASS=1 makes _get_current_user return a synthetic test user without
+# requiring a real OAuth session. Never set this in production.
+_E2E_AUTH_BYPASS = os.environ.get("E2E_AUTH_BYPASS") == "1"
+
 
 class _RequiresLogin(Exception):
     """Raised by require_user when no authenticated session is present."""
 
 
 async def _get_current_user(request: Request) -> dict[str, Any]:
+    if _E2E_AUTH_BYPASS:
+        return {"email": "e2e-test@localhost", "name": "E2E Test User"}
     user = request.session.get("user")
     if not user:
         raise _RequiresLogin()

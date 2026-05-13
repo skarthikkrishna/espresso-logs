@@ -9,9 +9,11 @@ export interface SeedResult {
   inventoryBagId?: string;
 }
 
+// When PW_BASE_URL is set (CI/staging), use its origin.
+// Locally, seed goes directly to FastAPI (port 8000) which runs with E2E_AUTH_BYPASS=1.
 const BASE = process.env.PW_BASE_URL
   ? new URL(process.env.PW_BASE_URL).origin
-  : 'http://localhost:4173';
+  : 'http://localhost:8000';
 
 /**
  * Seeds a CatalogItem with one associated active inventory bag.

@@ -1,5 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// In local dev: point at the FastAPI backend running with E2E_AUTH_BYPASS=1.
+// React Router has no basename, so routing only works correctly when the app
+// is served via FastAPI's catch-all (which strips /static/spa/ from the URL).
+// Vite preview at /static/spa/ causes React Router to match NotFound for all routes.
+//
+// In CI: set PW_BASE_URL to the staging environment URL.
+// Local dev: start the backend with `E2E_AUTH_BYPASS=1 uv run uvicorn app.main:app`
+const BASE_URL = process.env.PW_BASE_URL || 'http://localhost:8000';
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -8,7 +17,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
-    baseURL: process.env.PW_BASE_URL || 'http://localhost:4173/static/spa/',
+    baseURL: BASE_URL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -22,10 +31,6 @@ export default defineConfig({
       use: { ...devices['Desktop Safari'] },
     },
   ],
-  webServer: {
-    command: 'npm run build && npm run preview -- --port 4173',
-    url: 'http://localhost:4173/static/spa/',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  // No webServer: the FastAPI backend must be running externally with E2E_AUTH_BYPASS=1.
+  // For CI, PW_BASE_URL should point to a pre-deployed staging environment.
 });

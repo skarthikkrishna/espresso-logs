@@ -199,6 +199,7 @@ jobs:
         env:
           PW_BASE_URL: ${{ vars.PW_BASE_URL || '' }}
           CI: true
+          E2E_AUTH_BYPASS: "1"
       - uses: actions/upload-artifact@v7
         if: always()
         with:
