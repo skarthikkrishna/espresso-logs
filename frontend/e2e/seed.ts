@@ -69,17 +69,28 @@ export async function seedTestData(page: Page): Promise<SeedResult> {
 }
 
 /**
- * Removes records created by seedTestData.
+ * Removes records created by seedTestData by calling the E2E cleanup endpoint.
  *
- * No DELETE /api/catalog or DELETE /api/inventory endpoints exist as of spec-029.
- * Records are identifiable by the "PW_TEST_" prefix and can be removed manually if needed.
+ * The endpoint (DELETE /api/e2e/cleanup) is only available when the backend
+ * is started with E2E_AUTH_BYPASS=1.  Teardown failures are logged as warnings
+ * rather than thrown — a teardown error should not fail the test itself.
  */
 export async function teardownSeedData(
-  _page: Page,
-  _seed: SeedResult,
+  page: Page,
+  seed: SeedResult,
 ): Promise<void> {
-  // TODO: teardown requires DELETE /api/catalog/{catalogItemId}
-  // TODO: teardown requires DELETE /api/inventory/{bagId}
-  // Until DELETE endpoints are available, PW_TEST_-prefixed records must be
-  // cleaned up manually or via a separate maintenance script.
+  if (!seed.catalogItemId && !seed.bagId) return;
+
+  const res = await page.request.delete(`${BASE}/api/e2e/cleanup`, {
+    data: {
+      catalog_id: seed.catalogItemId ?? null,
+      bag_id: seed.bagId ?? null,
+    },
+  });
+
+  if (!res.ok()) {
+    console.warn(
+      `teardownSeedData: DELETE /api/e2e/cleanup failed: ${res.status()} ${await res.text()}`,
+    );
+  }
 }
