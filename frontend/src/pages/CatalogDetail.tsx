@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getCatalogDetail, createInventoryBag, updateCatalogItem, uploadCatalogImage } from '../api/catalog'
 import type { CatalogItem } from '../types/entities'
 import LoadingSpinner from '../components/LoadingSpinner'
+import Chip from '../components/Chip'
 import { ROAST_LEVELS } from '../utils/roastLevels'
 
 export default function CatalogDetail() {
@@ -232,9 +233,7 @@ export default function CatalogDetail() {
             <>
               <h1 className="text-2xl font-display text-amber-100">{item.bean_name}</h1>
               <p className="text-amber-200/70">{item.roaster}</p>
-              <span className="badge badge-sm text-xs px-2 py-0.5 mt-2 bg-amber-900/25 text-amber-300 border border-amber-600/30">
-                {item.roast_level}
-              </span>
+              <Chip label={item.roast_level} variant="roast" className="mt-2" />
               <div className="mt-2">
                 <button
                   onClick={() => {
