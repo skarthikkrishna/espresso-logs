@@ -57,7 +57,7 @@ export default function BrewLogDetail() {
         <h1 className="text-xl font-display text-amber-100">{shot.bag_display}</h1>
         <p className="text-amber-200/60 text-sm">{shot.date}</p>
         {shot.roast_level && (
-          <span className="badge badge-sm text-xs bg-amber-900/25 text-amber-300 border border-amber-600/30">
+          <span className="badge badge-sm text-xs px-2 py-0.5 bg-amber-900/25 text-amber-300 border border-amber-600/30">
             {shot.roast_level}
           </span>
         )}
