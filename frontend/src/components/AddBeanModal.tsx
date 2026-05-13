@@ -89,7 +89,7 @@ export default function AddBeanModal({ onClose, onSaved }: AddBeanModalProps) {
             <button
               onClick={handleInfer}
               disabled={loading || url.trim() === ''}
-              className="btn btn-sm bg-amber-700 hover:bg-amber-600 border-none text-white"
+              className="btn btn-sm btn-primary btn-bevel"
             >
               {loading ? <span className="loading loading-spinner loading-xs" /> : 'Look up'}
             </button>

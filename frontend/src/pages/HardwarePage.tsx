@@ -55,7 +55,7 @@ export default function HardwarePage() {
       <div className="glass-card card-bevel p-6 text-center">
         <p className="text-amber-200 font-medium">Couldn't load hardware</p>
         <p className="text-amber-400/70 text-sm mt-1">{(error as Error)?.message}</p>
-        <button onClick={() => refetch()} className="btn btn-sm btn-outline border-amber-600 text-amber-200 mt-3">
+        <button onClick={() => refetch()} className="btn btn-sm btn-outline border-amber-600 text-amber-200 mt-3 btn-bevel">
           Retry
         </button>
       </div>
@@ -161,7 +161,7 @@ export default function HardwarePage() {
               </svg>
               <p className="text-amber-200/60 text-sm">No hardware added yet</p>
               <button onClick={() => setAddModal({ open: true })}
-                className="btn btn-sm bg-amber-600 hover:bg-amber-500 border-none text-white mt-1">
+                className="btn btn-sm btn-primary btn-bevel mt-1">
                 Add hardware
               </button>
             </div>

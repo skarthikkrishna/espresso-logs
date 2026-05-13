@@ -84,7 +84,7 @@ export default function BrewLogList() {
       {createPortal(
         <button
           onClick={() => navigate('/brew-log/add')}
-          className="btn btn-circle btn-lg fixed bottom-20 right-4 md:bottom-6 bg-amber-600 hover:bg-amber-500 border-none text-white shadow-xl z-50"
+          className="btn btn-circle btn-lg btn-primary btn-bevel fixed bottom-20 right-4 md:bottom-6 z-50"
           aria-label="Add shot"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
