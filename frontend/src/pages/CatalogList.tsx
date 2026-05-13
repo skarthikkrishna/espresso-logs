@@ -47,7 +47,7 @@ export default function CatalogList() {
           <input
             type="text"
             placeholder="Search roaster or bean…"
-            className="input input-bordered w-full max-w-sm mb-6 bg-amber-950/60 border-amber-700/40 text-amber-100 placeholder-amber-200/40"
+            className="input input-bordered input-styled w-full max-w-sm mb-6 bg-amber-950/60 border-amber-700/40 text-amber-100 placeholder-amber-200/40"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -125,7 +125,9 @@ export default function CatalogList() {
           className="btn btn-circle btn-lg btn-primary btn-bevel fixed bottom-20 right-4 md:bottom-6 z-50"
           aria-label="Add bean"
         >
-          +
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
         </button>,
         document.body
       )}

@@ -172,6 +172,7 @@ h1, h2, .font-display {
   background: rgba(14, 9, 5, 0.50);
   border: 1px solid rgba(200, 134, 10, 0.10);
   border-radius: 1rem;
+  box-shadow: var(--bevel-shadow-raised);
   overflow: hidden;
   cursor: pointer;
   transition: box-shadow 200ms ease, border-color 200ms ease, transform 150ms ease;
@@ -326,6 +327,13 @@ input[type="file"]::file-selector-button {
   cursor: not-allowed;
 }
 
+/* ── Border suppression — remove DaisyUI btn-primary/btn-secondary border on all
+   beveled non-outline buttons. btn-outline buttons rely on their own border and
+   are excluded. */
+.btn-bevel:not(.btn-outline) {
+  border: none;
+}
+
 /* ── Glass modal backdrop ────────────────────────────────────────────────── */
 /* CRITICAL: -webkit-backdrop-filter cannot use CSS var() in Safari.         */
 /* Use hardcoded blur(16px) for webkit; var(--glass-blur) for standard.      */
@@ -360,6 +368,11 @@ input[type="file"]::file-selector-button {
 }
 .card-bevel:hover {
   box-shadow: var(--btn-hover-shadow);
+}
+
+/* ── Badge border-radius — match --bevel-radius token; fixes square roast-level badges */
+.badge {
+  border-radius: var(--bevel-radius);
 }
 
 /* ── Select appearance reset (D4, ADR-006) ──────────────────────────────── */

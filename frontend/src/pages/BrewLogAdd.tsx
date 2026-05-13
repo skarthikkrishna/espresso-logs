@@ -181,7 +181,7 @@ export default function BrewLogAdd() {
         {/* Bag — full width */}
         <div className="form-control">
           <label className="label">
-            <span className="label-text text-amber-200">Bag</span>
+            <span className="label-text text-amber-200/70">Bag</span>
           </label>
           <select
             className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
@@ -204,7 +204,7 @@ export default function BrewLogAdd() {
           <div className="grid grid-cols-3 gap-3">
             <div className="form-control">
               <label className="label">
-                <span className="label-text text-amber-200">Dose (g)</span>
+                <span className="label-text text-amber-200/70">Dose (g)</span>
               </label>
               <input
                 type="number"
@@ -217,7 +217,7 @@ export default function BrewLogAdd() {
             </div>
             <div className="form-control">
               <label className="label">
-                <span className="label-text text-amber-200">Yield (g)</span>
+                <span className="label-text text-amber-200/70">Yield (g)</span>
               </label>
               <input
                 type="number"
@@ -230,7 +230,7 @@ export default function BrewLogAdd() {
             </div>
             <div className="form-control">
               <label className="label">
-                <span className="label-text text-amber-200">Time (s)</span>
+                <span className="label-text text-amber-200/70">Time (s)</span>
               </label>
               <input
                 type="number"
@@ -242,52 +242,55 @@ export default function BrewLogAdd() {
             </div>
           </div>
 
-          {/* Shot eligibility */}
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text text-amber-200">Shot eligibility <span className="text-error">*</span></span>
-            </label>
-            <select
-              value={eligibility}
-              onChange={e => setEligibility(e.target.value)}
-              required
-              className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
-            >
-              <option value="">Select…</option>
-              <option value="Reject">Reject</option>
-              <option value="Passable">Passable</option>
-              <option value="Good Espresso">Good Espresso</option>
-              <option value="God Shot">God Shot</option>
-            </select>
-          </div>
+          {/* Basket + Shot eligibility — two-col on desktop, Issue 9 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Basket first */}
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text text-amber-200/70">Basket</span>
+              </label>
+              {hardwareIsLoading && (
+                <select disabled className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100/50 input-styled">
+                  <option>Loading baskets…</option>
+                </select>
+              )}
+              {hardwareIsSuccess && baskets.length === 0 && (
+                <select disabled className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100/50 input-styled">
+                  <option>No baskets found</option>
+                </select>
+              )}
+              {hardwareIsSuccess && baskets.length > 0 && (
+                <select
+                  value={basketId}
+                  onChange={e => { dirtyFields.current.add('basket'); setBasketId(e.target.value) }}
+                  className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
+                >
+                  <option value="">Select basket…</option>
+                  {baskets.map(b => (
+                    <option key={b.hardware_id} value={b.hardware_id}>{b.name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
 
-          {/* Basket select — three loading states (FE-3) */}
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text text-amber-200">Basket</span>
-            </label>
-            {hardwareIsLoading && (
-              <select disabled className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100/50 input-styled">
-                <option>Loading baskets…</option>
-              </select>
-            )}
-            {hardwareIsSuccess && baskets.length === 0 && (
-              <select disabled className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100/50 input-styled">
-                <option>No baskets found</option>
-              </select>
-            )}
-            {hardwareIsSuccess && baskets.length > 0 && (
+            {/* Shot eligibility second */}
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text text-amber-200/70">Shot eligibility <span className="text-error">*</span></span>
+              </label>
               <select
-                value={basketId}
-                onChange={e => { dirtyFields.current.add('basket'); setBasketId(e.target.value) }}
+                value={eligibility}
+                onChange={e => setEligibility(e.target.value)}
+                required
                 className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
               >
-                <option value="">Select basket…</option>
-                {baskets.map(b => (
-                  <option key={b.hardware_id} value={b.hardware_id}>{b.name}</option>
-                ))}
+                <option value="">Select…</option>
+                <option value="Reject">Reject</option>
+                <option value="Passable">Passable</option>
+                <option value="Good Espresso">Good Espresso</option>
+                <option value="God Shot">God Shot</option>
               </select>
-            )}
+            </div>
           </div>
         </div>
 
@@ -295,7 +298,7 @@ export default function BrewLogAdd() {
         <div className="mt-4 max-w-[560px] mx-auto w-full">
           <div className="form-control">
             <label className="label">
-              <span className="label-text text-amber-200">Extraction compass</span>
+              <span className="label-text text-amber-200/70">Extraction compass</span>
             </label>
             <div className="glass-card p-3 w-full">
               <CompassChart
@@ -334,7 +337,7 @@ export default function BrewLogAdd() {
           <div className="grid grid-cols-2 gap-3">
             <div className="form-control">
               <label className="label">
-                <span className="label-text text-amber-200">Machine</span>
+                <span className="label-text text-amber-200/70">Machine</span>
               </label>
               <select
                 value={machineId}
@@ -350,7 +353,7 @@ export default function BrewLogAdd() {
             </div>
             <div className="form-control">
               <label className="label">
-                <span className="label-text text-amber-200">Grinder</span>
+                <span className="label-text text-amber-200/70">Grinder</span>
               </label>
               <select
                 value={grinderId}
@@ -366,41 +369,44 @@ export default function BrewLogAdd() {
             </div>
           </div>
 
-          {/* Grind setting */}
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text text-amber-200">Grind setting</span>
-            </label>
-            <input
-              type="text"
-              className="input input-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
-              value={grindSetting}
-              onChange={(e) => { dirtyFields.current.add('grind'); setGrindSetting(e.target.value) }}
-            />
-          </div>
+          {/* Grind setting + Storage method — two-col on desktop, Issue 8 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Grind setting */}
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text text-amber-200/70">Grind setting</span>
+              </label>
+              <input
+                type="text"
+                className="input input-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
+                value={grindSetting}
+                onChange={(e) => { dirtyFields.current.add('grind'); setGrindSetting(e.target.value) }}
+              />
+            </div>
 
-          {/* Storage method — select populated from hardware API */}
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text text-amber-200">Storage method</span>
-            </label>
-            <select
-              value={storageMethod}
-              onChange={e => setStorageMethod(e.target.value)}
-              disabled={hardwareIsLoading}
-              className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
-            >
-              <option value="">Select storage…</option>
-              {storageItems.map(h => (
-                <option key={h.hardware_id} value={h.name}>{h.name}</option>
-              ))}
-            </select>
+            {/* Storage method */}
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text text-amber-200/70">Storage method</span>
+              </label>
+              <select
+                value={storageMethod}
+                onChange={e => setStorageMethod(e.target.value)}
+                disabled={hardwareIsLoading}
+                className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
+              >
+                <option value="">Select storage…</option>
+                {storageItems.map(h => (
+                  <option key={h.hardware_id} value={h.name}>{h.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Notes */}
           <div className="form-control">
             <label className="label">
-              <span className="label-text text-amber-200">Notes</span>
+              <span className="label-text text-amber-200/70">Notes</span>
             </label>
             <textarea
               rows={3}
