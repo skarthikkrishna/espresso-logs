@@ -30,8 +30,14 @@ from app.services.idempotency_store import IdempotencyStore
 _dw_log = logging.getLogger("app.deps.dual_write")
 
 # E2E_AUTH_BYPASS=1 makes _get_current_user return a synthetic test user without
-# requiring a real OAuth session. Never set this in production.
+# requiring a real OAuth session. Forbidden in production.
 _E2E_AUTH_BYPASS = os.environ.get("E2E_AUTH_BYPASS") == "1"
+
+if _E2E_AUTH_BYPASS and os.environ.get("APP_ENV") == "production":
+    raise RuntimeError(
+        "E2E_AUTH_BYPASS must not be set in production — "
+        "it bypasses all authentication globally."
+    )
 
 
 class _RequiresLogin(Exception):

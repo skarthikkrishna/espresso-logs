@@ -73,7 +73,10 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
+    from app.deps import _E2E_AUTH_BYPASS
     logger.info("Coffee Tracker starting up (env=%s)", settings.app_env)
+    if _E2E_AUTH_BYPASS:
+        logger.warning("⚠️  E2E_AUTH_BYPASS is ACTIVE — authentication is bypassed for all requests")
     yield
 
 
