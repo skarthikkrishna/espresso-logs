@@ -25,9 +25,16 @@
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-error: #ef4444;
+  /* DaisyUI box radius — used by .modal-box and other components */
+  --radius-box: 0.625rem;
+}
 
-  /* ── Design System Tokens ─────────────────────────────────────────────── */
-
+/* ── Design System Tokens ──────────────────────────────────────────────────
+   Defined in :root (NOT inside @plugin "daisyui/theme") because the DaisyUI
+   theme plugin treats commas as value separators, which truncates multi-layer
+   box-shadow declarations to their last value only.
+   ───────────────────────────────────────────────────────────────────────── */
+:root {
   /* Glass surface — modals/overlays only (backdrop-filter scope: FR-7) */
   --glass-bg: rgba(15, 10, 8, 0.72);
   --glass-blur: blur(16px);
@@ -283,93 +290,99 @@ input[type="file"]::file-selector-button {
   width: 100%;
 }
 
-@layer components {
-  /* ── Bevel button treatment ─────────────────────────────────────────── */
-  .btn-bevel {
-    box-shadow: var(--btn-rest-shadow);
-    border-radius: var(--bevel-radius);
-    overflow: hidden;
-    text-decoration: none;
-    -webkit-tap-highlight-color: transparent;
-    transition: box-shadow 150ms ease, opacity 100ms ease;
-  }
-  .btn-bevel:hover:not(:disabled) {
-    box-shadow: var(--btn-hover-shadow);
-  }
-  .btn-bevel:active:not(:disabled) {
-    box-shadow: var(--btn-active-shadow);
-  }
-  .btn-bevel:focus-visible {
-    box-shadow: var(--btn-rest-shadow), var(--input-focus-ring);
-    outline: none;
-  }
-  .btn-bevel:disabled,
-  .btn-bevel[disabled] {
-    box-shadow: none;
-    opacity: var(--btn-disabled-opacity);
-    cursor: not-allowed;
-  }
+/* ── Design-system component overrides ─────────────────────────────────────
+   These rules are intentionally OUTSIDE any @layer so they have higher cascade
+   priority than all layered styles (including @layer daisyui). This is required
+   because DaisyUI v5 registers itself in @layer daisyui, which outranks
+   @layer components. Unlayered CSS wins over every layer.
+   ───────────────────────────────────────────────────────────────────────── */
 
-  /* ── Glass modal backdrop ────────────────────────────────────────────── */
-  /* CRITICAL: -webkit-backdrop-filter cannot use CSS var() in Safari.     */
-  /* Use hardcoded blur(16px) for webkit; var(--glass-blur) for standard.  */
-  .glass-modal-backdrop {
-    background: var(--glass-bg);
-    -webkit-backdrop-filter: blur(16px);
-    backdrop-filter: blur(var(--glass-blur));
-  }
-  .glass-modal-surface {
-    box-shadow: var(--glass-highlight), var(--bevel-shadow-raised);
-    border-radius: var(--bevel-radius);
-    border: 1px solid var(--glass-border);
-  }
+/* ── Bevel button treatment ─────────────────────────────────────────────── */
+.btn-bevel {
+  box-shadow: var(--btn-rest-shadow);
+  border-radius: var(--bevel-radius);
+  overflow: hidden;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: box-shadow 150ms ease, opacity 100ms ease;
+}
+.btn-bevel:hover:not(:disabled) {
+  box-shadow: var(--btn-hover-shadow);
+}
+.btn-bevel:active:not(:disabled) {
+  box-shadow: var(--btn-active-shadow);
+}
+.btn-bevel:focus-visible {
+  box-shadow: var(--btn-rest-shadow), var(--input-focus-ring);
+  outline: none;
+}
+.btn-bevel:disabled,
+.btn-bevel[disabled] {
+  box-shadow: none;
+  opacity: var(--btn-disabled-opacity);
+  cursor: not-allowed;
+}
 
-  /* ── Styled form inputs ──────────────────────────────────────────────── */
-  .input-styled {
-    background: var(--input-bg);
-    border: var(--input-border);
-    border-radius: var(--bevel-radius);
-  }
-  .input-styled:focus,
-  .input-styled:focus-visible {
-    outline: none;
-    box-shadow: var(--input-focus-ring);
-  }
+/* ── Glass modal backdrop ────────────────────────────────────────────────── */
+/* CRITICAL: -webkit-backdrop-filter cannot use CSS var() in Safari.         */
+/* Use hardcoded blur(16px) for webkit; var(--glass-blur) for standard.      */
+.glass-modal-backdrop {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(var(--glass-blur));
+}
+.glass-modal-surface {
+  box-shadow: var(--glass-highlight), var(--bevel-shadow-raised);
+  border-radius: var(--bevel-radius);
+  border: 1px solid var(--glass-border);
+}
 
-  /* ── Bevel card surface ──────────────────────────────────────────────── */
+/* ── Styled form inputs ──────────────────────────────────────────────────── */
+.input-styled {
+  background: var(--input-bg);
+  border: var(--input-border);
+  border-radius: var(--bevel-radius);
+}
+.input-styled:focus,
+.input-styled:focus-visible {
+  outline: none;
+  box-shadow: var(--input-focus-ring);
+}
+
+/* ── Bevel card surface ──────────────────────────────────────────────────── */
+.card-bevel {
+  box-shadow: var(--bevel-shadow-raised);
+  border-radius: var(--bevel-radius);
+  overflow: hidden;
+}
+.card-bevel:hover {
+  box-shadow: var(--btn-hover-shadow);
+}
+
+/* ── Select appearance reset (D4, ADR-006) ──────────────────────────────── */
+select.input-styled,
+.select.input-styled {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* ── Tap highlight suppression (all interactive elements, iOS) ──────────── */
+.btn, [role="button"], a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Label gap (spec-029 D5 + D4 token) ─────────────────────────────────── */
+.form-control > .label {
+  display: block;
+  width: 100%;
+  margin-bottom: var(--input-label-gap);
+}
+
+/* ── Reduced motion overrides ────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .btn-bevel,
   .card-bevel {
-    box-shadow: var(--bevel-shadow-raised);
-    border-radius: var(--bevel-radius);
-    overflow: hidden;
-  }
-  .card-bevel:hover {
-    box-shadow: var(--btn-hover-shadow);
-  }
-
-  /* ── Select appearance reset (D4, ADR-006) ───────────────────────────── */
-  select.input-styled,
-  .select.input-styled {
-    -webkit-appearance: none;
-    appearance: none;
-  }
-
-  /* ── Tap highlight suppression (all interactive elements, iOS) ───────── */
-  .btn, [role="button"], a {
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  /* ── Label gap (spec-029 D5 + D4 token) ─────────────────────────────── */
-  .form-control > .label {
-    display: block;
-    width: 100%;
-    margin-bottom: var(--input-label-gap);
-  }
-
-  /* ── Reduced motion overrides ────────────────────────────────────────── */
-  @media (prefers-reduced-motion: reduce) {
-    .btn-bevel,
-    .card-bevel {
-      transition: none;
-    }
+    transition: none;
   }
 }
+
