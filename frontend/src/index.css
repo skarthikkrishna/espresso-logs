@@ -111,7 +111,18 @@ h1, h2, .font-display {
     url('/static/img/hero-dashboard.jpg');
   background-size: cover;
   background-position: center 40%;
-  transition: background-image 300ms ease;
+  /*
+   * Chrome desktop fix: pre-promote to a GPU compositor layer so the layer
+   * is stable before the background-image loads. Without this, Chrome
+   * invalidates the layer on async image load and the backdrop-filter on
+   * #main-content samples a black empty layer in its place.
+   *
+   * `transition: background-image` removed — background-image is not a
+   * CSS-animatable property (CSS Transitions Level 1); the declaration was a
+   * no-op on all browsers but Chrome may attempt a cross-fade that interferes
+   * with compositor layer management.
+   */
+  will-change: transform;
 }
 
 /* Per-page background overrides */
