@@ -32,3 +32,15 @@ Both tasks (finn-1 and finn-2) completed and committed to `fix/ui-safari-polish`
 2. "Chip/Badge Sizing Convention"
 
 See `.squad/orchestration-log/` for agent-level summaries.
+
+### 2026-05-13: Generic Chip component extracted
+
+- **Component:** `frontend/src/components/Chip.tsx`
+- **Variants:**
+  - `roast` — amber palette (`bg-amber-900/25 text-amber-300 border border-amber-600/30`); used for roast level in BrewLogDetail, Dashboard, CatalogDetail, CatalogList
+  - `machine` — stone palette (`bg-stone-900/30 text-stone-400 border border-stone-600/30`); used for hardware category in HardwarePage
+  - `default` — base classes only, no color overrides
+- **API:** `<Chip label={...} variant="roast|machine|default" className="..." />`
+- **Base classes:** `badge badge-sm text-xs px-2 py-0.5` (consistent padding/size enforced in one place)
+- **Null-safe:** returns `null` if `label` is falsy — no conditional wrapping needed at call sites
+- **Rule:** All future categorical label chips (roast type, machine category, etc.) should use `<Chip />` with the appropriate variant. Do not add inline badge spans to page files.
