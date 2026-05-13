@@ -14,3 +14,21 @@
 - **Root cause:** `CatalogDetail.tsx` used `badge` without `badge-sm`, rendering at full DaisyUI badge size (text-sm, h-6). All other instances had `badge-sm` but no explicit `text-xs`.
 - **Fix:** Added `badge-sm` to CatalogDetail and added explicit `text-xs` to all four badge instances (BrewLogDetail, Dashboard, CatalogList, CatalogDetail) so chip text size is enforced regardless of DaisyUI version internals.
 - **Rule:** Always pair DaisyUI badge components with both a size modifier (`badge-sm`) **and** an explicit Tailwind font-size (`text-xs`) for chip/tag use cases. Don't rely on DaisyUI's implicit font-size cascade.
+
+### 2026-05-13: Badge chip horizontal padding
+
+- **Root cause:** DaisyUI `badge-sm` only provides ~0.3rem horizontal padding, which is too tight for longer label text like "Medium" or "Light Roast". The text was visually touching the chip border edges.
+- **Fix:** Added `px-2 py-0.5` to all four roast/machine type badge spans across BrewLogDetail, CatalogDetail, CatalogList, and Dashboard. Note that CatalogDetail and Dashboard also had `mt-2` in their class string (absent in the other two files) — the grep pattern differed slightly per file.
+- **Rule:** DaisyUI badge variants (`badge-sm`, `badge-xs`) should always be supplemented with explicit `px-*` when displaying variable-length label text. Don't rely on DaisyUI's built-in padding for chip/tag use cases where breathing room matters.
+
+## Team Updates
+
+### 2026-05-13: Session Log — Chip & Chrome Fixes
+
+Both tasks (finn-1 and finn-2) completed and committed to `fix/ui-safari-polish`.
+
+**Decisions archived to decisions.md:**
+1. "Chrome desktop backdrop-filter + async background image pattern"
+2. "Chip/Badge Sizing Convention"
+
+See `.squad/orchestration-log/` for agent-level summaries.
