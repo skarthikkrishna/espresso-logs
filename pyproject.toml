@@ -22,7 +22,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "pytest>=8.2",
+    "pytest>=9.0.3",
     "pytest-asyncio>=0.23",
     "pytest-playwright>=0.5",
     "ruff>=0.15.12",
