@@ -232,7 +232,7 @@ export default function CatalogDetail() {
             <>
               <h1 className="text-2xl font-display text-amber-100">{item.bean_name}</h1>
               <p className="text-amber-200/70">{item.roaster}</p>
-              <span className="badge mt-2 bg-amber-900/25 text-amber-300 border border-amber-600/30">
+              <span className="badge badge-sm text-xs mt-2 bg-amber-900/25 text-amber-300 border border-amber-600/30">
                 {item.roast_level}
               </span>
               <div className="mt-2">

@@ -105,7 +105,7 @@ export default function CatalogList() {
                     </p>
                     {item.roast_level && (
                       <div className="flex items-center mt-3">
-                        <span className="badge badge-sm bg-amber-900/25 text-amber-300 border border-amber-600/30">
+                        <span className="badge badge-sm text-xs bg-amber-900/25 text-amber-300 border border-amber-600/30">
                           {item.roast_level}
                         </span>
                       </div>

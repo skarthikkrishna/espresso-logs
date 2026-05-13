@@ -92,7 +92,7 @@ export default function Dashboard() {
               >
                 <p className="font-semibold text-amber-100 text-sm leading-snug">{bag.display_name}</p>
                 {bag.roast_level && (
-                  <span className="badge badge-sm mt-2 bg-amber-900/25 text-amber-300 border border-amber-600/30">
+                  <span className="badge badge-sm text-xs mt-2 bg-amber-900/25 text-amber-300 border border-amber-600/30">
                     {bag.roast_level}
                   </span>
                 )}
