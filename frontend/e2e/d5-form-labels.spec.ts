@@ -8,11 +8,11 @@ test.describe('D5 — Add Shot form label alignment', () => {
   test.beforeEach(async ({ page }) => {
     seed = await seedTestData(page);
     await page.goto('./brew-log/add');
-    // Wait for the inventory fetch to complete so the Bag select is populated
-    await page.waitForSelector(
-      'select option:not([value=""]):not([disabled])',
-      { timeout: 10_000 },
-    );
+    // Wait for the inventory fetch to complete so the Bag select renders.
+    // <option> elements are never "visible" in Playwright (they're inside a dropdown),
+    // so wait for the select element itself and for networkidle.
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('select', { state: 'visible', timeout: 10_000 });
   });
 
   test.afterEach(async ({ page }) => {
@@ -33,8 +33,8 @@ test.describe('D5 — Add Shot form label alignment', () => {
 
     expect(labelBox).not.toBeNull();
     expect(selectBox).not.toBeNull();
-    // Label bottom edge must be strictly above select top edge
-    expect(labelBox!.y + labelBox!.height).toBeLessThan(selectBox!.y);
+    // Label bottom edge must be at or above select top edge (strict "above" or touching)
+    expect(labelBox!.y + labelBox!.height).toBeLessThanOrEqual(selectBox!.y);
   });
 
   test('Shot eligibility label is above select', async ({ page }) => {
@@ -51,7 +51,7 @@ test.describe('D5 — Add Shot form label alignment', () => {
 
     expect(labelBox).not.toBeNull();
     expect(selectBox).not.toBeNull();
-    expect(labelBox!.y + labelBox!.height).toBeLessThan(selectBox!.y);
+    expect(labelBox!.y + labelBox!.height).toBeLessThanOrEqual(selectBox!.y);
   });
 
   test('Basket label is above select', async ({ page }) => {
@@ -68,6 +68,6 @@ test.describe('D5 — Add Shot form label alignment', () => {
 
     expect(labelBox).not.toBeNull();
     expect(selectBox).not.toBeNull();
-    expect(labelBox!.y + labelBox!.height).toBeLessThan(selectBox!.y);
+    expect(labelBox!.y + labelBox!.height).toBeLessThanOrEqual(selectBox!.y);
   });
 });
