@@ -19,7 +19,7 @@ export default function CatalogList() {
   if (isLoading) return <LoadingSpinner />
   if (isError) return (
     <div className="p-4">
-      <div className="glass-card p-6 text-center">
+      <div className="glass-card card-bevel p-6 text-center">
         <p className="text-amber-200 font-medium">Couldn't load catalog</p>
         <button onClick={() => refetch()} className="btn btn-sm btn-outline border-amber-600 text-amber-200 mt-3">Retry</button>
       </div>

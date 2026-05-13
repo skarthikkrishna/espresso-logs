@@ -184,7 +184,7 @@ export default function BrewLogAdd() {
             <span className="label-text text-amber-200">Bag</span>
           </label>
           <select
-            className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100"
+            className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
             value={bagId}
             onChange={(e) => setBagId(e.target.value)}
             required
@@ -210,7 +210,7 @@ export default function BrewLogAdd() {
                 type="number"
                 step="0.1"
                 min="0"
-                className="input input-bordered bg-amber-950/60 border-amber-700/40 text-amber-100"
+                className="input input-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
                 value={doseG}
                 onChange={(e) => { dirtyFields.current.add('dose'); setDoseG(e.target.value) }}
               />
@@ -223,7 +223,7 @@ export default function BrewLogAdd() {
                 type="number"
                 step="0.1"
                 min="0"
-                className="input input-bordered bg-amber-950/60 border-amber-700/40 text-amber-100"
+                className="input input-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
                 value={yieldG}
                 onChange={(e) => { dirtyFields.current.add('yield'); setYieldG(e.target.value) }}
               />
@@ -235,7 +235,7 @@ export default function BrewLogAdd() {
               <input
                 type="number"
                 min="0"
-                className="input input-bordered bg-amber-950/60 border-amber-700/40 text-amber-100"
+                className="input input-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
                 value={timeSec}
                 onChange={(e) => setTimeSec(e.target.value)}
               />
@@ -251,7 +251,7 @@ export default function BrewLogAdd() {
               value={eligibility}
               onChange={e => setEligibility(e.target.value)}
               required
-              className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100"
+              className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
             >
               <option value="">Select…</option>
               <option value="Reject">Reject</option>
@@ -267,12 +267,12 @@ export default function BrewLogAdd() {
               <span className="label-text text-amber-200">Basket</span>
             </label>
             {hardwareIsLoading && (
-              <select disabled className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100/50">
+              <select disabled className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100/50 input-styled">
                 <option>Loading baskets…</option>
               </select>
             )}
             {hardwareIsSuccess && baskets.length === 0 && (
-              <select disabled className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100/50">
+              <select disabled className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100/50 input-styled">
                 <option>No baskets found</option>
               </select>
             )}
@@ -280,7 +280,7 @@ export default function BrewLogAdd() {
               <select
                 value={basketId}
                 onChange={e => { dirtyFields.current.add('basket'); setBasketId(e.target.value) }}
-                className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100"
+                className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
               >
                 <option value="">Select basket…</option>
                 {baskets.map(b => (
@@ -340,7 +340,7 @@ export default function BrewLogAdd() {
                 value={machineId}
                 onChange={e => setMachineId(e.target.value)}
                 disabled={hardwareIsLoading}
-                className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100"
+                className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
               >
                 <option value="">Select machine…</option>
                 {machines.map(m => (
@@ -356,7 +356,7 @@ export default function BrewLogAdd() {
                 value={grinderId}
                 onChange={e => setGrinderId(e.target.value)}
                 disabled={hardwareIsLoading}
-                className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100"
+                className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
               >
                 <option value="">Select grinder…</option>
                 {grinders.map(g => (
@@ -373,7 +373,7 @@ export default function BrewLogAdd() {
             </label>
             <input
               type="text"
-              className="input input-bordered bg-amber-950/60 border-amber-700/40 text-amber-100"
+              className="input input-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
               value={grindSetting}
               onChange={(e) => { dirtyFields.current.add('grind'); setGrindSetting(e.target.value) }}
             />
@@ -388,7 +388,7 @@ export default function BrewLogAdd() {
               value={storageMethod}
               onChange={e => setStorageMethod(e.target.value)}
               disabled={hardwareIsLoading}
-              className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100"
+              className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
             >
               <option value="">Select storage…</option>
               {storageItems.map(h => (
@@ -404,7 +404,7 @@ export default function BrewLogAdd() {
             </label>
             <textarea
               rows={3}
-              className="textarea textarea-bordered bg-amber-950/60 border-amber-700/40 text-amber-100"
+              className="textarea textarea-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
@@ -418,7 +418,7 @@ export default function BrewLogAdd() {
         <button
           type="submit"
           disabled={mutation.isPending || !bagId}
-          className="btn bg-amber-600 hover:bg-amber-500 border-none text-white w-full"
+          className="btn bg-amber-600 hover:bg-amber-500 border-none text-white w-full btn-bevel"
         >
           {mutation.isPending ? 'Saving…' : 'Log shot'}
         </button>

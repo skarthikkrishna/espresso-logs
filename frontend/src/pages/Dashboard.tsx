@@ -21,7 +21,7 @@ export default function Dashboard() {
   if (isLoading) return (
     <div className="p-4 space-y-3">
       {[1,2,3].map(i => (
-        <div key={i} className="glass-card p-4 animate-pulse">
+        <div key={i} className="glass-card card-bevel p-4 animate-pulse">
           <div className="h-4 bg-amber-900/40 rounded w-3/4 mb-2" />
           <div className="h-3 bg-amber-900/30 rounded w-1/2" />
         </div>
@@ -31,7 +31,7 @@ export default function Dashboard() {
 
   if (isError) return (
     <div className="p-4">
-      <div className="glass-card p-6 text-center">
+      <div className="glass-card card-bevel p-6 text-center">
         <p className="text-amber-200 font-medium">Couldn't load dashboard</p>
         <p className="text-amber-400/70 text-sm mt-1">{(error as Error)?.message}</p>
         <button onClick={() => refetch()} className="btn btn-sm btn-outline border-amber-600 text-amber-200 mt-3">
@@ -59,7 +59,7 @@ export default function Dashboard() {
       <div className="flex justify-end">
         <button
           onClick={() => navigate('/brew-log/add')}
-          className="btn btn-primary btn-sm no-underline"
+          className="btn btn-primary btn-sm no-underline btn-bevel"
         >
           + Log Shot
         </button>
@@ -72,7 +72,7 @@ export default function Dashboard() {
       <section>
         <h2 className="text-lg font-display text-amber-200 mb-4">Active bags</h2>
         {!bags?.length ? (
-          <div className="glass-card p-6">
+          <div className="glass-card card-bevel p-6">
             <h2 className="text-lg font-semibold text-amber-300 mb-2">No active bags yet.</h2>
             <p className="text-sm text-amber-200/70 mb-4">Add a bean to the catalog to get started.</p>
             <Link
@@ -87,7 +87,7 @@ export default function Dashboard() {
             {bags.map((bag) => (
               <div
                 key={bag.bag_id}
-                className="glass-card p-4 cursor-pointer"
+                className="glass-card card-bevel p-4 cursor-pointer"
                 onClick={() => navigate('/brew-log/add')}
               >
                 <p className="font-semibold text-amber-100 text-sm leading-snug">{bag.display_name}</p>
@@ -123,7 +123,7 @@ export default function Dashboard() {
               <Link
                 key={shot.shot_id}
                 to={`/brew-log/${shot.shot_id}`}
-                className="glass-card flex items-center justify-between px-4 py-3 hover:border-amber-500/40 transition-colors"
+                className="glass-card card-bevel flex items-center justify-between px-4 py-3 hover:border-amber-500/40 transition-colors"
               >
                 <div className="min-w-0">
                   <p className="text-sm text-amber-100 truncate">{shot.bag_display}</p>

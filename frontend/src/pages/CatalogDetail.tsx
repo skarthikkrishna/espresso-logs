@@ -54,7 +54,7 @@ export default function CatalogDetail() {
   if (isLoading) return <LoadingSpinner />
   if (isError) return (
     <div className="p-4">
-      <div className="glass-card p-6 text-center">
+      <div className="glass-card card-bevel p-6 text-center">
         <p className="text-amber-200 font-medium">Couldn't load coffee details</p>
         <button onClick={() => refetch()} className="btn btn-sm btn-outline border-amber-600 text-amber-200 mt-3">Retry</button>
       </div>
@@ -222,7 +222,7 @@ export default function CatalogDetail() {
                       setEditSaving(false)
                     }
                   }}
-                  className="btn btn-xs bg-amber-600 hover:bg-amber-500 border-none text-white"
+                  className="btn btn-xs bg-amber-600 hover:bg-amber-500 border-none text-white btn-bevel"
                 >
                   {editSaving ? <span className="loading loading-spinner loading-xs" /> : 'Save'}
                 </button>
@@ -246,7 +246,7 @@ export default function CatalogDetail() {
                     setImageError(null)
                     setEditing(true)
                   }}
-                  className="btn btn-xs btn-outline border border-amber-600/40 text-amber-300 hover:bg-amber-800/40 appearance-none"
+                  className="btn btn-xs btn-outline border border-amber-600/40 text-amber-300 hover:bg-amber-800/40 appearance-none btn-bevel"
                 >
                   Edit
                 </button>
@@ -260,7 +260,7 @@ export default function CatalogDetail() {
           href={item.product_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="btn btn-sm btn-outline border-amber-600/40 text-amber-400 hover:bg-amber-800/40 flex items-center justify-center mt-2 w-full max-w-xs mx-auto"
+          className="btn btn-sm btn-outline border-amber-600/40 text-amber-400 hover:bg-amber-800/40 flex items-center justify-center mt-2 w-full max-w-xs mx-auto btn-bevel"
         >
           View on roaster website ↗
         </a>
@@ -272,14 +272,14 @@ export default function CatalogDetail() {
           <h2 className="text-lg font-display text-amber-200">Bags</h2>
           <button
             onClick={() => { setAddingBag(true); setBagError(null) }}
-            className="btn btn-xs bg-amber-700 hover:bg-amber-600 border-none text-white overflow-hidden"
+            className="btn btn-xs bg-amber-700 hover:bg-amber-600 border-none text-white overflow-hidden btn-bevel"
           >
             + Add bag
           </button>
         </div>
 
         {addingBag && (
-          <div className="glass-card p-4 mb-3 space-y-3">
+          <div className="glass-card card-bevel p-4 mb-3 space-y-3">
             <div className="flex gap-3 flex-wrap">
               <div className="flex-1 min-w-[140px]">
                 <label className="label text-xs text-amber-200/70 pb-1">Roast date</label>
@@ -331,7 +331,7 @@ export default function CatalogDetail() {
                     setBagSaving(false)
                   }
                 }}
-                className="btn btn-xs bg-amber-600 hover:bg-amber-500 border-none text-white"
+              className="btn btn-xs bg-amber-600 hover:bg-amber-500 border-none text-white btn-bevel"
               >
                 {bagSaving ? <span className="loading loading-spinner loading-xs" /> : 'Save bag'}
               </button>
@@ -344,7 +344,7 @@ export default function CatalogDetail() {
         ) : (
           <div className="space-y-2">
             {bags.map((bag) => (
-              <div key={bag.bag_id} className="glass-card px-4 py-3 flex items-center gap-3">
+              <div key={bag.bag_id} className="glass-card card-bevel px-4 py-3 flex items-center gap-3">
                 <div>
                   {bag.roast_date && (
                     <p data-testid="bag-roast-date" className="text-sm text-amber-300 mt-0.5">{bag.roast_date}</p>
