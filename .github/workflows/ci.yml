@@ -177,6 +177,35 @@ jobs:
       - run: npm ci
       - run: npm run build
 
+  fe-e2e:
+    runs-on: ubuntu-latest
+    needs: check-activity
+    if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20.19'
+      - run: npm ci
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
+      - name: Build frontend
+        run: npm run build
+      - name: Run Playwright E2E tests
+        run: npx playwright test
+        env:
+          PW_BASE_URL: ${{ vars.PW_BASE_URL || '' }}
+          CI: true
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 14
+
   # ── Static analysis (parallel with all above) ───────────────────────────
   # codeql: disabled — requires GitHub Advanced Security (paid)
   semgrep:
