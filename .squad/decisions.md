@@ -299,6 +299,21 @@ The seed script has been run against the live spreadsheet. All 7 rows are presen
 
 ---
 
+## 2026-05-13: CI & Type Safety Fixes (Maya)
+
+### DEC-M01: Abstract method policy for BaseRepo
+
+**Status:** APPROVED  
+**PR:** #60 (fix/ui-safari-polish)
+
+**Decision:** Any method implemented identically across **all** concrete `BaseRepo` subclasses must also be declared as an `@abstractmethod` on `BaseRepo` itself. This is a mypy `--strict` requirement (`attr-defined` errors surface when calling through the base type) and a correctness guardrail for future subclasses.
+
+**Rationale:** `delete_rows(start_row, end_row)` was present on all 5 concrete repos but missing from `BaseRepo`, causing a mypy `attr-defined` failure in `api_e2e.py`. The fix is the canonical pattern: declare abstract, let concrete implementations satisfy it.
+
+**Impact:** Low risk: no runtime behaviour changed; all concrete repos already satisfy the new abstract contract. Future repo subclasses that forget to implement `delete_rows` will fail at import time, not at runtime.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
