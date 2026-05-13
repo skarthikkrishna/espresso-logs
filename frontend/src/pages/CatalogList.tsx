@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { listCatalog } from '../api/catalog'
 import LoadingSpinner from '../components/LoadingSpinner'
 import AddBeanModal from '../components/AddBeanModal'
+import Chip from '../components/Chip'
 
 export default function CatalogList() {
   const [search, setSearch] = useState('')
@@ -105,9 +106,7 @@ export default function CatalogList() {
                     </p>
                     {item.roast_level && (
                       <div className="flex items-center mt-3">
-                        <span className="badge badge-sm text-xs px-2 py-0.5 bg-amber-900/25 text-amber-300 border border-amber-600/30">
-                          {item.roast_level}
-                        </span>
+                        <Chip label={item.roast_level} variant="roast" />
                       </div>
                     )}
                   </div>

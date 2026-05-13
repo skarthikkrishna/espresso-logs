@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import { getDashboard } from '../api/dashboard'
 import { listBrewLog } from '../api/brewLog'
+import Chip from '../components/Chip'
 import type { DashboardBag, BrewLogEntry } from '../types/entities'
 
 export default function Dashboard() {
@@ -91,11 +92,7 @@ export default function Dashboard() {
                 onClick={() => navigate('/brew-log/add')}
               >
                 <p className="font-semibold text-amber-100 text-sm leading-snug">{bag.display_name}</p>
-                {bag.roast_level && (
-                  <span className="badge badge-sm text-xs px-2 py-0.5 mt-2 bg-amber-900/25 text-amber-300 border border-amber-600/30">
-                    {bag.roast_level}
-                  </span>
-                )}
+                <Chip label={bag.roast_level} variant="roast" className="mt-2" />
                 {bag.days_since_last_shot != null && (
                   <p className="text-xs text-amber-200/50 mt-2">
                     {bag.days_since_last_shot === 0 ? 'Last shot: today' : `Last shot: ${bag.days_since_last_shot}d ago`}

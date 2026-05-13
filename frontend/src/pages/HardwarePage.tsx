@@ -5,6 +5,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import AddHardwareModal from '../components/AddHardwareModal'
 import LogMaintenanceModal from '../components/LogMaintenanceModal'
 import EditHardwareModal from '../components/EditHardwareModal'
+import Chip from '../components/Chip'
 import type { HardwareItem } from '../types/entities'
 
 function HardwareIcon({ category }: { category: string }) {
@@ -132,9 +133,7 @@ export default function HardwarePage() {
                           {item.name}
                         </h3>
                         <div className="flex items-center justify-between mt-3">
-                          <span className="badge badge-sm bg-stone-900/30 text-stone-400 border border-stone-600/30">
-                            {item.category}
-                          </span>
+                          <Chip label={item.category} variant="machine" />
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
