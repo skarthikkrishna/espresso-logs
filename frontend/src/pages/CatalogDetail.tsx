@@ -246,7 +246,7 @@ export default function CatalogDetail() {
                     setImageError(null)
                     setEditing(true)
                   }}
-                  className="btn btn-xs btn-outline border-amber-600/40 text-amber-300 hover:bg-amber-800/40"
+                  className="btn btn-xs btn-outline border border-amber-600/40 text-amber-300 hover:bg-amber-800/40 appearance-none"
                 >
                   Edit
                 </button>
@@ -272,7 +272,7 @@ export default function CatalogDetail() {
           <h2 className="text-lg font-display text-amber-200">Bags</h2>
           <button
             onClick={() => { setAddingBag(true); setBagError(null) }}
-            className="btn btn-xs bg-amber-700 hover:bg-amber-600 border-none text-white"
+            className="btn btn-xs bg-amber-700 hover:bg-amber-600 border-none text-white overflow-hidden"
           >
             + Add bag
           </button>
