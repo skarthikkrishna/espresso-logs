@@ -20,6 +20,7 @@ from app.repos.hardware import HardwareRepo
 from app.repos.inventory import InventoryRepo
 from app.repos.maintenance import MaintenanceRepo
 from app.repos.sheets_client import RealSheetsClient, SheetsClientProtocol
+from app.testing.fake_sheets import FakeSheetsClient as _FakeSheetsClient, make_e2e_sheets_client as _make_e2e_sheets_client
 from app.repos.sql.brew_log import SqlBrewLogRepo
 from app.repos.sql.catalog import SqlCatalogRepo
 from app.repos.sql.hardware import SqlHardwareRepo
@@ -61,18 +62,25 @@ CurrentUser = Annotated[dict[str, Any], require_user]
 # ---------------------------------------------------------------------------
 
 _sheets_lock = threading.Lock()
-_sheets_client: RealSheetsClient | None = None
+_sheets_client: RealSheetsClient | _FakeSheetsClient | None = None
 
 
-def get_sheets_client() -> RealSheetsClient:
-    """Return the process-level RealSheetsClient singleton (lazy, thread-safe)."""
+def get_sheets_client() -> RealSheetsClient | _FakeSheetsClient:
+    """Return the process-level Sheets client singleton (lazy, thread-safe).
+
+    When E2E_AUTH_BYPASS=1 this returns an in-memory FakeSheetsClient pre-seeded
+    with representative test data.  No real Google Sheets API calls are made.
+    """
     global _sheets_client
     if _sheets_client is None:
         with _sheets_lock:
             if _sheets_client is None:
-                from app.config import settings  # local import avoids circular deps at module load
+                if _E2E_AUTH_BYPASS:
+                    _sheets_client = _make_e2e_sheets_client()
+                else:
+                    from app.config import settings  # local import avoids circular deps at module load
 
-                _sheets_client = RealSheetsClient(settings.spreadsheet_id)
+                    _sheets_client = RealSheetsClient(settings.spreadsheet_id)
     return _sheets_client
 
 
