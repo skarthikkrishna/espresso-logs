@@ -30,8 +30,8 @@ export default function EditHardwareModal({ hardware, onClose, onSaved }: EditHa
   const canSave = name.trim().length > 0 && !isPending
 
   return (
-    <dialog className="modal modal-open" open>
-      <div className="modal-box bg-stone-900 border border-amber-900/30">
+    <dialog className="modal modal-open glass-modal-backdrop" open>
+      <div className="modal-box bg-stone-900 border border-amber-900/30 glass-modal-surface">
         <h3 className="font-semibold text-lg text-amber-300 mb-4">Edit hardware</h3>
 
         <div className="flex flex-col gap-3">
@@ -41,7 +41,7 @@ export default function EditHardwareModal({ hardware, onClose, onSaved }: EditHa
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
+              className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100 input-styled"
             />
           </div>
         </div>
@@ -58,7 +58,7 @@ export default function EditHardwareModal({ hardware, onClose, onSaved }: EditHa
             <button
               onClick={() => mutate()}
               disabled={!canSave}
-              className="btn btn-sm bg-amber-600 hover:bg-amber-500 border-none text-white"
+              className="btn btn-sm bg-amber-600 hover:bg-amber-500 border-none text-white btn-bevel"
             >
               {isPending
                 ? <span className="loading loading-spinner loading-xs" />

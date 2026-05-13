@@ -113,7 +113,7 @@ export default function ImportWizard() {
           <input
             type="file"
             accept=".csv"
-            className="file-input file-input-bordered w-full bg-amber-950/60 border-amber-700/40 text-amber-100"
+            className="file-input file-input-bordered w-full bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
             onChange={handleFile}
           />
           <button

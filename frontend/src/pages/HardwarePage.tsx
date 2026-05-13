@@ -52,7 +52,7 @@ export default function HardwarePage() {
   if (isLoading) return <LoadingSpinner />
   if (isError) return (
     <div className="p-4">
-      <div className="glass-card p-6 text-center">
+      <div className="glass-card card-bevel p-6 text-center">
         <p className="text-amber-200 font-medium">Couldn't load hardware</p>
         <p className="text-amber-400/70 text-sm mt-1">{(error as Error)?.message}</p>
         <button onClick={() => refetch()} className="btn btn-sm btn-outline border-amber-600 text-amber-200 mt-3">
@@ -153,7 +153,7 @@ export default function HardwarePage() {
             )
           })}
           {!hardware?.length && (
-            <div className="glass-card p-8 flex flex-col items-center justify-center gap-3 text-center">
+            <div className="glass-card card-bevel p-8 flex flex-col items-center justify-center gap-3 text-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-amber-400/40"
                 fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={0.8}>
                 <path strokeLinecap="round" strokeLinejoin="round"
@@ -182,7 +182,7 @@ export default function HardwarePage() {
             </button>
           )}
           {!selectedId ? (
-            <div className="glass-card p-8 flex flex-col items-center justify-center gap-3 min-h-48 text-stone-500/40">
+            <div className="glass-card card-bevel p-8 flex flex-col items-center justify-center gap-3 min-h-48 text-stone-500/40">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={0.8}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -192,7 +192,7 @@ export default function HardwarePage() {
           ) : detailLoading ? (
             <LoadingSpinner />
           ) : selectedItem ? (
-            <div className="glass-card p-6 space-y-4">
+            <div className="glass-card card-bevel p-6 space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <span className="text-xs uppercase tracking-widest text-amber-400/60">
@@ -202,7 +202,7 @@ export default function HardwarePage() {
                 </div>
                 {(selectedItem.category === 'Machine' || selectedItem.category === 'Grinder') && (
                   <button onClick={() => setLogModal({ open: true, hardware: selectedItem })}
-                    className="btn btn-sm bg-amber-800/60 hover:bg-amber-700/60 border border-amber-600/30 text-amber-200 shrink-0">
+                    className="btn btn-sm bg-amber-800/60 hover:bg-amber-700/60 border border-amber-600/30 text-amber-200 shrink-0 btn-bevel">
                     Log maintenance
                   </button>
                 )}
