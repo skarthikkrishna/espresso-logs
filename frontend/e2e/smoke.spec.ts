@@ -1,7 +1,6 @@
 /**
- * Placeholder spec — ensures `npx playwright test --list` resolves with both
- * chromium and webkit projects while D2–D5 specs (T013–T016) are pending.
- * Remove this file once the full suite exists.
+ * Config smoke check — verifies Playwright can navigate and both browser
+ * projects (chromium, webkit) are wired up correctly.
  */
 import { test, expect } from '@playwright/test';
 
