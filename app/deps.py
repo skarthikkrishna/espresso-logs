@@ -34,13 +34,21 @@ from app.services.idempotency_store import IdempotencyStore
 _dw_log = logging.getLogger("app.deps.dual_write")
 
 # E2E_AUTH_BYPASS=1 makes _get_current_user return a synthetic test user without
-# requiring a real OAuth session. Forbidden in production.
+# requiring a real OAuth session.  Only permitted when APP_ENV is explicitly
+# "test" or "local" — any other environment (staging, preview, production) is
+# rejected at startup to prevent an unauthenticated bypass on live deployments.
 _E2E_AUTH_BYPASS = os.environ.get("E2E_AUTH_BYPASS") == "1"
 
-if _E2E_AUTH_BYPASS and os.environ.get("APP_ENV") == "production":
-    raise RuntimeError(
-        "E2E_AUTH_BYPASS must not be set in production — it bypasses all authentication globally."
-    )
+_PERMITTED_E2E_ENVS: frozenset[str] = frozenset({"test", "local"})
+
+if _E2E_AUTH_BYPASS:
+    _app_env = os.environ.get("APP_ENV", "")
+    if _app_env not in _PERMITTED_E2E_ENVS:
+        raise RuntimeError(
+            f"E2E_AUTH_BYPASS=1 is only permitted when APP_ENV is 'test' or 'local' "
+            f"(got APP_ENV={_app_env!r}). Remove E2E_AUTH_BYPASS before deploying to "
+            "staging, preview, or production environments."
+        )
 
 
 class _RequiresLogin(Exception):
@@ -154,6 +162,9 @@ class _DualWriteCatalogRepo:
 
     def delete_rows(self, start_row: int, end_row: int) -> None:
         self._sheets.delete_rows(start_row, end_row)
+
+    def delete_by_pk(self, pk_col: str, pk_val: str) -> None:
+        self._sheets.delete_by_pk(pk_col, pk_val)
 
 
 class _DualWriteBrewLogRepo:
@@ -285,6 +296,9 @@ class _DualWriteInventoryRepo:
 
     def delete_rows(self, start_row: int, end_row: int) -> None:
         self._sheets.delete_rows(start_row, end_row)
+
+    def delete_by_pk(self, pk_col: str, pk_val: str) -> None:
+        self._sheets.delete_by_pk(pk_col, pk_val)
 
 
 class _DualWriteHardwareRepo:

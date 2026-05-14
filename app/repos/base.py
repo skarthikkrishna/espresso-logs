@@ -102,3 +102,15 @@ class BaseRepo(ABC):
     @abstractmethod
     def delete_rows(self, start_row: int, end_row: int) -> None:
         """Delete spreadsheet rows from *start_row* to *end_row* (inclusive, 1-indexed)."""
+
+    def delete_by_pk(self, pk_col: str, pk_val: str) -> None:
+        """Find the row where *pk_col* == *pk_val* and delete it by sheet row position.
+
+        Silently does nothing if *pk_val* is not found.  Row numbering follows
+        the spreadsheet convention: row 1 is the header, data rows start at 2.
+        """
+        rows = self._fetch_all()
+        for i, row in enumerate(rows):
+            if row.get(pk_col) == pk_val:
+                self.delete_rows(i + 2, i + 2)
+                break

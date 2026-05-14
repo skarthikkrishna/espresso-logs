@@ -45,7 +45,13 @@ and do not fail the test.
 | File | Defect | What it checks |
 |------|--------|----------------|
 | `d2-add-bag-button.spec.ts` | D2 — +Add bag clipping | `overflow: hidden`, all corners rounded |
+| `d2-tokens.spec.ts` | D2 — Design token presence | All glass/bevel/btn/input CSS custom properties are defined and non-empty |
+| `d3-buttons.spec.ts` | D3 — btn-bevel consistency | All `btn-bevel` elements share identical, non-`none` `box-shadow` |
 | `d3-edit-button.spec.ts` | D3 — Edit bare text | border style, border alpha, appearance suppressed |
+| `d4-forms.spec.ts` | D4 — input-styled consistency | All enabled `input-styled` elements share the same `background-color` and label layout |
 | `d4-log-shot-button.spec.ts` | D4 — +Log Shot underline | `textDecorationLine` at rest and on hover |
 | `d5-form-labels.spec.ts` | D5 — Form label alignment | label bounding box is above select bounding box |
+| `d5-modals.spec.ts` | D5 — Glass modal surface | `.modal-box` has a non-empty, non-`none` `box-shadow` |
+| `d6-cards.spec.ts` | D6 — card-bevel consistency | All `card-bevel` elements share the same `box-shadow` |
+| `regression-029.spec.ts` | spec-029 regression guard | D2 `overflow:hidden`, D3 `-webkit-appearance:none`, D4 `text-decoration:none`, D5 `display:block` labels |
 | `smoke.spec.ts` | Config health | Playwright config sanity check |
