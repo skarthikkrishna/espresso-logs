@@ -1,0 +1,9 @@
+[extend]
+# Use the default gitleaks ruleset as base
+useDefault = true
+
+[[allowlists]]
+description = "Allow PEM header examples in .copilot skill documentation"
+paths = [
+  '''.copilot/skills/.*\.md''',
+]
