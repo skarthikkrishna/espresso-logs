@@ -71,8 +71,8 @@ export default function AddBeanModal({ onClose, onSaved }: AddBeanModalProps) {
   const showForm = manualMode || inferredFields !== null
 
   return (
-    <dialog className="modal modal-open">
-      <div className="modal-box bg-stone-900 border border-amber-900/30">
+    <dialog className="modal modal-open glass-modal-backdrop">
+      <div className="modal-box bg-stone-900 border border-amber-900/30 glass-modal-surface">
         <h3 className="font-semibold text-lg text-amber-300 mb-4">Add bean</h3>
 
         {/* URL lookup */}
@@ -84,12 +84,12 @@ export default function AddBeanModal({ onClose, onSaved }: AddBeanModalProps) {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://..."
-              className="input input-bordered input-sm flex-1 bg-stone-800 border-amber-900/40 text-amber-100"
+              className="input input-bordered input-sm flex-1 bg-stone-800 border-amber-900/40 text-amber-100 input-styled"
             />
             <button
               onClick={handleInfer}
               disabled={loading || url.trim() === ''}
-              className="btn btn-sm bg-amber-700 hover:bg-amber-600 border-none text-white"
+              className="btn btn-sm btn-primary btn-bevel"
             >
               {loading ? <span className="loading loading-spinner loading-xs" /> : 'Look up'}
             </button>
@@ -120,7 +120,7 @@ export default function AddBeanModal({ onClose, onSaved }: AddBeanModalProps) {
                 type="text"
                 value={roaster}
                 onChange={(e) => setRoaster(e.target.value)}
-                className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
+                className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100 input-styled"
               />
             </div>
             <div>
@@ -129,7 +129,7 @@ export default function AddBeanModal({ onClose, onSaved }: AddBeanModalProps) {
                 type="text"
                 value={beanName}
                 onChange={(e) => setBeanName(e.target.value)}
-                className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
+                className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100 input-styled"
               />
             </div>
             <div>
@@ -137,7 +137,7 @@ export default function AddBeanModal({ onClose, onSaved }: AddBeanModalProps) {
               <select
                 value={roastLevel}
                 onChange={(e) => setRoastLevel(e.target.value)}
-                className="select select-bordered select-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
+                className="select select-bordered select-sm w-full bg-stone-800 border-amber-900/40 text-amber-100 input-styled"
               >
                 <option value="">Select...</option>
                 {ROAST_LEVELS.map((r) => (
@@ -164,7 +164,7 @@ export default function AddBeanModal({ onClose, onSaved }: AddBeanModalProps) {
             <button
               onClick={handleSave}
               disabled={saving || !roaster.trim() || !beanName.trim() || !roastLevel}
-              className="btn btn-sm bg-amber-600 hover:bg-amber-500 border-none text-white"
+              className="btn btn-sm bg-amber-600 hover:bg-amber-500 border-none text-white btn-bevel"
             >
               {saving ? <span className="loading loading-spinner loading-xs" /> : 'Save bean'}
             </button>

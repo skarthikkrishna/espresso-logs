@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import builtins
 import logging
+import os
 import threading
 from typing import TYPE_CHECKING, Annotated, Any, cast
 
@@ -19,6 +20,10 @@ from app.repos.hardware import HardwareRepo
 from app.repos.inventory import InventoryRepo
 from app.repos.maintenance import MaintenanceRepo
 from app.repos.sheets_client import RealSheetsClient, SheetsClientProtocol
+from app.testing.fake_sheets import (
+    FakeSheetsClient as _FakeSheetsClient,
+    make_e2e_sheets_client as _make_e2e_sheets_client,
+)
 from app.repos.sql.brew_log import SqlBrewLogRepo
 from app.repos.sql.catalog import SqlCatalogRepo
 from app.repos.sql.hardware import SqlHardwareRepo
@@ -28,12 +33,31 @@ from app.services.idempotency_store import IdempotencyStore
 
 _dw_log = logging.getLogger("app.deps.dual_write")
 
+# E2E_AUTH_BYPASS=1 makes _get_current_user return a synthetic test user without
+# requiring a real OAuth session.  Only permitted when APP_ENV is explicitly
+# "test" or "local" — any other environment (staging, preview, production) is
+# rejected at startup to prevent an unauthenticated bypass on live deployments.
+_E2E_AUTH_BYPASS = os.environ.get("E2E_AUTH_BYPASS") == "1"
+
+_PERMITTED_E2E_ENVS: frozenset[str] = frozenset({"test", "local"})
+
+if _E2E_AUTH_BYPASS:
+    _app_env = os.environ.get("APP_ENV", "")
+    if _app_env not in _PERMITTED_E2E_ENVS:
+        raise RuntimeError(
+            f"E2E_AUTH_BYPASS=1 is only permitted when APP_ENV is 'test' or 'local' "
+            f"(got APP_ENV={_app_env!r}). Remove E2E_AUTH_BYPASS before deploying to "
+            "staging, preview, or production environments."
+        )
+
 
 class _RequiresLogin(Exception):
     """Raised by require_user when no authenticated session is present."""
 
 
 async def _get_current_user(request: Request) -> dict[str, Any]:
+    if _E2E_AUTH_BYPASS:
+        return {"email": "e2e-test@localhost", "name": "E2E Test User"}
     user = request.session.get("user")
     if not user:
         raise _RequiresLogin()
@@ -48,18 +72,27 @@ CurrentUser = Annotated[dict[str, Any], require_user]
 # ---------------------------------------------------------------------------
 
 _sheets_lock = threading.Lock()
-_sheets_client: RealSheetsClient | None = None
+_sheets_client: RealSheetsClient | _FakeSheetsClient | None = None
 
 
-def get_sheets_client() -> RealSheetsClient:
-    """Return the process-level RealSheetsClient singleton (lazy, thread-safe)."""
+def get_sheets_client() -> RealSheetsClient | _FakeSheetsClient:
+    """Return the process-level Sheets client singleton (lazy, thread-safe).
+
+    When E2E_AUTH_BYPASS=1 this returns an in-memory FakeSheetsClient pre-seeded
+    with representative test data.  No real Google Sheets API calls are made.
+    """
     global _sheets_client
     if _sheets_client is None:
         with _sheets_lock:
             if _sheets_client is None:
-                from app.config import settings  # local import avoids circular deps at module load
+                if _E2E_AUTH_BYPASS:
+                    _sheets_client = _make_e2e_sheets_client()
+                else:
+                    from app.config import (
+                        settings,
+                    )  # local import avoids circular deps at module load
 
-                _sheets_client = RealSheetsClient(settings.spreadsheet_id)
+                    _sheets_client = RealSheetsClient(settings.spreadsheet_id)
     return _sheets_client
 
 
@@ -129,6 +162,9 @@ class _DualWriteCatalogRepo:
 
     def delete_rows(self, start_row: int, end_row: int) -> None:
         self._sheets.delete_rows(start_row, end_row)
+
+    def delete_by_pk(self, pk_col: str, pk_val: str) -> None:
+        self._sheets.delete_by_pk(pk_col, pk_val)
 
 
 class _DualWriteBrewLogRepo:
@@ -260,6 +296,9 @@ class _DualWriteInventoryRepo:
 
     def delete_rows(self, start_row: int, end_row: int) -> None:
         self._sheets.delete_rows(start_row, end_row)
+
+    def delete_by_pk(self, pk_col: str, pk_val: str) -> None:
+        self._sheets.delete_by_pk(pk_col, pk_val)
 
 
 class _DualWriteHardwareRepo:

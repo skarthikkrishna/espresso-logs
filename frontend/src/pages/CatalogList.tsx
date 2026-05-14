@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { listCatalog } from '../api/catalog'
 import LoadingSpinner from '../components/LoadingSpinner'
 import AddBeanModal from '../components/AddBeanModal'
+import Chip from '../components/Chip'
 
 export default function CatalogList() {
   const [search, setSearch] = useState('')
@@ -19,9 +20,9 @@ export default function CatalogList() {
   if (isLoading) return <LoadingSpinner />
   if (isError) return (
     <div className="p-4">
-      <div className="glass-card p-6 text-center">
+      <div className="glass-card card-bevel p-6 text-center">
         <p className="text-amber-200 font-medium">Couldn't load catalog</p>
-        <button onClick={() => refetch()} className="btn btn-sm btn-outline border-amber-600 text-amber-200 mt-3">Retry</button>
+        <button onClick={() => refetch()} className="btn btn-sm btn-outline border-amber-600 text-amber-200 mt-3 btn-bevel">Retry</button>
       </div>
     </div>
   )
@@ -47,7 +48,7 @@ export default function CatalogList() {
           <input
             type="text"
             placeholder="Search roaster or bean…"
-            className="input input-bordered w-full max-w-sm mb-6 bg-amber-950/60 border-amber-700/40 text-amber-100 placeholder-amber-200/40"
+            className="input input-bordered input-styled w-full max-w-sm mb-6 bg-amber-950/60 border-amber-700/40 text-amber-100 placeholder-amber-200/40"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -105,9 +106,7 @@ export default function CatalogList() {
                     </p>
                     {item.roast_level && (
                       <div className="flex items-center mt-3">
-                        <span className="badge badge-sm bg-amber-900/25 text-amber-300 border border-amber-600/30">
-                          {item.roast_level}
-                        </span>
+                        <Chip label={item.roast_level} />
                       </div>
                     )}
                   </div>
@@ -122,10 +121,12 @@ export default function CatalogList() {
       {createPortal(
         <button
           onClick={() => setModalOpen(true)}
-          className="btn btn-circle btn-lg fixed bottom-20 right-4 md:bottom-6 bg-amber-600 hover:bg-amber-500 border-none text-white shadow-xl z-50"
+          className="btn btn-circle btn-lg btn-primary btn-bevel fixed bottom-20 right-4 md:bottom-6 z-50"
           aria-label="Add bean"
         >
-          +
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
         </button>,
         document.body
       )}

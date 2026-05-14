@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getBrewLogDetail, getBrewLogFeedback } from '../api/brewLog'
 import LoadingSpinner from '../components/LoadingSpinner'
+import Chip from '../components/Chip'
 import type { BrewLogEntry } from '../types/entities'
 
 function eligibilityBadgeClasses(eligibility: string): string {
@@ -56,11 +57,7 @@ export default function BrewLogDetail() {
       <div>
         <h1 className="text-xl font-display text-amber-100">{shot.bag_display}</h1>
         <p className="text-amber-200/60 text-sm">{shot.date}</p>
-        {shot.roast_level && (
-          <span className="badge badge-sm bg-amber-900/25 text-amber-300 border border-amber-600/30">
-            {shot.roast_level}
-          </span>
-        )}
+        <Chip label={shot.roast_level} />
         {shot.shot_eligibility && (
           <span
             data-testid="eligibility-badge"

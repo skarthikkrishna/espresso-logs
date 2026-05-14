@@ -113,11 +113,11 @@ export default function ImportWizard() {
           <input
             type="file"
             accept=".csv"
-            className="file-input file-input-bordered w-full bg-amber-950/60 border-amber-700/40 text-amber-100"
+            className="file-input file-input-bordered w-full bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
             onChange={handleFile}
           />
           <button
-            className="btn bg-amber-600 hover:bg-amber-500 border-none text-white w-full"
+            className="btn btn-primary btn-bevel w-full"
             disabled={rows.length === 0}
             onClick={() => setStep(2)}
           >
@@ -163,13 +163,13 @@ export default function ImportWizard() {
           </div>
           <div className="flex gap-3">
             <button
-              className="btn btn-ghost border-amber-600/40 text-amber-400"
+              className="btn btn-ghost border-amber-600/40 text-amber-400 btn-bevel"
               onClick={() => setStep(1)}
             >
               Back
             </button>
             <button
-              className="btn bg-amber-600 hover:bg-amber-500 border-none text-white flex-1"
+              className="btn btn-primary btn-bevel flex-1"
               disabled={importing || rows.filter((r) => r.errors.length === 0).length === 0}
               onClick={handleImport}
             >
@@ -191,7 +191,7 @@ export default function ImportWizard() {
             {results.errors > 0 && `, ${results.errors} failed`}.
           </p>
           <button
-            className="btn bg-amber-600 hover:bg-amber-500 border-none text-white"
+            className="btn btn-primary btn-bevel"
             onClick={() => { setStep(1); setRows([]) }}
           >
             Import more
