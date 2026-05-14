@@ -29,9 +29,28 @@ export default defineConfig({
       },
     },
   },
+  // Vite 8 inherits server.proxy in preview mode, which would forward
+  // /static/spa/* to uvicorn — breaking E2E tests. Explicit preview config
+  // keeps /api and /auth proxied (for seed.ts) but lets Vite serve its own
+  // built assets directly.
+  preview: {
+    port: 4173,
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+      '/auth': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    // Exclude Playwright E2E specs — they are not Vitest tests
+    exclude: ['e2e/**', 'node_modules/**'],
   },
 })

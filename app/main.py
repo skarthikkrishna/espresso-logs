@@ -15,7 +15,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.auth import router as auth_router
 from app.config import settings
-from app.deps import CurrentUser, _RequiresLogin
+from app.deps import CurrentUser, _E2E_AUTH_BYPASS, _RequiresLogin
 from app.routers import defaults as defaults_router, health, import_wizard
 from app.routers import (
     api_auth,
@@ -74,6 +74,8 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
     logger.info("Coffee Tracker starting up (env=%s)", settings.app_env)
+    if _E2E_AUTH_BYPASS:
+        logger.warning("⚠️  E2E_AUTH_BYPASS is ACTIVE — authentication is bypassed for all requests")
     yield
 
 
@@ -181,6 +183,12 @@ app.include_router(api_maintenance.router)
 app.include_router(api_defaults.router)
 app.include_router(defaults_router.router)
 app.include_router(import_wizard.router)
+
+# E2E-only cleanup endpoint — only mounted when auth bypass is active (never in production)
+if _E2E_AUTH_BYPASS:
+    from app.routers import api_e2e
+
+    app.include_router(api_e2e.router)
 
 _spa_index = pathlib.Path(__file__).parent / "static" / "spa" / "index.html"
 

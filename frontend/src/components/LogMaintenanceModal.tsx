@@ -60,8 +60,8 @@ export default function LogMaintenanceModal({ hardware, onClose, onSaved }: LogM
     !isFutureDate
 
   return (
-    <dialog className="modal modal-open" open>
-      <div className="modal-box bg-stone-900 border border-amber-900/30">
+    <dialog className="modal modal-open glass-modal-backdrop" open>
+      <div className="modal-box bg-stone-900 border border-amber-900/30 glass-modal-surface">
         <h3 className="font-semibold text-lg text-amber-300 mb-4">Log maintenance</h3>
 
         <div className="flex flex-col gap-3">
@@ -79,7 +79,7 @@ export default function LogMaintenanceModal({ hardware, onClose, onSaved }: LogM
               value={date}
               max={today}
               onChange={(e) => setDate(e.target.value)}
-              className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
+              className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100 input-styled"
             />
             {isFutureDate && (
               <p className="text-xs text-amber-400/80 mt-1">Date cannot be in the future.</p>
@@ -102,7 +102,7 @@ export default function LogMaintenanceModal({ hardware, onClose, onSaved }: LogM
               <select
                 value={actionType}
                 onChange={(e) => setActionType(e.target.value)}
-                className="select select-bordered select-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
+                className="select select-bordered select-sm w-full bg-stone-800 border-amber-900/40 text-amber-100 input-styled"
               >
                 <option value="">Select action…</option>
                 {validActionTypes.map((a) => (
@@ -121,7 +121,7 @@ export default function LogMaintenanceModal({ hardware, onClose, onSaved }: LogM
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              className="textarea textarea-bordered textarea-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
+              className="textarea textarea-bordered textarea-sm w-full bg-stone-800 border-amber-900/40 text-amber-100 input-styled"
             />
           </div>
         </div>
@@ -138,7 +138,7 @@ export default function LogMaintenanceModal({ hardware, onClose, onSaved }: LogM
             <button
               onClick={() => mutate()}
               disabled={!canSave}
-              className="btn btn-sm bg-amber-600 hover:bg-amber-500 border-none text-white"
+              className="btn btn-sm bg-amber-600 hover:bg-amber-500 border-none text-white btn-bevel"
             >
               {isPending
                 ? <span className="loading loading-spinner loading-xs" />

@@ -1,10 +1,68 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
+/* ── DaisyUI v5 + Tailwind v4 ──────────────────────────────────────────── */
+@plugin "daisyui" {
+  themes: espresso-dark --default;
+}
+
+@plugin "daisyui/theme" {
+  name: "espresso-dark";
+  default: true;
+  color-scheme: dark;
+  --color-primary: #d97706;
+  --color-primary-content: #ffffff;
+  --color-secondary: #92400e;
+  --color-secondary-content: #ffffff;
+  --color-accent: #f59e0b;
+  --color-accent-content: #1a1209;
+  --color-neutral: #2d1f0e;
+  --color-neutral-content: #f5e6d3;
+  --color-base-100: #1a1209;
+  --color-base-200: #22160b;
+  --color-base-300: #2d1f0e;
+  --color-base-content: #f5e6d3;
+  --color-info: #3b82f6;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  /* DaisyUI box radius — used by .modal-box and other components */
+  --radius-box: 0.625rem;
+}
+
+/* ── Design System Tokens ──────────────────────────────────────────────────
+   Defined in :root (NOT inside @plugin "daisyui/theme") because the DaisyUI
+   theme plugin treats commas as value separators, which truncates multi-layer
+   box-shadow declarations to their last value only.
+   ───────────────────────────────────────────────────────────────────────── */
 :root {
-  --font-display: 'Playfair Display', Georgia, serif;
-  --font-body:    'Inter', system-ui, sans-serif;
+  /* Glass surface — modals/overlays only (backdrop-filter scope: FR-7) */
+  --glass-bg: rgba(15, 10, 8, 0.72);
+  --glass-blur: blur(16px);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: inset 0 1px 0 rgba(255,255,255,0.08);
+
+  /* Bevel depth — buttons and cards */
+  --bevel-shadow-raised: 0 4px 16px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.08);
+  --bevel-shadow-inset: inset 0 2px 6px rgba(0,0,0,0.6), 0 1px 2px rgba(0,0,0,0.9);
+  --bevel-radius: 0.625rem;
+
+  /* Button states */
+  --btn-rest-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.08);
+  --btn-hover-shadow: 0 6px 20px rgba(0,0,0,0.6), 0 2px 4px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.10);
+  --btn-active-shadow: inset 0 2px 6px rgba(0,0,0,0.6), 0 1px 2px rgba(0,0,0,0.9);
+  --btn-disabled-opacity: 0.4;
+
+  /* Form inputs */
+  --input-bg: rgba(34, 22, 11, 0.8);
+  --input-border: 1px solid rgba(217, 119, 6, 0.2);
+  --input-focus-ring: 0 0 0 2px rgba(217, 119, 6, 0.6);
+  --input-label-gap: 0.375rem;
+}
+
+/* ── Custom font families (Tailwind v4 @theme creates utility classes) ─── */
+@theme {
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-body: Inter, system-ui, sans-serif;
 }
 
 body {
@@ -53,7 +111,18 @@ h1, h2, .font-display {
     url('/static/img/hero-dashboard.jpg');
   background-size: cover;
   background-position: center 40%;
-  transition: background-image 300ms ease;
+  /*
+   * Chrome desktop fix: pre-promote to a GPU compositor layer so the layer
+   * is stable before the background-image loads. Without this, Chrome
+   * invalidates the layer on async image load and the backdrop-filter on
+   * #main-content samples a black empty layer in its place.
+   *
+   * `transition: background-image` removed — background-image is not a
+   * CSS-animatable property (CSS Transitions Level 1); the declaration was a
+   * no-op on all browsers but Chrome may attempt a cross-fade that interferes
+   * with compositor layer management.
+   */
+  will-change: transform;
 }
 
 /* Per-page background overrides */
@@ -114,6 +183,7 @@ h1, h2, .font-display {
   background: rgba(14, 9, 5, 0.50);
   border: 1px solid rgba(200, 134, 10, 0.10);
   border-radius: 1rem;
+  box-shadow: var(--bevel-shadow-raised);
   overflow: hidden;
   cursor: pointer;
   transition: box-shadow 200ms ease, border-color 200ms ease, transform 150ms ease;
@@ -220,3 +290,126 @@ input[type="file"]::file-selector-button {
 .compass-ping {
   animation: compassPing 2s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
+
+/* Safari UA text-decoration reset — spec-029 D4 */
+.btn {
+  text-decoration: none;
+}
+
+/* Safari flex-column label layout fix — spec-029 D5 */
+.form-control > .label {
+  display: block;
+  width: 100%;
+}
+
+/* ── Design-system component overrides ─────────────────────────────────────
+   These rules are intentionally OUTSIDE any @layer so they have higher cascade
+   priority than all layered styles (including @layer daisyui). This is required
+   because DaisyUI v5 registers itself in @layer daisyui, which outranks
+   @layer components. Unlayered CSS wins over every layer.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* ── Bevel button treatment ─────────────────────────────────────────────── */
+.btn-bevel {
+  box-shadow: var(--btn-rest-shadow);
+  overflow: hidden;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: box-shadow 150ms ease, opacity 100ms ease;
+}
+/* Preserve btn-circle's 50% radius — only apply bevel-radius to non-circular buttons */
+.btn-bevel:not(.btn-circle) {
+  border-radius: var(--bevel-radius);
+}
+.btn-bevel:hover:not(:disabled) {
+  box-shadow: var(--btn-hover-shadow);
+}
+.btn-bevel:active:not(:disabled) {
+  box-shadow: var(--btn-active-shadow);
+}
+.btn-bevel:focus-visible {
+  box-shadow: var(--btn-rest-shadow), var(--input-focus-ring);
+  outline: none;
+}
+.btn-bevel:disabled,
+.btn-bevel[disabled] {
+  box-shadow: none;
+  opacity: var(--btn-disabled-opacity);
+  cursor: not-allowed;
+}
+
+/* ── Border suppression — remove DaisyUI btn-primary/btn-secondary border on all
+   beveled non-outline buttons. btn-outline buttons rely on their own border and
+   are excluded. */
+.btn-bevel:not(.btn-outline) {
+  border: none;
+}
+
+/* ── Glass modal backdrop ────────────────────────────────────────────────── */
+/* CRITICAL: -webkit-backdrop-filter cannot use CSS var() in Safari.         */
+/* Use hardcoded blur(16px) for webkit; var(--glass-blur) for standard.      */
+.glass-modal-backdrop {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(var(--glass-blur));
+}
+.glass-modal-surface {
+  box-shadow: var(--glass-highlight), var(--bevel-shadow-raised);
+  border-radius: var(--bevel-radius);
+  border: 1px solid var(--glass-border);
+}
+
+/* ── Styled form inputs ──────────────────────────────────────────────────── */
+.input-styled {
+  background: var(--input-bg);
+  border: var(--input-border);
+  border-radius: var(--bevel-radius);
+}
+.input-styled:focus,
+.input-styled:focus-visible {
+  outline: none;
+  box-shadow: var(--input-focus-ring);
+}
+
+/* ── Bevel card surface ──────────────────────────────────────────────────── */
+.card-bevel {
+  box-shadow: var(--bevel-shadow-raised);
+  border-radius: var(--bevel-radius);
+  overflow: hidden;
+}
+.card-bevel:hover {
+  box-shadow: var(--btn-hover-shadow);
+}
+
+/* ── Badge border-radius — match --bevel-radius token; fixes square roast-level badges */
+.badge {
+  border-radius: var(--bevel-radius);
+}
+
+/* ── Select appearance reset (D4, ADR-006) ──────────────────────────────── */
+select.input-styled,
+.select.input-styled {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* ── Tap highlight suppression (all interactive elements, iOS) ──────────── */
+.btn, [role="button"], a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Label gap (spec-029 D5 + D4 token) ─────────────────────────────────── */
+.form-control > .label {
+  display: block;
+  width: 100%;
+  margin-bottom: var(--input-label-gap);
+}
+
+/* ── Reduced motion overrides ────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .btn-bevel,
+  .card-bevel {
+    transition: none;
+  }
+}
+

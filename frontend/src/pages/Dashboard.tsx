@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import { getDashboard } from '../api/dashboard'
 import { listBrewLog } from '../api/brewLog'
+import Chip from '../components/Chip'
 import type { DashboardBag, BrewLogEntry } from '../types/entities'
 
 export default function Dashboard() {
@@ -21,7 +22,7 @@ export default function Dashboard() {
   if (isLoading) return (
     <div className="p-4 space-y-3">
       {[1,2,3].map(i => (
-        <div key={i} className="glass-card p-4 animate-pulse">
+        <div key={i} className="glass-card card-bevel p-4 animate-pulse">
           <div className="h-4 bg-amber-900/40 rounded w-3/4 mb-2" />
           <div className="h-3 bg-amber-900/30 rounded w-1/2" />
         </div>
@@ -31,10 +32,10 @@ export default function Dashboard() {
 
   if (isError) return (
     <div className="p-4">
-      <div className="glass-card p-6 text-center">
+      <div className="glass-card card-bevel p-6 text-center">
         <p className="text-amber-200 font-medium">Couldn't load dashboard</p>
         <p className="text-amber-400/70 text-sm mt-1">{(error as Error)?.message}</p>
-        <button onClick={() => refetch()} className="btn btn-sm btn-outline border-amber-600 text-amber-200 mt-3">
+        <button onClick={() => refetch()} className="btn btn-sm btn-outline border-amber-600 text-amber-200 mt-3 btn-bevel">
           Retry
         </button>
       </div>
@@ -59,7 +60,7 @@ export default function Dashboard() {
       <div className="flex justify-end">
         <button
           onClick={() => navigate('/brew-log/add')}
-          className="btn btn-primary btn-sm"
+          className="btn btn-primary btn-sm no-underline btn-bevel"
         >
           + Log Shot
         </button>
@@ -72,12 +73,12 @@ export default function Dashboard() {
       <section>
         <h2 className="text-lg font-display text-amber-200 mb-4">Active bags</h2>
         {!bags?.length ? (
-          <div className="glass-card p-6">
+          <div className="glass-card card-bevel p-6">
             <h2 className="text-lg font-semibold text-amber-300 mb-2">No active bags yet.</h2>
             <p className="text-sm text-amber-200/70 mb-4">Add a bean to the catalog to get started.</p>
             <Link
               to="/catalog"
-              className="btn bg-amber-600 hover:bg-amber-500 border-none text-white"
+              className="btn btn-primary btn-bevel no-underline"
             >
               Go to catalog →
             </Link>
@@ -87,15 +88,11 @@ export default function Dashboard() {
             {bags.map((bag) => (
               <div
                 key={bag.bag_id}
-                className="glass-card p-4 cursor-pointer"
+                className="glass-card card-bevel p-4 cursor-pointer"
                 onClick={() => navigate('/brew-log/add')}
               >
                 <p className="font-semibold text-amber-100 text-sm leading-snug">{bag.display_name}</p>
-                {bag.roast_level && (
-                  <span className="badge badge-sm mt-2 bg-amber-900/25 text-amber-300 border border-amber-600/30">
-                    {bag.roast_level}
-                  </span>
-                )}
+                <Chip label={bag.roast_level} className="mt-2" />
                 {bag.days_since_last_shot != null && (
                   <p className="text-xs text-amber-200/50 mt-2">
                     {bag.days_since_last_shot === 0 ? 'Last shot: today' : `Last shot: ${bag.days_since_last_shot}d ago`}
@@ -123,7 +120,7 @@ export default function Dashboard() {
               <Link
                 key={shot.shot_id}
                 to={`/brew-log/${shot.shot_id}`}
-                className="glass-card flex items-center justify-between px-4 py-3 hover:border-amber-500/40 transition-colors"
+                className="glass-card card-bevel flex items-center justify-between px-4 py-3 hover:border-amber-500/40 transition-colors"
               >
                 <div className="min-w-0">
                   <p className="text-sm text-amber-100 truncate">{shot.bag_display}</p>
@@ -145,10 +142,12 @@ export default function Dashboard() {
       {createPortal(
         <button
           aria-label="Log a shot"
-          className="btn btn-circle btn-lg bg-amber-600 hover:bg-amber-500 fixed bottom-20 right-4 z-50 lg:hidden"
+          className="btn btn-circle btn-lg btn-primary btn-bevel fixed bottom-20 right-4 z-50 lg:hidden"
           onClick={() => navigate('/brew-log/add')}
         >
-          <span aria-hidden="true">+</span>
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
         </button>,
         document.body
       )}
