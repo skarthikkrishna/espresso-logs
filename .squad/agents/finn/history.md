@@ -31,6 +31,12 @@
 - **Fix:** Added `px-2 py-0.5` to all four roast/machine type badge spans across BrewLogDetail, CatalogDetail, CatalogList, and Dashboard. Note that CatalogDetail and Dashboard also had `mt-2` in their class string (absent in the other two files) — the grep pattern differed slightly per file.
 - **Rule:** DaisyUI badge variants (`badge-sm`, `badge-xs`) should always be supplemented with explicit `px-*` when displaying variable-length label text. Don't rely on DaisyUI's built-in padding for chip/tag use cases where breathing room matters.
 
+### 2026-05-13: Aria's Chip design corrections applied
+
+- **Border radius:** `rounded-full` → `rounded` — Aria (Designer) confirmed pill shapes are not part of the design system. The design token `--bevel-radius: 10px` (defined in `index.css`) mandates `rounded`, not pill/full.
+- **Padding:** `px-2 py-0.5` → `px-2.5 py-1` — previous padding was too tight; text was crowding against chip edges. Aria specified the correct padding values.
+- **Authority rule:** Aria owns all border-radius and spacing decisions for UI components. When Aria specifies a design token correction, apply it directly — no debate needed on shape tokens.
+
 ## Team Updates
 
 ### 2026-05-13: Session Log — Chip & Chrome Fixes

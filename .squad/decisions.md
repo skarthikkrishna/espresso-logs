@@ -314,6 +314,57 @@ The seed script has been run against the live spreadsheet. All 7 rows are presen
 
 ---
 
+### 2026-05-13: Chip Component Refactor — Single Unified Style, Design Corrections Applied
+
+**Status:** ✅ **COMPLETE**  
+**Branch:** fix/ui-safari-polish  
+**Commit:** a190afd
+
+**Summary:** `<Chip />` component extracted as shared categorical label across frontend. Single unified amber frosted-glass style replaces inline badges for roast level and hardware categories. Design system deviations corrected per Aria's review.
+
+**Design Audit (Aria):**
+- ✅ Color palette: amber/brown frosted-glass aligns with espresso theme
+- ✅ Backdrop blur: `blur-sm` non-competing with main-content blur
+- ⚠️ Border radius: `rounded-full` (pill) does NOT match design token `--bevel-radius: 10px`
+- ⚠️ Padding: `px-2 py-0.5` (8px / 2px) too tight; text crowding at edges
+
+**Corrections Applied (Finn):**
+- Border radius: `rounded-full` → `rounded` (matches `--bevel-radius`)
+- Padding: `px-2 py-0.5` → `px-2.5 py-1` (10px / 4px)
+- Removed `backdrop-blur-sm` (no-op inside frosted containers)
+
+**Final API:**
+```tsx
+<Chip label={shot.roast_level} />
+<Chip label={item.category} className="mt-2" />
+```
+- No `variant` prop; single unified style
+- `label` supports null/undefined (returns null)
+- All categorical labels render identically
+
+**Call Sites (5):**
+- BrewLogDetail.tsx: roast level
+- Dashboard.tsx: roast level
+- CatalogDetail.tsx: roast level
+- CatalogList.tsx: roast level
+- HardwarePage.tsx: hardware category
+
+**Non-Chip Badges (remain semantic):**
+- Eligibility badge (BrewLogDetail.tsx): dynamic color per shot_eligibility
+- Import status (ImportWizard.tsx): error/success feedback
+
+**Audit Results:**
+- ✅ Unified style: all 5 call sites correct
+- ✅ Lint: 0 warnings
+- ✅ Build: clean
+- ✅ Tests: 140/140 passed
+
+**Verdicts:**
+- **Aria (Designer):** ✅ Design changes approved; aligns with design system
+- **Finn (Frontend):** ✅ Corrections applied and verified
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
