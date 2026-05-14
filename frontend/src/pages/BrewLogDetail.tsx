@@ -57,7 +57,7 @@ export default function BrewLogDetail() {
       <div>
         <h1 className="text-xl font-display text-amber-100">{shot.bag_display}</h1>
         <p className="text-amber-200/60 text-sm">{shot.date}</p>
-        <Chip label={shot.roast_level} variant="roast" />
+        <Chip label={shot.roast_level} />
         {shot.shot_eligibility && (
           <span
             data-testid="eligibility-badge"

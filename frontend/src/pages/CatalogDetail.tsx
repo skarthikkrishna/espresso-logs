@@ -233,7 +233,7 @@ export default function CatalogDetail() {
             <>
               <h1 className="text-2xl font-display text-amber-100">{item.bean_name}</h1>
               <p className="text-amber-200/70">{item.roaster}</p>
-              <Chip label={item.roast_level} variant="roast" className="mt-2" />
+              <Chip label={item.roast_level} className="mt-2" />
               <div className="mt-2">
                 <button
                   onClick={() => {
