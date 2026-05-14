@@ -2,6 +2,16 @@
 
 ## Learnings
 
+### 2026-05-13: Chip component full audit — verified correct, no fixes needed
+
+- **What was found:** `Chip.tsx` already uses a single unified style (`bg-amber-900/30 text-amber-200/90 border border-amber-700/40 backdrop-blur-sm`) with no variants. Previous inline fix had correctly consolidated the `roast` and `machine` variants into one.
+- **Call sites (all 5):** BrewLogDetail.tsx, Dashboard.tsx, CatalogList.tsx, CatalogDetail.tsx, HardwarePage.tsx — all use `<Chip />` with no `variant` prop. No orphaned inline badge spans for categorical labels remain.
+- **Intentional non-chip badges:** `eligibility-badge` in BrewLogDetail uses inline DaisyUI badge with dynamic color (eligibility status is semantic, needs color coding). ImportWizard uses `badge-error`/`badge-success` for row validation — both correct and intentional.
+- **TypeScript:** No `any`, proper `string | null | undefined` for label, optional `className`. Passes strict mode.
+- **Padding:** `px-2 py-0.5` verified adequate — provides 8px horizontal breathing room for all label values (Light, Medium, Dark, Machine, Grinder, etc.).
+- **All checks:** lint ✅ 0 warnings, build ✅, tests ✅ 140/140 passed.
+- **Rule:** `<Chip />` is the canonical component for all categorical label pills. No variants — single amber frosted-glass style is the app-wide standard. Eligibility/status badges that require semantic color coding are intentionally separate patterns (DaisyUI badge with explicit color modifier).
+
 ### 2026-05-13: Chrome desktop black overlay on backdrop-filter + async background image
 
 - **Root cause:** `#main-content` has `backdrop-filter: blur(4px)`. When the hero background image (e.g. `hero-brew.jpg`) loads asynchronously, Chrome desktop invalidates `.app-bg`'s GPU compositor layer and re-promotes it. During that layer promotion window, `#main-content`'s backdrop-filter samples from a black/empty compositor layer instead of the loaded image. Chrome mobile and Safari handle this layer transition without the black flash.
