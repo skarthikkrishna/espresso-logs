@@ -92,7 +92,7 @@ export default function Dashboard() {
                 onClick={() => navigate('/brew-log/add')}
               >
                 <p className="font-semibold text-amber-100 text-sm leading-snug">{bag.display_name}</p>
-                <Chip label={bag.roast_level} variant="roast" className="mt-2" />
+                <Chip label={bag.roast_level} className="mt-2" />
                 {bag.days_since_last_shot != null && (
                   <p className="text-xs text-amber-200/50 mt-2">
                     {bag.days_since_last_shot === 0 ? 'Last shot: today' : `Last shot: ${bag.days_since_last_shot}d ago`}

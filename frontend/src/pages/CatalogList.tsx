@@ -106,7 +106,7 @@ export default function CatalogList() {
                     </p>
                     {item.roast_level && (
                       <div className="flex items-center mt-3">
-                        <Chip label={item.roast_level} variant="roast" />
+                        <Chip label={item.roast_level} />
                       </div>
                     )}
                   </div>

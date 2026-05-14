@@ -133,7 +133,7 @@ export default function HardwarePage() {
                           {item.name}
                         </h3>
                         <div className="flex items-center justify-between mt-3">
-                          <Chip label={item.category} variant="machine" />
+                          <Chip label={item.category} />
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
