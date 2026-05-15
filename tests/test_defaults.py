@@ -5,6 +5,7 @@ Tests for app/services/defaults.py — get_defaults() 4-level fallback chain.
 from __future__ import annotations
 
 import pytest
+from unittest.mock import patch
 
 from app.repos.base import TTLCache
 from app.repos.brew_log import BrewLogRepo
@@ -12,6 +13,11 @@ from app.repos.catalog import CatalogRepo
 from app.repos.inventory import InventoryRepo
 from tests.doubles import FakeSheetsClient
 from app.services.defaults import get_defaults
+from app.deps import (
+    _DualWriteBrewLogRepo,
+    _DualWriteCatalogRepo,
+    _DualWriteInventoryRepo,
+)
 
 # ---------------------------------------------------------------------------
 # Shared test data
@@ -163,7 +169,11 @@ _SHOT_C = {
 
 
 def _make_repos(brew_log_rows=None, inventory_rows=None, catalog_rows=None):
-    """Return (brew_log_repo, inventory_repo, catalog_repo) backed by FakeSheetsClient."""
+    """Return (brew_log_repo, inventory_repo, catalog_repo) backed by FakeSheetsClient.
+
+    Returns DualWrite wrappers with sql=None so that async read calls fall through
+    to the synchronous Sheets repos (use_postgres=False path).
+    """
     client = FakeSheetsClient(
         {
             "Brew_Log": brew_log_rows or [],
@@ -172,11 +182,26 @@ def _make_repos(brew_log_rows=None, inventory_rows=None, catalog_rows=None):
         }
     )
     cache = TTLCache()
+    sheets_brew = BrewLogRepo(client=client, cache=cache)
+    sheets_inv = InventoryRepo(client=client, cache=cache)
+    sheets_cat = CatalogRepo(client=client, cache=cache)
     return (
-        BrewLogRepo(client=client, cache=cache),
-        InventoryRepo(client=client, cache=cache),
-        CatalogRepo(client=client, cache=cache),
+        _DualWriteBrewLogRepo(sheets=sheets_brew, sql=None),
+        _DualWriteInventoryRepo(sheets=sheets_inv, sql=None),
+        _DualWriteCatalogRepo(sheets=sheets_cat, sql=None),
     )
+
+
+# Patch settings.use_postgres=False for all tests in this module so DualWrite
+# wrappers always fall back to the Sheets repos.
+pytestmark = pytest.mark.usefixtures("_patch_use_postgres_false")
+
+
+@pytest.fixture(autouse=True)
+def _patch_use_postgres_false():
+    with patch("app.deps.settings") as mock_settings:
+        mock_settings.use_postgres = False
+        yield
 
 
 # ---------------------------------------------------------------------------
