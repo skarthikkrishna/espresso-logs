@@ -72,6 +72,10 @@ This is not optional. These steps are mechanical, not advisory. Execute them in 
 
 > **Note:** SpecKit artifacts (`specs/`, plans, tasks, gates) live in the `coffee_tracker` repo. Filesystem checks for those artifacts must be run in that repo. All other protocol steps apply identically here.
 
+**Orchestration log — standing rule (applies to every step below):** Before every `task` tool call that spawns an agent, write an orchestration log entry to `.squad/orchestration-log/{timestamp}-{agent-name}.md` using the format in `.squad/templates/orchestration-log.md`. The entry must exist before the agent runs. Fill in the Outcome field after the agent returns.
+
+**Scribe — background constant:** Scribe is not a session-close-only agent. After any substantial work batch completes (implementation, planning, or any output that would represent lost state if the session terminated), spawn Scribe in the background before proceeding to the next work batch. Scribe at session close (STEP 5) is the final mandatory run — it does not replace mid-session runs.
+
 ---
 
 ### STEP 0 — Spawn Ralph (mandatory, blocking)
@@ -80,8 +84,10 @@ Spawn Ralph via the `task` tool (`agent_type: general-purpose`, `mode: sync`). P
 
 1. Is `.squad/identity/now.md` updated within the last 7 days?
 2. Is there conflicting in-progress state from a prior session in `.squad/log/`?
+3. Read `.squad/decisions.md` and surface to the coordinator any decision directly relevant to the incoming request.
+4. Read `.squad/identity/wisdom.md` and surface any patterns directly relevant to the incoming request.
 
-**HALT** if either condition fails. Do NOT proceed until Ralph explicitly signals clear.
+**HALT** if condition 1 or 2 fails. Checks 3 and 4 are informational — surface findings but do not halt on them. Do NOT proceed until Ralph explicitly signals clear.
 Ralph's response must include one of: `CLEAR — proceed` or `BLOCKED — [reason]`.
 If Ralph returns BLOCKED, surface the blocker to the operator. Do not work around it.
 
@@ -135,6 +141,8 @@ This is not a suggestion. This is the step. It cannot be skipped, combined, or i
 
 ### STEP 1 — Spawn the Routing Agent (mandatory, blocking)
 
+*(Write orchestration log entry before spawning — see standing rule above.)*
+
 Spawn the owning routing agent via the `task` tool (`agent_type: general-purpose`, `mode: sync`). Provide the agent's charter inlined.
 
 - Feature / product / backend scope → spawn **Alex** or **Priya**
@@ -173,6 +181,8 @@ git log --oneline -5 .squad/decisions/inbox/
 
 ### STEP 2 — SpecKit Phases (sequential, no skipping)
 
+*(Write an orchestration log entry before each agent spawn in this step — see standing rule above.)*
+
 Each phase = coordinator spawns the owning agent via `task` tool. Each phase blocks the next. Hard gate artifacts must exist on disk in the `coffee_tracker` repo (verified via `git ls-files` run there) before the next phase begins.
 
 | Phase | Spawn | Owner | Hard Gate |
@@ -206,6 +216,8 @@ All three can run simultaneously. The coordinator monitors completion and surfac
 
 ### STEP 3 — Direct Implementation (Squad-authorized only)
 
+*(Write orchestration log entry before any agent spawn in this step — see standing rule above.)*
+
 Only proceed here if STEP 1 returned `status: DIRECT_PERMITTED` with explicit rationale and scope confirmation.
 
 - For any change touching application or infrastructure code: Quinn gate (`specs/{n}/quinn-gate.md`) is still required. Check with `git ls-files` in the `coffee_tracker` repo.
@@ -225,7 +237,13 @@ Follow `.github/copilot-prompts/pr-merge-workflow.md` exactly. No step may be sk
 
 This is not a suggestion. This is the step. It cannot be skipped, combined, or inferred. A passing checklist is not permission. Silence is not permission. Completing the work is not permission. The only permission is the operator saying yes.
 
-CI must be green before requesting review. Tag the PR with: `@copilot can you review this please`.
+CI must be green before requesting review.
+
+**Internal Squad review gate — required before external review. Cannot be bypassed even when CI is green:**
+1. Spawn **Maya** (`task`, sync, blocking) to review the PR. Maya must return `APPROVED` or `APPROVED_WITH_NOTES`. If Maya returns `BLOCKED` → do not proceed. Surface to operator.
+2. Spawn **Quinn** (`task`, sync, blocking) to review the PR. Quinn must return `APPROVED` or `APPROVED_WITH_NOTES`. If Quinn returns `BLOCKED` → do not proceed. Surface to operator.
+3. Only after both Maya AND Quinn approve: tag `@copilot can you review this please`.
+
 Do NOT request review while any build check is failing.
 
 If CI fails at any point — invoke Tariq (via `task` tool) for failure triage before touching any code. See Inviolable Rule 3.
@@ -281,6 +299,8 @@ These are not guidelines. Violating any of these is a **process failure** that m
     - There are two valid states: charter amended, or session not closed. There is no third state. There is no "if time permits" path. There is no "we'll fix it next session" escape. The amendment is a prerequisite for closure, not a follow-up task.
     - This rule is not waivable. It applies to all agents, all domains, all session types — including governance-only sessions.
 
+12. **`git commit` requires explicit authorization — this is a separate and additional gate to `git push`.** No implementation agent may run `git commit` unless the coordinator has received an explicit directive from the operator, or has issued an explicit commit instruction to that agent. Completing implementation work, passing tests, or receiving coordinator approval to proceed does not constitute authorization to commit. The only exception: Scribe may run `git commit` for `.squad/` state files only (decisions.md, history.md, log/, orchestration-log/). Scribe never commits source code, app/ files, frontend/ files, or build artifacts. Both the commit gate and the push gate must be cleared independently — clearing one does not clear the other.
+
 ---
 
 ## Squad Agent Ownership
@@ -307,6 +327,7 @@ Squad agent charters live in `.squad/agents/` in `skarthikkrishna/coffee_tracker
 
 All Squad agents operate under the 12 behavioral principles defined in [`AGENTS.md`](../AGENTS.md).
 Agents read `.squad/skills/agent-behavioral-principles/SKILL.md` before starting any task.
+All agents must also read `.squad/skills/git-discipline/SKILL.md` before any task in this session. This is a hard gate, not a suggestion.
 
 These principles apply in addition to — not instead of — charter-specific responsibilities.
 
