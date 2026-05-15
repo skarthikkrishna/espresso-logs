@@ -11,8 +11,6 @@ from __future__ import annotations
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
 from app.deps import (
     _DualWriteBrewLogRepo,
     _DualWriteCatalogRepo,
@@ -158,7 +156,7 @@ class TestDualWriteBrewLogRepoReads:
 
         with patch("app.deps.settings") as mock_settings:
             mock_settings.use_postgres = True
-            result = await wrapper.list_recent(5)
+            await wrapper.list_recent(5)
 
         sql.list_recent.assert_awaited_once_with(5)
         sheets.list_recent.assert_not_called()
@@ -249,7 +247,7 @@ class TestDualWriteInventoryRepoReads:
 
         with patch("app.deps.settings") as mock_settings:
             mock_settings.use_postgres = True
-            result = await wrapper.list(status="Active")
+            await wrapper.list(status="Active")
 
         sql.list.assert_awaited_once_with(status="Active")
         sheets.list.assert_not_called()
@@ -325,7 +323,7 @@ class TestDualWriteHardwareRepoReads:
 
         with patch("app.deps.settings") as mock_settings:
             mock_settings.use_postgres = True
-            result = await wrapper.list(category="Machine")
+            await wrapper.list(category="Machine")
 
         sql.list.assert_awaited_once_with(category="Machine")
         sheets.list.assert_not_called()
@@ -400,7 +398,7 @@ class TestDualWriteMaintenanceRepoReads:
 
         with patch("app.deps.settings") as mock_settings:
             mock_settings.use_postgres = True
-            result = await wrapper.list(hardware_id="HW001")
+            await wrapper.list(hardware_id="HW001")
 
         sql.list.assert_awaited_once_with(hardware_id="HW001")
         sheets.list.assert_not_called()
