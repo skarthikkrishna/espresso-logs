@@ -74,7 +74,7 @@ This is not optional. These steps are mechanical, not advisory. Execute them in 
 
 **Orchestration log — standing rule (applies to every step below):** Before every `task` tool call that spawns an agent, write an orchestration log entry to `.squad/orchestration-log/{timestamp}-{agent-name}.md` using the format in `.squad/templates/orchestration-log.md`. The entry must exist before the agent runs. Fill in the Outcome field after the agent returns.
 
-**Scribe — background constant:** Scribe is not a session-close-only agent. After any substantial work batch completes (implementation, planning, or any output that would represent lost state if the session terminated), spawn Scribe in the background before proceeding to the next work batch. Scribe at session close (STEP 5) is the final mandatory run — it does not replace mid-session runs.
+**Scribe — background constant:** Scribe is not a session-close-only agent. After any implementation batch completes, or after any SpecKit phase output (spec.md, plan.md, tasks.md, or any gate file) is produced, spawn Scribe in the background before proceeding to the next work batch. Scribe at session close (STEP 5) is the final mandatory run — it does not replace mid-session runs.
 
 ---
 
@@ -84,8 +84,8 @@ Spawn Ralph via the `task` tool (`agent_type: general-purpose`, `mode: sync`). P
 
 1. Is `.squad/identity/now.md` updated within the last 7 days?
 2. Is there conflicting in-progress state from a prior session in `.squad/log/`?
-3. Read `.squad/decisions.md` and surface to the coordinator any decision directly relevant to the incoming request.
-4. Read `.squad/identity/wisdom.md` and surface any patterns directly relevant to the incoming request.
+3. Read `.squad/decisions.md` and surface to the coordinator all decisions whose topic, named agent, or workflow step mentions any element of the incoming request.
+4. Read `.squad/identity/wisdom.md` and surface all patterns whose domain or tag matches the domain of the incoming request.
 
 **HALT** if condition 1 or 2 fails. Checks 3 and 4 are informational — surface findings but do not halt on them. Do NOT proceed until Ralph explicitly signals clear.
 Ralph's response must include one of: `CLEAR — proceed` or `BLOCKED — [reason]`.
@@ -131,7 +131,7 @@ This is not a suggestion. This is the step. It cannot be skipped, combined, or i
 
 At the start of every session:
 
-- Check whether any file in `.squad/log/` has a name containing the word `retro` and is dated within the last 7 calendar days.
+- Check whether any file in `.squad/log/` has a name containing the word `retro` and whose filename timestamp (the `{timestamp}` prefix in `.squad/log/{timestamp}-{topic}.md` format) falls within the last 7 calendar days.
 - **If no such file exists → HALT. Run the Retrospective with Enforcement ceremony before any other work in this session.** This check runs regardless of whether any failure occurred. It runs even if the task seems small. It runs before STEP 1.
 - If a qualifying retro log exists → proceed.
 
@@ -293,13 +293,13 @@ These are not guidelines. Violating any of these is a **process failure** that m
     - The only two states an agent or coordinator may be in before a push: **asking the operator** or **paused waiting for the operator's reply**. There is no third state. There is no "reasonable judgement" escape. There is no "it seems ready" path.
     - This rule binds the coordinator AND every implementation agent. It is not delegatable. An implementation agent completing work and reporting success does not transfer push authority to itself.
 
-11. **Agent domain failures require charter amendment before session close.** If, at any point during the session, any agent produced output that was found to have missed something within their stated charter domain — not outside it, within it — their charter must be amended before STEP 5 runs.
-    - The amendment must encode the **class of issue** as a principle, not the specific incident. An amendment that says "check for X" after an X incident is inadequate. A valid amendment names the underlying category that X belongs to and states what the agent must verify for any member of that category.
+11. **Agent domain failures require charter amendment before session close.** If, at any point during the session, any agent produced output that the operator or coordinator explicitly identified as having missed something within that agent's stated charter domain — not outside it, within it — their charter must be amended before STEP 5 runs.
+    - The amendment must encode the **class of issue** as a principle, not the specific incident. An amendment that says "check for X" after an X incident is inadequate. A valid amendment takes the form: "For any [type of artifact/task/output], verify [specific check]." An amendment that names the specific incident rather than a type is rejected.
     - **Before STEP 5 (session close):** the coordinator must verify that the relevant charter has been amended. If not: **HALT. Do not run Scribe. Do not run Ralph. Do not close the session. Amend the charter first.**
     - There are two valid states: charter amended, or session not closed. There is no third state. There is no "if time permits" path. There is no "we'll fix it next session" escape. The amendment is a prerequisite for closure, not a follow-up task.
     - This rule is not waivable. It applies to all agents, all domains, all session types — including governance-only sessions.
 
-12. **`git commit` requires explicit authorization — this is a separate and additional gate to `git push`.** No implementation agent may run `git commit` unless the coordinator has received an explicit directive from the operator, or has issued an explicit commit instruction to that agent. Completing implementation work, passing tests, or receiving coordinator approval to proceed does not constitute authorization to commit. The only exception: Scribe may run `git commit` for `.squad/` state files only (decisions.md, history.md, log/, orchestration-log/). Scribe never commits source code, app/ files, frontend/ files, or build artifacts. Both the commit gate and the push gate must be cleared independently — clearing one does not clear the other.
+12. **`git commit` requires explicit authorization — this is a separate and additional gate to `git push`.** No implementation agent may run `git commit` unless the coordinator has received an explicit directive from the operator to commit, and has relayed that directive as an explicit commit instruction to that agent. Completing implementation work, passing tests, or receiving coordinator approval to proceed does not constitute authorization to commit. The only exception: Scribe may run `git commit` for `.squad/` state files only (decisions.md, history.md, log/, orchestration-log/). Scribe never commits source code, app/ files, frontend/ files, or build artifacts. Both the commit gate and the push gate must be cleared independently — clearing one does not clear the other.
 
 ---
 
