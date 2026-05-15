@@ -70,8 +70,11 @@ class Settings(BaseSettings):
     # Phase M1 — Postgres data layer (future M4+)
     database_url: Optional[str] = None  # DATABASE_URL — only used when use_postgres=True
     # In production, sourced from the APP_SECRETS Secret Manager blob (key: "USE_POSTGRES").
-    # Do NOT set USE_POSTGRES as a standalone Cloud Run env var — all config lives in the
-    # APP_SECRETS JSON blob.  For local dev, set USE_POSTGRES in .env directly.
+    # Do NOT set USE_POSTGRES as a standalone Cloud Run env var — env vars take precedence
+    # over blob values, so a stale standalone var would silently override the blob entry.
+    # Secrets (DATABASE_URL, USE_POSTGRES, API keys) live in the blob; infra config
+    # (APP_ENV, OAUTH_REDIRECT_URI) stays as standalone Cloud Run env vars.
+    # For local dev, set USE_POSTGRES in .env directly.
     use_postgres: bool = False
 
     # APP_SECRETS JSON blob (Cloud Run): single Secret Manager secret containing all
