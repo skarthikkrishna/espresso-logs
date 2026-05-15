@@ -18,6 +18,7 @@ from app.deps import (
     _DualWriteInventoryRepo,
     _DualWriteMaintenanceRepo,
 )
+from app.repos.sql.hardware import SqlHardwareRepo
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -371,6 +372,21 @@ class TestDualWriteHardwareRepoReads:
             await wrapper.get("HW001")
 
         sheets.get.assert_called_once_with("HW001")
+
+    async def test_hardware_next_id_still_uses_sheets_when_use_postgres_true(
+        self, settings_use_postgres: Any
+    ) -> None:
+        """next_id() must always delegate to Sheets — never switches to SQL."""
+        sheets_mock = MagicMock()
+        sheets_mock.next_id.return_value = "HW-42"
+        sql_mock = AsyncMock(spec=SqlHardwareRepo)
+
+        wrapper = _DualWriteHardwareRepo(sheets=sheets_mock, sql=sql_mock)
+        result = wrapper.next_id("Grinder")
+
+        sheets_mock.next_id.assert_called_once_with("Grinder")
+        sql_mock.next_id.assert_not_called()
+        assert result == "HW-42"
 
 
 # ---------------------------------------------------------------------------
