@@ -4,11 +4,16 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query
 
-from app.deps import CurrentUser, get_brew_log_repo, get_catalog_repo, get_inventory_repo
+from app.deps import (
+    CurrentUser,
+    _DualWriteBrewLogRepo,
+    _DualWriteCatalogRepo,
+    _DualWriteInventoryRepo,
+    get_brew_log_repo,
+    get_catalog_repo,
+    get_inventory_repo,
+)
 from app.models.api import DefaultsOut
-from app.repos.brew_log import BrewLogRepo
-from app.repos.catalog import CatalogRepo
-from app.repos.inventory import InventoryRepo
 from app.services import defaults as defaults_service
 
 router = APIRouter(prefix="/api", tags=["defaults"])
@@ -19,9 +24,9 @@ async def api_get_defaults(
     bag_id: str,
     user: CurrentUser,
     basket_id: str | None = Query(default=None),
-    brew_log_repo: BrewLogRepo = Depends(get_brew_log_repo),
-    inventory_repo: InventoryRepo = Depends(get_inventory_repo),
-    catalog_repo: CatalogRepo = Depends(get_catalog_repo),
+    brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
+    inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
+    catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
 ) -> DefaultsOut:
     defaults_dict = await defaults_service.get_defaults(
         bag_id, brew_log_repo, inventory_repo, catalog_repo, basket_id=basket_id

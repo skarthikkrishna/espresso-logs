@@ -36,7 +36,10 @@ def _brew_repo(fake_sheets: FakeSheetsClient, cache: TTLCache) -> _DualWriteBrew
 
 
 def _maint_repo(fake_sheets: FakeSheetsClient, cache: TTLCache) -> _DualWriteMaintenanceRepo:
-    return _DualWriteMaintenanceRepo(sheets=MaintenanceRepo(client=fake_sheets, cache=cache), sql=None)
+    return _DualWriteMaintenanceRepo(
+        sheets=MaintenanceRepo(client=fake_sheets, cache=cache), sql=None
+    )
+
 
 # ---------------------------------------------------------------------------
 # Inline test stubs

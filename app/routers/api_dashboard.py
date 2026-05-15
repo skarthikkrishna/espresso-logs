@@ -7,11 +7,16 @@ from typing import Any, List
 
 from fastapi import APIRouter, Depends
 
-from app.deps import CurrentUser, get_brew_log_repo, get_catalog_repo, get_inventory_repo
+from app.deps import (
+    CurrentUser,
+    _DualWriteBrewLogRepo,
+    _DualWriteCatalogRepo,
+    _DualWriteInventoryRepo,
+    get_brew_log_repo,
+    get_catalog_repo,
+    get_inventory_repo,
+)
 from app.models.api import DashboardBagOut
-from app.repos.brew_log import BrewLogRepo
-from app.repos.catalog import CatalogRepo
-from app.repos.inventory import InventoryRepo
 
 router = APIRouter(prefix="/api", tags=["dashboard"])
 
@@ -19,9 +24,9 @@ router = APIRouter(prefix="/api", tags=["dashboard"])
 @router.get("/dashboard", response_model=List[DashboardBagOut])
 async def api_dashboard(
     user: CurrentUser,
-    inventory_repo: InventoryRepo = Depends(get_inventory_repo),
-    brew_log_repo: BrewLogRepo = Depends(get_brew_log_repo),
-    catalog_repo: CatalogRepo = Depends(get_catalog_repo),
+    inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
+    brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
+    catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
 ) -> list[DashboardBagOut]:
     # Batch fetch everything at once — 3 Sheets calls total instead of N+2
     active_bags = await inventory_repo.list()  # status="Active"

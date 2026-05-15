@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import builtins
-from typing import Any
+from datetime import datetime as dt
+from typing import Any, cast
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -63,9 +64,7 @@ class SqlBrewLogRepo:
     async def update_feedback(self, shot_id: str, ai_feedback: str) -> None:
         """Update AI feedback for a brew log entry identified by Sheets Shot_ID."""
         await self._db.execute(
-            update(BrewLog)
-            .where(BrewLog.sheets_id == shot_id)
-            .values(ai_feedback=ai_feedback)
+            update(BrewLog).where(BrewLog.sheets_id == shot_id).values(ai_feedback=ai_feedback)
         )
         await self._db.commit()
 
@@ -74,23 +73,17 @@ class SqlBrewLogRepo:
 
     async def list(self) -> builtins.list[dict[str, Any]]:
         """Return all brew log entries ordered by brew date descending."""
-        result = await self._db.execute(
-            select(BrewLog).order_by(BrewLog.brewed_at.desc())
-        )
+        result = await self._db.execute(select(BrewLog).order_by(BrewLog.brewed_at.desc()))
         return [self._to_dict(r) for r in result.scalars().all()]
 
     async def list_recent(self, n: int = 20) -> builtins.list[dict[str, Any]]:
         """Return the N most recent brew log entries."""
-        result = await self._db.execute(
-            select(BrewLog).order_by(BrewLog.brewed_at.desc()).limit(n)
-        )
+        result = await self._db.execute(select(BrewLog).order_by(BrewLog.brewed_at.desc()).limit(n))
         return [self._to_dict(r) for r in result.scalars().all()]
 
     async def list_for_bag(self, bag_id: str) -> builtins.list[dict[str, Any]]:
         """Return all brew log entries for a given bag."""
-        result = await self._db.execute(
-            select(BrewLog).where(BrewLog.bag_id == bag_id)
-        )
+        result = await self._db.execute(select(BrewLog).where(BrewLog.bag_id == bag_id))
         return [self._to_dict(r) for r in result.scalars().all()]
 
     async def list_existing_ids(self) -> builtins.list[str]:
@@ -102,16 +95,14 @@ class SqlBrewLogRepo:
 
     async def get(self, shot_id: str) -> dict[str, Any] | None:
         """Fetch a single brew log entry by Sheets Shot_ID."""
-        result = await self._db.execute(
-            select(BrewLog).where(BrewLog.sheets_id == shot_id)
-        )
+        result = await self._db.execute(select(BrewLog).where(BrewLog.sheets_id == shot_id))
         row = result.scalar_one_or_none()
         return self._to_dict(row) if row else None
 
     def _to_dict(self, row: BrewLog) -> dict[str, Any]:
         return {
             "Shot_ID": row.sheets_id or "",
-            "Date": row.brewed_at.date().isoformat() if row.brewed_at else "",
+            "Date": cast(dt, row.brewed_at).date().isoformat() if row.brewed_at else "",
             "Bag_ID": row.bag_id or "",
             "Machine_ID": row.machine_id or "",
             "Grinder_ID": row.grinder_id or "",

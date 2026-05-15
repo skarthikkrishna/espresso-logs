@@ -41,7 +41,9 @@ class BrewLog(Base):
     machine_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     grinder_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     basket_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
-    grind_setting: Mapped[float | None] = mapped_column(sa.Numeric(5, 1, asdecimal=False), nullable=True)
+    grind_setting: Mapped[float | None] = mapped_column(
+        sa.Numeric(5, 1, asdecimal=False), nullable=True
+    )
     shot_eligibility: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     taste_summary: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     ai_feedback: Mapped[str | None] = mapped_column(sa.Text, nullable=True)

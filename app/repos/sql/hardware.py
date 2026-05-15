@@ -20,9 +20,7 @@ class SqlHardwareRepo:
         """Insert or update a hardware row by sheets_id. household_id intentionally NULL (M5)."""
         sheets_id = row.get("Hardware_ID")
         if sheets_id:
-            result = await self._db.execute(
-                select(Hardware).where(Hardware.sheets_id == sheets_id)
-            )
+            result = await self._db.execute(select(Hardware).where(Hardware.sheets_id == sheets_id))
             existing = result.scalar_one_or_none()
         else:
             existing = None
@@ -66,9 +64,7 @@ class SqlHardwareRepo:
 
     async def get(self, hardware_id: str) -> dict[str, Any] | None:
         """Fetch a single hardware item by Sheets Hardware_ID."""
-        result = await self._db.execute(
-            select(Hardware).where(Hardware.sheets_id == hardware_id)
-        )
+        result = await self._db.execute(select(Hardware).where(Hardware.sheets_id == hardware_id))
         row = result.scalar_one_or_none()
         return self._to_dict(row) if row else None
 
