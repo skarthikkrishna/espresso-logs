@@ -452,11 +452,11 @@ The repository abstraction (`SheetsClientProtocol`, `CatalogRepo`, `BrewLogRepo`
 | **M1** | Schema & infra | Provision Cloud SQL, run Alembic migrations, add `DATABASE_URL` secret | Drop Cloud SQL (no data yet) |
 | **M2** | Dual-write shadow | App writes to both Sheets and Postgres; reads from Sheets | Remove DB writes from deps.py |
 | **M3** | Backfill + validation | Run `scripts/migrate_sheets_to_postgres.py`; compare row counts and checksums | Keep Sheets as authoritative until validated |
-| **M4** | Read switchover | App reads from Postgres; writes to both | Flip `USE_POSTGRES=false` env var in Cloud Run |
+| **M4** | Read switchover | App reads from Postgres; writes to both | Set `USE_POSTGRES=false` in the APP_SECRETS blob |
 | **M5** | Household, Roles & Sheets write-disable | Disable Sheets write path; implement household/roles; Sheets becomes read-only archive | Re-enable Sheets writes (two-line change in deps.py); remove household/roles behind feature flag |
 | **M6** | Sheets decommission | Remove gspread dependency; archive workbook; update Terraform | Workbook preserved in Drive indefinitely |
 
-> **Phase ordering note (TPM):** M5 bundles Sheets write-disable with household/roles in a single phase because both are safe to roll back at the same point (Sheets is still an intact archive). Decoupling them into M5a/M5b would add a deployment cycle with no user-visible value. The M5 rollback window is: flip `USE_POSTGRES=false` OR re-enable gspread writes in `deps.py` — one PR, one deploy, no data loss.
+> **Phase ordering note (TPM):** M5 bundles Sheets write-disable with household/roles in a single phase because both are safe to roll back at the same point (Sheets is still an intact archive). Decoupling them into M5a/M5b would add a deployment cycle with no user-visible value. The M5 rollback window is: set `USE_POSTGRES=false` in the APP_SECRETS blob OR re-enable gspread writes in `deps.py` — one PR, one deploy, no data loss.
 
 ### 7.2 Migration Script Approach
 
@@ -485,7 +485,7 @@ async def migrate():
 ### 7.3 Rollback Plan
 
 - **M1–M3:** Sheets is still the source of truth. Rollback is removing the Postgres connection from `deps.py`. Zero data loss.
-- **M4:** Flip `USE_POSTGRES=false` in Cloud Run env vars (30-second deploy, no code change). Postgres data is preserved; Sheets is still current because M4 kept dual-write active.
+- **M4:** Set `USE_POSTGRES=false` in the APP_SECRETS blob (30-second deploy, no code change). Postgres data is preserved; Sheets is still current because M4 kept dual-write active.
 - **M5:** Re-enable the `gspread` write path in `deps.py` (two-line change, one PR, one deploy). The household/roles routes can be left in place or gated behind a feature flag — they are additive and non-destructive.
 - **M6:** No rollback needed — workbook is preserved in Drive; migration is irreversible only in the sense that re-enabling gspread would require re-plumbing the dependency.
 
@@ -623,7 +623,7 @@ The v1 phases (1–17) are complete or in-flight and are not repeated here. The 
 ### Phase M4 — Read Switchover
 
 1. Update `deps.py` to read from Postgres, write to both.
-2. Add `USE_POSTGRES` env var (default `true`); flipping to `false` reverts to Sheets reads within a 30-second redeploy.
+2. Add `USE_POSTGRES` key (default `true`) to the APP_SECRETS Secret Manager blob; setting it to `false` reverts to Sheets reads within a 30-second redeploy.
 3. Deploy; monitor for 48 hours.
 4. Acceptance: All API responses served from Postgres; zero 500 errors attributable to the DB.
 
