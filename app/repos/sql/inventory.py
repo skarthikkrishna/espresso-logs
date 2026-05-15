@@ -44,9 +44,11 @@ class SqlInventoryRepo:
             existing.status = row.get("Status", "Active")
             existing.storage_method = row.get("Storage_Method")
             existing.notes = row.get("Notes") or row.get("Beans")
+            existing.sheets_catalog_id = row.get("Catalog_ID")
         else:
             bag = InventoryBag(
                 sheets_id=sheets_id,
+                sheets_catalog_id=row.get("Catalog_ID"),
                 roast_date=_to_date(row.get("RoastDate")),
                 beans=row.get("Beans"),
                 display_name=row.get("Display_Name") or row.get("Beans"),
@@ -91,6 +93,7 @@ class SqlInventoryRepo:
     def _to_dict(self, row: InventoryBag) -> dict[str, Any]:
         return {
             "Bag_ID": row.sheets_id or "",
+            "Catalog_ID": row.sheets_catalog_id or "",
             "Beans": row.beans or "",
             "Display_Name": row.display_name or row.beans or "",
             "RoastDate": row.roast_date.isoformat() if row.roast_date else "",

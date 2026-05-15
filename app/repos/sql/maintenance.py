@@ -2,12 +2,26 @@
 
 from __future__ import annotations
 
+import datetime
 from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.maintenance import MaintenanceLog
+
+
+def _parse_datetime(val: Any) -> datetime.datetime | None:
+    """Parse an ISO date/datetime string to a UTC datetime. Returns None on failure."""
+    if val is None or val == "":
+        return None
+    try:
+        dt = datetime.datetime.fromisoformat(str(val))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=datetime.timezone.utc)
+        return dt
+    except (TypeError, ValueError):
+        return None
 
 
 class SqlMaintenanceRepo:
@@ -21,6 +35,7 @@ class SqlMaintenanceRepo:
         event = MaintenanceLog(
             sheets_id=row.get("Maintenance_ID"),
             sheets_hardware_id=row.get("Hardware_ID"),
+            performed_at=_parse_datetime(row.get("Date")),
             action=row.get("Action_Type", ""),
             notes=row.get("Notes"),
         )
