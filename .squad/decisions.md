@@ -453,6 +453,61 @@ Added hard no-push gate to `.copilot/instructions.md` (coordinator reads at sess
 
 ---
 
+## 2026-05-14: Routing decision — M4 Read Switchover (Priya)
+
+**Status:** DIRECT_PERMITTED
+
+M4 Read Switchover is execution of a pre-specified, pre-architected migration milestone. No new product scope. Implementation plan is already defined in `docs/requirements/engineering_architecture_v2.md` (§ Phase M4). All infrastructure is already in place: SQL repos have `list()`/`get()` read methods, `USE_POSTGRES` flag exists in `app/config.py`, and `self._sql` is injected into all five `_DualWrite*` wrappers in `app/deps.py`.
+
+**Why:** The change is narrowly bounded — flip the read path in all five `_DualWrite*` classes in `app/deps.py` from `self._sheets` to `self._sql` when `settings.use_postgres=True`, with `self._sheets` fallback when `False`. Update tests to cover both read paths. Quinn gate is still required before implementation (touches application code). M3 backfill + validation must be confirmed complete before `USE_POSTGRES=true` is set in Cloud Run prod env.
+
+**Scope:**
+- `app/deps.py` — `list()`, `get()`, `list_*()` read methods in `_DualWriteCatalogRepo`, `_DualWriteBrewLogRepo`, `_DualWriteInventoryRepo`, `_DualWriteHardwareRepo`, `_DualWriteMaintenanceRepo`
+- `tests/` — coverage for both `use_postgres=True` and `use_postgres=False` read paths
+- No router, service, frontend, or schema changes required
+
+**Gates:**
+- Quinn gate required (application code change)
+- M3 backfill completion must be verified before flipping env var in prod
+
+---
+
+## 2026-05-14: M4 Prerequisites Complete (Alex)
+
+**Status:** IMPLEMENTED — awaiting review + Quinn re-gate
+
+All M4 prerequisite tasks (P1 + P2) are implemented and all tests pass (399 passed, 4 skipped).
+**Branch:** `feat/m4-prerequisites` (7 commits, not pushed)
+
+### P1 — ORM Models + SQL Repo Write Methods
+
+- All 5 ORM models updated with `sheets_id` and v2 columns matching migration 0004.
+- Migration 0005 created: adds `sheets_hardware_id TEXT` to `maintenance_log` (needed because `hardware_id` FK stores UUIDs while routers pass Sheets string IDs for filtering).
+- All 5 SQL repos rewritten with upsert-by-sheets_id pattern and complete v2 column writes.
+
+### P2 — Async Read Path
+
+- All 5 SQL repos have async `list()`, `get()`, and entity-specific read methods.
+- All 5 DualWrite wrappers in `deps.py` have `async def` read methods with `settings.use_postgres` check.
+- All router files (`api_catalog`, `api_brew_log`, `api_hardware`, `api_inventory`, `api_maintenance`, `api_dashboard`) and services (`defaults.py`, `inference.py`) now `await` all repo read calls.
+
+### Tests
+
+- 27 new tests in `tests/repos/test_sql_repos_read.py` covering use_postgres=True, False, and sql=None fallback.
+- `tests/test_defaults.py` and `tests/test_inference.py` updated to use DualWrite wrappers with `sql=None` + `use_postgres=False` fixture so async `await` works correctly in unit tests without requiring Sheets repos to be async.
+
+### Key Technical Decisions
+
+1. **`sheets_hardware_id` cross-reference column**: The `list()` filter for maintenance must match Sheets string IDs. Since `hardware_id` FK is a UUID, a new `sheets_hardware_id TEXT` column stores the raw Sheets string (e.g. "HW001"). Migration 0005 covers this.
+
+2. **`update_feedback` stays sync**: Kept sync to match existing DualWrite + Sheets repo contract. Marked `# TODO(M4-async)` for the full async migration.
+
+3. **DualWrite wrappers delegate sync read calls**: When `use_postgres=False`, async DualWrite methods call sync Sheets methods directly — safe because there's no I/O on the event loop in the test context.
+
+4. **Unit test compatibility pattern**: Tests that previously passed raw Sheets repos to async services now wrap them in `_DualWrite*` with `sql=None` and patch `settings.use_postgres=False`. Preserves test fidelity without making Sheets repos async.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
