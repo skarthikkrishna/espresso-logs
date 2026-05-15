@@ -93,3 +93,14 @@ Guard only blocked `APP_ENV=production`; staging/preview deployments could still
 - `sheets_catalog_id` as a Text cross-reference column (like `sheets_hardware_id` in maintenance) is the right pattern for Sheets string IDs that need to survive without a UUID FK resolve.
 
 **Test result:** 400 passed, 4 skipped. Lint: 0 issues. mypy --strict: 0 issues.
+
+### 2026-05-15: USE_POSTGRES moved into APP_SECRETS blob
+
+**What:** `use_postgres` was already read from `APP_SECRETS` by the existing `_load_app_secrets` validator in `app/config.py` (lowercases blob keys before injecting). Added explicit inline comment on the `use_postgres` field noting it must be sourced from the APP_SECRETS JSON blob in production and must NOT be set as a standalone Cloud Run env var. Updated `.env.example` with matching comment explaining the local vs production split. `cloudbuild.yaml` already omits `USE_POSTGRES` from `--set-env-vars` — no change required. Secret Manager blob updated: `gcloud secrets versions add APP_SECRETS` created version 3 with `"USE_POSTGRES": true` included.
+
+**Key decisions:**
+- No code logic change was needed — the `_load_app_secrets` validator already handles blob injection for any key.
+- The comment is the canonical documentation for operators configuring Cloud Run — no external docs were needed because `.env.example` is the operator-facing reference.
+- `USE_POSTGRES` must NOT appear as a standalone Cloud Run env var; all non-infra config belongs in the APP_SECRETS blob to avoid config drift between Secret Manager and Cloud Run revision vars.
+
+**Test result:** 400 passed, 4 skipped. Lint: 0 issues.
