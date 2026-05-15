@@ -95,6 +95,44 @@ prompt: "You are Ralph. Read .squad/identity/now.md and the most recent file in 
 
 ---
 
+### STEP 0b — Ceremony Check (mandatory, blocking)
+
+**This step runs at the start of every session, and again after any CI failure, build failure, or reviewer rejection. It is not a judgment call. It is a mechanical gate.**
+
+Read `.squad/ceremonies.md` before spawning any work batch. Evaluate each ceremony in order:
+
+#### Check A — Before-work ceremonies
+
+For every ceremony with `trigger: auto` and `when: before`:
+
+- Evaluate the condition against the current task.
+- **If the condition matches → HALT. Spawn the designated facilitator (sync, blocking) before any other work proceeds.** The ceremony output must be attached verbatim in all subsequent work spawn prompts for this session.
+- If the condition does not match → skip with no reasoning. There is no "probably applies" path. There is no "it seems small" escape.
+
+This is not a suggestion. This is the step. It cannot be skipped, combined, or inferred. A condition that matches is not a prompt for judgment. It is a trigger. Ceremony runs.
+
+#### Check B — After-failure ceremonies
+
+After any CI failure, build failure, or reviewer rejection:
+
+- Read `.squad/ceremonies.md`. Trigger all ceremonies with `trigger: auto` and `when: after`.
+- The Retrospective ceremony MUST produce GitHub Issues labeled `retro-action`. Markdown notes are not a valid output. A decision drop file is not a valid substitute. GitHub Issues are the only valid form of action item. This is not optional.
+- **HALT until all after-failure ceremonies are complete before continuing any implementation work.**
+
+This is not a suggestion. This is the step. It cannot be skipped, combined, or inferred.
+
+#### Check C — Weekly enforcement
+
+At the start of every session:
+
+- Check whether any file in `.squad/log/` has a name containing the word `retro` and is dated within the last 7 calendar days.
+- **If no such file exists → HALT. Run the Retrospective with Enforcement ceremony before any other work in this session.** This check runs regardless of whether any failure occurred. It runs even if the task seems small. It runs before STEP 1.
+- If a qualifying retro log exists → proceed.
+
+This is not a suggestion. This is the step. It cannot be skipped, combined, or inferred.
+
+---
+
 ### STEP 1 — Spawn the Routing Agent (mandatory, blocking)
 
 Spawn the owning routing agent via the `task` tool (`agent_type: general-purpose`, `mode: sync`). Provide the agent's charter inlined.
@@ -236,6 +274,12 @@ These are not guidelines. Violating any of these is a **process failure** that m
     - The operator must have been explicitly asked whether to push and must have replied affirmatively. An agent completing its work is NOT implicit permission to push. Silence is NOT permission. A passing checklist is NOT permission. The only permission is the operator saying yes.
     - The only two states an agent or coordinator may be in before a push: **asking the operator** or **paused waiting for the operator's reply**. There is no third state. There is no "reasonable judgement" escape. There is no "it seems ready" path.
     - This rule binds the coordinator AND every implementation agent. It is not delegatable. An implementation agent completing work and reporting success does not transfer push authority to itself.
+
+11. **Agent domain failures require charter amendment before session close.** If, at any point during the session, any agent produced output that was found to have missed something within their stated charter domain — not outside it, within it — their charter must be amended before STEP 5 runs.
+    - The amendment must encode the **class of issue** as a principle, not the specific incident. An amendment that says "check for X" after an X incident is inadequate. A valid amendment names the underlying category that X belongs to and states what the agent must verify for any member of that category.
+    - **Before STEP 5 (session close):** the coordinator must verify that the relevant charter has been amended. If not: **HALT. Do not run Scribe. Do not run Ralph. Do not close the session. Amend the charter first.**
+    - There are two valid states: charter amended, or session not closed. There is no third state. There is no "if time permits" path. There is no "we'll fix it next session" escape. The amendment is a prerequisite for closure, not a follow-up task.
+    - This rule is not waivable. It applies to all agents, all domains, all session types — including governance-only sessions.
 
 ---
 
