@@ -1,8 +1,7 @@
 # Quinn Gate — M4 Read Switchover
 
-**Status:** APPROVED_WITH_NOTES
+**Status:** BLOCKED
 **Date:** 2026-05-14
-**Re-Review Date:** 2026-05-14
 **Reviewer:** Quinn
 
 ## Summary
@@ -105,37 +104,11 @@ After switching reads, update the class docstrings on all 5 wrappers to remove "
 
 ## Verdict
 
-**APPROVED_WITH_NOTES.** All three blocking prerequisites from the original gate are resolved. Two minor notes that are non-blocking for the M4 deps.py switchover but must be addressed before M5:
+**BLOCKED.** Implementation of the deps.py read switchover cannot proceed until:
 
-1. ✅ P1: Alembic migrations 0004 + 0005 add all required columns (`sheets_id` on all 5 entities, plus all v2 application columns). SQL repo write methods correctly map Sheets IDs and new columns.
-2. ✅ P2: All 5 SQL repos implement real async read methods using SELECT queries. DualWrite wrappers in `deps.py` are async with `use_postgres` check and `_sql=None` graceful fallback. `next_id()` in `_DualWriteHardwareRepo` unconditionally delegates to Sheets. All routers use `await` on every read call.
-3. ✅ P3: Confirmed by operator — full backfill via script with write-quiesced window.
-4. ✅ Tests: `tests/repos/test_sql_repos_read.py` exists with 27 tests covering all three required paths (`use_postgres=True`, `use_postgres=False`, `_sql=None` fallback) for all 5 wrappers. 399 tests pass, 0 fail. Ruff clean.
+1. ✅ P1: Alembic migrations add `sheets_shot_id` (BrewLog) and `sheets_bag_id` (Inventory) columns; `SqlCatalogRepo` schema fix for `notes`/`Catalog_ID` conflict
+2. ✅ P2: All 5 SQL repos implement real, non-stub read methods that query the database
+3. ✅ P3: Backfill plan confirmed by operator before `USE_POSTGRES=true` is set in production
+4. ✅ All required test cases listed above exist and pass (both `use_postgres=True` and `use_postgres=False` read paths, plus the `_sql=None` guard)
 
----
-
-## Re-Review Notes
-
-### What was fixed (Alex, `feat/m4-prerequisites` — 7 commits)
-
-**P1 — ORM models and migrations:**
-- All 5 ORM models updated: `brew_log` (sheets_id, bag_id, machine_id, grinder_id, basket_id, grind_setting, shot_eligibility, taste_summary, ai_feedback, storage_method), `catalog` (sheets_id, product_url, local_image_path), `inventory` (sheets_id, beans, display_name, roast_level, status, storage_method), `hardware` (sheets_id, product_url, local_image_path), `maintenance` (sheets_id, sheets_hardware_id)
-- Migrations 0004 and 0005 cover all schema changes with proper UNIQUE constraints on `sheets_id` columns
-- `SqlCatalogRepo.upsert()` correctly stores `sheets_id=row.get("Catalog_ID")` and maps `Tasting_Notes`/`Notes` — the original `notes`/`Catalog_ID` conflict is resolved
-- All SQL repo write methods (`upsert()`/`add()`) store `sheets_id` from the correct Sheets key per entity
-
-**P2 — SQL repo read implementations and async DualWrite:**
-- All 5 SQL repos now have real async `list()`, `get()`, and domain-specific read methods (`list_recent`, `list_for_bag`, `list_existing_ids`, `list_all`) using SQLAlchemy `select()` queries
-- `SqlCatalogRepo._fetch_all()` added (was missing — would have caused `AttributeError` in production)
-- All 5 `_DualWrite*` classes in `deps.py` have `async def` read methods with `settings.use_postgres` check and `self._sql is None` fallback
-- `_DualWriteHardwareRepo.next_id()` correctly stays on `self._sheets` unconditionally
-- All 5 routers verified: every read call site uses `await`
-
-**Test coverage added:**
-- `tests/repos/test_sql_repos_read.py`: 27 tests across all 5 wrappers, covering all three required paths
-
-### Non-blocking notes (must resolve before M5)
-
-1. **Missing `next_id` regression guard:** The original gate specified `test_hardware_next_id_still_uses_sheets_when_use_postgres_true`. This test is absent from `test_sql_repos_read.py`. The implementation is correct, but if `next_id` routing is ever touched, there is no test to catch a regression. Add before M5.
-
-2. **`SqlBrewLogRepo.update_feedback()` antipattern:** The SQL stub for `update_feedback` uses the deprecated `asyncio.get_event_loop()` / `ensure_future` pattern (lines 63–81 of `app/repos/sql/brew_log.py`). This method is not called from `deps.py` (which routes `update_feedback` to Sheets only), so there is no runtime impact today. However, the code will issue `DeprecationWarning` if it is ever exercised and should be converted to a proper `async def` before the method is wired into the M5 DualWrite path.
+Once P1–P3 are complete and test coverage meets the checklist above, re-submit for gate review. Expected re-review scope: SQL repo read implementations + migrations + updated deps.py switchover logic.
