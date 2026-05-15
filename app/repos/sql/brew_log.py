@@ -60,28 +60,14 @@ class SqlBrewLogRepo:
         for row in rows:
             await self.add(row)
 
-    def update_feedback(self, shot_id: str, ai_feedback: str) -> None:
-        """Update AI feedback for a brew log entry by Sheets Shot_ID.
-
-        # TODO(M4-async): This method is sync to match the current DualWrite wrapper
-        # and Sheets repo signature. Convert to async def in a dedicated step once
-        # the DualWrite update_feedback path is also converted.
-        """
-        import asyncio
-
-        async def _do_update() -> None:
-            await self._db.execute(
-                update(BrewLog)
-                .where(BrewLog.sheets_id == shot_id)
-                .values(ai_feedback=ai_feedback)
-            )
-            await self._db.commit()
-
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            asyncio.ensure_future(_do_update())
-        else:
-            loop.run_until_complete(_do_update())
+    async def update_feedback(self, shot_id: str, ai_feedback: str) -> None:
+        """Update AI feedback for a brew log entry identified by Sheets Shot_ID."""
+        await self._db.execute(
+            update(BrewLog)
+            .where(BrewLog.sheets_id == shot_id)
+            .values(ai_feedback=ai_feedback)
+        )
+        await self._db.commit()
 
     def delete_rows(self, start_row: int, end_row: int) -> None:
         """No-op."""
