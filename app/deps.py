@@ -103,8 +103,9 @@ def get_sheets_client() -> RealSheetsClient | _FakeSheetsClient:
 
 
 class _DualWriteCatalogRepo:
-    """Dual-write wrapper: writes to Sheets first, then Postgres; reads from Sheets.
+    """Dual-write wrapper: writes to Sheets first, then Postgres.
 
+    Reads route to Postgres when USE_POSTGRES=true; fall back to Sheets otherwise.
     When ``sql`` is ``None`` (i.e. ``USE_POSTGRES=False``), all write operations
     go to Sheets only — no Postgres connection is opened.
     """
@@ -173,8 +174,9 @@ class _DualWriteCatalogRepo:
 
 
 class _DualWriteBrewLogRepo:
-    """Dual-write wrapper for BrewLog: Sheets-first, Postgres-second; reads from Sheets.
+    """Dual-write wrapper for BrewLog: Sheets-first, Postgres-second.
 
+    Reads route to Postgres when USE_POSTGRES=true; fall back to Sheets otherwise.
     When ``sql`` is ``None`` (i.e. ``USE_POSTGRES=False``), all write operations
     go to Sheets only.
     """
@@ -253,8 +255,9 @@ class _DualWriteBrewLogRepo:
 
 
 class _DualWriteInventoryRepo:
-    """Dual-write wrapper for InventoryBag: Sheets-first, Postgres-second; reads from Sheets.
+    """Dual-write wrapper for InventoryBag: Sheets-first, Postgres-second.
 
+    Reads route to Postgres when USE_POSTGRES=true; fall back to Sheets otherwise.
     When ``sql`` is ``None`` (i.e. ``USE_POSTGRES=False``), all write operations
     go to Sheets only.
     """
@@ -323,8 +326,10 @@ class _DualWriteInventoryRepo:
 
 
 class _DualWriteHardwareRepo:
-    """Dual-write wrapper for Hardware: Sheets-first, Postgres-second; reads from Sheets.
+    """Dual-write wrapper for Hardware: Sheets-first, Postgres-second.
 
+    Reads route to Postgres when USE_POSTGRES=true; fall back to Sheets otherwise.
+    ``next_id()`` always delegates to Sheets unconditionally.
     When ``sql`` is ``None`` (i.e. ``USE_POSTGRES=False``), all write operations
     go to Sheets only.
     """
@@ -388,8 +393,9 @@ class _DualWriteHardwareRepo:
 
 
 class _DualWriteMaintenanceRepo:
-    """Dual-write wrapper for MaintenanceLog: Sheets-first, Postgres-second; reads from Sheets.
+    """Dual-write wrapper for MaintenanceLog: Sheets-first, Postgres-second.
 
+    Reads route to Postgres when USE_POSTGRES=true; fall back to Sheets otherwise.
     When ``sql`` is ``None`` (i.e. ``USE_POSTGRES=False``), all write operations
     go to Sheets only.
     """
