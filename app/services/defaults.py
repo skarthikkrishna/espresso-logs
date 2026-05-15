@@ -68,7 +68,7 @@ async def get_defaults(
     """
     # BE-1: hoist list_for_bag above the basket_id branch so Level 0 and Level 1
     # share a single Sheets read. Do NOT call list_for_bag twice.
-    shots = brew_log_repo.list_for_bag(bag_id)
+    shots = await brew_log_repo.list_for_bag(bag_id)
 
     # ── Level 0: basket-specific exact bag match ─────────────────────────────
     if basket_id:
@@ -86,25 +86,25 @@ async def get_defaults(
         return _extract_defaults(most_recent)
 
     # ── Levels 2 & 3 require the bag to exist in Inventory ───────────────────
-    bag = inventory_repo.get(bag_id)
+    bag = await inventory_repo.get(bag_id)
     if bag is None:
         return {}
 
     # ── Level 2: same roaster ─────────────────────────────────────────────────
     catalog_id = bag.get("Catalog_ID")
     if catalog_id:
-        catalog = catalog_repo.get(catalog_id)
+        catalog = await catalog_repo.get(catalog_id)
         if catalog:
             roaster = catalog.get("Roaster")
             if roaster:
-                active_bags = inventory_repo.list()  # defaults to status="Active"
+                active_bags = await inventory_repo.list()  # defaults to status="Active"
                 all_shots: list[dict[str, Any]] = []
                 for active_bag in active_bags:
                     other_cat_id = active_bag.get("Catalog_ID")
                     if other_cat_id:
-                        other_catalog = catalog_repo.get(other_cat_id)
+                        other_catalog = await catalog_repo.get(other_cat_id)
                         if other_catalog and other_catalog.get("Roaster") == roaster:
-                            all_shots.extend(brew_log_repo.list_for_bag(active_bag["Bag_ID"]))
+                            all_shots.extend(await brew_log_repo.list_for_bag(active_bag["Bag_ID"]))
                 if all_shots:
                     most_recent = max(all_shots, key=lambda s: s.get("Date", ""))
                     return _extract_defaults(most_recent)
@@ -112,11 +112,11 @@ async def get_defaults(
     # ── Level 3: same roast level ─────────────────────────────────────────────
     roast_level = bag.get("RoastLevel")
     if roast_level:
-        active_bags = inventory_repo.list()  # defaults to status="Active"
+        active_bags = await inventory_repo.list()  # defaults to status="Active"
         all_shots = []
         for active_bag in active_bags:
             if active_bag.get("RoastLevel") == roast_level:
-                all_shots.extend(brew_log_repo.list_for_bag(active_bag["Bag_ID"]))
+                all_shots.extend(await brew_log_repo.list_for_bag(active_bag["Bag_ID"]))
         if all_shots:
             most_recent = max(all_shots, key=lambda s: s.get("Date", ""))
             return _extract_defaults(most_recent)

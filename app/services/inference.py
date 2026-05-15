@@ -245,7 +245,7 @@ async def get_ai_feedback(
     extra_context: dict[str, Any] | None = None,
 ) -> str:
     # Step 1: fetch shot
-    shot = brew_log_repo.get(shot_id)
+    shot = await brew_log_repo.get(shot_id)
     if shot is None:
         return _GRACEFUL_NOT_FOUND
 
@@ -255,7 +255,7 @@ async def get_ai_feedback(
         return cast(str, existing)
 
     # Step 3: fetch non-Reject shot history for this bag (exclude current shot)
-    raw_history = brew_log_repo.list_for_bag(shot["Bag_ID"])
+    raw_history = await brew_log_repo.list_for_bag(shot["Bag_ID"])
     history = [
         s
         for s in raw_history
@@ -277,7 +277,7 @@ async def get_ai_feedback(
         except (ValueError, KeyError):
             shot_date = date.today()
         cutoff = shot_date - timedelta(days=30)
-        raw_mnt = maintenance_repo.list()
+        raw_mnt = await maintenance_repo.list()
         maintenance_events = []
         for r in raw_mnt:
             if r.get("Hardware_ID") not in hardware_ids:

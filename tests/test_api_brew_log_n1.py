@@ -107,28 +107,34 @@ def _reset_overrides():
 
 def _make_mock_inventory_repo():
     repo = MagicMock()
-    repo.list_all.return_value = [_BAG_ROW.copy()]
-    repo.get.return_value = _BAG_ROW.copy()
+    repo.list_all = AsyncMock(return_value=[_BAG_ROW.copy()])
+    repo.list = AsyncMock(return_value=[_BAG_ROW.copy()])
+    repo.get = AsyncMock(return_value=_BAG_ROW.copy())
     return repo
 
 
 def _make_mock_catalog_repo():
     repo = MagicMock()
-    repo.list.return_value = [_CATALOG_ROW.copy()]
+    repo.list = AsyncMock(return_value=[_CATALOG_ROW.copy()])
+    repo.get = AsyncMock(return_value=_CATALOG_ROW.copy())
     return repo
 
 
 def _make_mock_hardware_repo():
     repo = MagicMock()
-    repo.list.return_value = [_HARDWARE_ROW.copy()]
+    repo.list = AsyncMock(return_value=[_HARDWARE_ROW.copy()])
+    repo.get = AsyncMock(return_value=_HARDWARE_ROW.copy())
     return repo
 
 
 def _make_mock_brew_log_repo(shots=None):
     repo = MagicMock()
     shots = shots if shots is not None else [_SHOT_ROW.copy()]
-    repo.list_recent.return_value = shots
-    repo.get.return_value = shots[0] if shots else None
+    repo.list_recent = AsyncMock(return_value=shots)
+    repo.list = AsyncMock(return_value=shots)
+    repo.list_all = AsyncMock(return_value=shots)
+    repo.list_existing_ids = AsyncMock(return_value=[s["Shot_ID"] for s in shots])
+    repo.get = AsyncMock(return_value=shots[0] if shots else None)
     repo.add = AsyncMock(return_value=None)
     return repo
 
@@ -213,11 +219,15 @@ async def test_brew_log_list_handles_missing_bag_id():
     shot_no_bag["Bag_ID"] = ""
 
     inv_repo = MagicMock()
-    inv_repo.list_all.return_value = []  # empty — bag not found
+    inv_repo.list_all = AsyncMock(return_value=[])
+    inv_repo.list = AsyncMock(return_value=[])
+    inv_repo.get = AsyncMock(return_value=None)
     cat_repo = MagicMock()
-    cat_repo.list.return_value = []
+    cat_repo.list = AsyncMock(return_value=[])
+    cat_repo.get = AsyncMock(return_value=None)
     hw_repo = MagicMock()
-    hw_repo.list.return_value = []
+    hw_repo.list = AsyncMock(return_value=[])
+    hw_repo.get = AsyncMock(return_value=None)
     bl_repo = _make_mock_brew_log_repo(shots=[shot_no_bag])
 
     overrides = {
@@ -255,11 +265,15 @@ async def test_brew_log_list_handles_missing_hardware_ids():
     shot_unknown_hw["Basket_ID"] = "UNKNOWN_B"
 
     inv_repo = MagicMock()
-    inv_repo.list_all.return_value = []
+    inv_repo.list_all = AsyncMock(return_value=[])
+    inv_repo.list = AsyncMock(return_value=[])
+    inv_repo.get = AsyncMock(return_value=None)
     cat_repo = MagicMock()
-    cat_repo.list.return_value = []
+    cat_repo.list = AsyncMock(return_value=[])
+    cat_repo.get = AsyncMock(return_value=None)
     hw_repo = MagicMock()
-    hw_repo.list.return_value = []  # empty — no matching hardware in lookup dict
+    hw_repo.list = AsyncMock(return_value=[])  # empty — no matching hardware in lookup dict
+    hw_repo.get = AsyncMock(return_value=None)
     bl_repo = _make_mock_brew_log_repo(shots=[shot_unknown_hw])
 
     overrides = {
@@ -337,7 +351,8 @@ async def test_brew_log_create_pre_fetches_lookups():
     bl_repo = _make_mock_brew_log_repo(shots=[])
 
     maint_repo = MagicMock()
-    maint_repo.list.return_value = []
+    maint_repo.list = AsyncMock(return_value=[])
+    maint_repo.add = AsyncMock(return_value=None)
     llm = MagicMock()
 
     overrides = {

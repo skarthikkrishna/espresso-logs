@@ -24,13 +24,13 @@ async def api_dashboard(
     catalog_repo: CatalogRepo = Depends(get_catalog_repo),
 ) -> list[DashboardBagOut]:
     # Batch fetch everything at once — 3 Sheets calls total instead of N+2
-    active_bags = inventory_repo.list()  # status="Active"
+    active_bags = await inventory_repo.list()  # status="Active"
 
     # Build in-memory lookup dicts to avoid per-bag Sheets calls
-    all_catalog = {row["Catalog_ID"]: row for row in catalog_repo.list()}
+    all_catalog = {row["Catalog_ID"]: row for row in await catalog_repo.list()}
 
     shots_by_bag: dict[str, list[dict[str, Any]]] = {}
-    for shot in brew_log_repo.list():
+    for shot in await brew_log_repo.list():
         bag_id = shot.get("Bag_ID", "")
         if bag_id:
             shots_by_bag.setdefault(bag_id, []).append(shot)
