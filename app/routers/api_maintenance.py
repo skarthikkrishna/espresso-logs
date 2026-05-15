@@ -41,14 +41,18 @@ async def api_maintenance_list(
     maintenance_repo: MaintenanceRepo = Depends(get_maintenance_repo),
     hardware_repo: HardwareRepo = Depends(get_hardware_repo),
 ) -> list[MaintenanceEventOut]:
-    events = maintenance_repo.list(hardware_id=hardware_id)
+    events = await maintenance_repo.list(hardware_id=hardware_id)
     events = sorted(events, key=lambda e: e.get("Date", ""), reverse=True)
+
+    # Pre-fetch all hardware referenced by the returned events.
+    hw_ids = {e.get("Hardware_ID", "") for e in events}
+    hw_ids.discard("")
     hw_cache: dict[str, dict[str, Any] | None] = {}
+    for hw_id in hw_ids:
+        hw_cache[hw_id] = await hardware_repo.get(hw_id)
 
     def _hw_name(hw_id: str) -> str:
-        if hw_id not in hw_cache:
-            hw_cache[hw_id] = hardware_repo.get(hw_id)
-        hw = hw_cache[hw_id]
+        hw = hw_cache.get(hw_id)
         return hw.get("Name", hw_id) if hw else hw_id
 
     return [_maint_to_out(e, _hw_name(e.get("Hardware_ID", ""))) for e in events]
@@ -68,7 +72,7 @@ async def api_maintenance_create(
     hardware_repo: HardwareRepo = Depends(get_hardware_repo),
     maintenance_repo: MaintenanceRepo = Depends(get_maintenance_repo),
 ) -> MaintenanceEventOut:
-    hardware = hardware_repo.get(body.hardware_id)
+    hardware = await hardware_repo.get(body.hardware_id)
     if hardware is None:
         raise HTTPException(status_code=404, detail="Hardware not found")
     if hardware.get("Category") == "Basket":
@@ -87,7 +91,7 @@ async def api_maintenance_create(
     except ValueError:
         raise HTTPException(status_code=422, detail="date must be ISO format (YYYY-MM-DD)")
 
-    existing_ids = [e["Maintenance_ID"] for e in maintenance_repo.list()]
+    existing_ids = [e["Maintenance_ID"] for e in await maintenance_repo.list()]
     maintenance_id = make_maintenance_id(existing_ids)
     row = {
         "Maintenance_ID": maintenance_id,
