@@ -47,3 +47,16 @@ Guard only blocked `APP_ENV=production`; staging/preview deployments could still
 - Unit tests for defaults.py and inference.py now wrap raw Sheets repos in DualWrite wrappers with `sql=None` and patch `settings.use_postgres=False` — avoids needing to make Sheets repos async while preserving full test coverage.
 
 **Test result:** 399 passed, 4 skipped. Lint: 0 issues. Branch not pushed — awaiting Karthik review.
+
+### 2026-05-14: M4 Quinn re-gate notes addressed
+
+**What:** Fixed two Quinn APPROVED_WITH_NOTES items on `feat/m4-prerequisites`:
+1. `SqlBrewLogRepo.update_feedback` — removed `asyncio.get_event_loop().run_until_complete()` antipattern; converted to proper `async def` with `await self._db.execute(...)` / `await self._db.commit()`.
+2. Added regression test `test_hardware_next_id_still_uses_sheets_when_use_postgres_true` confirming `next_id()` always unconditionally delegates to Sheets.
+
+**Learnings:**
+- M4 switchover pattern: `from app.config import settings` imported at module level in `deps.py`; all 5 DualWrite read methods gate on `settings.use_postgres and self._sql is not None`
+- All 5 DualWrite wrappers: reads are conditional on `settings.use_postgres and self._sql is not None`
+- `settings_use_postgres` pytest fixture created in `tests/repos/conftest.py` — patches `app.deps.settings` with `use_postgres=True`
+
+**Test result:** 400 passed, 4 skipped. Lint: 0 issues.
