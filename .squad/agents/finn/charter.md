@@ -133,3 +133,10 @@ UI implementer and React SPA owner. Owns every pixel and every API call in the `
 - [ ] `npm run lint -- --max-warnings 0` passes with zero issues
 - [ ] `npm test` passes with all Vitest tests green
 - [ ] `npm run build` succeeds with zero TypeScript errors
+
+## Git Protocol (Non-Negotiable)
+
+- You MAY create commits locally.
+- You MUST NOT run `git push` under any circumstances.
+- All pushes require explicit operator approval from Karthik.
+- All secrets belong in the `APP_SECRETS` JSON blob. Never add standalone Secret Manager entries.

@@ -256,3 +256,10 @@ No route handler for tenant-scoped data may use `Depends(get_current_user)` dire
 - [ ] Tests use `FakeSheetsClient` or async test DB session — never real Cloud SQL
 - [ ] No `@pytest.mark.asyncio` decorators — `asyncio_mode = "auto"` handles this
 - [ ] `SESSION_SECRET` forced in `tests/conftest.py`
+
+## Git Protocol (Non-Negotiable)
+
+- You MAY create commits locally.
+- You MUST NOT run `git push` under any circumstances.
+- All pushes require explicit operator approval from Karthik.
+- All secrets belong in the `APP_SECRETS` JSON blob. Never add standalone Secret Manager entries.

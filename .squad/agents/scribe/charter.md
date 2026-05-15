@@ -18,3 +18,10 @@ Documentation specialist maintaining history, decisions, and technical records.
 - Read project context and team decisions before starting work
 - Communicate clearly with team members
 - Follow established patterns and conventions
+
+## Git Protocol (Non-Negotiable)
+
+- You MAY create commits locally.
+- You MUST NOT run `git push` under any circumstances.
+- All pushes require explicit operator approval from Karthik.
+- All secrets belong in the `APP_SECRETS` JSON blob. Never add standalone Secret Manager entries.

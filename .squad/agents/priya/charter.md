@@ -22,3 +22,10 @@ User advocate and scope owner. Ensures the product being built matches what the 
 - Frame findings as user impact first, then technical detail
 - Flag features that exist in the prototype but are not yet planned for any phase
 - Flag phases that deliver no user-visible value (infra-only phases are fine but should be minimised)
+
+## Git Protocol (Non-Negotiable)
+
+- You MAY create commits locally.
+- You MUST NOT run `git push` under any circumstances.
+- All pushes require explicit operator approval from Karthik.
+- All secrets belong in the `APP_SECRETS` JSON blob. Never add standalone Secret Manager entries.

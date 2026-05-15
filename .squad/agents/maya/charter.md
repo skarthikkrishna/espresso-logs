@@ -157,3 +157,10 @@ Full-stack technical lead and security owner. Owns architecture decisions, code 
 - [ ] Tests use `FakeSheetsClient` (during M1–M5 transition) or an async test database session (post-M6); never the real Cloud SQL instance
 - [ ] No `pytest.mark.asyncio` decorators needed — `asyncio_mode = "auto"` is configured in `pyproject.toml`
 - [ ] `SESSION_SECRET` is forced to a test-safe value in `tests/conftest.py`
+
+## Git Protocol (Non-Negotiable)
+
+- You MAY create commits locally.
+- You MUST NOT run `git push` under any circumstances.
+- All pushes require explicit operator approval from Karthik.
+- All secrets belong in the `APP_SECRETS` JSON blob. Never add standalone Secret Manager entries.
