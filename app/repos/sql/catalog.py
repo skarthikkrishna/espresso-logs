@@ -34,7 +34,7 @@ class SqlCatalogRepo:
             existing.origin = row.get("Origin")
             existing.process = row.get("Process")
             existing.roast_level = row.get("Roast_Level")
-            existing.notes = row.get("Tasting_Notes") or row.get("Notes")
+            existing.notes = row.get("Tasting_Notes") or row.get("Notes") or row.get("Catalog_ID")
             existing.product_url = row.get("Product_URL")
             existing.local_image_path = row.get("Local_Image_Path")
         else:
@@ -45,7 +45,7 @@ class SqlCatalogRepo:
                 origin=row.get("Origin"),
                 process=row.get("Process"),
                 roast_level=row.get("Roast_Level"),
-                notes=row.get("Tasting_Notes") or row.get("Notes"),
+                notes=row.get("Tasting_Notes") or row.get("Notes") or row.get("Catalog_ID"),
                 product_url=row.get("Product_URL"),
                 local_image_path=row.get("Local_Image_Path"),
             )
