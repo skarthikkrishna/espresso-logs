@@ -29,6 +29,7 @@ STORAGE_METHOD_ENUM: frozenset[str] = frozenset(
         "Freezer", "Fridge", "Pantry", "Airtight Container", "Valve Bag", "Open Bag", "Mylar Bag",
         # Extended values found in production Sheets data
         "Frozen — Bag", "Frozen — Glass Tube", "Frozen — Knodos Glass Tube",
+        "Ambient — Bag",
     }
 )
 HARDWARE_CATEGORY_ENUM: frozenset[str] = frozenset(
