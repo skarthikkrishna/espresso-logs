@@ -43,7 +43,7 @@ class SqlInventoryRepo:
             existing.roast_level = row.get("RoastLevel") or row.get("Roast_Level")
             existing.status = row.get("Status", "Active")
             existing.storage_method = row.get("Storage_Method")
-            existing.notes = row.get("Notes")
+            existing.notes = row.get("Notes") or row.get("Beans")
         else:
             bag = InventoryBag(
                 sheets_id=sheets_id,
@@ -53,7 +53,7 @@ class SqlInventoryRepo:
                 roast_level=row.get("RoastLevel") or row.get("Roast_Level"),
                 status=row.get("Status", "Active"),
                 storage_method=row.get("Storage_Method"),
-                notes=row.get("Notes"),
+                notes=row.get("Notes") or row.get("Beans"),
             )
             self._db.add(bag)
 

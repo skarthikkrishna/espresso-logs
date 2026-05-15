@@ -88,7 +88,7 @@ async def test_read_methods_delegate_to_sheets_only() -> None:
     sql_mock = AsyncMock()
 
     wrapper = _DualWriteCatalogRepo(sheets=sheets_mock, sql=sql_mock)
-    result = wrapper.list()
+    result = await wrapper.list()
 
     assert result == [{"Roaster": "From Sheets"}]
     sheets_mock.list.assert_called_once()
