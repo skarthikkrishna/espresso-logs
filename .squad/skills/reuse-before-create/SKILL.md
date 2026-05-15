@@ -23,7 +23,7 @@ This skill enforces a single principle: **Always ask if the thing you're about t
 ### Config & Secrets
 
 - **Before adding a new environment variable**: Check if it belongs in an existing config blob (e.g., `APP_SECRETS`, `FEATURE_FLAGS`).
-- **Before creating a new secrets pattern**: Review `app/deps.py` and `app/main.py` for existing injection patterns.
+- **Before creating a new secrets pattern**: Review `app/config.py` (`Settings._load_app_secrets`) for the canonical injection pattern — add a field to `Settings` and let `_load_app_secrets` map the blob key automatically. Do not reach into `app/deps.py` or `app/main.py` to add raw `os.getenv` calls.
 - **Reuse existing precedent**: If `APP_SECRETS` is a JSON blob in Cloud Run, new secrets should go there, not as standalone vars.
 - **Single source of truth**: Configuration centralization beats ad-hoc env vars every time.
 
@@ -82,10 +82,15 @@ USE_NEW_AI_MODEL = os.getenv("USE_NEW_AI_MODEL", "false").lower() == "true"
 
 **✅ Pattern:**
 ```python
-# app/deps.py — APP_SECRETS already exists
-APP_SECRETS = json.loads(os.getenv("APP_SECRETS", "{}"))
-use_postgres = APP_SECRETS.get("use_postgres", False)
-use_new_ai_model = APP_SECRETS.get("use_new_ai_model", False)
+# app/config.py — add fields to Settings; _load_app_secrets maps blob keys automatically
+class Settings(BaseSettings):
+    use_postgres: bool = False       # set via USE_POSTGRES env var or APP_SECRETS blob key
+    use_new_ai_model: bool = False   # set via USE_NEW_AI_MODEL env var or APP_SECRETS blob key
+
+# In your code — access via the singleton; never parse APP_SECRETS JSON directly
+from app.config import settings
+if settings.use_postgres: ...
+if settings.use_new_ai_model: ...
 ```
 
 ### Backend Service: Extend, Don't Duplicate

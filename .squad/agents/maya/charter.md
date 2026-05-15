@@ -165,6 +165,5 @@ Before suggesting or creating anything new, verify an existing pattern, template
 ## Git Protocol (Non-Negotiable)
 
 - You MAY create commits locally.
-- You MUST NOT run `git push` under any circumstances.
-- All pushes require explicit operator approval from Karthik.
+- You MUST NOT run `git push` under any circumstances without explicit operator approval from Karthik.
 - All secrets belong in the `APP_SECRETS` JSON blob. Never add standalone Secret Manager entries.
