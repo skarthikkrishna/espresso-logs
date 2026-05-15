@@ -6,6 +6,7 @@ matching the constraint added in Alembic migration 0002 (see plan.md R-2).
 
 from __future__ import annotations
 
+import datetime
 import uuid
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column
@@ -38,7 +39,7 @@ class CatalogBean(Base):
     sheets_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True, unique=True)
     product_url: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     local_image_path: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
-    created_at: Mapped[sa.DateTime] = mapped_column(
+    created_at: Mapped[datetime.datetime] = mapped_column(
         sa.TIMESTAMP(timezone=True),
         nullable=False,
         server_default=sa.text("now()"),

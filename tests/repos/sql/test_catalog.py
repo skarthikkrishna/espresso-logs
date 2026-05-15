@@ -68,3 +68,88 @@ async def test_add_many_inserts_all_rows(db_session: AsyncSession) -> None:
     )
     beans = result.scalars().all()
     assert len(beans) == 3
+
+
+# ---------------------------------------------------------------------------
+# Issue #64 — write-then-read integration (Postgres read path)
+# ---------------------------------------------------------------------------
+
+
+async def test_upsert_then_list_returns_row(db_session: AsyncSession) -> None:
+    """write-then-read: row written via upsert() appears in list()."""
+    repo = SqlCatalogRepo(db=db_session)
+    await repo.upsert(
+        {
+            "Catalog_ID": "CAT-20260515-01",
+            "Roaster": "Blue Bottle",
+            "Bean_Name": "Giant Steps",
+            "Roast_Level": "Light",
+        }
+    )
+    results = await repo.list()
+    assert len(results) == 1
+    assert results[0]["Catalog_ID"] == "CAT-20260515-01"
+    assert results[0]["Roaster"] == "Blue Bottle"
+    assert results[0]["Bean_Name"] == "Giant Steps"
+    assert results[0]["Roast_Level"] == "Light"
+
+
+async def test_upsert_then_get_returns_row(db_session: AsyncSession) -> None:
+    """write-then-read: row written via upsert() is retrievable via get()."""
+    repo = SqlCatalogRepo(db=db_session)
+    await repo.upsert(
+        {
+            "Catalog_ID": "CAT-20260515-02",
+            "Roaster": "Stumptown",
+            "Bean_Name": "Hair Bender",
+        }
+    )
+    result = await repo.get("CAT-20260515-02")
+    assert result is not None
+    assert result["Catalog_ID"] == "CAT-20260515-02"
+    assert result["Roaster"] == "Stumptown"
+    assert result["Bean_Name"] == "Hair Bender"
+
+
+# ---------------------------------------------------------------------------
+# Issue #69 — happy-path: list() and get() with data
+# ---------------------------------------------------------------------------
+
+
+async def test_list_returns_inserted_row(db_session: AsyncSession) -> None:
+    """list() returns a dict with correct field mapping for an upserted row."""
+    repo = SqlCatalogRepo(db=db_session)
+    await repo.upsert(
+        {
+            "Catalog_ID": "CAT-20260515-03",
+            "Roaster": "Counter Culture",
+            "Bean_Name": "Hologram",
+            "Roast_Level": "Medium",
+        }
+    )
+    results = await repo.list()
+    assert len(results) == 1
+    row = results[0]
+    assert row["Catalog_ID"] == "CAT-20260515-03"
+    assert row["Roaster"] == "Counter Culture"
+    assert row["Bean_Name"] == "Hologram"
+    assert row["Roast_Level"] == "Medium"
+
+
+async def test_get_returns_inserted_row(db_session: AsyncSession) -> None:
+    """get() returns a dict with correct field mapping for an upserted row."""
+    repo = SqlCatalogRepo(db=db_session)
+    await repo.upsert(
+        {
+            "Catalog_ID": "CAT-20260515-04",
+            "Roaster": "Onyx",
+            "Bean_Name": "Tropical Weather",
+            "Roast_Level": "Light",
+        }
+    )
+    result = await repo.get("CAT-20260515-04")
+    assert result is not None
+    assert result["Catalog_ID"] == "CAT-20260515-04"
+    assert result["Roaster"] == "Onyx"
+    assert result["Bean_Name"] == "Tropical Weather"
+    assert result["Roast_Level"] == "Light"

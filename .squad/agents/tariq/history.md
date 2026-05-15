@@ -45,3 +45,14 @@ Reviewed both `docs/requirements/functional-spec-v2.md` and `docs/requirements/e
 
 ### Monitoring gap: no "2am broken" signal
 - Both architecture and functional spec were silent on proactive alerting. Cloud Monitoring Uptime Check on `/health` with email alerting is free and takes 10 minutes to set up. Always require a monitoring minimum as part of any launch-gate checklist.
+
+## 2026-05-15 — Issue #66: Pre-push check script created
+
+Created `scripts/pre-push-check.sh` with all four required CI checks (ruff check, ruff format, mypy strict, pytest). Script runs checks in order with clear section headers and exits immediately on failure. Added `make pre-push` target to Makefile. File is executable and staged, ready for coordinator commit after CI verification.
+
+### Key decision: Early exit pattern
+- Used `set -e` at top and explicit `on_failure` helper function for clear error reporting
+- Each check section prints `[N/4]` header for visibility
+- SPREADSHEET_ID=dummy is set for pytest as required by copilot-instructions.md
+- Script runs from repo root using `git rev-parse --show-toplevel` for robustness
+

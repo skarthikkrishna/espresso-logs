@@ -312,6 +312,6 @@ async def get_ai_feedback(
         return _GRACEFUL_ERROR
 
     # Step 7: persist
-    brew_log_repo.update_feedback(shot_id, feedback_text)
+    await brew_log_repo.update_feedback(shot_id, feedback_text)
 
     return feedback_text

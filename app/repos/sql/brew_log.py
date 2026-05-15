@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import builtins
-from datetime import datetime as dt
-from typing import Any, cast
+from typing import Any
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -102,7 +101,7 @@ class SqlBrewLogRepo:
     def _to_dict(self, row: BrewLog) -> dict[str, Any]:
         return {
             "Shot_ID": row.sheets_id or "",
-            "Date": cast(dt, row.brewed_at).date().isoformat() if row.brewed_at else "",
+            "Date": row.brewed_at.date().isoformat() if row.brewed_at else "",
             "Bag_ID": row.bag_id or "",
             "Machine_ID": row.machine_id or "",
             "Grinder_ID": row.grinder_id or "",

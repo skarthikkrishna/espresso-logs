@@ -63,3 +63,31 @@ async def test_next_id_returns_empty_string(db_session: AsyncSession) -> None:
     """next_id() is a no-op stub returning empty string in M2."""
     repo = SqlHardwareRepo(db=db_session)
     assert repo.next_id("Machine") == ""
+
+
+# ---------------------------------------------------------------------------
+# Issue #69 — happy-path: list() and get() with data
+# ---------------------------------------------------------------------------
+
+
+async def test_list_returns_inserted_row(db_session: AsyncSession) -> None:
+    """list() returns a dict with correct field mapping for an upserted row."""
+    repo = SqlHardwareRepo(db=db_session)
+    await repo.upsert({"Hardware_ID": "HW-001", "Name": "Decent DE1", "Category": "Machine"})
+    results = await repo.list()
+    assert len(results) == 1
+    row = results[0]
+    assert row["Hardware_ID"] == "HW-001"
+    assert row["Name"] == "Decent DE1"
+    assert row["Category"] == "Machine"
+
+
+async def test_get_returns_inserted_row(db_session: AsyncSession) -> None:
+    """get() returns a dict with correct field mapping for an upserted row."""
+    repo = SqlHardwareRepo(db=db_session)
+    await repo.upsert({"Hardware_ID": "HW-002", "Name": "Niche Zero", "Category": "Grinder"})
+    result = await repo.get("HW-002")
+    assert result is not None
+    assert result["Hardware_ID"] == "HW-002"
+    assert result["Name"] == "Niche Zero"
+    assert result["Category"] == "Grinder"

@@ -69,3 +69,46 @@ async def test_get_returns_none(db_session: AsyncSession) -> None:
     """get() returns None when entry does not exist."""
     repo = SqlInventoryRepo(db=db_session)
     assert await repo.get("BAG001") is None
+
+
+# ---------------------------------------------------------------------------
+# Issue #69 — happy-path: list() and get() with data
+# ---------------------------------------------------------------------------
+
+
+async def test_list_returns_inserted_row(db_session: AsyncSession) -> None:
+    """list() returns a dict with correct field mapping for an upserted row."""
+    repo = SqlInventoryRepo(db=db_session)
+    await repo.upsert(
+        {
+            "Bag_ID": "BAG-001",
+            "Beans": "Ethiopia Natural",
+            "RoastDate": "2026-05-01",
+            "Status": "Active",
+        }
+    )
+    results = await repo.list()
+    assert len(results) == 1
+    row = results[0]
+    assert row["Bag_ID"] == "BAG-001"
+    assert row["Beans"] == "Ethiopia Natural"
+    assert row["RoastDate"] == "2026-05-01"
+    assert row["Status"] == "Active"
+
+
+async def test_get_returns_inserted_row(db_session: AsyncSession) -> None:
+    """get() returns a dict with correct field mapping for an upserted row."""
+    repo = SqlInventoryRepo(db=db_session)
+    await repo.upsert(
+        {
+            "Bag_ID": "BAG-002",
+            "Beans": "Kenya AA",
+            "RoastDate": "2026-04-20",
+            "Status": "Active",
+        }
+    )
+    result = await repo.get("BAG-002")
+    assert result is not None
+    assert result["Bag_ID"] == "BAG-002"
+    assert result["Beans"] == "Kenya AA"
+    assert result["RoastDate"] == "2026-04-20"
