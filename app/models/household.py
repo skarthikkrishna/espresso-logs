@@ -6,6 +6,7 @@ Role constraint uses canonical term 'admin' (not 'manager') per DEC-T01.
 
 from __future__ import annotations
 
+import datetime
 import uuid
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column
@@ -24,7 +25,7 @@ class Household(Base):
         server_default=sa.text("gen_random_uuid()"),
     )
     name: Mapped[str] = mapped_column(sa.Text, nullable=False)
-    created_at: Mapped[sa.DateTime] = mapped_column(
+    created_at: Mapped[datetime.datetime] = mapped_column(
         sa.TIMESTAMP(timezone=True),
         nullable=False,
         server_default=sa.text("now()"),
@@ -66,7 +67,7 @@ class HouseholdMember(Base):
         sa.ForeignKey("household_members.id", ondelete="SET NULL"),
         nullable=True,
     )
-    joined_at: Mapped[sa.DateTime] = mapped_column(
+    joined_at: Mapped[datetime.datetime] = mapped_column(
         sa.TIMESTAMP(timezone=True),
         nullable=False,
         server_default=sa.text("now()"),
@@ -100,17 +101,17 @@ class PendingInvitation(Base):
         sa.ForeignKey("users.id"),
         nullable=False,
     )
-    invited_at: Mapped[sa.DateTime] = mapped_column(
+    invited_at: Mapped[datetime.datetime] = mapped_column(
         sa.TIMESTAMP(timezone=True),
         nullable=False,
         server_default=sa.text("now()"),
     )
-    expires_at: Mapped[sa.DateTime] = mapped_column(
+    expires_at: Mapped[datetime.datetime] = mapped_column(
         sa.TIMESTAMP(timezone=True),
         nullable=False,
         server_default=sa.text("now() + INTERVAL '72 hours'"),
     )
-    accepted_at: Mapped[sa.DateTime | None] = mapped_column(
+    accepted_at: Mapped[datetime.datetime | None] = mapped_column(
         sa.TIMESTAMP(timezone=True), nullable=True
     )
 
@@ -142,11 +143,11 @@ class GuestToken(Base):
         sa.ForeignKey("users.id"),
         nullable=False,
     )
-    created_at: Mapped[sa.DateTime] = mapped_column(
+    created_at: Mapped[datetime.datetime] = mapped_column(
         sa.TIMESTAMP(timezone=True),
         nullable=False,
         server_default=sa.text("now()"),
     )
-    revoked_at: Mapped[sa.DateTime | None] = mapped_column(
+    revoked_at: Mapped[datetime.datetime | None] = mapped_column(
         sa.TIMESTAMP(timezone=True), nullable=True
     )

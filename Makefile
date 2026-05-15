@@ -19,6 +19,9 @@ test: ## Run Python tests
 lint: ## Run ruff linter
 	uv run ruff check app/ tests/
 
+pre-push: ## Run all pre-push checks (linting, types, tests)
+	@bash scripts/pre-push-check.sh
+
 # ── Frontend ──────────────────────────────────────────────────────────────────
 
 build: ## Build React SPA (outputs to app/static/spa/)

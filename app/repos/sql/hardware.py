@@ -1,36 +1,49 @@
-"""SqlHardwareRepo — Postgres write mirror for the hardware entity (M2)."""
+"""SqlHardwareRepo — Postgres read/write mirror for the hardware entity (M4)."""
 
 from __future__ import annotations
 
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.hardware import Hardware
 
 
 class SqlHardwareRepo:
-    """Write-only SQL mirror for Hardware rows.
-
-    Reads return empty results — the SheetsRepo is the read source of truth
-    through M3.
-    """
+    """SQL mirror for Hardware rows — write always, reads when use_postgres=True."""
 
     def __init__(self, db: AsyncSession) -> None:
         self._db = db
 
     async def upsert(self, row: dict[str, Any]) -> None:
-        """Insert a hardware row. household_id intentionally NULL (M5)."""
-        item = Hardware(
-            name=row.get("Name", ""),
-            category=row.get("Category", ""),
-        )
-        self._db.add(item)
+        """Insert or update a hardware row by sheets_id. household_id intentionally NULL (M5)."""
+        sheets_id = row.get("Hardware_ID")
+        if sheets_id:
+            result = await self._db.execute(select(Hardware).where(Hardware.sheets_id == sheets_id))
+            existing = result.scalar_one_or_none()
+        else:
+            existing = None
+
+        if existing is not None:
+            existing.name = row.get("Name", "")
+            existing.category = row.get("Category", "")
+            existing.product_url = row.get("Product_URL")
+            existing.local_image_path = row.get("Local_Image_Path")
+        else:
+            item = Hardware(
+                sheets_id=sheets_id,
+                name=row.get("Name", ""),
+                category=row.get("Category", ""),
+                product_url=row.get("Product_URL"),
+                local_image_path=row.get("Local_Image_Path"),
+            )
+            self._db.add(item)
+
         await self._db.commit()
-        await self._db.refresh(item)
 
     async def add_many(self, rows: list[dict[str, Any]]) -> None:
-        """Bulk insert."""
+        """Bulk upsert."""
         for row in rows:
             await self.upsert(row)
 
@@ -41,10 +54,26 @@ class SqlHardwareRepo:
         """No-op stub — ID generation is Sheets-specific."""
         return ""
 
-    def list(self, category: str | None = None) -> list[dict[str, Any]]:
-        """Not used in M2 (reads come from Sheets). Returns empty list."""
-        return []
+    async def list(self, category: str | None = None) -> list[dict[str, Any]]:
+        """Return hardware items, optionally filtered by category."""
+        q = select(Hardware)
+        if category is not None:
+            q = q.where(Hardware.category == category)
+        result = await self._db.execute(q)
+        return [self._to_dict(r) for r in result.scalars().all()]
 
-    def get(self, hardware_id: str) -> dict[str, Any] | None:
-        """Not used in M2. Returns None."""
-        return None
+    async def get(self, hardware_id: str) -> dict[str, Any] | None:
+        """Fetch a single hardware item by Sheets Hardware_ID."""
+        result = await self._db.execute(select(Hardware).where(Hardware.sheets_id == hardware_id))
+        row = result.scalar_one_or_none()
+        return self._to_dict(row) if row else None
+
+    def _to_dict(self, row: Hardware) -> dict[str, Any]:
+        return {
+            "Hardware_ID": row.sheets_id or "",
+            "Name": row.name or "",
+            "Category": row.category or "",
+            "Product_URL": row.product_url or "",
+            "Local_Image_Path": row.local_image_path or "",
+            "Notes": row.notes or "",
+        }

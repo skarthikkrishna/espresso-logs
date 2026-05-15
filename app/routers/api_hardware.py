@@ -17,10 +17,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.config import settings
-from app.deps import CurrentUser, get_hardware_repo, get_llm_client, get_maintenance_repo
+from app.deps import (
+    CurrentUser,
+    _DualWriteHardwareRepo,
+    _DualWriteMaintenanceRepo,
+    get_hardware_repo,
+    get_llm_client,
+    get_maintenance_repo,
+)
 from app.models.api import HardwareDetailOut, HardwareItemOut, MaintenanceEventOut
-from app.repos.hardware import HardwareRepo
-from app.repos.maintenance import MaintenanceRepo
 from app.services.image_sourcer import fetch_image_bytes, fetch_page_context, source_bean_image
 from app.services.image_store import upload_image
 from app.services.inference import LLMClient
@@ -70,24 +75,24 @@ async def api_hardware_action_types(
 @router.get("/hardware", response_model=List[HardwareItemOut])
 async def api_hardware_list(
     user: CurrentUser,
-    hardware_repo: HardwareRepo = Depends(get_hardware_repo),
+    hardware_repo: _DualWriteHardwareRepo = Depends(get_hardware_repo),
 ) -> list[HardwareItemOut]:
-    return [_hw_to_out(row) for row in hardware_repo.list()]
+    return [_hw_to_out(row) for row in await hardware_repo.list()]
 
 
 @router.get("/hardware/{hardware_id}", response_model=HardwareDetailOut)
 async def api_hardware_detail(
     hardware_id: str,
     user: CurrentUser,
-    hardware_repo: HardwareRepo = Depends(get_hardware_repo),
-    maintenance_repo: MaintenanceRepo = Depends(get_maintenance_repo),
+    hardware_repo: _DualWriteHardwareRepo = Depends(get_hardware_repo),
+    maintenance_repo: _DualWriteMaintenanceRepo = Depends(get_maintenance_repo),
 ) -> HardwareDetailOut:
-    item = hardware_repo.get(hardware_id)
+    item = await hardware_repo.get(hardware_id)
     if item is None:
         raise HTTPException(status_code=404, detail="Hardware item not found")
 
     hardware_name = item.get("Name", hardware_id)
-    events = maintenance_repo.list(hardware_id=hardware_id)
+    events = await maintenance_repo.list(hardware_id=hardware_id)
     events.sort(key=lambda e: e.get("Date", ""), reverse=True)
 
     return HardwareDetailOut(
@@ -106,7 +111,7 @@ class _HardwareCreateBody(BaseModel):
 async def api_hardware_create(
     body: _HardwareCreateBody,
     user: CurrentUser,
-    hardware_repo: HardwareRepo = Depends(get_hardware_repo),
+    hardware_repo: _DualWriteHardwareRepo = Depends(get_hardware_repo),
     llm_client: LLMClient = Depends(get_llm_client),
 ) -> HardwareItemOut:
     if body.category not in _CATEGORIES:
@@ -126,7 +131,7 @@ async def api_hardware_create(
         "Product_URL": (body.product_url or "").strip(),
         "Local_Image_Path": "",
     }
-    await hardware_repo.upsert(row)  # type: ignore[misc, func-returns-value]
+    await hardware_repo.upsert(row)
 
     # Auto-source and upload image from product URL (non-fatal — item is always created).
     if body.product_url:
@@ -148,7 +153,7 @@ async def api_hardware_create(
                     image_path = await upload_image(
                         img_bytes, content_type, obj_name, settings.assets_bucket
                     )
-                    await hardware_repo.upsert({**row, "Local_Image_Path": image_path})  # type: ignore[misc, func-returns-value]
+                    await hardware_repo.upsert({**row, "Local_Image_Path": image_path})
                     row["Local_Image_Path"] = image_path
         except Exception as exc:  # noqa: BLE001
             logger.warning("image pipeline failed for hardware %r: %s", hardware_id, exc)
@@ -166,9 +171,9 @@ async def api_hardware_update(
     hardware_id: str,
     body: _HardwareUpdateBody,
     user: CurrentUser,
-    hardware_repo: HardwareRepo = Depends(get_hardware_repo),
+    hardware_repo: _DualWriteHardwareRepo = Depends(get_hardware_repo),
 ) -> HardwareItemOut:
-    item = hardware_repo.get(hardware_id)
+    item = await hardware_repo.get(hardware_id)
     if item is None:
         raise HTTPException(status_code=404, detail="Hardware item not found")
     if not body.name.strip():
@@ -178,5 +183,5 @@ async def api_hardware_update(
     updated["Name"] = body.name.strip()
     if body.category and body.category in _CATEGORIES:
         updated["Category"] = body.category
-    await hardware_repo.upsert(updated)  # type: ignore[misc, func-returns-value]
+    await hardware_repo.upsert(updated)
     return _hw_to_out(updated)

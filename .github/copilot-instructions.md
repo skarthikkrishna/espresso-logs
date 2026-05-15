@@ -49,8 +49,14 @@ git checkout -b <type>/<slug>   # e.g. fix/brew-log-ordering
 - Module-level docstrings required on all routers and services
 - Tests use `SPREADSHEET_ID=dummy` and `FakeSheetsClient` (never real sheets)
 - `pytest-asyncio` in `auto` mode — no `@pytest.mark.asyncio` markers needed
-- Linting: `uv run ruff check app/ tests/`
-- Tests: `SPREADSHEET_ID=dummy uv run pytest tests/ -v --ignore=tests/e2e/`
+### Local CI-equivalent — all four must pass before any push is considered
+
+1. `uv run ruff check app/ tests/`
+2. `uv run ruff format --check app/ tests/`
+3. `uv run mypy app/ --strict`
+4. `SPREADSHEET_ID=dummy uv run pytest tests/ -v --ignore=tests/e2e/`
+
+All four are required. Not three. Not "the ones that seem relevant." All four.
 
 ## Documentation
 
@@ -173,6 +179,14 @@ Only proceed here if STEP 1 returned `status: DIRECT_PERMITTED` with explicit ra
 
 Follow `.github/copilot-prompts/pr-merge-workflow.md` exactly. No step may be skipped.
 
+**Before any `git push`:**
+1. Run all four local CI checks (see Local CI-equivalent section). All four must pass.
+2. **STOP. Ask the operator:** "All four local checks pass. Ready for me to push to [branch]?"
+3. **Wait for explicit affirmative reply.**
+4. Only then: `git push`.
+
+This is not a suggestion. This is the step. It cannot be skipped, combined, or inferred. A passing checklist is not permission. Silence is not permission. Completing the work is not permission. The only permission is the operator saying yes.
+
 CI must be green before requesting review. Tag the PR with: `@copilot can you review this please`.
 Do NOT request review while any build check is failing.
 
@@ -216,6 +230,12 @@ These are not guidelines. Violating any of these is a **process failure** that m
 8. **Three operator corrections → session halts.** If the operator has corrected the coordinator or a spawned agent three or more times in a single session, stop all work immediately. Spawn Ralph + Tariq via `task` tool. Tariq produces a written diagnosis to `.squad/log/{timestamp}-rca.md`. No work continues until the operator has reviewed the diagnosis and explicitly authorised resumption.
 
 9. **Quinn gate is a filesystem artifact, not a verbal acknowledgment.** (Duplicate emphasis — this rule is that important.) Before any implementation begins: run `git ls-files specs/{n}/quinn-gate.md` in the `coffee_tracker` repo. Empty output = blocked. No exceptions for "small" tasks, "governance-only" work that touches code, or time pressure.
+
+10. **Before `git push`: ask or pause. Those are the only two options. There is no third.** Before executing `git push` on any branch:
+    - All four local CI checks (ruff check, ruff format --check, mypy --strict, pytest) must have passed in the current terminal session. If any check has not been run or has failed: **STOP. Ask the operator. Do not push.**
+    - The operator must have been explicitly asked whether to push and must have replied affirmatively. An agent completing its work is NOT implicit permission to push. Silence is NOT permission. A passing checklist is NOT permission. The only permission is the operator saying yes.
+    - The only two states an agent or coordinator may be in before a push: **asking the operator** or **paused waiting for the operator's reply**. There is no third state. There is no "reasonable judgement" escape. There is no "it seems ready" path.
+    - This rule binds the coordinator AND every implementation agent. It is not delegatable. An implementation agent completing work and reporting success does not transfer push authority to itself.
 
 ---
 

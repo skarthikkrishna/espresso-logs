@@ -6,6 +6,7 @@ Indexes on user_id and token_hash are declared explicitly for lookup performance
 
 from __future__ import annotations
 
+import datetime
 import uuid
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column
@@ -30,11 +31,13 @@ class RefreshToken(Base):
         nullable=False,
     )
     token_hash: Mapped[str] = mapped_column(sa.Text, nullable=False, unique=True)
-    expires_at: Mapped[sa.DateTime] = mapped_column(sa.TIMESTAMP(timezone=True), nullable=False)
+    expires_at: Mapped[datetime.datetime] = mapped_column(
+        sa.TIMESTAMP(timezone=True), nullable=False
+    )
     revoked: Mapped[bool] = mapped_column(
         sa.Boolean, nullable=False, server_default=sa.text("FALSE")
     )
-    created_at: Mapped[sa.DateTime] = mapped_column(
+    created_at: Mapped[datetime.datetime] = mapped_column(
         sa.TIMESTAMP(timezone=True),
         nullable=False,
         server_default=sa.text("now()"),

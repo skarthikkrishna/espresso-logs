@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import uuid
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column
@@ -30,11 +31,18 @@ class InventoryBag(Base):
         sa.ForeignKey("catalog.id"),
         nullable=True,
     )
-    roast_date: Mapped[sa.Date | None] = mapped_column(sa.Date, nullable=True)
+    roast_date: Mapped[datetime.date | None] = mapped_column(sa.Date, nullable=True)
     weight_g: Mapped[float | None] = mapped_column(sa.Numeric(7, 1, asdecimal=False), nullable=True)
     purchase_url: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     notes: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
-    created_at: Mapped[sa.DateTime] = mapped_column(
+    sheets_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True, unique=True)
+    sheets_catalog_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    beans: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    display_name: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    roast_level: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    status: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    storage_method: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(
         sa.TIMESTAMP(timezone=True),
         nullable=False,
         server_default=sa.text("now()"),
