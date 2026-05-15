@@ -104,3 +104,18 @@ Guard only blocked `APP_ENV=production`; staging/preview deployments could still
 - `USE_POSTGRES` must NOT appear as a standalone Cloud Run env var; all non-infra config belongs in the APP_SECRETS blob to avoid config drift between Secret Manager and Cloud Run revision vars.
 
 **Test result:** 400 passed, 4 skipped. Lint: 0 issues.
+
+
+### 2026-05-15: PR #71 Copilot review — USE_POSTGRES comment narrowed
+
+**What:** Addressed Copilot bot inline review comment on PR #71. The original comment on `use_postgres` in `app/config.py` incorrectly stated "all config lives in the APP_SECRETS blob" (inaccurate — infra config like APP_ENV/OAUTH_REDIRECT_URI stays as standalone vars) and did not clearly surface the precedence risk (env vars override blob values). Updated comment to: (1) state env vars take precedence over the blob, (2) explicitly warn operators not to set USE_POSTGRES as a standalone Cloud Run env var for this reason, (3) distinguish secrets-in-blob from infra-config-as-standalone-vars. Also updated `docs/requirements/engineering_architecture_v2.md` rollback instructions to reference the APP_SECRETS blob rather than Cloud Run env vars. Replied to all three Copilot review comments on GitHub.
+
+**Files changed:**
+- `app/config.py` — narrowed `use_postgres` inline comment (L72-78)
+- `docs/requirements/engineering_architecture_v2.md` — 4 references to `USE_POSTGRES` env var updated to reference APP_SECRETS blob
+
+**Key decisions:**
+- Precedence rule (env vars > blob) is now explicitly documented at the field; operators must never add USE_POSTGRES to Cloud Run env vars directly.
+- Scope boundary is now clear: secrets (DATABASE_URL, USE_POSTGRES, API keys) → blob; infra config (APP_ENV, OAUTH_REDIRECT_URI) → standalone vars.
+
+**Commit:** `bffbe7a` — `fix: narrow USE_POSTGRES comment per Copilot review`
