@@ -1,21 +1,17 @@
 ---
-updated_at: 2026-05-15T06:31:39Z
-focus_area: PR review comment handling completed; M4 read switchover branch now in review/monitoring state
-active_issues:
-  - Await Copilot PR review feedback and address any actionable findings on feat/m4-prerequisites
-  - Maintain push gate discipline: no push without explicit operator approval after all four local CI checks pass
+updated_at: 2026-05-15T02:48:50Z
+focus_area: E2E auth bypass prod guard, thread safety fixes, chip/badge design unification
+active_issues: []
 ---
 
 # What We're Focused On
 
-## Current State
+## Recent Session Close-Out (chip-design-fix)
 
-The PR review comment workflow request has been handled and closed (routing decision logged as DIRECT_PERMITTED; decision drop merged to `.squad/decisions.md`; session log written).
+**Chip/Badge Design:** `<Chip />` component extracted and unified across frontend. Single amber frosted-glass style, design corrections applied (border-radius, padding). All 5 call sites updated.
 
-M4 prerequisites remain complete on `feat/m4-prerequisites`, with Quinn gate approved with notes and P3 backfill strategy already confirmed.
+**E2E Auth Bypass Production Guard:** Hard startup failure gate added. `E2E_AUTH_BYPASS=1` only permitted in `"test"` or `"local"` environments. Production deployment with bypass active fails immediately.
 
-## Open Work State
+**Thread Safety Fixes:** E2E_SEED schema alignment corrected; `delete_by_pk` promoted to public BaseRepo method; private repo coupling in api_e2e.py refactored to use public interface.
 
-1. Monitor PR review results from `@copilot` and triage any findings.
-2. Apply fixes only if review feedback is valid, then re-run all four local CI-equivalent checks.
-3. Before any future push: explicitly ask operator and wait for affirmative permission.
+**Next Phase:** Return to V2 product spec implementation tasks (M1–M6 phases). Household/role layer, auth middleware updates, multi-tenancy patterns.
