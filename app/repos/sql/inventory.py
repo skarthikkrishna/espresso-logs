@@ -1,4 +1,4 @@
-"""SqlInventoryRepo — Postgres write mirror for the inventory_bags entity (M2)."""
+"""SqlInventoryRepo — Postgres read/write mirror for the inventory_bags entity (M4)."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import builtins
 import datetime
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.inventory import InventoryBag
@@ -19,48 +20,83 @@ def _to_date(val: Any) -> datetime.date | None:
 
 
 class SqlInventoryRepo:
-    """Write-only SQL mirror for InventoryBag rows.
-
-    Reads return empty results — the SheetsRepo is the read source of truth
-    through M3.
-    """
+    """SQL mirror for InventoryBag rows — write always, reads when use_postgres=True."""
 
     def __init__(self, db: AsyncSession) -> None:
         self._db = db
 
     async def upsert(self, row: dict[str, Any]) -> None:
-        """Insert an inventory bag row. household_id intentionally NULL (M5).
+        """Insert or update an inventory bag row by sheets_id. household_id intentionally NULL (M5)."""
+        sheets_id = row.get("Bag_ID")
+        if sheets_id:
+            result = await self._db.execute(
+                select(InventoryBag).where(InventoryBag.sheets_id == sheets_id)
+            )
+            existing = result.scalar_one_or_none()
+        else:
+            existing = None
 
-        FIXME(M4): Bag_ID (Sheets primary key) is not stored — add a
-        sheets_bag_id TEXT column + backfill migration before enabling
-        Postgres reads in M4 (needed for get(bag_id) queries).
-        Also: "Beans" field stored in notes column — remap to a dedicated
-        beans_name column in M4.
-        """
-        bag = InventoryBag(
-            roast_date=_to_date(row.get("RoastDate")),
-            notes=row.get("Beans"),
-        )
-        self._db.add(bag)
+        if existing is not None:
+            existing.roast_date = _to_date(row.get("RoastDate"))
+            existing.beans = row.get("Beans")
+            existing.display_name = row.get("Display_Name") or row.get("Beans")
+            existing.roast_level = row.get("RoastLevel") or row.get("Roast_Level")
+            existing.status = row.get("Status", "Active")
+            existing.storage_method = row.get("Storage_Method")
+            existing.notes = row.get("Notes")
+        else:
+            bag = InventoryBag(
+                sheets_id=sheets_id,
+                roast_date=_to_date(row.get("RoastDate")),
+                beans=row.get("Beans"),
+                display_name=row.get("Display_Name") or row.get("Beans"),
+                roast_level=row.get("RoastLevel") or row.get("Roast_Level"),
+                status=row.get("Status", "Active"),
+                storage_method=row.get("Storage_Method"),
+                notes=row.get("Notes"),
+            )
+            self._db.add(bag)
+
         await self._db.commit()
-        await self._db.refresh(bag)
 
     async def add_many(self, rows: list[dict[str, Any]]) -> None:
-        """Bulk insert."""
+        """Bulk upsert."""
         for row in rows:
             await self.upsert(row)
 
     def delete_rows(self, start_row: int, end_row: int) -> None:
         """No-op."""
 
-    def list(self, status: str | None = "Active") -> builtins.list[dict[str, Any]]:
-        """Not used in M2 (reads come from Sheets). Returns empty list."""
-        return []
+    async def list(self, status: str | None = "Active") -> builtins.list[dict[str, Any]]:
+        """Return inventory bags, optionally filtered by status."""
+        q = select(InventoryBag)
+        if status is not None:
+            q = q.where(InventoryBag.status == status)
+        result = await self._db.execute(q)
+        return [self._to_dict(r) for r in result.scalars().all()]
 
-    def list_all(self) -> builtins.list[dict[str, Any]]:
-        """Not used in M2. Returns empty list."""
-        return []
+    async def list_all(self) -> builtins.list[dict[str, Any]]:
+        """Return all inventory bags regardless of status."""
+        result = await self._db.execute(select(InventoryBag))
+        return [self._to_dict(r) for r in result.scalars().all()]
 
-    def get(self, bag_id: str) -> dict[str, Any] | None:
-        """Not used in M2. Returns None."""
-        return None
+    async def get(self, bag_id: str) -> dict[str, Any] | None:
+        """Fetch a single inventory bag by Sheets Bag_ID."""
+        result = await self._db.execute(
+            select(InventoryBag).where(InventoryBag.sheets_id == bag_id)
+        )
+        row = result.scalar_one_or_none()
+        return self._to_dict(row) if row else None
+
+    def _to_dict(self, row: InventoryBag) -> dict[str, Any]:
+        return {
+            "Bag_ID": row.sheets_id or "",
+            "Beans": row.beans or "",
+            "Display_Name": row.display_name or row.beans or "",
+            "RoastDate": row.roast_date.isoformat() if row.roast_date else "",
+            "RoastLevel": row.roast_level or "",
+            "Roast_Level": row.roast_level or "",
+            "Status": row.status or "Active",
+            "Storage_Method": row.storage_method or "",
+            "Notes": row.notes or "",
+        }
