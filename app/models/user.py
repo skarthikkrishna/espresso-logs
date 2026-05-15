@@ -7,6 +7,7 @@ one identity credential: a username+password OR a Google OAuth sub.
 
 from __future__ import annotations
 
+import datetime
 import uuid
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column
@@ -36,12 +37,12 @@ class User(Base):
     email: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     display_name: Mapped[str] = mapped_column(sa.Text, nullable=False)
     picture_url: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
-    created_at: Mapped[sa.DateTime] = mapped_column(
+    created_at: Mapped[datetime.datetime] = mapped_column(
         sa.TIMESTAMP(timezone=True),
         nullable=False,
         server_default=sa.text("now()"),
     )
-    last_seen_at: Mapped[sa.DateTime] = mapped_column(
+    last_seen_at: Mapped[datetime.datetime] = mapped_column(
         sa.TIMESTAMP(timezone=True),
         nullable=False,
         server_default=sa.text("now()"),
@@ -52,7 +53,7 @@ class User(Base):
         nullable=False,
         server_default=sa.text("0"),
     )
-    locked_until: Mapped[sa.DateTime | None] = mapped_column(
+    locked_until: Mapped[datetime.datetime | None] = mapped_column(
         sa.TIMESTAMP(timezone=True),
         nullable=True,
     )

@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime as dt
-from typing import Any, cast
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -57,7 +56,7 @@ class SqlMaintenanceRepo:
         return {
             "Maintenance_ID": row.sheets_id or "",
             "Hardware_ID": row.sheets_hardware_id or "",
-            "Date": cast(dt, row.performed_at).date().isoformat() if row.performed_at else "",
+            "Date": row.performed_at.date().isoformat() if row.performed_at else "",
             "Action_Type": row.action or "",
             "Notes": row.notes or "",
         }

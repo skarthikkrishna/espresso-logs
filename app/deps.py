@@ -247,8 +247,22 @@ class _DualWriteBrewLogRepo:
                     },
                 )
 
-    def update_feedback(self, shot_id: str, ai_feedback: str) -> None:
+    async def update_feedback(self, shot_id: str, ai_feedback: str) -> None:
         self._sheets.update_feedback(shot_id, ai_feedback)
+        if self._sql is not None and settings.use_postgres:
+            try:
+                await self._sql.update_feedback(shot_id, ai_feedback)
+            except Exception as exc:
+                await self._sql._db.rollback()
+                _dw_log.warning(
+                    "Postgres write failed",
+                    extra={
+                        "component": "dual_write",
+                        "entity_type": "brew_log",
+                        "operation": "update_feedback",
+                        "error": str(exc),
+                    },
+                )
 
     def delete_rows(self, start_row: int, end_row: int) -> None:
         self._sheets.delete_rows(start_row, end_row)

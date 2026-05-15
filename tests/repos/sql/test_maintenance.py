@@ -63,3 +63,35 @@ async def test_get_returns_none(db_session: AsyncSession) -> None:
     """get() returns None when entry does not exist."""
     repo = SqlMaintenanceRepo(db=db_session)
     assert await repo.get("MAINT001") is None
+
+
+# ---------------------------------------------------------------------------
+# Issue #69 — happy-path: list() and get() with data
+# ---------------------------------------------------------------------------
+
+
+async def test_list_returns_inserted_row(db_session: AsyncSession) -> None:
+    """list() returns a dict with correct field mapping for an inserted row."""
+    repo = SqlMaintenanceRepo(db=db_session)
+    await repo.add(
+        {"Maintenance_ID": "MNT-001", "Action_Type": "Backflush", "Notes": "Weekly clean"}
+    )
+    results = await repo.list()
+    assert len(results) == 1
+    row = results[0]
+    assert row["Maintenance_ID"] == "MNT-001"
+    assert row["Action_Type"] == "Backflush"
+    assert row["Notes"] == "Weekly clean"
+
+
+async def test_get_returns_inserted_row(db_session: AsyncSession) -> None:
+    """get() returns a dict with correct field mapping for an inserted row."""
+    repo = SqlMaintenanceRepo(db=db_session)
+    await repo.add(
+        {"Maintenance_ID": "MNT-002", "Action_Type": "Descale", "Notes": "Monthly descale"}
+    )
+    result = await repo.get("MNT-002")
+    assert result is not None
+    assert result["Maintenance_ID"] == "MNT-002"
+    assert result["Action_Type"] == "Descale"
+    assert result["Notes"] == "Monthly descale"

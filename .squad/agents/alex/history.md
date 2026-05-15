@@ -60,3 +60,16 @@ Guard only blocked `APP_ENV=production`; staging/preview deployments could still
 - `settings_use_postgres` pytest fixture created in `tests/repos/conftest.py` — patches `app.deps.settings` with `use_postgres=True`
 
 **Test result:** 400 passed, 4 skipped. Lint: 0 issues.
+
+### 2026-05-15: Issues #67 and #68 — async update_feedback + Mapped type fixes
+
+**What:**
+- Issue #67: `_DualWriteBrewLogRepo.update_feedback` was a sync `def` that silently dropped SQL writes when `USE_POSTGRES=True`. Converted to `async def` and added dual-write block (try/except with `_dw_log.warning` and rollback on failure), matching the `add()` pattern. Updated `inference.py` to `await` the call.
+- Issue #68: All ORM model files had `Mapped[sa.DateTime]`, `Mapped[sa.Date | None]`, etc. — SQLAlchemy column type objects inside `Mapped[]`, not Python types. Fixed all to use `datetime.datetime` / `datetime.date` from the stdlib `datetime` module. Added `import datetime` to each affected model file. Removed `cast()` workarounds from `SqlBrewLogRepo._to_dict`, `SqlInventoryRepo._to_dict`, and `SqlMaintenanceRepo._to_dict`. Removed now-unused `cast` and `dt` imports from those SQL repo files.
+
+**Key decisions:**
+- `Mapped[sa.DateTime]` is semantically wrong: `Mapped[T]` expects a Python type `T`, not an SA column descriptor. The column descriptor belongs in `mapped_column(sa.TIMESTAMP(...))` only.
+- `cast()` in `_to_dict` was a mypy workaround; once the model annotation is correct, the type flows through naturally and the workaround is unnecessary and misleading.
+- `import datetime` added as a module-level import (not `from datetime import datetime`) to keep `datetime.date` and `datetime.datetime` both accessible with minimal line changes to model files.
+
+**Test result:** 400 passed, 4 skipped. Lint: 0 issues.

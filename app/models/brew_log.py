@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import uuid
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column
@@ -48,12 +49,12 @@ class BrewLog(Base):
     taste_summary: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     ai_feedback: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     storage_method: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
-    brewed_at: Mapped[sa.DateTime] = mapped_column(
+    brewed_at: Mapped[datetime.datetime] = mapped_column(
         sa.TIMESTAMP(timezone=True),
         nullable=False,
         server_default=sa.text("now()"),
     )
-    created_at: Mapped[sa.DateTime] = mapped_column(
+    created_at: Mapped[datetime.datetime] = mapped_column(
         sa.TIMESTAMP(timezone=True),
         nullable=False,
         server_default=sa.text("now()"),
