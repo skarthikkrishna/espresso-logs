@@ -19,6 +19,10 @@ Persistent memory agent that maintains context across sessions.
 - Communicate clearly with team members
 - Follow established patterns and conventions
 
+## Reuse Before Create (Non-Negotiable)
+
+Before suggesting or creating anything new, verify an existing pattern, template, or entity doesn't already cover it. Always check before you add.
+
 ## Git Protocol (Non-Negotiable)
 
 - You MAY create commits locally.

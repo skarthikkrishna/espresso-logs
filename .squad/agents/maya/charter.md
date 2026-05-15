@@ -158,6 +158,10 @@ Full-stack technical lead and security owner. Owns architecture decisions, code 
 - [ ] No `pytest.mark.asyncio` decorators needed — `asyncio_mode = "auto"` is configured in `pyproject.toml`
 - [ ] `SESSION_SECRET` is forced to a test-safe value in `tests/conftest.py`
 
+## Reuse Before Create (Non-Negotiable)
+
+Before suggesting or creating anything new, verify an existing pattern, template, or entity doesn't already cover it. Always check before you add.
+
 ## Git Protocol (Non-Negotiable)
 
 - You MAY create commits locally.
