@@ -13,6 +13,11 @@ from pydantic import BaseModel
 
 from app.deps import (
     CurrentUser,
+    _DualWriteBrewLogRepo,
+    _DualWriteCatalogRepo,
+    _DualWriteHardwareRepo,
+    _DualWriteInventoryRepo,
+    _DualWriteMaintenanceRepo,
     get_brew_log_repo,
     get_catalog_repo,
     get_hardware_repo,
@@ -22,11 +27,6 @@ from app.deps import (
     get_maintenance_repo,
 )
 from app.models.api import BrewLogEntryOut, FeedbackOut
-from app.repos.brew_log import BrewLogRepo
-from app.repos.catalog import CatalogRepo
-from app.repos.hardware import HardwareRepo
-from app.repos.inventory import InventoryRepo
-from app.repos.maintenance import MaintenanceRepo
 from app.services.idempotency_store import IdempotencyStore
 from app.services.ids import make_shot_id
 from app.services.inference import LLMClient, get_ai_feedback
@@ -43,23 +43,23 @@ def _float(v: object) -> float | None:
         return None
 
 
-def _build_lookups(
-    inventory_repo: InventoryRepo,
-    catalog_repo: CatalogRepo,
-    hardware_repo: HardwareRepo,
+async def _build_lookups(
+    inventory_repo: _DualWriteInventoryRepo,
+    catalog_repo: _DualWriteCatalogRepo,
+    hardware_repo: _DualWriteHardwareRepo,
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     """Pre-fetch all lookup tables once; return (bags, catalog, hardware) dicts.
 
     Duplicate PKs use first-row-wins semantics (insertion order preserved).
     """
     bags: dict[str, Any] = {}
-    for r in inventory_repo.list_all():
+    for r in await inventory_repo.list_all():
         bags.setdefault(r["Bag_ID"], r)
     catalog: dict[str, Any] = {}
-    for r in catalog_repo.list():
+    for r in await catalog_repo.list():
         catalog.setdefault(r["Catalog_ID"], r)
     hardware: dict[str, Any] = {}
-    for r in hardware_repo.list():
+    for r in await hardware_repo.list():
         hardware.setdefault(r["Hardware_ID"], r)
     return bags, catalog, hardware
 
@@ -119,13 +119,13 @@ def _shot_to_out(shot: dict[str, Any], names: dict[str, Any]) -> BrewLogEntryOut
 @router.get("/brew-log", response_model=List[BrewLogEntryOut])
 async def api_brew_log_list(
     user: CurrentUser,
-    brew_log_repo: BrewLogRepo = Depends(get_brew_log_repo),
-    inventory_repo: InventoryRepo = Depends(get_inventory_repo),
-    catalog_repo: CatalogRepo = Depends(get_catalog_repo),
-    hardware_repo: HardwareRepo = Depends(get_hardware_repo),
+    brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
+    inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
+    catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
+    hardware_repo: _DualWriteHardwareRepo = Depends(get_hardware_repo),
 ) -> list[BrewLogEntryOut]:
-    shots = brew_log_repo.list_recent(20)
-    bags, catalog, hardware = _build_lookups(inventory_repo, catalog_repo, hardware_repo)
+    shots = await brew_log_repo.list_recent(20)
+    bags, catalog, hardware = await _build_lookups(inventory_repo, catalog_repo, hardware_repo)
     return [_shot_to_out(s, _resolve_names_from_dicts(s, bags, catalog, hardware)) for s in shots]
 
 
@@ -133,9 +133,9 @@ async def api_brew_log_list(
 async def api_brew_log_feedback(
     shot_id: str,
     user: CurrentUser,
-    brew_log_repo: BrewLogRepo = Depends(get_brew_log_repo),
+    brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
 ) -> FeedbackOut:
-    shot = brew_log_repo.get(shot_id)
+    shot = await brew_log_repo.get(shot_id)
     if shot is None:
         raise HTTPException(status_code=404, detail="Shot not found")
     return FeedbackOut(ai_feedback=shot.get("AI_Feedback") or None)
@@ -145,15 +145,15 @@ async def api_brew_log_feedback(
 async def api_brew_log_detail(
     shot_id: str,
     user: CurrentUser,
-    brew_log_repo: BrewLogRepo = Depends(get_brew_log_repo),
-    inventory_repo: InventoryRepo = Depends(get_inventory_repo),
-    catalog_repo: CatalogRepo = Depends(get_catalog_repo),
-    hardware_repo: HardwareRepo = Depends(get_hardware_repo),
+    brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
+    inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
+    catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
+    hardware_repo: _DualWriteHardwareRepo = Depends(get_hardware_repo),
 ) -> BrewLogEntryOut:
-    shot = brew_log_repo.get(shot_id)
+    shot = await brew_log_repo.get(shot_id)
     if shot is None:
         raise HTTPException(status_code=404, detail="Shot not found")
-    bags, catalog, hardware = _build_lookups(inventory_repo, catalog_repo, hardware_repo)
+    bags, catalog, hardware = await _build_lookups(inventory_repo, catalog_repo, hardware_repo)
     names = _resolve_names_from_dicts(shot, bags, catalog, hardware)
     return _shot_to_out(shot, names)
 
@@ -179,11 +179,11 @@ class _BrewLogCreateBody(BaseModel):
 async def api_brew_log_create(
     body: _BrewLogCreateBody,
     user: CurrentUser,
-    brew_log_repo: BrewLogRepo = Depends(get_brew_log_repo),
-    inventory_repo: InventoryRepo = Depends(get_inventory_repo),
-    catalog_repo: CatalogRepo = Depends(get_catalog_repo),
-    hardware_repo: HardwareRepo = Depends(get_hardware_repo),
-    maintenance_repo: MaintenanceRepo = Depends(get_maintenance_repo),
+    brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
+    inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
+    catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
+    hardware_repo: _DualWriteHardwareRepo = Depends(get_hardware_repo),
+    maintenance_repo: _DualWriteMaintenanceRepo = Depends(get_maintenance_repo),
     llm_client: LLMClient = Depends(get_llm_client),
     store: IdempotencyStore = Depends(get_idempotency_store),
 ) -> BrewLogEntryOut:
@@ -200,7 +200,7 @@ async def api_brew_log_create(
         if cached is not None:
             return JSONResponse(status_code=200, content=cached)  # type: ignore[return-value]
 
-    existing_ids = brew_log_repo.list_existing_ids()
+    existing_ids = await brew_log_repo.list_existing_ids()
     shot_id = make_shot_id(shot_date, body.bag_id, existing_ids)
 
     row = {
@@ -219,10 +219,10 @@ async def api_brew_log_create(
         "User_Notes": body.user_notes,
         "Storage_Method": body.storage_method,
     }
-    await brew_log_repo.add(row)  # type: ignore[misc, func-returns-value]
+    await brew_log_repo.add(row)
 
     # Fire-and-forget AI feedback
-    bags, catalog, hardware = _build_lookups(inventory_repo, catalog_repo, hardware_repo)
+    bags, catalog, hardware = await _build_lookups(inventory_repo, catalog_repo, hardware_repo)
     names = _resolve_names_from_dicts(row, bags, catalog, hardware)
     extra_context = {
         "machine_name": names.get("machine_name") or "",

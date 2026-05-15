@@ -7,8 +7,7 @@ from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
 import httpx
 
 if TYPE_CHECKING:
-    from app.repos.brew_log import BrewLogRepo
-    from app.repos.maintenance import MaintenanceRepo
+    from app.deps import _DualWriteBrewLogRepo, _DualWriteMaintenanceRepo
 
 logger = logging.getLogger(__name__)
 
@@ -239,13 +238,13 @@ _GRACEFUL_NOT_FOUND = "AI feedback unavailable \u2014 this shot could not be fou
 
 async def get_ai_feedback(
     shot_id: str,
-    brew_log_repo: "BrewLogRepo",
-    maintenance_repo: "MaintenanceRepo",
+    brew_log_repo: "_DualWriteBrewLogRepo",
+    maintenance_repo: "_DualWriteMaintenanceRepo",
     llm_client: LLMClient,
     extra_context: dict[str, Any] | None = None,
 ) -> str:
     # Step 1: fetch shot
-    shot = brew_log_repo.get(shot_id)
+    shot = await brew_log_repo.get(shot_id)
     if shot is None:
         return _GRACEFUL_NOT_FOUND
 
@@ -255,7 +254,7 @@ async def get_ai_feedback(
         return cast(str, existing)
 
     # Step 3: fetch non-Reject shot history for this bag (exclude current shot)
-    raw_history = brew_log_repo.list_for_bag(shot["Bag_ID"])
+    raw_history = await brew_log_repo.list_for_bag(shot["Bag_ID"])
     history = [
         s
         for s in raw_history
@@ -277,7 +276,7 @@ async def get_ai_feedback(
         except (ValueError, KeyError):
             shot_date = date.today()
         cutoff = shot_date - timedelta(days=30)
-        raw_mnt = maintenance_repo.list()
+        raw_mnt = await maintenance_repo.list()
         maintenance_events = []
         for r in raw_mnt:
             if r.get("Hardware_ID") not in hardware_ids:
@@ -313,6 +312,6 @@ async def get_ai_feedback(
         return _GRACEFUL_ERROR
 
     # Step 7: persist
-    brew_log_repo.update_feedback(shot_id, feedback_text)
+    await brew_log_repo.update_feedback(shot_id, feedback_text)
 
     return feedback_text

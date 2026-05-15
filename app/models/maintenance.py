@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import uuid
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column
@@ -31,13 +32,15 @@ class MaintenanceLog(Base):
         nullable=True,
     )
     action: Mapped[str] = mapped_column(sa.Text, nullable=False)
-    performed_at: Mapped[sa.DateTime] = mapped_column(
+    performed_at: Mapped[datetime.datetime] = mapped_column(
         sa.TIMESTAMP(timezone=True),
         nullable=False,
         server_default=sa.text("now()"),
     )
     notes: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
-    created_at: Mapped[sa.DateTime] = mapped_column(
+    sheets_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True, unique=True)
+    sheets_hardware_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(
         sa.TIMESTAMP(timezone=True),
         nullable=False,
         server_default=sa.text("now()"),

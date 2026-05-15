@@ -13,11 +13,33 @@ Covers 17 test cases (T008-a through T008-q):
 from __future__ import annotations
 
 import pytest
+from unittest.mock import patch
 
 from app.repos.base import TTLCache
 from app.repos.brew_log import BrewLogRepo
 from app.repos.maintenance import MaintenanceRepo
 from tests.doubles import FakeSheetsClient
+from app.deps import _DualWriteBrewLogRepo, _DualWriteMaintenanceRepo
+
+
+# Patch settings.use_postgres=False for all tests in this module so DualWrite
+# wrappers fall back to the Sheets repos transparently.
+@pytest.fixture(autouse=True)
+def _patch_use_postgres_false():
+    with patch("app.deps.settings") as mock_settings:
+        mock_settings.use_postgres = False
+        yield
+
+
+def _brew_repo(fake_sheets: FakeSheetsClient, cache: TTLCache) -> _DualWriteBrewLogRepo:
+    return _DualWriteBrewLogRepo(sheets=BrewLogRepo(client=fake_sheets, cache=cache), sql=None)
+
+
+def _maint_repo(fake_sheets: FakeSheetsClient, cache: TTLCache) -> _DualWriteMaintenanceRepo:
+    return _DualWriteMaintenanceRepo(
+        sheets=MaintenanceRepo(client=fake_sheets, cache=cache), sql=None
+    )
+
 
 # ---------------------------------------------------------------------------
 # Inline test stubs
@@ -230,8 +252,8 @@ async def test_get_ai_feedback_happy_path():
 
     fake_sheets = FakeSheetsClient({"Brew_Log": [_SHOT.copy()], "Maintenance": []})
     cache = TTLCache()
-    brew_repo = BrewLogRepo(client=fake_sheets, cache=cache)
-    mnt_repo = MaintenanceRepo(client=fake_sheets, cache=cache)
+    brew_repo = _brew_repo(fake_sheets, cache)
+    mnt_repo = _maint_repo(fake_sheets, cache)
     llm = FakeLLMClient(return_value="Try a finer grind.")
 
     result = await get_ai_feedback(
@@ -243,7 +265,7 @@ async def test_get_ai_feedback_happy_path():
 
     assert result == "Try a finer grind."
     assert llm.call_count == 1
-    updated_shot = brew_repo.get("SHOT-001")
+    updated_shot = await brew_repo.get("SHOT-001")
     assert updated_shot is not None
     assert updated_shot["AI_Feedback"] == "Try a finer grind."
 
@@ -259,8 +281,8 @@ async def test_get_ai_feedback_noop_client():
 
     fake_sheets = FakeSheetsClient({"Brew_Log": [_SHOT.copy()], "Maintenance": []})
     cache = TTLCache()
-    brew_repo = BrewLogRepo(client=fake_sheets, cache=cache)
-    mnt_repo = MaintenanceRepo(client=fake_sheets, cache=cache)
+    brew_repo = _brew_repo(fake_sheets, cache)
+    mnt_repo = _maint_repo(fake_sheets, cache)
 
     result = await get_ai_feedback(
         shot_id="SHOT-001",
@@ -272,7 +294,7 @@ async def test_get_ai_feedback_noop_client():
     assert result == "AI feedback unavailable \u2014 no API key configured."
     # Noop path does NOT raise LLMError and returns a non-empty string,
     # so update_feedback must still be called.
-    updated_shot = brew_repo.get("SHOT-001")
+    updated_shot = await brew_repo.get("SHOT-001")
     assert updated_shot is not None
     assert updated_shot["AI_Feedback"] == "AI feedback unavailable \u2014 no API key configured."
 
@@ -288,8 +310,8 @@ async def test_get_ai_feedback_shot_not_found():
 
     fake_sheets = FakeSheetsClient({"Brew_Log": [], "Maintenance": []})
     cache = TTLCache()
-    brew_repo = BrewLogRepo(client=fake_sheets, cache=cache)
-    mnt_repo = MaintenanceRepo(client=fake_sheets, cache=cache)
+    brew_repo = _brew_repo(fake_sheets, cache)
+    mnt_repo = _maint_repo(fake_sheets, cache)
     llm = FakeLLMClient()
 
     result = await get_ai_feedback(
@@ -315,8 +337,8 @@ async def test_get_ai_feedback_llm_error():
     shot_data = _SHOT.copy()
     fake_sheets = FakeSheetsClient({"Brew_Log": [shot_data], "Maintenance": []})
     cache = TTLCache()
-    brew_repo = BrewLogRepo(client=fake_sheets, cache=cache)
-    mnt_repo = MaintenanceRepo(client=fake_sheets, cache=cache)
+    brew_repo = _brew_repo(fake_sheets, cache)
+    mnt_repo = _maint_repo(fake_sheets, cache)
 
     result = await get_ai_feedback(
         shot_id="SHOT-001",
@@ -326,7 +348,7 @@ async def test_get_ai_feedback_llm_error():
     )
 
     assert result == "AI feedback unavailable \u2014 please try again later."
-    updated_shot = brew_repo.get("SHOT-001")
+    updated_shot = await brew_repo.get("SHOT-001")
     assert updated_shot is not None
     assert updated_shot.get("AI_Feedback", "") == ""
 
@@ -372,8 +394,8 @@ async def test_hardware_id_filter_drops_empty_string():
         }
     )
     cache = TTLCache()
-    brew_repo = BrewLogRepo(client=fake_sheets, cache=cache)
-    mnt_repo = MaintenanceRepo(client=fake_sheets, cache=cache)
+    brew_repo = _brew_repo(fake_sheets, cache)
+    mnt_repo = _maint_repo(fake_sheets, cache)
     llm = FakeLLMClient(return_value="Grind advice.")
 
     await get_ai_feedback(
@@ -437,8 +459,8 @@ async def test_maintenance_date_both_bounds():
         }
     )
     cache = TTLCache()
-    brew_repo = BrewLogRepo(client=fake_sheets, cache=cache)
-    mnt_repo = MaintenanceRepo(client=fake_sheets, cache=cache)
+    brew_repo = _brew_repo(fake_sheets, cache)
+    mnt_repo = _maint_repo(fake_sheets, cache)
     llm = FakeLLMClient(return_value="Advice.")
 
     await get_ai_feedback(
@@ -478,8 +500,8 @@ async def test_existing_feedback_short_circuit():
         }
     )
     cache = TTLCache()
-    brew_repo = BrewLogRepo(client=fake_sheets, cache=cache)
-    mnt_repo = MaintenanceRepo(client=fake_sheets, cache=cache)
+    brew_repo = _brew_repo(fake_sheets, cache)
+    mnt_repo = _maint_repo(fake_sheets, cache)
     llm = FakeLLMClient()
 
     result = await get_ai_feedback(
@@ -492,7 +514,7 @@ async def test_existing_feedback_short_circuit():
     assert result == existing_text
     assert llm.call_count == 0  # LLM never called
     # update_feedback not called — value unchanged
-    updated = brew_repo.get("SHOT-001")
+    updated = await brew_repo.get("SHOT-001")
     assert updated is not None
     assert updated["AI_Feedback"] == existing_text
 
@@ -607,8 +629,8 @@ async def test_get_ai_feedback_prompt_double_overflow_returns_graceful():
 
     fake_sheets = FakeSheetsClient({"Brew_Log": [_SHOT.copy()], "Maintenance": []})
     cache = TTLCache()
-    brew_repo = BrewLogRepo(client=fake_sheets, cache=cache)
-    mnt_repo = MaintenanceRepo(client=fake_sheets, cache=cache)
+    brew_repo = _brew_repo(fake_sheets, cache)
+    mnt_repo = _maint_repo(fake_sheets, cache)
     llm = FakeLLMClient()
 
     # Always raise ValueError — both the first call (with maintenance) and the

@@ -1,15 +1,21 @@
 ---
-updated_at: 2025-07-30T00:00:00Z
-focus_area: CompassChart ZoneBoundaries + inference layer enrichment (Q1/Q2/Q3 answered)
-active_issues: []
+updated_at: 2026-05-15T06:31:39Z
+focus_area: PR review comment handling completed; M4 read switchover branch now in review/monitoring state
+active_issues:
+  - Await Copilot PR review feedback and address any actionable findings on feat/m4-prerequisites
+  - Maintain push gate discipline: no push without explicit operator approval after all four local CI checks pass
 ---
 
 # What We're Focused On
 
-**Q1 (ZoneBoundaries):** Frontend utility complete. CompassChart prop interface extended with optional `zoneBoundaries` parameter. No backend schema changes. Backward compatible.
+## Current State
 
-**Q2 (roast_level):** Field confirmed end-to-end (Python + TypeScript). Already resolved in _resolve_names_from_dicts. No new columns or form inputs needed.
+The PR review comment workflow request has been handled and closed (routing decision logged as DIRECT_PERMITTED; decision drop merged to `.squad/decisions.md`; session log written).
 
-**Q3 (LLM Enrichment):** Fire-and-forget inference pattern; enrich prompt with machine_name, basket_name, roast_level, zone_taste; persist Zone_Taste to Brew_Log; frontend polls GET /api/brew-log/{id}/feedback for ai_feedback every 3s.
+M4 prerequisites remain complete on `feat/m4-prerequisites`, with Quinn gate approved with notes and P3 backfill strategy already confirmed.
 
-**Next Phase:** Implementation of ZoneBoundaries utility, _BrewLogCreateBody extension, Zone_Taste column, and feedback endpoint.
+## Open Work State
+
+1. Monitor PR review results from `@copilot` and triage any findings.
+2. Apply fixes only if review feedback is valid, then re-run all four local CI-equivalent checks.
+3. Before any future push: explicitly ask operator and wait for affirmative permission.
