@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import builtins
 import datetime
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -37,7 +37,7 @@ class SqlInventoryRepo:
             existing = None
 
         if existing is not None:
-            existing.roast_date = _to_date(row.get("RoastDate"))
+            existing.roast_date = _to_date(row.get("RoastDate"))  # type: ignore[assignment]
             existing.beans = row.get("Beans")
             existing.display_name = row.get("Display_Name") or row.get("Beans")
             existing.roast_level = row.get("RoastLevel") or row.get("Roast_Level")
@@ -93,7 +93,7 @@ class SqlInventoryRepo:
             "Bag_ID": row.sheets_id or "",
             "Beans": row.beans or "",
             "Display_Name": row.display_name or row.beans or "",
-            "RoastDate": row.roast_date.isoformat() if row.roast_date else "",
+            "RoastDate": cast(datetime.date, row.roast_date).isoformat() if row.roast_date else "",
             "RoastLevel": row.roast_level or "",
             "Roast_Level": row.roast_level or "",
             "Status": row.status or "Active",

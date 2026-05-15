@@ -13,6 +13,11 @@ from pydantic import BaseModel
 
 from app.deps import (
     CurrentUser,
+    _DualWriteBrewLogRepo,
+    _DualWriteCatalogRepo,
+    _DualWriteHardwareRepo,
+    _DualWriteInventoryRepo,
+    _DualWriteMaintenanceRepo,
     get_brew_log_repo,
     get_catalog_repo,
     get_hardware_repo,
@@ -22,11 +27,6 @@ from app.deps import (
     get_maintenance_repo,
 )
 from app.models.api import BrewLogEntryOut, FeedbackOut
-from app.repos.brew_log import BrewLogRepo
-from app.repos.catalog import CatalogRepo
-from app.repos.hardware import HardwareRepo
-from app.repos.inventory import InventoryRepo
-from app.repos.maintenance import MaintenanceRepo
 from app.services.idempotency_store import IdempotencyStore
 from app.services.ids import make_shot_id
 from app.services.inference import LLMClient, get_ai_feedback
@@ -44,9 +44,9 @@ def _float(v: object) -> float | None:
 
 
 async def _build_lookups(
-    inventory_repo: InventoryRepo,
-    catalog_repo: CatalogRepo,
-    hardware_repo: HardwareRepo,
+    inventory_repo: _DualWriteInventoryRepo,
+    catalog_repo: _DualWriteCatalogRepo,
+    hardware_repo: _DualWriteHardwareRepo,
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     """Pre-fetch all lookup tables once; return (bags, catalog, hardware) dicts.
 
@@ -119,10 +119,10 @@ def _shot_to_out(shot: dict[str, Any], names: dict[str, Any]) -> BrewLogEntryOut
 @router.get("/brew-log", response_model=List[BrewLogEntryOut])
 async def api_brew_log_list(
     user: CurrentUser,
-    brew_log_repo: BrewLogRepo = Depends(get_brew_log_repo),
-    inventory_repo: InventoryRepo = Depends(get_inventory_repo),
-    catalog_repo: CatalogRepo = Depends(get_catalog_repo),
-    hardware_repo: HardwareRepo = Depends(get_hardware_repo),
+    brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
+    inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
+    catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
+    hardware_repo: _DualWriteHardwareRepo = Depends(get_hardware_repo),
 ) -> list[BrewLogEntryOut]:
     shots = await brew_log_repo.list_recent(20)
     bags, catalog, hardware = await _build_lookups(inventory_repo, catalog_repo, hardware_repo)
@@ -133,7 +133,7 @@ async def api_brew_log_list(
 async def api_brew_log_feedback(
     shot_id: str,
     user: CurrentUser,
-    brew_log_repo: BrewLogRepo = Depends(get_brew_log_repo),
+    brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
 ) -> FeedbackOut:
     shot = await brew_log_repo.get(shot_id)
     if shot is None:
@@ -145,10 +145,10 @@ async def api_brew_log_feedback(
 async def api_brew_log_detail(
     shot_id: str,
     user: CurrentUser,
-    brew_log_repo: BrewLogRepo = Depends(get_brew_log_repo),
-    inventory_repo: InventoryRepo = Depends(get_inventory_repo),
-    catalog_repo: CatalogRepo = Depends(get_catalog_repo),
-    hardware_repo: HardwareRepo = Depends(get_hardware_repo),
+    brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
+    inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
+    catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
+    hardware_repo: _DualWriteHardwareRepo = Depends(get_hardware_repo),
 ) -> BrewLogEntryOut:
     shot = await brew_log_repo.get(shot_id)
     if shot is None:
@@ -179,11 +179,11 @@ class _BrewLogCreateBody(BaseModel):
 async def api_brew_log_create(
     body: _BrewLogCreateBody,
     user: CurrentUser,
-    brew_log_repo: BrewLogRepo = Depends(get_brew_log_repo),
-    inventory_repo: InventoryRepo = Depends(get_inventory_repo),
-    catalog_repo: CatalogRepo = Depends(get_catalog_repo),
-    hardware_repo: HardwareRepo = Depends(get_hardware_repo),
-    maintenance_repo: MaintenanceRepo = Depends(get_maintenance_repo),
+    brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
+    inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
+    catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
+    hardware_repo: _DualWriteHardwareRepo = Depends(get_hardware_repo),
+    maintenance_repo: _DualWriteMaintenanceRepo = Depends(get_maintenance_repo),
     llm_client: LLMClient = Depends(get_llm_client),
     store: IdempotencyStore = Depends(get_idempotency_store),
 ) -> BrewLogEntryOut:
@@ -219,7 +219,7 @@ async def api_brew_log_create(
         "User_Notes": body.user_notes,
         "Storage_Method": body.storage_method,
     }
-    await brew_log_repo.add(row)  # type: ignore[misc, func-returns-value]
+    await brew_log_repo.add(row)
 
     # Fire-and-forget AI feedback
     bags, catalog, hardware = await _build_lookups(inventory_repo, catalog_repo, hardware_repo)

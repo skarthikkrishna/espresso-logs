@@ -54,12 +54,12 @@ async def test_add_many_inserts_all_rows(db_session: AsyncSession) -> None:
 
 
 async def test_list_returns_empty(db_session: AsyncSession) -> None:
-    """list() is a no-op stub in M2."""
+    """list() returns empty list on empty DB."""
     repo = SqlMaintenanceRepo(db=db_session)
-    assert repo.list() == []
+    assert await repo.list() == []
 
 
 async def test_get_returns_none(db_session: AsyncSession) -> None:
-    """get() is a no-op stub in M2."""
+    """get() returns None when entry does not exist."""
     repo = SqlMaintenanceRepo(db=db_session)
-    assert repo.get("MAINT001") is None
+    assert await repo.get("MAINT001") is None

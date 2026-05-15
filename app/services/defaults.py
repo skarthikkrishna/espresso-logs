@@ -10,11 +10,10 @@ Implements a 4-level fallback chain:
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from app.repos.brew_log import BrewLogRepo
-from app.repos.catalog import CatalogRepo
-from app.repos.inventory import InventoryRepo
+if TYPE_CHECKING:
+    from app.deps import _DualWriteBrewLogRepo, _DualWriteCatalogRepo, _DualWriteInventoryRepo
 
 # Column names from Brew_Log sheet → snake_case output keys
 # Confirmed: Brew_Log sheet column is "Yield_Out_g" — verified per spec BE-2 requirement
@@ -42,9 +41,9 @@ def _extract_defaults(shot: dict[str, Any]) -> dict[str, Any]:
 
 async def get_defaults(
     bag_id: str,
-    brew_log_repo: BrewLogRepo,
-    inventory_repo: InventoryRepo,
-    catalog_repo: CatalogRepo,
+    brew_log_repo: "_DualWriteBrewLogRepo",
+    inventory_repo: "_DualWriteInventoryRepo",
+    catalog_repo: "_DualWriteCatalogRepo",
     basket_id: str | None = None,  # ← NEW (T008): Level 0 basket-specific lookup
 ) -> dict[str, Any]:
     """Return smart pre-fill defaults for *bag_id* using a 4-level fallback chain.

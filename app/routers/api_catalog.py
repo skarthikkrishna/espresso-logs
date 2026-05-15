@@ -16,6 +16,10 @@ from pydantic import BaseModel
 from app.config import settings
 from app.deps import (
     CurrentUser,
+    _DualWriteBrewLogRepo,
+    _DualWriteCatalogRepo,
+    _DualWriteHardwareRepo,
+    _DualWriteInventoryRepo,
     get_brew_log_repo,
     get_catalog_repo,
     get_hardware_repo,
@@ -24,10 +28,6 @@ from app.deps import (
 )
 from app.services.inference import LLMClient
 from app.models.api import BrewLogEntryOut, CatalogDetailOut, CatalogItemOut, InventoryBagOut
-from app.repos.brew_log import BrewLogRepo
-from app.repos.catalog import CatalogRepo
-from app.repos.hardware import HardwareRepo
-from app.repos.inventory import InventoryRepo
 from app.services.ids import make_inventory_id
 from app.services.image_sourcer import fetch_image_bytes, fetch_page_context, source_bean_image
 from app.services.image_store import upload_image
@@ -114,7 +114,7 @@ def _shot_to_out(
 @router.get("/catalog", response_model=List[CatalogItemOut])
 async def api_catalog_list(
     user: CurrentUser,
-    catalog_repo: CatalogRepo = Depends(get_catalog_repo),
+    catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
 ) -> list[CatalogItemOut]:
     return [_catalog_to_out(row) for row in await catalog_repo.list()]
 
@@ -123,10 +123,10 @@ async def api_catalog_list(
 async def api_catalog_detail(
     catalog_id: str,
     user: CurrentUser,
-    catalog_repo: CatalogRepo = Depends(get_catalog_repo),
-    inventory_repo: InventoryRepo = Depends(get_inventory_repo),
-    brew_log_repo: BrewLogRepo = Depends(get_brew_log_repo),
-    hardware_repo: HardwareRepo = Depends(get_hardware_repo),
+    catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
+    inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
+    brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
+    hardware_repo: _DualWriteHardwareRepo = Depends(get_hardware_repo),
 ) -> CatalogDetailOut:
     entry = await catalog_repo.get(catalog_id)
     if entry is None:
@@ -143,9 +143,11 @@ async def api_catalog_detail(
     linked_shots = linked_shots[:10]
 
     # Pre-fetch all hardware needed for the shots to avoid per-shot awaits.
-    hw_ids = {s.get("Machine_ID") or "" for s in linked_shots} | \
-             {s.get("Grinder_ID") or "" for s in linked_shots} | \
-             {s.get("Basket_ID") or "" for s in linked_shots}
+    hw_ids = (
+        {s.get("Machine_ID") or "" for s in linked_shots}
+        | {s.get("Grinder_ID") or "" for s in linked_shots}
+        | {s.get("Basket_ID") or "" for s in linked_shots}
+    )
     hw_ids.discard("")
     hw_cache: dict[str, dict[str, Any] | None] = {}
     for hw_id in hw_ids:
@@ -201,7 +203,7 @@ class InferCatalogOut(BaseModel):
 async def api_catalog_create(
     body: _CatalogCreateBody,
     user: CurrentUser,
-    catalog_repo: CatalogRepo = Depends(get_catalog_repo),
+    catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
     llm_client: LLMClient = Depends(get_llm_client),
 ) -> CatalogItemOut:
     errors: list[str] = []
@@ -261,7 +263,7 @@ async def api_catalog_create(
             logger.warning("image upload failed for %r: %s", catalog_id, exc)
 
     # Single upsert — image path (if any) is already staged in row before writing.
-    await catalog_repo.upsert(row)  # type: ignore[misc, func-returns-value]
+    await catalog_repo.upsert(row)
     return _catalog_to_out(row)
 
 
@@ -277,7 +279,7 @@ async def api_catalog_update(
     catalog_id: str,
     body: _CatalogUpdateBody,
     user: CurrentUser,
-    catalog_repo: CatalogRepo = Depends(get_catalog_repo),
+    catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
 ) -> CatalogItemOut:
     """Update an editable catalog entry. Preserves Local_Image_Path; use the
     /image endpoint to change the image."""
@@ -316,7 +318,7 @@ async def api_catalog_update(
         "Roast_Level": body.roast_level,
         "Product_URL": (body.product_url or "").strip(),
     }
-    await catalog_repo.upsert(updated)  # type: ignore[misc, func-returns-value]
+    await catalog_repo.upsert(updated)
     return _catalog_to_out(updated)
 
 
@@ -415,8 +417,8 @@ async def api_catalog_add_bag(
     catalog_id: str,
     body: _BagCreateBody,
     user: CurrentUser,
-    catalog_repo: CatalogRepo = Depends(get_catalog_repo),
-    inventory_repo: InventoryRepo = Depends(get_inventory_repo),
+    catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
+    inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
 ) -> InventoryBagOut:
     entry = await catalog_repo.get(catalog_id)
     if entry is None:
@@ -442,7 +444,7 @@ async def api_catalog_add_bag(
         "Status": "Active",
         "Storage_Method": body.storage_method or "",
     }
-    await inventory_repo.upsert(row)  # type: ignore[misc, func-returns-value]
+    await inventory_repo.upsert(row)
     return _bag_to_out(row, display_name)
 
 
@@ -451,7 +453,7 @@ async def api_catalog_upload_image(
     catalog_id: str,
     user: CurrentUser,
     file: UploadFile = File(...),
-    catalog_repo: CatalogRepo = Depends(get_catalog_repo),
+    catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
 ) -> JSONResponse:
     entry = await catalog_repo.get(catalog_id)
     if entry is None:
@@ -463,5 +465,5 @@ async def api_catalog_upload_image(
     image_path = await upload_image(img_bytes, content_type, obj_name, settings.assets_bucket)
     fresh = await catalog_repo.get(catalog_id)
     if fresh is not None:
-        await catalog_repo.upsert({**fresh, "Local_Image_Path": image_path})  # type: ignore[misc, func-returns-value]
+        await catalog_repo.upsert({**fresh, "Local_Image_Path": image_path})
     return JSONResponse({"image_path": image_path})

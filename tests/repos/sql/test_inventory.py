@@ -54,18 +54,18 @@ async def test_upsert_handles_empty_date(db_session: AsyncSession) -> None:
 
 
 async def test_list_returns_empty(db_session: AsyncSession) -> None:
-    """list() is a no-op stub in M2."""
+    """list() returns empty list on empty DB."""
     repo = SqlInventoryRepo(db=db_session)
-    assert repo.list() == []
+    assert await repo.list() == []
 
 
 async def test_list_all_returns_empty(db_session: AsyncSession) -> None:
-    """list_all() is a no-op stub in M2."""
+    """list_all() returns empty list on empty DB."""
     repo = SqlInventoryRepo(db=db_session)
-    assert repo.list_all() == []
+    assert await repo.list_all() == []
 
 
 async def test_get_returns_none(db_session: AsyncSession) -> None:
-    """get() is a no-op stub in M2."""
+    """get() returns None when entry does not exist."""
     repo = SqlInventoryRepo(db=db_session)
-    assert repo.get("BAG001") is None
+    assert await repo.get("BAG001") is None

@@ -8,14 +8,14 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
 from app.deps import (
+    _DualWriteBrewLogRepo,
+    _DualWriteCatalogRepo,
+    _DualWriteInventoryRepo,
     get_brew_log_repo,
     get_catalog_repo,
     get_inventory_repo,
     require_user,
 )
-from app.repos.brew_log import BrewLogRepo
-from app.repos.catalog import CatalogRepo
-from app.repos.inventory import InventoryRepo
 from app.services import defaults as defaults_service
 
 router = APIRouter(dependencies=[require_user])
@@ -24,9 +24,9 @@ router = APIRouter(dependencies=[require_user])
 @router.get("/api/defaults")
 async def get_defaults_api(
     bag_id: str = "",
-    brew_log_repo: BrewLogRepo = Depends(get_brew_log_repo),
-    inventory_repo: InventoryRepo = Depends(get_inventory_repo),
-    catalog_repo: CatalogRepo = Depends(get_catalog_repo),
+    brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
+    inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
+    catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
 ) -> JSONResponse:
     """Return smart pre-fill defaults for *bag_id* as JSON.
 

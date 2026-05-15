@@ -7,8 +7,7 @@ from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
 import httpx
 
 if TYPE_CHECKING:
-    from app.repos.brew_log import BrewLogRepo
-    from app.repos.maintenance import MaintenanceRepo
+    from app.deps import _DualWriteBrewLogRepo, _DualWriteMaintenanceRepo
 
 logger = logging.getLogger(__name__)
 
@@ -239,8 +238,8 @@ _GRACEFUL_NOT_FOUND = "AI feedback unavailable \u2014 this shot could not be fou
 
 async def get_ai_feedback(
     shot_id: str,
-    brew_log_repo: "BrewLogRepo",
-    maintenance_repo: "MaintenanceRepo",
+    brew_log_repo: "_DualWriteBrewLogRepo",
+    maintenance_repo: "_DualWriteMaintenanceRepo",
     llm_client: LLMClient,
     extra_context: dict[str, Any] | None = None,
 ) -> str:

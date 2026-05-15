@@ -7,15 +7,19 @@ from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from app.deps import CurrentUser, get_catalog_repo, get_inventory_repo
+from app.deps import (
+    CurrentUser,
+    _DualWriteCatalogRepo,
+    _DualWriteInventoryRepo,
+    get_catalog_repo,
+    get_inventory_repo,
+)
 from app.models.api import InventoryBagOut
-from app.repos.catalog import CatalogRepo
-from app.repos.inventory import InventoryRepo
 
 router = APIRouter(prefix="/api", tags=["inventory"])
 
 
-async def _resolve_display_name(bag: dict[str, Any], catalog_repo: CatalogRepo) -> str:
+async def _resolve_display_name(bag: dict[str, Any], catalog_repo: _DualWriteCatalogRepo) -> str:
     cat_id = bag.get("Catalog_ID")
     if cat_id:
         cat = await catalog_repo.get(cat_id)
@@ -41,8 +45,8 @@ def _bag_to_out(bag: dict[str, Any], display_name: str) -> InventoryBagOut:
 async def api_inventory_list(
     user: CurrentUser,
     status: str | None = "Active",
-    inventory_repo: InventoryRepo = Depends(get_inventory_repo),
-    catalog_repo: CatalogRepo = Depends(get_catalog_repo),
+    inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
+    catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
 ) -> list[InventoryBagOut]:
     if status == "all":
         bags = await inventory_repo.list(status=None)
@@ -61,8 +65,8 @@ async def api_inventory_list(
 async def api_inventory_detail(
     bag_id: str,
     user: CurrentUser,
-    inventory_repo: InventoryRepo = Depends(get_inventory_repo),
-    catalog_repo: CatalogRepo = Depends(get_catalog_repo),
+    inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
+    catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
 ) -> InventoryBagOut:
     bag = await inventory_repo.get(bag_id)
     if bag is None:
@@ -82,8 +86,8 @@ async def api_inventory_patch(
     bag_id: str,
     body: _BagPatchBody,
     user: CurrentUser,
-    inventory_repo: InventoryRepo = Depends(get_inventory_repo),
-    catalog_repo: CatalogRepo = Depends(get_catalog_repo),
+    inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
+    catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
 ) -> InventoryBagOut:
     if body.status not in _VALID_PATCH_STATUSES:
         raise HTTPException(
@@ -94,5 +98,5 @@ async def api_inventory_patch(
     if bag is None:
         raise HTTPException(status_code=404, detail="Bag not found")
     updated = {**bag, "Status": body.status}
-    await inventory_repo.upsert(updated)  # type: ignore[misc, func-returns-value]
+    await inventory_repo.upsert(updated)
     return _bag_to_out(updated, await _resolve_display_name(updated, catalog_repo))
