@@ -2,6 +2,143 @@
 
 ## Active Decisions
 
+### 2026-05-14: M4 deps.py read switchover complete
+**By:** Alex
+**What:** All 5 DualWrite read methods now route to Postgres when USE_POSTGRES=true. Quinn notes addressed. feat/m4-prerequisites ready for PR.
+**Why:** M4 milestone — Sheets → Postgres migration read switchover
+
+---
+
+### 2026-05-15T03:52:30Z: P3 backfill strategy confirmed
+**By:** skarthikkrishna (via Copilot)
+**What:** Full backfill via `scripts/migrate_sheets_to_postgres.py`. No concurrent writes during backfill window. Backfill runs before `USE_POSTGRES=true` is set in prod.
+**Why:** User decision — resolves Quinn gate P3 prerequisite for M4 read switchover.
+
+---
+
+### 2026-05-14: Quinn gate approved — M4 prerequisites
+**By:** Quinn
+**What:** feat/m4-prerequisites APPROVED_WITH_NOTES for M4 deps.py switchover
+**Why:** P1 (ORM + write methods) and P2 (SQL reads + async DualWrite) verified. P3 confirmed by operator. Two non-blocking notes (missing next_id regression test; update_feedback asyncio antipattern in SQL stub) must be resolved before M5 but do not block the M4 read switchover.
+
+---
+
+### 2026-05-14: Decision Drop — M4 CI Failure RCA
+**From:** Tariq (Technical Program Manager)  
+**For:** Alex (Backend Engineer)  
+**Date:** 2026-05-14  
+**PR:** #62 `feat/m4-prerequisites` — 3 of 13 CI checks failing
+
+---
+
+## Root Cause Summary
+
+The branch made SQL repo methods async (correct) but **did not update Sheets repos or their consumers**. This creates:
+
+1. **Format failures** (5 files) — ruff format violations, auto-fixable
+2. **Typecheck failures** (19 errors) across 4 categories:
+   - 4 errors: SQLAlchemy column types lack Python datetime methods (need casts)
+   - 1 error: Type annotation collision in catalog repo (rename return type)
+   - **14 errors: Awaiting non-async results** (Sheets repos still sync, SQL repos now async)
+3. **Test failures** (16 tests) — Tests call async methods without `await` when DATABASE_URL is set in CI
+
+---
+
+## Fix Plan (4 Phases, in order)
+
+### Phase 1: Type Annotations (4 files, 5 changes)
+- `app/repos/sql/maintenance.py:59` — Cast `performed_at` to datetime
+- `app/repos/sql/brew_log.py:114` — Cast `brewed_at` to datetime
+- `app/repos/sql/inventory.py:40,96` — Cast/assert `roast_date` conversions
+- `app/repos/sql/catalog.py:77` — Fix return type annotation collision
+
+**Outcome:** Reduces mypy errors from 19 to 15.
+
+### Phase 2: Make Sheets Repos Async (5 files)
+All read methods must be `async` to match SQL repos:
+- `CatalogRepo.list()`, `.get()`, `._fetch_all()`
+- `InventoryRepo.list()`, `.list_all()`, `.get()`
+- `HardwareRepo.list()`, `.list_all()`, `.get()`
+- `MaintenanceRepo.list()`, `.get()`
+- `BrewLogRepo.list()`, `.list_recent()`, `.list_for_bag()`, `.list_existing_ids()`, `.get()`
+
+Update _DualWrite wrappers to always `await` both branches.
+
+**Outcome:** Eliminates 14 mypy errors. Callers can now correctly use `await`.
+
+### Phase 3: Update Test Stubs (6 files)
+Add `await` to all assertions calling async methods:
+- `tests/repos/sql/test_inventory.py` (6 tests)
+- `tests/repos/sql/test_brew_log.py` (2 tests)
+- `tests/repos/sql/test_catalog.py` (3 tests)
+- `tests/repos/sql/test_hardware.py` (2 tests)
+- `tests/repos/sql/test_maintenance.py` (2 tests)
+- `tests/repos/sql/test_dual_write.py` (1 test)
+
+**Outcome:** All 16 tests pass in CI when DATABASE_URL is set.
+
+### Phase 4: Format (1 command)
+```bash
+uv run ruff format app/ tests/
+```
+Auto-corrects all 5 format violations in place.
+
+**Outcome:** `CI/format` check passes.
+
+---
+
+## No Logic Changes Required
+
+All fixes are structural:
+- Phase 1: Type casts (runtime safe)
+- Phase 2: Add `async`/`await` keywords (no behavior change)
+- Phase 3: Add `await` to tests (mirrors production async behavior)
+- Phase 4: Formatting only
+
+---
+
+## Process Note
+
+**Inviolable Rule 3 (CI Discipline):** Build failures require root cause analysis. This failure occurred because `mypy --strict app/` was not run before push. Recommend adding pre-push check script and documenting in CONTRIBUTING.md.
+
+---
+
+## Verification
+
+After all phases complete, verify:
+```bash
+uv run ruff format --check app/ tests/        # 0 failures
+uv run mypy app/ --strict                     # 0 errors
+uv run pytest tests/ --cov-fail-under=80      # 16 new tests pass, coverage ≥80%
+```
+
+Then PR is ready for review.
+
+---
+
+### 2026-05-14: Push gate mandate — binary only
+**By:** Karthik (via Tariq)
+**What:** Before any git push, the only valid states are: (1) asking the operator for permission, or (2) paused waiting for the operator's reply. No agent or coordinator may push based on their own assessment that work is complete. All four local CI checks must pass AND the operator must have explicitly said yes. No exceptions, no interpretation, no fuzzy cases.
+**Why:** PR #62 was pushed without user validation and without running the full CI-equivalent suite locally. The gap was an incomplete pre-push checklist and no explicit binary push gate. This mandate closes that gap permanently.
+**Scope:** Binds the coordinator and all implementation agents (Alex, Finn, and any future agents). Non-waivable.
+
+---
+
+### 2026-05-15: Tariq Routing Decision — PR Review Comment Handling
+
+- Agent: Tariq (routing)
+- Request: Address new PR comment `@copilot can you review this please` on an existing PR.
+- Decision: DIRECT_PERMITTED
+
+## Rationale
+This is bounded operational workflow work (PR review handling) and does not introduce or change product requirements, architecture, or implementation scope. No SpecKit artifact generation is needed to execute this request.
+
+## Explicit Scope Confirmation
+Scope is strictly limited to handling the existing PR review comment and any directly related PR review workflow actions. No feature, UX, API, data model, or cross-cutting architecture changes are authorized under this routing decision.
+
+---
+
+
 ### 2025-07-30: ZoneBoundaries — frontend utility, no backend sheet tab
 
 ZoneBoundaries live in `frontend/src/utils/zoneBoundaries.ts` as static TypeScript constants. `MACHINE_TIME_PROFILES` and `ROAST_RATIO_PROFILES` are frontend-only. CompassChart gets optional `zoneBoundaries` prop; defaults to equal-thirds (backward compat, 87 tests unaffected).
