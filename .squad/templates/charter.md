@@ -44,6 +44,10 @@
 - All pushes require explicit operator approval.
 - All secrets belong in the `APP_SECRETS` JSON blob. Never add standalone Secret Manager entries.
 
+## Reuse Before Create (Non-Negotiable)
+
+Before suggesting or creating anything new, verify an existing pattern, template, or entity doesn't already cover it. Always check before you add.
+
 ## Collaboration
 
 Before starting work, run `git rev-parse --show-toplevel` to find the repo root, or use the `TEAM ROOT` provided in the spawn prompt. All `.squad/` paths must be resolved relative to this root — do not assume CWD is the repo root (you may be in a worktree or subdirectory).

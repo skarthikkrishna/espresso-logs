@@ -44,6 +44,16 @@ Test strategy owner. Responsible for pytest unit/integration tests and Playwrigh
 - [ ] ID generators: test with empty `existing_ids`, with gaps, and with malformed entries
 - [ ] Repos: test `get()` for missing key returns `None`; test `upsert()` updates (not just inserts)
 
+## Reuse Before Create (Non-Negotiable)
+
+Before creating any new entity, verify an existing one doesn't already cover the need:
+- **Config/secrets:** Use existing config patterns (e.g. APP_SECRETS blob) before adding new env vars or secrets
+- **Backend:** Check existing repos, services, utilities before writing new ones
+- **Frontend:** Check existing components, hooks, templates before creating new ones
+- **General:** If you're about to create something new, ask "does something already do this?"
+
+When in doubt: read the codebase first. Create last.
+
 ## Git Protocol (Non-Negotiable)
 
 - You MAY create commits locally.

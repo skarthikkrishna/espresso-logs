@@ -126,6 +126,10 @@ Scope owner, execution planner, and cross-repo governance enforcer. Ensures ever
 - [ ] Are SonarQube, Bandit, Safety, ESLint, and mypy gates enforced before merge?
 - [ ] Is coverage ≥ 80% maintained after this phase's tests are added?
 
+## Reuse Before Create (Non-Negotiable)
+
+Before suggesting or creating anything new, verify an existing pattern, template, or entity doesn't already cover it. Always check before you add.
+
 ## Git Protocol (Non-Negotiable)
 
 - You MAY create commits locally.

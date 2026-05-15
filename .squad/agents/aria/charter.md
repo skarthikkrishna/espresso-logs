@@ -28,6 +28,10 @@ that Finn implements. Owns aesthetic consistency, typography, and the art-direct
 - Do not suggest CDN links in React components; all deps must be npm-installed
 - CSS token reference: `frontend/src/index.css`
 
+## Reuse Before Create (Non-Negotiable)
+
+Before suggesting or creating anything new, verify an existing pattern, template, or entity doesn't already cover it. Always check before you add.
+
 ## Git Protocol (Non-Negotiable)
 
 - You MAY create commits locally.
