@@ -15,10 +15,10 @@ from app.repos.inventory import InventoryRepo
 router = APIRouter(prefix="/api", tags=["inventory"])
 
 
-def _resolve_display_name(bag: dict[str, Any], catalog_repo: CatalogRepo) -> str:
+async def _resolve_display_name(bag: dict[str, Any], catalog_repo: CatalogRepo) -> str:
     cat_id = bag.get("Catalog_ID")
     if cat_id:
-        cat = catalog_repo.get(cat_id)
+        cat = await catalog_repo.get(cat_id)
         if cat:
             return f"{cat['Roaster']} — {cat['Bean_Name']}"
     return str(bag.get("Display_Name") or bag.get("Beans", bag.get("Bag_ID", "")))
@@ -45,13 +45,16 @@ async def api_inventory_list(
     catalog_repo: CatalogRepo = Depends(get_catalog_repo),
 ) -> list[InventoryBagOut]:
     if status == "all":
-        bags = inventory_repo.list(status=None)
+        bags = await inventory_repo.list(status=None)
     elif status in ("Active", "Finished", None):
-        bags = inventory_repo.list(status=status)
+        bags = await inventory_repo.list(status=status)
     else:
-        bags = inventory_repo.list(status=status)
+        bags = await inventory_repo.list(status=status)
 
-    return [_bag_to_out(b, _resolve_display_name(b, catalog_repo)) for b in bags]
+    result = []
+    for b in bags:
+        result.append(_bag_to_out(b, await _resolve_display_name(b, catalog_repo)))
+    return result
 
 
 @router.get("/inventory/{bag_id}", response_model=InventoryBagOut)
@@ -61,10 +64,10 @@ async def api_inventory_detail(
     inventory_repo: InventoryRepo = Depends(get_inventory_repo),
     catalog_repo: CatalogRepo = Depends(get_catalog_repo),
 ) -> InventoryBagOut:
-    bag = inventory_repo.get(bag_id)
+    bag = await inventory_repo.get(bag_id)
     if bag is None:
         raise HTTPException(status_code=404, detail="Bag not found")
-    return _bag_to_out(bag, _resolve_display_name(bag, catalog_repo))
+    return _bag_to_out(bag, await _resolve_display_name(bag, catalog_repo))
 
 
 _VALID_PATCH_STATUSES = {"Active", "Finished"}
@@ -87,9 +90,9 @@ async def api_inventory_patch(
             status_code=422,
             detail=f"status must be one of: {sorted(_VALID_PATCH_STATUSES)}",
         )
-    bag = inventory_repo.get(bag_id)
+    bag = await inventory_repo.get(bag_id)
     if bag is None:
         raise HTTPException(status_code=404, detail="Bag not found")
     updated = {**bag, "Status": body.status}
     await inventory_repo.upsert(updated)  # type: ignore[misc, func-returns-value]
-    return _bag_to_out(updated, _resolve_display_name(updated, catalog_repo))
+    return _bag_to_out(updated, await _resolve_display_name(updated, catalog_repo))

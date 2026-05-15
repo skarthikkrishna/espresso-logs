@@ -116,7 +116,7 @@ async def api_catalog_list(
     user: CurrentUser,
     catalog_repo: CatalogRepo = Depends(get_catalog_repo),
 ) -> list[CatalogItemOut]:
-    return [_catalog_to_out(row) for row in catalog_repo.list()]
+    return [_catalog_to_out(row) for row in await catalog_repo.list()]
 
 
 @router.get("/catalog/{catalog_id}", response_model=CatalogDetailOut)
@@ -128,28 +128,33 @@ async def api_catalog_detail(
     brew_log_repo: BrewLogRepo = Depends(get_brew_log_repo),
     hardware_repo: HardwareRepo = Depends(get_hardware_repo),
 ) -> CatalogDetailOut:
-    entry = catalog_repo.get(catalog_id)
+    entry = await catalog_repo.get(catalog_id)
     if entry is None:
         raise HTTPException(status_code=404, detail="Catalog entry not found")
 
     display_name = f"{entry.get('Roaster', '')} — {entry.get('Bean_Name', '')}"
-    all_bags = inventory_repo.list(status=None)
+    all_bags = await inventory_repo.list(status=None)
     linked_bags = [b for b in all_bags if b.get("Catalog_ID") == catalog_id]
 
     linked_shots: list[dict[str, Any]] = []
     for bag in linked_bags:
-        linked_shots.extend(brew_log_repo.list_for_bag(bag["Bag_ID"]))
+        linked_shots.extend(await brew_log_repo.list_for_bag(bag["Bag_ID"]))
     linked_shots.sort(key=lambda s: s.get("Date", ""), reverse=True)
     linked_shots = linked_shots[:10]
 
+    # Pre-fetch all hardware needed for the shots to avoid per-shot awaits.
+    hw_ids = {s.get("Machine_ID") or "" for s in linked_shots} | \
+             {s.get("Grinder_ID") or "" for s in linked_shots} | \
+             {s.get("Basket_ID") or "" for s in linked_shots}
+    hw_ids.discard("")
     hw_cache: dict[str, dict[str, Any] | None] = {}
+    for hw_id in hw_ids:
+        hw_cache[hw_id] = await hardware_repo.get(hw_id)
 
     def _hw(hw_id: str | None) -> str | None:
         if not hw_id:
             return None
-        if hw_id not in hw_cache:
-            hw_cache[hw_id] = hardware_repo.get(hw_id)
-        hw = hw_cache[hw_id]
+        hw = hw_cache.get(hw_id)
         return hw.get("Name") if hw else None
 
     bag_out_list = [_bag_to_out(b, display_name) for b in linked_bags]
@@ -213,7 +218,7 @@ async def api_catalog_create(
     if errors:
         raise HTTPException(status_code=422, detail=errors)
 
-    existing = catalog_repo._fetch_all()
+    existing = await catalog_repo._fetch_all()
     catalog_id = _next_catalog_id(existing)
     row = {
         "Catalog_ID": catalog_id,
@@ -298,7 +303,7 @@ async def api_catalog_update(
     # overwritten by a stale Local_Image_Path. This narrows but does not
     # fully eliminate the race window — the same caveat applies to the
     # existing /image endpoint upsert below.
-    fresh_rows = catalog_repo._fetch_all()
+    fresh_rows = await catalog_repo._fetch_all()
     entry = next((r for r in fresh_rows if r.get("Catalog_ID") == catalog_id), None)
     if entry is None:
         raise HTTPException(status_code=404, detail="Catalog entry not found")
@@ -413,7 +418,7 @@ async def api_catalog_add_bag(
     catalog_repo: CatalogRepo = Depends(get_catalog_repo),
     inventory_repo: InventoryRepo = Depends(get_inventory_repo),
 ) -> InventoryBagOut:
-    entry = catalog_repo.get(catalog_id)
+    entry = await catalog_repo.get(catalog_id)
     if entry is None:
         raise HTTPException(status_code=404, detail="Catalog entry not found")
 
@@ -423,7 +428,7 @@ async def api_catalog_add_bag(
     except ValueError:
         raise HTTPException(status_code=422, detail="roast_date must be ISO format (YYYY-MM-DD)")
 
-    existing_ids = [b["Bag_ID"] for b in inventory_repo.list(status=None)]
+    existing_ids = [b["Bag_ID"] for b in await inventory_repo.list(status=None)]
     bag_id = make_inventory_id(roaster, roast_date, body.roast_level, existing_ids)
 
     display_name = f"{roaster} — {entry.get('Bean_Name', '')}"
@@ -448,7 +453,7 @@ async def api_catalog_upload_image(
     file: UploadFile = File(...),
     catalog_repo: CatalogRepo = Depends(get_catalog_repo),
 ) -> JSONResponse:
-    entry = catalog_repo.get(catalog_id)
+    entry = await catalog_repo.get(catalog_id)
     if entry is None:
         raise HTTPException(status_code=404, detail="Catalog entry not found")
 
@@ -456,7 +461,7 @@ async def api_catalog_upload_image(
     content_type = (file.content_type or "image/jpeg").split(";")[0].strip()
     obj_name = f"bean-images/{catalog_id}-{uuid.uuid4().hex[:8]}.jpg"
     image_path = await upload_image(img_bytes, content_type, obj_name, settings.assets_bucket)
-    fresh = catalog_repo.get(catalog_id)
+    fresh = await catalog_repo.get(catalog_id)
     if fresh is not None:
         await catalog_repo.upsert({**fresh, "Local_Image_Path": image_path})  # type: ignore[misc, func-returns-value]
     return JSONResponse({"image_path": image_path})

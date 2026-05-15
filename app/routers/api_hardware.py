@@ -72,7 +72,7 @@ async def api_hardware_list(
     user: CurrentUser,
     hardware_repo: HardwareRepo = Depends(get_hardware_repo),
 ) -> list[HardwareItemOut]:
-    return [_hw_to_out(row) for row in hardware_repo.list()]
+    return [_hw_to_out(row) for row in await hardware_repo.list()]
 
 
 @router.get("/hardware/{hardware_id}", response_model=HardwareDetailOut)
@@ -82,12 +82,12 @@ async def api_hardware_detail(
     hardware_repo: HardwareRepo = Depends(get_hardware_repo),
     maintenance_repo: MaintenanceRepo = Depends(get_maintenance_repo),
 ) -> HardwareDetailOut:
-    item = hardware_repo.get(hardware_id)
+    item = await hardware_repo.get(hardware_id)
     if item is None:
         raise HTTPException(status_code=404, detail="Hardware item not found")
 
     hardware_name = item.get("Name", hardware_id)
-    events = maintenance_repo.list(hardware_id=hardware_id)
+    events = await maintenance_repo.list(hardware_id=hardware_id)
     events.sort(key=lambda e: e.get("Date", ""), reverse=True)
 
     return HardwareDetailOut(
@@ -168,7 +168,7 @@ async def api_hardware_update(
     user: CurrentUser,
     hardware_repo: HardwareRepo = Depends(get_hardware_repo),
 ) -> HardwareItemOut:
-    item = hardware_repo.get(hardware_id)
+    item = await hardware_repo.get(hardware_id)
     if item is None:
         raise HTTPException(status_code=404, detail="Hardware item not found")
     if not body.name.strip():
