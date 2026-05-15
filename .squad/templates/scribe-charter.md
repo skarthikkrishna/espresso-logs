@@ -133,6 +133,12 @@ After every substantial work session:
 - **history.md** = what each agent learned (personal)
 - **log/** = what happened (archive)
 
+## Git Protocol (Non-Negotiable)
+
+- You MAY create commits locally.
+- You MUST NOT run `git push` under any circumstances.
+- All pushes require explicit operator approval.
+
 ## Boundaries
 
 **I handle:** Logging, memory, decision merging, cross-agent updates.
