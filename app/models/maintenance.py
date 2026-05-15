@@ -37,6 +37,8 @@ class MaintenanceLog(Base):
         server_default=sa.text("now()"),
     )
     notes: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    sheets_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True, unique=True)
+    sheets_hardware_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     created_at: Mapped[sa.DateTime] = mapped_column(
         sa.TIMESTAMP(timezone=True),
         nullable=False,

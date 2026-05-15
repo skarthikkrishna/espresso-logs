@@ -36,6 +36,16 @@ class BrewLog(Base):
     time_sec: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)
     rating: Mapped[int | None] = mapped_column(sa.SmallInteger, nullable=True)
     notes: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    sheets_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True, unique=True)
+    bag_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    machine_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    grinder_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    basket_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    grind_setting: Mapped[float | None] = mapped_column(sa.Numeric(5, 1, asdecimal=False), nullable=True)
+    shot_eligibility: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    taste_summary: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    ai_feedback: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    storage_method: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     brewed_at: Mapped[sa.DateTime] = mapped_column(
         sa.TIMESTAMP(timezone=True),
         nullable=False,

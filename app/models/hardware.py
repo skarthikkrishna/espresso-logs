@@ -29,6 +29,9 @@ class Hardware(Base):
     category: Mapped[str] = mapped_column(sa.Text, nullable=False)
     purchase_date: Mapped[sa.Date | None] = mapped_column(sa.Date, nullable=True)
     notes: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    sheets_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True, unique=True)
+    product_url: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    local_image_path: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     created_at: Mapped[sa.DateTime] = mapped_column(
         sa.TIMESTAMP(timezone=True),
         nullable=False,
