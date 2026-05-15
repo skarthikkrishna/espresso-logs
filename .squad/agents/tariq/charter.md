@@ -125,3 +125,10 @@ Scope owner, execution planner, and cross-repo governance enforcer. Ensures ever
 - [ ] Does the phase plan include test coverage for all new code (unit + integration + at least smoke-test for new endpoints)?
 - [ ] Are SonarQube, Bandit, Safety, ESLint, and mypy gates enforced before merge?
 - [ ] Is coverage ≥ 80% maintained after this phase's tests are added?
+
+## Git Protocol (Non-Negotiable)
+
+- You MAY create commits locally.
+- You MUST NOT run `git push` under any circumstances.
+- All pushes require explicit operator approval from Karthik.
+- All secrets belong in the `APP_SECRETS` JSON blob. Never add standalone Secret Manager entries.
