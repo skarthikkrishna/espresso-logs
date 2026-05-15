@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import builtins
 from typing import Any
 
 from sqlalchemy import select
@@ -74,7 +75,7 @@ class SqlCatalogRepo:
         row = result.scalar_one_or_none()
         return self._to_dict(row) if row else None
 
-    async def _fetch_all(self) -> list[dict[str, Any]]:
+    async def _fetch_all(self) -> builtins.list[dict[str, Any]]:
         """Alias for list() — used by router cache-busting reads."""
         return await self.list()
 

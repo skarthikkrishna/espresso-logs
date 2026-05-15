@@ -48,15 +48,15 @@ async def test_upsert_empty_category_falls_back_to_empty_string(db_session: Asyn
 
 
 async def test_list_returns_empty(db_session: AsyncSession) -> None:
-    """list() is a no-op stub in M2."""
+    """list() returns empty list on empty DB."""
     repo = SqlHardwareRepo(db=db_session)
-    assert repo.list() == []
+    assert await repo.list() == []
 
 
 async def test_get_returns_none(db_session: AsyncSession) -> None:
-    """get() is a no-op stub in M2."""
+    """get() returns None when entry does not exist."""
     repo = SqlHardwareRepo(db=db_session)
-    assert repo.get("M01") is None
+    assert await repo.get("M01") is None
 
 
 async def test_next_id_returns_empty_string(db_session: AsyncSession) -> None:
