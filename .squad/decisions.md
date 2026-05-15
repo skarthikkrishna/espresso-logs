@@ -453,6 +453,39 @@ Added hard no-push gate to `.copilot/instructions.md` (coordinator reads at sess
 
 ---
 
+---
+
+## 2026-05-14: Routing decision — M4 read switchover (Priya)
+
+**Status:** DIRECT_PERMITTED
+
+M4 Read Switchover is execution of a pre-specified, pre-architected migration milestone. No new product scope. Implementation plan already defined in `docs/requirements/engineering_architecture_v2.md` (§ Phase M4). All infrastructure already in place: SQL repos have `list()`/`get()` read methods, `USE_POSTGRES` flag exists in `app/config.py`, and `self._sql` is injected into all five `_DualWrite*` wrappers in `app/deps.py`.
+
+**Scope:** Flip read path in all five `_DualWrite*` classes in `app/deps.py` from `self._sheets` to `self._sql` when `settings.use_postgres=True`. Update tests to cover both read paths. No router, service, frontend, or schema changes required.
+
+**Gates:** Quinn gate required (application code change). M3 backfill completion must be verified before flipping env var in prod.
+
+---
+
+## 2026-05-15: Household transition strategy — UPDATE-based reassignment (Maya)
+
+**Status:** PENDING (open questions outstanding)
+
+**ADR:** `docs/architecture/adr-001-household-transition.md`
+
+When the multi-user auth milestone arrives, the `default_household` (seeded in M4, now containing all migrated data) **must be claimed by the first real authenticated user via UPDATE, not delete+recreate**.
+
+- **MUST:** UPDATE `household.owner_user_id` (or equivalent) to link the default household to a real user
+- **MUST NOT:** Delete or recreate the `default_household` UUID — all foreign keys depend on it
+- **MUST NOT:** Move data rows to a different household UUID
+
+**Open questions (must resolve before auth milestone):**
+- Single-user app (household ≈ user) or multi-tenant (multiple households)?
+- Should `system_user` be soft-deleted, hard-deleted, or archived?
+- Should the default household claim be automatic (on first login) or manual (admin command)?
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
