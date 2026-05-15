@@ -1,15 +1,17 @@
 ---
-updated_at: 2025-07-30T00:00:00Z
-focus_area: CompassChart ZoneBoundaries + inference layer enrichment (Q1/Q2/Q3 answered)
+updated_at: 2026-05-15T02:48:50Z
+focus_area: E2E auth bypass prod guard, thread safety fixes, chip/badge design unification
 active_issues: []
 ---
 
 # What We're Focused On
 
-**Q1 (ZoneBoundaries):** Frontend utility complete. CompassChart prop interface extended with optional `zoneBoundaries` parameter. No backend schema changes. Backward compatible.
+## Recent Session Close-Out (chip-design-fix)
 
-**Q2 (roast_level):** Field confirmed end-to-end (Python + TypeScript). Already resolved in _resolve_names_from_dicts. No new columns or form inputs needed.
+**Chip/Badge Design:** `<Chip />` component extracted and unified across frontend. Single amber frosted-glass style, design corrections applied (border-radius, padding). All 5 call sites updated.
 
-**Q3 (LLM Enrichment):** Fire-and-forget inference pattern; enrich prompt with machine_name, basket_name, roast_level, zone_taste; persist Zone_Taste to Brew_Log; frontend polls GET /api/brew-log/{id}/feedback for ai_feedback every 3s.
+**E2E Auth Bypass Production Guard:** Hard startup failure gate added. `E2E_AUTH_BYPASS=1` only permitted in `"test"` or `"local"` environments. Production deployment with bypass active fails immediately.
 
-**Next Phase:** Implementation of ZoneBoundaries utility, _BrewLogCreateBody extension, Zone_Taste column, and feedback endpoint.
+**Thread Safety Fixes:** E2E_SEED schema alignment corrected; `delete_by_pk` promoted to public BaseRepo method; private repo coupling in api_e2e.py refactored to use public interface.
+
+**Next Phase:** Return to V2 product spec implementation tasks (M1–M6 phases). Household/role layer, auth middleware updates, multi-tenancy patterns.
