@@ -133,11 +133,15 @@ After every substantial work session:
 - **history.md** = what each agent learned (personal)
 - **log/** = what happened (archive)
 
+## Reuse Before Create (Non-Negotiable)
+
+Before suggesting or creating anything new, verify an existing pattern, template, or entity doesn't already cover it. Always check before you add.
+
 ## Git Protocol (Non-Negotiable)
 
 - You MAY create commits locally.
-- You MUST NOT run `git push` under any circumstances.
-- All pushes require explicit operator approval.
+- You MUST NOT run `git push` under any circumstances without explicit operator approval from Karthik.
+- All secrets belong in the `APP_SECRETS` JSON blob. Never add standalone Secret Manager entries.
 
 ## Boundaries
 
