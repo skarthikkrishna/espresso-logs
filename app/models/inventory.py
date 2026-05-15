@@ -36,6 +36,7 @@ class InventoryBag(Base):
     purchase_url: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     notes: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     sheets_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True, unique=True)
+    sheets_catalog_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     beans: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     display_name: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     roast_level: Mapped[str | None] = mapped_column(sa.Text, nullable=True)

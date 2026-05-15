@@ -73,3 +73,23 @@ Guard only blocked `APP_ENV=production`; staging/preview deployments could still
 - `import datetime` added as a module-level import (not `from datetime import datetime`) to keep `datetime.date` and `datetime.datetime` both accessible with minimal line changes to model files.
 
 **Test result:** 400 passed, 4 skipped. Lint: 0 issues.
+
+### 2026-05-15: Copilot PR review bugs — brew_log, maintenance, inventory
+
+**What:** Fixed 3 Copilot PR review bugs on `feat/m4-prerequisites`:
+
+1. **Bug 1 (brew_log.py):** `SqlBrewLogRepo.add()` never set `brewed_at`, so Postgres always recorded insertion time. Added `_parse_datetime(val)` helper (ISO string → UTC datetime, None on failure) and passed `brewed_at=_parse_datetime(row.get("Date"))` to the constructor.
+
+2. **Bug 2 (maintenance.py):** Identical pattern — `performed_at` was never set. Added same `_parse_datetime` helper locally (defined per-file to avoid over-engineering a shared util for just two files) and passed `performed_at=_parse_datetime(row.get("Date"))`.
+
+3. **Bug 3 (inventory):** Three-part fix:
+   - Added `sheets_catalog_id: Mapped[str | None]` column to `app/models/inventory.py`
+   - Created `alembic/versions/0006_add_sheets_catalog_id_to_inventory_bags.py`
+   - Updated `upsert()` to persist `sheets_catalog_id` on both insert and update paths; updated `_to_dict()` to return `"Catalog_ID": row.sheets_catalog_id or ""`
+
+**Key learnings:**
+- `server_default=sa.text("now()")` silently records insertion time when the ORM constructor doesn't set the column — the server default is NOT a "keep existing" fallback, it only fires if the column is omitted entirely from the INSERT.
+- `_parse_datetime` pattern: use `datetime.datetime.fromisoformat(str(val))` then `.replace(tzinfo=datetime.timezone.utc)` if no tzinfo — handles both date-only strings (e.g. "2024-01-15") and full ISO datetimes.
+- `sheets_catalog_id` as a Text cross-reference column (like `sheets_hardware_id` in maintenance) is the right pattern for Sheets string IDs that need to survive without a UUID FK resolve.
+
+**Test result:** 400 passed, 4 skipped. Lint: 0 issues. mypy --strict: 0 issues.

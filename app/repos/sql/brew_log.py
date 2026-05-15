@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import builtins
+import datetime
 from typing import Any
 
 from sqlalchemy import select, update
@@ -25,6 +26,19 @@ def _to_int(val: Any) -> int | None:
         return None
 
 
+def _parse_datetime(val: Any) -> datetime.datetime | None:
+    """Parse an ISO date/datetime string to a UTC datetime. Returns None on failure."""
+    if val is None or val == "":
+        return None
+    try:
+        dt = datetime.datetime.fromisoformat(str(val))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=datetime.timezone.utc)
+        return dt
+    except (TypeError, ValueError):
+        return None
+
+
 class SqlBrewLogRepo:
     """SQL mirror for BrewLog rows — write always, reads when use_postgres=True."""
 
@@ -35,6 +49,7 @@ class SqlBrewLogRepo:
         """Append a brew log row. household_id intentionally NULL (M5)."""
         entry = BrewLog(
             sheets_id=row.get("Shot_ID"),
+            brewed_at=_parse_datetime(row.get("Date")),
             bag_id=row.get("Bag_ID"),
             machine_id=row.get("Machine_ID"),
             grinder_id=row.get("Grinder_ID"),
