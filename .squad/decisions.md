@@ -365,6 +365,94 @@ The seed script has been run against the live spreadsheet. All 7 rows are presen
 
 ---
 
+## 2026-05-13: E2E_AUTH_BYPASS Production Guard (Alex)
+
+**Status:** IMPLEMENTED (commit c5f1655)
+
+Gate `E2E_AUTH_BYPASS` behind hard startup failure in production:
+
+1. If `E2E_AUTH_BYPASS=1` and `APP_ENV=production`, raise `RuntimeError` immediately.
+2. Log `WARNING` whenever bypass is active (any environment).
+
+**Implementation:** Uses `os.environ.get("APP_ENV")` at module load, not `settings.app_env` (circular dependency risk). Guard only raises when both conditions true; dev/test unaffected.
+
+**Rationale:** Startup crash on misconfiguration is the strongest safeguard — deployment fails loudly rather than silently exposing unauthenticated API.
+
+---
+
+## 2026-05-13: E2E_AUTH_BYPASS Environment Allowlist (Alex)
+
+**Status:** IMPLEMENTED
+
+`E2E_AUTH_BYPASS=1` permitted only when `APP_ENV` is explicitly `"test"` or `"local"`. Any other value raises `RuntimeError` at startup.
+
+**Changes:**
+- `app/deps.py`: Replaced `APP_ENV == "production"` with `APP_ENV in {"test", "local"}`
+- Added `_PERMITTED_E2E_ENVS = frozenset({"test", "local"})`
+- Error message names permitted values, calls out staging/preview
+
+**Rationale:** Staging Cloud Run deployment with bypass exposes synthetic-user auth and unauthenticated DELETE endpoint to public internet. Allowlist ensures misconfigured deployments fail at startup.
+
+---
+
+## 2026-05-13: E2E_SEED Schema Alignment (Alex)
+
+**Status:** IMPLEMENTED
+
+`E2E_SEED` in `app/testing/fake_sheets.py` must always match production sheet schema. No synonyms, no extra fields.
+
+**Changes:**
+- `Inventory`: renamed `Roast_Date` → `RoastDate`, `Roast_Level` → `RoastLevel`; added `Display_Name`; removed `Date_Finished`; reordered to match `InventoryRepo.COLUMNS`
+- `BrewLog`: tab key `BrewLog` → `Brew_Log`; renamed fields (`Log_ID` → `Shot_ID`, `Dose_g` → `Dose_In_g`, etc.); removed `Rating`/`Beans`; added all missing COLUMNS fields
+
+**Rationale:** Seed data mismatching repo schema causes E2E tests to exercise wrong code paths silently.
+
+---
+
+## 2026-05-13: Public `delete_by_pk` on BaseRepo (Alex)
+
+**Status:** IMPLEMENTED
+
+Row deletion by primary key is a standard repo operation — exposed as public method on `BaseRepo`, not ad-hoc private logic.
+
+**Changes:**
+- `app/repos/base.py`: added concrete `delete_by_pk(pk_col, pk_val)` to `BaseRepo`
+- `app/deps.py`: delegated in `_DualWriteCatalogRepo` and `_DualWriteInventoryRepo`
+- `app/routers/api_e2e.py`: removed `_delete_by_id` helper; uses `repo.delete_by_pk()` directly; added `_RepoPkDelete` Protocol
+
+**Rationale:** Coupling router to private repo details breaks encapsulation; causes silent failures when repos are wrapped (e.g., `_DualWriteInventoryRepo` had no `_fetch_all`).
+
+---
+
+## 2026-05-13: User Directive — No Git Push Without Approval
+
+**By:** Karthik (via Copilot)  
+**Date:** 2026-05-13T20:36:58Z
+
+No agent may run `git push`, `git commit`, or trigger CI without explicit user approval. Every push burns a GitHub Actions CI run and costs real money. Agents stage changes locally and wait. Coordinator asks "ready to push?" before commit+push.
+
+**Enforcement:** Hard gate in every agent charter. Scribe exception: may commit `.squad/` files only, never push.
+
+---
+
+## 2026-05-13: Hard Gate — No Git Push Without User Approval (Maya)
+
+**Status:** APPROVED
+
+All agent charters updated with explicit no-push gate. New skill: `.squad/skills/git-discipline/SKILL.md`. Agents may only run `git add`. `git commit` and `git push` require explicit user confirmation via coordinator. **Scribe exception:** may commit `.squad/` files only, never push.
+
+---
+
+## 2026-05-13: Coordinator-Level Git Push Gate (Tariq)
+
+**Status:** APPROVED
+
+Added hard no-push gate to `.copilot/instructions.md` (coordinator reads at session start). Created `.copilot/skills/git-gate/SKILL.md`. Gate requires explicit user confirmation before any git commit/push on source code. Scribe `.squad/` commits excepted.
+
+**Rationale:** Agent charter gates don't constrain coordinator — only `.copilot/instructions.md` does.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
