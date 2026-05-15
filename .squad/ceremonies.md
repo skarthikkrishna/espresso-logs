@@ -61,6 +61,7 @@
 2. What did not ship? (open issues, blockers)
 3. Root cause on any failures
 4. Action items -- each MUST become a GitHub Issue labeled retro-action
+5. Rework Rate: run `npx github:bradygaster/squad rework` and record the output in the session log. Review against healthy thresholds (Rework Rate ≤15%, Review Cycles ≤1.0, Rejection Rate ≤20%). Any metric in the 🔴 range requires a GitHub Issue labeled `retro-action` before the ceremony closes.
 
 **Coordinator integration:**
 At round start, call Test-RetroOverdue (see skill retro-enforcement). If overdue, run this ceremony before the work queue.
