@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.models.base import get_db
 from app.repos.base import TTLCache, get_process_cache
 from app.repos.brew_log import BrewLogRepo
@@ -112,15 +113,19 @@ class _DualWriteCatalogRepo:
         self._sheets = sheets
         self._sql = sql
 
-    def list(self) -> builtins.list[dict[str, Any]]:
+    async def list(self) -> builtins.list[dict[str, Any]]:
+        if settings.use_postgres and self._sql is not None:
+            return await self._sql.list()
         return self._sheets.list()
 
-    def get(self, catalog_id: str) -> dict[str, Any] | None:
+    async def get(self, catalog_id: str) -> dict[str, Any] | None:
+        if settings.use_postgres and self._sql is not None:
+            return await self._sql.get(catalog_id)
         return self._sheets.get(catalog_id)
 
-    def _fetch_all(self) -> builtins.list[dict[str, Any]]:
-        # _fetch_all is called directly by api_catalog.py for cache-busting reads.
-        # Reads come from Sheets through M3 — delegating to the Sheets repo is correct.
+    async def _fetch_all(self) -> builtins.list[dict[str, Any]]:
+        if settings.use_postgres and self._sql is not None:
+            return await self._sql._fetch_all()
         return self._sheets._fetch_all()
 
     async def upsert(self, row: dict[str, Any]) -> None:
@@ -178,19 +183,29 @@ class _DualWriteBrewLogRepo:
         self._sheets = sheets
         self._sql = sql
 
-    def list(self) -> builtins.list[dict[str, Any]]:
+    async def list(self) -> builtins.list[dict[str, Any]]:
+        if settings.use_postgres and self._sql is not None:
+            return await self._sql.list()
         return self._sheets.list()
 
-    def list_recent(self, n: int = 20) -> builtins.list[dict[str, Any]]:
+    async def list_recent(self, n: int = 20) -> builtins.list[dict[str, Any]]:
+        if settings.use_postgres and self._sql is not None:
+            return await self._sql.list_recent(n)
         return self._sheets.list_recent(n)
 
-    def list_for_bag(self, bag_id: str) -> builtins.list[dict[str, Any]]:
+    async def list_for_bag(self, bag_id: str) -> builtins.list[dict[str, Any]]:
+        if settings.use_postgres and self._sql is not None:
+            return await self._sql.list_for_bag(bag_id)
         return self._sheets.list_for_bag(bag_id)
 
-    def list_existing_ids(self) -> builtins.list[str]:
+    async def list_existing_ids(self) -> builtins.list[str]:
+        if settings.use_postgres and self._sql is not None:
+            return await self._sql.list_existing_ids()
         return self._sheets.list_existing_ids()
 
-    def get(self, shot_id: str) -> dict[str, Any] | None:
+    async def get(self, shot_id: str) -> dict[str, Any] | None:
+        if settings.use_postgres and self._sql is not None:
+            return await self._sql.get(shot_id)
         return self._sheets.get(shot_id)
 
     async def add(self, row: dict[str, Any]) -> None:
@@ -248,13 +263,19 @@ class _DualWriteInventoryRepo:
         self._sheets = sheets
         self._sql = sql
 
-    def list(self, status: str | None = "Active") -> builtins.list[dict[str, Any]]:
+    async def list(self, status: str | None = "Active") -> builtins.list[dict[str, Any]]:
+        if settings.use_postgres and self._sql is not None:
+            return await self._sql.list(status=status)
         return self._sheets.list(status=status)
 
-    def list_all(self) -> builtins.list[dict[str, Any]]:
+    async def list_all(self) -> builtins.list[dict[str, Any]]:
+        if settings.use_postgres and self._sql is not None:
+            return await self._sql.list_all()
         return self._sheets.list_all()
 
-    def get(self, bag_id: str) -> dict[str, Any] | None:
+    async def get(self, bag_id: str) -> dict[str, Any] | None:
+        if settings.use_postgres and self._sql is not None:
+            return await self._sql.get(bag_id)
         return self._sheets.get(bag_id)
 
     async def upsert(self, row: dict[str, Any]) -> None:
@@ -312,10 +333,14 @@ class _DualWriteHardwareRepo:
         self._sheets = sheets
         self._sql = sql
 
-    def list(self, category: str | None = None) -> builtins.list[dict[str, Any]]:
+    async def list(self, category: str | None = None) -> builtins.list[dict[str, Any]]:
+        if settings.use_postgres and self._sql is not None:
+            return await self._sql.list(category=category)
         return self._sheets.list(category=category)
 
-    def get(self, hardware_id: str) -> dict[str, Any] | None:
+    async def get(self, hardware_id: str) -> dict[str, Any] | None:
+        if settings.use_postgres and self._sql is not None:
+            return await self._sql.get(hardware_id)
         return self._sheets.get(hardware_id)
 
     def next_id(self, category: str) -> str:
@@ -373,10 +398,14 @@ class _DualWriteMaintenanceRepo:
         self._sheets = sheets
         self._sql = sql
 
-    def list(self, hardware_id: str | None = None) -> builtins.list[dict[str, Any]]:
+    async def list(self, hardware_id: str | None = None) -> builtins.list[dict[str, Any]]:
+        if settings.use_postgres and self._sql is not None:
+            return await self._sql.list(hardware_id=hardware_id)
         return self._sheets.list(hardware_id=hardware_id)
 
-    def get(self, maintenance_id: str) -> dict[str, Any] | None:
+    async def get(self, maintenance_id: str) -> dict[str, Any] | None:
+        if settings.use_postgres and self._sql is not None:
+            return await self._sql.get(maintenance_id)
         return self._sheets.get(maintenance_id)
 
     async def add(self, row: dict[str, Any]) -> None:
