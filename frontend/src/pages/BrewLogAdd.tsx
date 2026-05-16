@@ -41,7 +41,7 @@ export default function BrewLogAdd() {
   // Rotated in onSuccess to protect any future in-place-reset path.
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID())
 
-  const { data: inventory, isLoading: invLoading } = useQuery({
+  const { data: inventory, isLoading: invLoading, isError: invError, refetch: refetchInventory } = useQuery({
     queryKey: ['inventory'],
     queryFn: () => listInventory('Active'),
   })
@@ -172,6 +172,20 @@ export default function BrewLogAdd() {
   }
 
   if (invLoading) return <LoadingSpinner />
+  if (invError) return (
+    <div className="p-4 md:p-6 max-w-2xl">
+      <div className="glass-card card-bevel p-6 text-center">
+        <p className="text-amber-200 font-medium">Couldn't load your beans</p>
+        <p className="text-amber-400/70 text-sm mt-1">Check your connection and try again.</p>
+        <button
+          onClick={() => refetchInventory()}
+          className="btn btn-sm btn-outline border-amber-600 text-amber-200 mt-3 btn-bevel"
+        >
+          Retry
+        </button>
+      </div>
+    </div>
+  )
 
   return (
     <div className="p-4 md:p-6 max-w-2xl">
