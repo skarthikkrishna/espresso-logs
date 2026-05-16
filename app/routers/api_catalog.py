@@ -467,4 +467,3 @@ async def api_catalog_upload_image(
     if fresh is not None:
         await catalog_repo.upsert({**fresh, "Local_Image_Path": image_path})
     return JSONResponse({"image_path": image_path})
-
