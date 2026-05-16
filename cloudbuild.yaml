@@ -68,30 +68,26 @@ steps:
 
   # Step 5b: Apply pending database migrations before the new service revision goes live.
   #
-  # APP_SECRETS is a JSON blob in Secret Manager (set via --set-secrets on the deploy step).
-  # Cloud Build's availableSecrets section (bottom of this file) mounts it as APP_SECRETS_JSON.
-  # We extract DATABASE_URL from the blob and run `alembic upgrade head` against production.
-  #
+  # DATABASE_URL is a standalone Secret Manager secret (separate from APP_SECRETS blob).
+  # Cloud Build's availableSecrets block mounts it as DATABASE_URL env var via secretEnv.
   # Cloud SQL Auth Proxy v2 is started inline so alembic can reach the database via the
   # same Unix socket path that Cloud Run uses at runtime
   # (/cloudsql/<PROJECT>:<REGION>:<INSTANCE>).  The proxy is killed after the migration
   # completes to avoid leaving a zombie process.
   #
   # OPERATOR REQUIREMENTS:
-  #   - $_CLOUDBUILD_SA must have roles/secretmanager.secretAccessor on APP_SECRETS.
+  #   - $_CLOUDBUILD_SA must have roles/secretmanager.secretAccessor on DATABASE_URL and APP_SECRETS.
   #   - $_CLOUDBUILD_SA must have roles/cloudsql.client on the Cloud SQL instance.
   #   - _CLOUDSQL_INSTANCE must be set in the Cloud Build trigger to the full instance
-  #     connection name: PROJECT:REGION:INSTANCE (e.g. my-project:us-west1:espresso-logs).
-  #   - DATABASE_URL inside APP_SECRETS must use the Unix socket path:
-  #     postgresql+asyncpg://user:pass@/dbname?host=/cloudsql/<_CLOUDSQL_INSTANCE>
+  #     connection name: PROJECT:REGION:INSTANCE (e.g. espresso-logs-prod:us-west1:espresso-logs-db)
   #
-  # This step intentionally runs AFTER push (image is irrelevant — we use the workspace
-  # directly via uv) and BEFORE deploy, so a failed migration blocks the deploy.
+  # This step intentionally runs AFTER push and BEFORE deploy so a failed migration
+  # blocks the deploy.
   - name: 'ghcr.io/astral-sh/uv:python3.12-bookworm-slim'
     id: 'migrate'
     entrypoint: bash
     waitFor: ['push']
-    secretEnv: ['APP_SECRETS_JSON']
+    secretEnv: ['DATABASE_URL']
     args:
       - '-c'
       - |
@@ -103,7 +99,6 @@ steps:
         /usr/local/bin/cloud-sql-proxy --unix-socket=/cloudsql $_CLOUDSQL_INSTANCE &
         PROXY_PID=$!
         sleep 3
-        export DATABASE_URL=$(echo "$APP_SECRETS_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)['DATABASE_URL'])")
         uv run alembic upgrade head
         kill $PROXY_PID || true
     dir: /workspace
@@ -130,7 +125,7 @@ steps:
       # Cloud Run injects APP_SECRETS as a single Secret Manager secret (JSON blob).
       # config.py parses the blob at startup — individual env vars take precedence.
       # To add a new secret: update the APP_SECRETS JSON blob value in Secret Manager.
-      - '--set-secrets=APP_SECRETS=APP_SECRETS:latest'
+      - '--set-secrets=APP_SECRETS=APP_SECRETS:latest,DATABASE_URL=DATABASE_URL:latest'
       # Attach the Cloud SQL Auth Proxy sidecar so the container can reach Postgres
       # via Unix socket (/cloudsql/<instance>).  Without this flag the socket does not
       # exist and every DATABASE_URL connection attempt fails with a 500 on all
@@ -182,6 +177,8 @@ availableSecrets:
   secretManager:
     - versionName: 'projects/$PROJECT_ID/secrets/APP_SECRETS/versions/latest'
       env: 'APP_SECRETS_JSON'
+    - versionName: 'projects/$PROJECT_ID/secrets/DATABASE_URL/versions/latest'
+      env: 'DATABASE_URL'
 
 # Build runs as the dedicated Cloud Build SA (not the Compute Engine default SA — DEV-001 fix)
 serviceAccount: 'projects/$PROJECT_ID/serviceAccounts/$_CLOUDBUILD_SA'
