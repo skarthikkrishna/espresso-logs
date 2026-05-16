@@ -211,7 +211,7 @@ async def api_catalog_create(
         errors.append("Roaster is required.")
     if not body.bean_name.strip():
         errors.append("Bean name is required.")
-    if body.roast_level not in _ROAST_LEVELS:
+    if body.roast_level and body.roast_level not in _ROAST_LEVELS:
         errors.append("Invalid roast level.")
     if body.product_url:
         scheme = urlparse(body.product_url.strip()).scheme
@@ -291,7 +291,7 @@ async def api_catalog_update(
         errors.append("Roaster is required.")
     if not body.bean_name.strip():
         errors.append("Bean name is required.")
-    if body.roast_level not in _ROAST_LEVELS:
+    if body.roast_level and body.roast_level not in _ROAST_LEVELS:
         errors.append("Invalid roast level.")
     if body.product_url:
         scheme = urlparse(body.product_url.strip()).scheme
