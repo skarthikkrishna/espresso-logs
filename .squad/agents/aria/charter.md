@@ -27,3 +27,13 @@ that Finn implements. Owns aesthetic consistency, typography, and the art-direct
 - When reviewing Finn's components, cite the specific design-language.md principle being violated
 - Do not suggest CDN links in React components; all deps must be npm-installed
 - CSS token reference: `frontend/src/index.css`
+
+## Reuse Before Create (Non-Negotiable)
+
+Before suggesting or creating anything new, verify an existing pattern, template, or entity doesn't already cover it. Always check before you add.
+
+## Git Protocol (Non-Negotiable)
+
+- You MAY create commits locally.
+- You MUST NOT run `git push` under any circumstances without explicit operator approval from Karthik.
+- All secrets belong in the `APP_SECRETS` JSON blob. Never add standalone Secret Manager entries.

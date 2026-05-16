@@ -94,6 +94,17 @@ Guard only blocked `APP_ENV=production`; staging/preview deployments could still
 
 **Test result:** 400 passed, 4 skipped. Lint: 0 issues. mypy --strict: 0 issues.
 
+### 2026-05-15: PR #72 Copilot review feedback addressed
+
+**What:** Five governance fixes on branch `chore/squad-governance-protocols`:
+1. Merged stale `decisions/inbox/alex-use-postgres-routing.md` into `decisions.md` and deleted the inbox file.
+2. Added `## Reuse Before Create (Non-Negotiable)` section to `templates/scribe-charter.md` and synced its Git Protocol with `scribe/charter.md` (added APP_SECRETS line, added "from Karthik", merged two-line push prohibition into one).
+3. Fixed `SKILL.md` (reuse-before-create): replaced references to `app/deps.py`/`app/main.py` for APP_SECRETS config with `app/config.py` (`Settings._load_app_secrets`). Replaced the bad example code block (`APP_SECRETS.get(...)` inline) with the correct pattern of adding fields to `Settings` and reading via `settings.*`.
+4. In `templates/charter.md`, collapsed the two-line absolute push prohibition into: "You MUST NOT run `git push` under any circumstances without explicit operator approval from Karthik."
+5. Applied the same single-line push wording fix to all 9 agent charters in `.squad/agents/*/charter.md`.
+
+**Why:** Copilot inline review on PR #72 flagged all 5 issues as governance inconsistencies.
+
 ### 2026-05-15: USE_POSTGRES moved into APP_SECRETS blob
 
 **What:** `use_postgres` was already read from `APP_SECRETS` by the existing `_load_app_secrets` validator in `app/config.py` (lowercases blob keys before injecting). Added explicit inline comment on the `use_postgres` field noting it must be sourced from the APP_SECRETS JSON blob in production and must NOT be set as a standalone Cloud Run env var. Updated `.env.example` with matching comment explaining the local vs production split. `cloudbuild.yaml` already omits `USE_POSTGRES` from `--set-env-vars` — no change required. Secret Manager blob updated: `gcloud secrets versions add APP_SECRETS` created version 3 with `"USE_POSTGRES": true` included.

@@ -133,3 +133,19 @@ UI implementer and React SPA owner. Owns every pixel and every API call in the `
 - [ ] `npm run lint -- --max-warnings 0` passes with zero issues
 - [ ] `npm test` passes with all Vitest tests green
 - [ ] `npm run build` succeeds with zero TypeScript errors
+
+## Reuse Before Create (Non-Negotiable)
+
+Before creating any new entity, verify an existing one doesn't already cover the need:
+- **Config/secrets:** Use existing config patterns (e.g. APP_SECRETS blob) before adding new env vars or secrets
+- **Backend:** Check existing repos, services, utilities before writing new ones
+- **Frontend:** Check existing components, hooks, templates before creating new ones
+- **General:** If you're about to create something new, ask "does something already do this?"
+
+When in doubt: read the codebase first. Create last.
+
+## Git Protocol (Non-Negotiable)
+
+- You MAY create commits locally.
+- You MUST NOT run `git push` under any circumstances without explicit operator approval from Karthik.
+- All secrets belong in the `APP_SECRETS` JSON blob. Never add standalone Secret Manager entries.
