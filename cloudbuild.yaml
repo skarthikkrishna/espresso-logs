@@ -1,8 +1,10 @@
 # Required Cloud Build substitution variables (set in trigger config):
-#   _REGION        — GCP region (e.g. us-west1)
-#   _RUNTIME_SA    — Cloud Run runtime service account email
-#   _CLOUDBUILD_SA — Cloud Build service account email
-#   _SERVICE_URL   — Deployed Cloud Run service URL (e.g. https://my-app-xxx.a.run.app)
+#   _REGION           — GCP region (e.g. us-west1)
+#   _RUNTIME_SA       — Cloud Run runtime service account email
+#   _CLOUDBUILD_SA    — Cloud Build service account email
+#   _SERVICE_URL      — Deployed Cloud Run service URL (e.g. https://my-app-xxx.a.run.app)
+#   _CLOUDSQL_INSTANCE — Full Cloud SQL connection name: PROJECT:REGION:INSTANCE
+#                        (e.g. my-gcp-project:us-west1:espresso-logs)
 # Built-in substitution used: $PROJECT_ID (automatically set by Cloud Build)
 steps:
   # Step 1: Confirm uv is available (ghcr.io/astral-sh/uv image has uv pre-installed)
@@ -70,9 +72,18 @@ steps:
   # Cloud Build's availableSecrets section (bottom of this file) mounts it as APP_SECRETS_JSON.
   # We extract DATABASE_URL from the blob and run `alembic upgrade head` against production.
   #
-  # OPERATOR REQUIREMENT: $_CLOUDBUILD_SA must have roles/secretmanager.secretAccessor
-  # on the APP_SECRETS secret in Secret Manager. Without this IAM binding the step will fail
-  # with a permission-denied error and the deploy step will not run.
+  # Cloud SQL Auth Proxy v2 is started inline so alembic can reach the database via the
+  # same Unix socket path that Cloud Run uses at runtime
+  # (/cloudsql/<PROJECT>:<REGION>:<INSTANCE>).  The proxy is killed after the migration
+  # completes to avoid leaving a zombie process.
+  #
+  # OPERATOR REQUIREMENTS:
+  #   - $_CLOUDBUILD_SA must have roles/secretmanager.secretAccessor on APP_SECRETS.
+  #   - $_CLOUDBUILD_SA must have roles/cloudsql.client on the Cloud SQL instance.
+  #   - _CLOUDSQL_INSTANCE must be set in the Cloud Build trigger to the full instance
+  #     connection name: PROJECT:REGION:INSTANCE (e.g. my-project:us-west1:espresso-logs).
+  #   - DATABASE_URL inside APP_SECRETS must use the Unix socket path:
+  #     postgresql+asyncpg://user:pass@/dbname?host=/cloudsql/<_CLOUDSQL_INSTANCE>
   #
   # This step intentionally runs AFTER push (image is irrelevant — we use the workspace
   # directly via uv) and BEFORE deploy, so a failed migration blocks the deploy.
@@ -84,8 +95,17 @@ steps:
     args:
       - '-c'
       - |
+        set -e
+        curl -sSL -o /usr/local/bin/cloud-sql-proxy \
+          https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.12.0/cloud-sql-proxy.linux.amd64
+        chmod +x /usr/local/bin/cloud-sql-proxy
+        mkdir -p /cloudsql
+        /usr/local/bin/cloud-sql-proxy --unix-socket=/cloudsql $_CLOUDSQL_INSTANCE &
+        PROXY_PID=$!
+        sleep 3
         export DATABASE_URL=$(echo "$APP_SECRETS_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)['DATABASE_URL'])")
         uv run alembic upgrade head
+        kill $PROXY_PID || true
     dir: /workspace
 
   # Step 6: Deploy pre-built image to Cloud Run (no nested build — avoids Compute SA dependency)
@@ -111,6 +131,12 @@ steps:
       # config.py parses the blob at startup — individual env vars take precedence.
       # To add a new secret: update the APP_SECRETS JSON blob value in Secret Manager.
       - '--set-secrets=APP_SECRETS=APP_SECRETS:latest'
+      # Attach the Cloud SQL Auth Proxy sidecar so the container can reach Postgres
+      # via Unix socket (/cloudsql/<instance>).  Without this flag the socket does not
+      # exist and every DATABASE_URL connection attempt fails with a 500 on all
+      # SQL-backed endpoints (catalog, inventory, brew log, etc.).
+      # _CLOUDSQL_INSTANCE format: PROJECT:REGION:INSTANCE (e.g. my-proj:us-west1:espresso-logs)
+      - '--add-cloudsql-instances=$_CLOUDSQL_INSTANCE'
 
   # Steps 7+8: E2E smoke tests.
   #
@@ -171,3 +197,7 @@ substitutions:
   _RUNTIME_SA: <SET_IN_TRIGGER>
   _CLOUDBUILD_SA: <SET_IN_TRIGGER>
   _SERVICE_URL: ''
+  # Full Cloud SQL instance connection name: PROJECT:REGION:INSTANCE
+  # Example: my-gcp-project:us-west1:espresso-logs
+  # Set this in the Cloud Build trigger substitution variables.
+  _CLOUDSQL_INSTANCE: <SET_IN_TRIGGER>
