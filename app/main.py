@@ -10,12 +10,23 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.auth import router as auth_router
 from app.config import settings
-from app.deps import CurrentUser, _E2E_AUTH_BYPASS, _RequiresLogin
+from app.deps import CurrentUser, _E2E_AUTH_BYPASS, _RequiresLogin, get_sheets_client
+from app.models.base import get_session_factory
+from app.models.inventory import InventoryBag
+from app.models.maintenance import MaintenanceLog
+from app.repos.base import TTLCache
+from app.repos.inventory import InventoryRepo
+from app.repos.maintenance import MaintenanceRepo
+from app.repos.sheets_client import SheetsClientProtocol
+from app.repos.sql.inventory import SqlInventoryRepo
+from app.repos.sql.maintenance import SqlMaintenanceRepo
 from app.routers import defaults as defaults_router, health, import_wizard
 from app.routers import (
     api_auth,
@@ -71,11 +82,105 @@ _configure_logging()
 logger = logging.getLogger(__name__)
 
 
+async def _backfill_maintenance_logs(
+    db: AsyncSession,
+    sheets_client: SheetsClientProtocol,
+) -> None:
+    """Backfill sheets_hardware_id on maintenance_log rows written before migration 0005.
+
+    Idempotency guard: skips the Sheets read entirely when no rows have a NULL
+    sheets_hardware_id.  After the first successful run this query returns 0 and
+    subsequent cold starts are cheap.
+    """
+    result = await db.execute(
+        select(func.count())
+        .select_from(MaintenanceLog)
+        .where(MaintenanceLog.sheets_hardware_id.is_(None))
+    )
+    null_count: int = result.scalar_one()
+    if null_count == 0:
+        logger.info("Backfill: maintenance_log has 0 rows with sheets_hardware_id=NULL — skipping")
+        return
+    logger.info(
+        "Backfill: found %d maintenance rows with sheets_hardware_id=NULL, starting upsert",
+        null_count,
+    )
+    sheets_repo = MaintenanceRepo(sheets_client, TTLCache())
+    sql_repo = SqlMaintenanceRepo(db=db)
+    for row in sheets_repo.list():
+        await sql_repo.upsert(row)
+
+
+async def _backfill_inventory_bags(
+    db: AsyncSession,
+    sheets_client: SheetsClientProtocol,
+) -> None:
+    """Backfill sheets_catalog_id on inventory_bags rows written before migration 0006.
+
+    Passes status=None to InventoryRepo.list() so that depleted/archived bags are
+    included — omitting them would leave historical brew-log entries unresolvable.
+
+    Idempotency guard: skips the Sheets read entirely when no rows have a NULL
+    sheets_catalog_id.  Per-row logic mirrors SqlMaintenanceRepo.upsert():
+    - Row absent from Postgres → INSERT via SqlInventoryRepo.upsert().
+    - Row present with NULL sheets_catalog_id → UPDATE only that field.
+    - Row present with non-NULL sheets_catalog_id → no-op.
+    """
+    result = await db.execute(
+        select(func.count())
+        .select_from(InventoryBag)
+        .where(InventoryBag.sheets_catalog_id.is_(None))
+    )
+    null_count: int = result.scalar_one()
+    if null_count == 0:
+        logger.info("Backfill: inventory_bags has 0 rows with sheets_catalog_id=NULL — skipping")
+        return
+    logger.info(
+        "Backfill: found %d inventory bags with sheets_catalog_id=NULL, starting upsert",
+        null_count,
+    )
+    sheets_repo = InventoryRepo(sheets_client, TTLCache())
+    sql_repo = SqlInventoryRepo(db=db)
+    for row in sheets_repo.list(status=None):
+        bag_id = row.get("Bag_ID")
+        if not bag_id:
+            continue
+        bag_result = await db.execute(select(InventoryBag).where(InventoryBag.sheets_id == bag_id))
+        existing: InventoryBag | None = bag_result.scalar_one_or_none()
+        if existing is None:
+            # Bag absent from Postgres — full insert via repo
+            await sql_repo.upsert(row)
+        elif existing.sheets_catalog_id is None:
+            # Only fill in the missing field; leave all other columns untouched
+            existing.sheets_catalog_id = row.get("Catalog_ID")
+            await db.commit()
+        # else: sheets_catalog_id already set → no-op
+
+
+async def run_startup_backfill() -> None:
+    """Idempotent startup backfill for pre-migration missing Postgres fields.
+
+    Gated on settings.use_postgres — returns immediately when False so no
+    database connection is opened.  All exceptions are caught and logged at
+    WARNING level; the app always continues to start.
+    """
+    if not settings.use_postgres:
+        return
+    try:
+        async with get_session_factory()() as db:
+            sheets_client = get_sheets_client()
+            await _backfill_maintenance_logs(db, sheets_client)
+            await _backfill_inventory_bags(db, sheets_client)
+    except Exception as exc:
+        logger.warning("Startup backfill failed — will retry on next cold start: %s", exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
     logger.info("Coffee Tracker starting up (env=%s)", settings.app_env)
     if _E2E_AUTH_BYPASS:
         logger.warning("⚠️  E2E_AUTH_BYPASS is ACTIVE — authentication is bypassed for all requests")
+    await run_startup_backfill()
     yield
     if settings.use_postgres:
         from app.models.base import close_engine
