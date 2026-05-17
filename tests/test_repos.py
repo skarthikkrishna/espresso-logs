@@ -474,3 +474,42 @@ def test_brew_log_add_passes_pk_col(brew_client, empty_cache):
 
         normalised = {col: new_shot.get(col, "") for col in _Repo.COLUMNS}
         spy.assert_called_once_with("Brew_Log", normalised, pk_col="Shot_ID")
+
+
+def test_brew_log_add_duplicate_first_call_blocked(empty_cache):
+    """PK guard blocks duplicate on the very first call — regression for _first_call removal.
+
+    FakeSheetsClient.append_row mirrors the updated RealSheetsClient behaviour:
+    the PK check fires unconditionally (not only on retries).  Adding a row
+    with a Shot_ID that already exists must leave exactly one row in the store.
+    """
+    existing = _SHOT_1.copy()
+    client = FakeSheetsClient({"Brew_Log": [existing]})
+    repo = BrewLogRepo(client=client, cache=empty_cache)
+
+    # Attempt to add a row with the same Shot_ID
+    duplicate = _SHOT_1.copy()
+    repo.add(duplicate)
+
+    rows = client._store.get("Brew_Log", [])
+    assert len(rows) == 1, (
+        f"Duplicate Shot_ID should be blocked on first call; got {len(rows)} rows"
+    )
+
+
+def test_fake_sheets_append_row_pk_guard_blocks_first_call():
+    """FakeSheetsClient.append_row PK guard fires on first call (no _first_call skip).
+
+    Directly exercises the low-level append_row contract: two calls with the
+    same pk_col value leave exactly one row, regardless of which call is first.
+    """
+    client = FakeSheetsClient({"Brew_Log": []})
+    row = _SHOT_1.copy()
+    client.append_row("Brew_Log", row, pk_col="Shot_ID")
+    assert len(client._store["Brew_Log"]) == 1
+
+    # Second call with identical PK — should be silently skipped
+    client.append_row("Brew_Log", row.copy(), pk_col="Shot_ID")
+    assert len(client._store["Brew_Log"]) == 1, (
+        "PK guard must block the second append_row even on the first collision"
+    )

@@ -116,11 +116,10 @@ class RealSheetsClient:
     def append_row(self, tab: str, row: dict[str, Any], pk_col: str | None = None) -> None:
         """Append *row* to *tab*, writing headers first if the sheet is empty.
 
-        If *pk_col* is provided, retry attempts check whether a row with that
-        PK value already exists before writing — skipping the write if found.
-        The first attempt always writes; the check only fires on retries so the
-        common (success) path pays no extra Sheets API call.  Only the PK column
-        is fetched (not all records) to minimise latency and quota usage.
+        If *pk_col* is provided, checks whether a row with that PK value already
+        exists before every write attempt — skipping the write if found.  Only
+        the PK column is fetched (not all records) to minimise latency and quota
+        usage.
 
         This guard is appropriate for repos where append is the primary write
         path (e.g. BrewLog).  Simpler repos that only append rarely (Catalog,
@@ -129,11 +128,9 @@ class RealSheetsClient:
         """
         ws = self._worksheet(tab)
         with self._get_tab_lock(tab):
-            _first_call = [True]
 
             def _do_append() -> None:
-                if pk_col is not None and not _first_call[0]:
-                    # Only check on retries — first attempt writes unconditionally
+                if pk_col is not None:
                     pk_val = row[pk_col]
                     headers = ws.row_values(1)
                     if pk_col in headers:
@@ -146,7 +143,6 @@ class RealSheetsClient:
                                 pk_val,
                             )
                             return
-                _first_call[0] = False
                 if not ws.row_values(1):
                     ws.append_row(list(row.keys()), value_input_option="USER_ENTERED")  # type: ignore[arg-type]
                 ws.append_row(list(row.values()), value_input_option="USER_ENTERED")  # type: ignore[arg-type]
