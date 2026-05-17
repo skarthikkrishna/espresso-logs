@@ -123,8 +123,8 @@ class BrewLogRepo(BaseRepo):
 
         Used by the POST route to reduce stale-cache ID collisions.  Note: the
         read→compute→append sequence is not atomic, so truly concurrent requests
-        can still generate the same ID; the PK guard in ``add()`` + the
-        ``append_row`` retry check handle that residual race.
+        can still generate the same ID; the unconditional PK guard in
+        ``append_row`` (when ``pk_col`` is provided) handles that residual race.
         """
         rows = self._client.get_all_records(_TAB)
         return [r[_PK] for r in rows if r.get(_PK)]
