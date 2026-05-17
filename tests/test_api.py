@@ -827,14 +827,16 @@ _BREW_LOG_POST_BODY = {
 @pytest.mark.asyncio
 async def test_api_brew_log_create_taste_summary_written():
     """POST /api/brew-log writes Taste_Summary field to the row."""
-    from unittest.mock import patch
+    from unittest.mock import AsyncMock, patch
     from app.deps import get_sheets_client
 
     fake = _make_fake_client()
     app.dependency_overrides[get_sheets_client] = lambda: fake
     try:
-        # Patch asyncio.create_task to suppress fire-and-forget AI task during test
-        with patch("app.routers.api_brew_log.asyncio.create_task"):
+        # Patch get_ai_feedback to suppress inline AI call during test
+        with patch(
+            "app.routers.api_brew_log.get_ai_feedback", AsyncMock(return_value="mocked feedback")
+        ):
             async with AsyncClient(
                 transport=ASGITransport(app=app), base_url="http://test", follow_redirects=False
             ) as client:
@@ -852,7 +854,6 @@ async def test_api_brew_log_create_taste_summary_written():
 @pytest.mark.asyncio
 async def test_api_brew_log_create_extra_context_passed_to_ai_feedback():
     """POST /api/brew-log passes extra_context dict (with taste_summary) to get_ai_feedback."""
-    import asyncio as _asyncio
     from unittest.mock import patch
     from app.deps import get_sheets_client
 
@@ -873,8 +874,7 @@ async def test_api_brew_log_create_extra_context_passed_to_ai_feedback():
             ) as client:
                 client.cookies.set("session", _AUTHED_COOKIE)
                 resp = await client.post("/api/brew-log", json=_BREW_LOG_POST_BODY)
-            # Yield control so the event loop can execute the create_task coroutine
-            await _asyncio.sleep(0.05)
+            # get_ai_feedback is now awaited inline; no need to yield for a background task
 
         assert resp.status_code == 201
         assert "extra_context" in captured
