@@ -1,26 +1,31 @@
 ---
 updated_at: 2026-05-15T00:00:00Z
-focus_area: M4 complete — Postgres read switchover in production; M5 planning pending
-active_issues: []
+focus_area: Production hotfix for catalog/brew log/inventory — espresso-logs PR #73 open, awaiting review and merge
+active_issues:
+  - pr: 73
+    repo: espresso-logs
+    status: open
+    branch: hotfix/beans-catalog-brew-log
 ---
 
 # What We're Focused On
 
-## Recent Completion — M4: PostgreSQL Read Switchover
+## Active Work — Hotfix: Catalog / Brew Log / Inventory
 
-**M4 DONE.** PR #62 merged. Production migration complete. 75 brew logs live in Cloud SQL. System is now reading from Postgres in production.
+**PR #73 open** (`hotfix/beans-catalog-brew-log → main`) — CI green, `@copilot` review requested. Awaiting review and merge.
 
-- Dual-write mode active: Sheets still written to; Postgres is the authoritative read source.
-- ADR-001 (household transition strategy) committed to `docs/architecture/adr-001-household-transition.md`.
-- All governance artifacts for M4 committed and pushed.
+### Context
 
-## Active Work
-
-No active in-progress work items.
+- IAM grants are live: tf-infra PR #26 merged, `terraform apply` succeeded.
+- Migrations 0005 + 0006 already applied to production manually.
 
 ## Open / Next
 
-- **M5 planning:** Data cleanup phase — enum allowlists, data quality. Not yet started.
-- **Auth/household milestone:** Not yet planned. ADR-001 documents the transition constraint and open questions.
-- **GitHub issue cleanup:** Close issues #64, #66, #67, #68, #69 referencing PR #62.
-- **ADR-001 open questions:** Single-user vs multi-tenant decision needed from Krishna before auth milestone can be planned.
+1. **espresso-logs PR #73** — merge when review is approved.
+2. **After merge (operator action):** Set Cloud Build trigger substitution `_CLOUDSQL_INSTANCE` to `espresso-logs-prod:us-west1:espresso-logs-db`.
+3. **After deploy:** Verify catalog, brew log, and add-bean are working in production.
+
+## Completed
+
+- M4 DONE: PR #62 merged. Production migration complete. 75 brew logs live in Cloud SQL. System reads from Postgres in production.
+- ADR-001 (household transition strategy) committed to `docs/architecture/adr-001-household-transition.md`.
