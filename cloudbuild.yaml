@@ -81,22 +81,36 @@ steps:
   #   - _CLOUDSQL_INSTANCE must be set in the Cloud Build trigger to the full instance
   #     connection name: PROJECT:REGION:INSTANCE (e.g. espresso-logs-prod:us-west1:espresso-logs-db)
   #
-  # This step intentionally runs AFTER push and BEFORE deploy so a failed migration
+  # Split into two steps:
+  #   migrate-proxy-install: copies the proxy binary from the official image into /workspace
+  #     (shared between steps) so the slim uv image can use it without curl or apt-get.
+  #   migrate: starts the proxy from /workspace, runs alembic, then kills the proxy.
+  #
+  # Both steps intentionally run AFTER push and BEFORE deploy so a failed migration
   # blocks the deploy.
+
+  # Step 5b-1: Copy the Cloud SQL proxy binary from the official proxy image into /workspace.
+  # /workspace is shared between all Cloud Build steps; the slim uv image in the next step
+  # has no curl or wget, so we extract the binary here instead of downloading it at runtime.
+  - name: 'gcr.io/cloud-sql-connectors/cloud-sql-proxy:2'
+    id: 'migrate-proxy-install'
+    entrypoint: 'cp'
+    args: ['/cloud-sql-proxy', '/workspace/cloud-sql-proxy']
+    waitFor: ['push']
+
+  # Step 5b-2: Run alembic migrations using the proxy binary copied in the previous step.
   - name: 'ghcr.io/astral-sh/uv:python3.12-bookworm-slim'
     id: 'migrate'
     entrypoint: bash
-    waitFor: ['push']
+    waitFor: ['migrate-proxy-install']
     secretEnv: ['DATABASE_URL']
     args:
       - '-c'
       - |
         set -e
-        curl -sSL -o /usr/local/bin/cloud-sql-proxy \
-          https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.12.0/cloud-sql-proxy.linux.amd64
-        chmod +x /usr/local/bin/cloud-sql-proxy
+        chmod +x /workspace/cloud-sql-proxy
         mkdir -p /cloudsql
-        /usr/local/bin/cloud-sql-proxy --unix-socket=/cloudsql $_CLOUDSQL_INSTANCE &
+        /workspace/cloud-sql-proxy --unix-socket=/cloudsql $_CLOUDSQL_INSTANCE &
         PROXY_PID=$$!
         sleep 3
         uv run alembic upgrade head
