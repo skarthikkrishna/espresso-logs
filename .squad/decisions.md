@@ -507,3 +507,82 @@ When the multi-user auth milestone arrives, the `default_household` (seeded in M
 - All meaningful changes require team consensus
 - Document architectural decisions here
 - Keep history focused on work, decisions focused on direction
+
+---
+
+## 2026-05-15 — Session: hotfix/beans-catalog-brew-log
+
+### Routing Decision — Beans/Catalog Hotfix (Priya)
+
+**Date:** 2026-05-15  
+**Agent:** Priya  
+**Decision:** DIRECT_PERMITTED  
+**Trigger:** Three user-reported production bugs in the beans/catalog domain
+
+**Bugs:**
+1. Cannot add new beans
+2. Cannot view catalog or add to catalog
+3. New brew log form shows empty beans dropdown
+
+**Root Cause Hypotheses:**
+- Bug 1 & 2a: `AddBeanModal.tsx` — no client-side validation for required fields (`roast_level`, `roaster`, `bean_name`); backend returns HTTP 422 silently
+- Bug 2b: Production `APP_SECRETS` blob may be missing `use_postgres: true` → Sheets fallback → 500 if Sheets auth stale
+- Bug 3: `BrewLogAdd.tsx` — `isError` not destructured from inventory query; silent failure renders empty dropdown
+
+**Fix scope:** `frontend/src/components/AddBeanModal.tsx`, `frontend/src/pages/BrewLogAdd.tsx` — no new API endpoints, no schema changes.
+
+**Status: DIRECT_PERMITTED**
+
+---
+
+### Decision Drop — IAM Grants for Cloud Build SA (Tariq)
+
+**Date:** 2026-05-15  
+**Agent:** Tariq  
+**Triggered by:** hotfix/beans-catalog-brew-log
+
+`cloudbuild.yaml` updated to mount `DATABASE_URL` via `--set-secrets` and pass `--add-cloudsql-instances`. Cloud Build SA (`coffee-tracker-cloudbuild@espresso-logs-prod.iam.gserviceaccount.com`) required two new IAM grants:
+
+- `roles/secretmanager.secretAccessor` on `DATABASE_URL` secret (resource-scoped)
+- `roles/cloudsql.client` at project level
+
+**Path taken:** Terraform (`tf-infra` repo) — consistent with existing codified IAM patterns. New resources added to `secrets.tf` and `iam.tf`. Branch `hotfix/iam-cloudbuild-database-url`, commit `23d1236`. PR #26 merged; `terraform apply` succeeded — grants live in GCP.
+
+**Sequence dependency:** `hotfix/beans-catalog-brew-log` deploy was BLOCKED until tf-infra apply completed.
+
+---
+
+### Decision Drop — PR #71 Copilot Review Fixes (Alex)
+
+**Date:** 2026-05-15  
+**Author:** Alex  
+**Branch:** config/use-postgres-to-app-secrets  
+**Commit:** bffbe7a
+
+Narrowed `use_postgres` inline comment in `app/config.py` to accurately reflect:
+1. Env vars take precedence over APP_SECRETS blob values — stale standalone `USE_POSTGRES` env var would silently override (now documented as warning)
+2. Scope boundary: secrets (DATABASE_URL, USE_POSTGRES, API keys) → APP_SECRETS blob; infra config (APP_ENV, OAUTH_REDIRECT_URI) → standalone env vars
+3. `docs/requirements/engineering_architecture_v2.md` rollback instructions corrected to reference APP_SECRETS blob (not standalone env var)
+
+No logic changes — purely documentation/comment correctness.
+
+---
+
+### Decision Drop — PR #72 Feedback Addressed (Alex)
+
+**Date:** 2026-05-15
+
+1. Stale inbox merged — `decisions/inbox/alex-use-postgres-routing.md` appended and deleted
+2. `scribe-charter.md` template synced — added `Reuse Before Create` section, APP_SECRETS line, Git Protocol update
+3. `SKILL.md` corrected — `reuse-before-create/SKILL.md` now references `app/config.py` (`Settings._load_app_secrets`) as canonical APP_SECRETS pattern
+4. `charter.md` template push wording collapsed to single authoritative line
+5. All 9 agent charters updated with consistent push prohibition wording
+
+---
+
+### Routing Decision — PR #72 Feedback (Tariq)
+
+**Date:** 2026-05-15  
+**What:** DIRECT_PERMITTED — 5 governance file updates (`.squad/` only)  
+**Scope:** templates, skills, inbox merge — no feature work, no code, no tests  
+**Rationale:** Mechanical template maintenance and policy wording. No SpecKit trigger; no blocking dependencies.

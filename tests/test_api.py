@@ -308,6 +308,29 @@ async def test_api_catalog_create_authenticated():
 
 
 @pytest.mark.asyncio
+async def test_api_catalog_create_empty_roast_level_accepted():
+    """POST /api/catalog with roast_level='' (LLM could not infer it) must return 201."""
+    status, data = await _authed(
+        "POST",
+        "/api/catalog",
+        json={"roaster": "Ritual", "bean_name": "Junin", "roast_level": ""},
+    )
+    assert status == 201, f"Expected 201, got {status}: {data}"
+    assert data["roaster"] == "Ritual"
+
+
+@pytest.mark.asyncio
+async def test_api_catalog_create_invalid_roast_level_rejected():
+    """POST /api/catalog with a non-empty invalid roast_level must still return 422."""
+    status, _ = await _authed(
+        "POST",
+        "/api/catalog",
+        json={"roaster": "Ritual", "bean_name": "Junin", "roast_level": "Bogus"},
+    )
+    assert status == 422
+
+
+@pytest.mark.asyncio
 async def test_api_catalog_update_unauthenticated():
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test", follow_redirects=False
@@ -357,6 +380,18 @@ async def test_api_catalog_update_validation_error():
         json={"roaster": "", "bean_name": "Y", "roast_level": "Bogus"},
     )
     assert status == 422
+
+
+@pytest.mark.asyncio
+async def test_api_catalog_update_empty_roast_level_accepted():
+    """PUT /api/catalog with roast_level='' must be accepted (mirrors POST fix)."""
+    status, data = await _authed(
+        "PUT",
+        "/api/catalog/CAT001",
+        json={"roaster": "Blue Bottle", "bean_name": "Kenya", "roast_level": ""},
+    )
+    assert status == 200, f"Expected 200, got {status}: {data}"
+    assert data["roast_level"] == ""
 
 
 @pytest.mark.asyncio
