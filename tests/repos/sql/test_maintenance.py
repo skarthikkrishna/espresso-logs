@@ -95,3 +95,100 @@ async def test_get_returns_inserted_row(db_session: AsyncSession) -> None:
     assert result["Maintenance_ID"] == "MNT-002"
     assert result["Action_Type"] == "Descale"
     assert result["Notes"] == "Monthly descale"
+
+
+# ---------------------------------------------------------------------------
+# T-MR-01..03 — SqlMaintenanceRepo.upsert() unit tests
+# ---------------------------------------------------------------------------
+
+
+async def test_mr01_upsert_new_sheets_id_inserts_row(db_session: AsyncSession) -> None:
+    """T-MR-01: upsert() on a new sheets_id inserts a row with correct sheets_hardware_id."""
+    repo = SqlMaintenanceRepo(db=db_session)
+    row = {
+        "Maintenance_ID": "MNT-UPSERT-01",
+        "Hardware_ID": "HW-42",
+        "Date": "2024-03-15",
+        "Action_Type": "Backflush",
+        "Notes": "Weekly",
+    }
+    await repo.upsert(row)
+
+    result = await repo.get("MNT-UPSERT-01")
+    assert result is not None
+    assert result["Maintenance_ID"] == "MNT-UPSERT-01"
+    assert result["Hardware_ID"] == "HW-42"
+    assert result["Action_Type"] == "Backflush"
+    assert result["Notes"] == "Weekly"
+
+
+async def test_mr02_upsert_null_hardware_id_updates_only_hardware_id(
+    db_session: AsyncSession,
+) -> None:
+    """T-MR-02: upsert() on existing row with NULL sheets_hardware_id updates only that field.
+
+    ``performed_at``, ``action``, and ``notes`` must be unchanged.
+    """
+    repo = SqlMaintenanceRepo(db=db_session)
+    # Insert a row without Hardware_ID (simulates a pre-migration-0005 write)
+    await repo.add(
+        {
+            "Maintenance_ID": "MNT-UPSERT-02",
+            "Action_Type": "Descale",
+            "Notes": "Original notes",
+            "Date": "2024-01-10",
+        }
+    )
+
+    # Upsert should fill in the hardware ID without touching other fields
+    await repo.upsert(
+        {
+            "Maintenance_ID": "MNT-UPSERT-02",
+            "Hardware_ID": "HW-99",
+            "Action_Type": "SHOULD_NOT_OVERWRITE",
+            "Notes": "SHOULD_NOT_OVERWRITE",
+            "Date": "9999-12-31",
+        }
+    )
+
+    result = await repo.get("MNT-UPSERT-02")
+    assert result is not None
+    assert result["Hardware_ID"] == "HW-99"
+    # Original fields must be unchanged
+    assert result["Action_Type"] == "Descale"
+    assert result["Notes"] == "Original notes"
+
+
+async def test_mr03_upsert_existing_non_null_hardware_id_is_noop(
+    db_session: AsyncSession,
+) -> None:
+    """T-MR-03: upsert() on existing row with non-NULL sheets_hardware_id is a no-op."""
+    repo = SqlMaintenanceRepo(db=db_session)
+    # Insert a row that already has Hardware_ID set
+    await repo.add(
+        {
+            "Maintenance_ID": "MNT-UPSERT-03",
+            "Hardware_ID": "HW-ORIGINAL",
+            "Action_Type": "Clean",
+            "Notes": "Original",
+            "Date": "2024-02-20",
+        }
+    )
+
+    # Upsert with a different Hardware_ID — must be ignored
+    await repo.upsert(
+        {
+            "Maintenance_ID": "MNT-UPSERT-03",
+            "Hardware_ID": "HW-SHOULD-NOT-REPLACE",
+            "Action_Type": "IGNORED",
+            "Notes": "IGNORED",
+            "Date": "9999-12-31",
+        }
+    )
+
+    result = await repo.get("MNT-UPSERT-03")
+    assert result is not None
+    # sheets_hardware_id was already set — row must be completely unchanged
+    assert result["Hardware_ID"] == "HW-ORIGINAL"
+    assert result["Action_Type"] == "Clean"
+    assert result["Notes"] == "Original"
