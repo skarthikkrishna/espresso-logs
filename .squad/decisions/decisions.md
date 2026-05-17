@@ -77,3 +77,22 @@ badge badge-sm text-xs <colour-tokens>
 **Rule:** When using DaisyUI `badge` as a compact metadata chip/tag, always specify both `badge-sm` **and** `text-xs`. Never rely on DaisyUI's implicit font-size inheritance for compact chips.
 
 ---
+
+### Spec-031 Data Remediation — DIRECT_PERMITTED
+
+**Date:** 2026-05-17  
+**Author:** Alex (backend routing)  
+**Branch:** fix/031-brew-log-duplication-missing-ai  
+**Status:** Committed (decision drop: `20260517T231941Z-remediation-routing.md`)
+
+Bounded operational data remediation for spec-031 classified as `DIRECT_PERMITTED`.
+
+**Scope permitted:** Single script (`scripts/remediate_031.py`) to (1) delete confirmed Case A duplicate rows 78 & 80 from Brew_Log (higher index first to avoid row-shift) and (2) backfill blank `AI_Feedback` for rows dated 2026-05-16 and 2026-05-17 using existing `get_ai_feedback` from `app/services/inference.py`.
+
+**Explicitly excluded:** No changes to `app/`, `frontend/`, `alembic/`, or any schema. No new tests, no new dependencies, no new API endpoints.
+
+**Constraints:** Delete row 80 before row 78; script must be dry-run capable (`--dry-run`); idempotent; auth via same env-var pattern as `diagnose_brew_log_duplicates.py`.
+
+**Outcome:** 2 duplicate rows deleted, 2 AI feedbacks backfilled, 0 errors. Scripts dropped (one-time operational use, not committed).
+
+---
