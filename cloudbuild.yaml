@@ -152,7 +152,8 @@ steps:
       - '--add-cloudsql-instances=$_CLOUDSQL_INSTANCE'
       # Pin the startup probe to /health so console drift cannot re-break deployments.
       # /health is an unauthenticated endpoint (app/routers/health.py) — no OAuth redirect.
-      - '--startup-probe=httpGet.path=/health,httpGet.port=8080'
+      # initialDelaySeconds=15: gives Python time to import modules before first probe fires.
+      - '--startup-probe=httpGet.path=/health,httpGet.port=8080,initialDelaySeconds=15,failureThreshold=6'
 
   # Steps 7+8: E2E smoke tests.
   #
