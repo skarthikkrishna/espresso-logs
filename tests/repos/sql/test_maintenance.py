@@ -5,6 +5,7 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.hardware import Hardware
 from app.models.maintenance import MaintenanceLog
 from app.repos.sql.maintenance import SqlMaintenanceRepo
 
@@ -192,3 +193,85 @@ async def test_mr03_upsert_existing_non_null_hardware_id_is_noop(
     assert result["Hardware_ID"] == "HW-ORIGINAL"
     assert result["Action_Type"] == "Clean"
     assert result["Notes"] == "Original"
+
+
+# ---------------------------------------------------------------------------
+# T-MR-JOIN-01..05 — LEFT OUTER JOIN Hardware tests
+# ---------------------------------------------------------------------------
+
+
+async def test_mr_join_01_list_with_hardware_id_returns_rows_matched_via_uuid_fk(
+    db_session: AsyncSession,
+) -> None:
+    """T-MR-JOIN-01: list(hardware_id=...) matches via Hardware.sheets_id when FK is populated."""
+    hw = Hardware(name="M", category="Machine", sheets_id="HW-JOIN-01")
+    db_session.add(hw)
+    await db_session.flush()
+
+    log = MaintenanceLog(hardware_id=hw.id, sheets_hardware_id=None, action="Backflush")
+    db_session.add(log)
+    await db_session.flush()
+
+    repo = SqlMaintenanceRepo(db=db_session)
+    results = await repo.list(hardware_id="HW-JOIN-01")
+    assert len(results) == 1
+    assert results[0]["Action_Type"] == "Backflush"
+    assert results[0]["Hardware_ID"] == "HW-JOIN-01"
+
+
+async def test_mr_join_02_list_with_hardware_id_still_matches_sheets_hardware_id_column(
+    db_session: AsyncSession,
+) -> None:
+    """T-MR-JOIN-02: list(hardware_id=...) still matches legacy sheets_hardware_id column."""
+    log = MaintenanceLog(hardware_id=None, sheets_hardware_id="HW-LEGACY-01", action="Descale")
+    db_session.add(log)
+    await db_session.flush()
+
+    repo = SqlMaintenanceRepo(db=db_session)
+    results = await repo.list(hardware_id="HW-LEGACY-01")
+    assert len(results) == 1
+    assert results[0]["Hardware_ID"] == "HW-LEGACY-01"
+
+
+async def test_mr_join_03_list_with_hardware_id_returns_empty_when_no_match(
+    db_session: AsyncSession,
+) -> None:
+    """T-MR-JOIN-03: list(hardware_id=...) returns [] when no row matches."""
+    log = MaintenanceLog(hardware_id=None, sheets_hardware_id="HW-OTHER", action="Clean")
+    db_session.add(log)
+    await db_session.flush()
+
+    repo = SqlMaintenanceRepo(db=db_session)
+    results = await repo.list(hardware_id="HW-NO-MATCH")
+    assert results == []
+
+
+async def test_mr_join_04_list_without_hardware_id_returns_all_rows(
+    db_session: AsyncSession,
+) -> None:
+    """T-MR-JOIN-04: list() with no filter returns all maintenance rows."""
+    db_session.add(MaintenanceLog(action="Clean"))
+    db_session.add(MaintenanceLog(action="Calibrate"))
+    await db_session.flush()
+
+    repo = SqlMaintenanceRepo(db=db_session)
+    results = await repo.list()
+    assert len(results) == 2
+
+
+async def test_mr_join_05_list_returns_hardware_sheets_id_from_join_in_to_dict(
+    db_session: AsyncSession,
+) -> None:
+    """T-MR-JOIN-05: _to_dict populates Hardware_ID from JOIN result, not NULL column."""
+    hw = Hardware(name="M", category="Machine", sheets_id="HW-DICT-01")
+    db_session.add(hw)
+    await db_session.flush()
+
+    log = MaintenanceLog(hardware_id=hw.id, sheets_hardware_id=None, action="Clean")
+    db_session.add(log)
+    await db_session.flush()
+
+    repo = SqlMaintenanceRepo(db=db_session)
+    results = await repo.list(hardware_id="HW-DICT-01")
+    assert len(results) == 1
+    assert results[0]["Hardware_ID"] == "HW-DICT-01"
