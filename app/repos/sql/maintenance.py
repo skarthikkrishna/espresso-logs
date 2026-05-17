@@ -5,9 +5,10 @@ from __future__ import annotations
 import datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.hardware import Hardware
 from app.models.maintenance import MaintenanceLog
 
 
@@ -88,11 +89,18 @@ class SqlMaintenanceRepo:
 
     async def list(self, hardware_id: str | None = None) -> list[dict[str, Any]]:
         """Return maintenance events, optionally filtered by Sheets Hardware_ID."""
-        q = select(MaintenanceLog)
+        q = select(MaintenanceLog, Hardware.sheets_id.label("hardware_sheets_id")).outerjoin(
+            Hardware, MaintenanceLog.hardware_id == Hardware.id
+        )
         if hardware_id is not None:
-            q = q.where(MaintenanceLog.sheets_hardware_id == hardware_id)
+            q = q.where(
+                or_(
+                    MaintenanceLog.sheets_hardware_id == hardware_id,
+                    Hardware.sheets_id == hardware_id,
+                )
+            )
         result = await self._db.execute(q)
-        return [self._to_dict(r) for r in result.scalars().all()]
+        return [self._to_dict(log, hw_id) for log, hw_id in result.all()]
 
     async def get(self, maintenance_id: str) -> dict[str, Any] | None:
         """Fetch a single maintenance event by Sheets Maintenance_ID."""
@@ -102,10 +110,12 @@ class SqlMaintenanceRepo:
         row = result.scalar_one_or_none()
         return self._to_dict(row) if row else None
 
-    def _to_dict(self, row: MaintenanceLog) -> dict[str, Any]:
+    def _to_dict(
+        self, row: MaintenanceLog, hardware_sheets_id: str | None = None
+    ) -> dict[str, Any]:
         return {
             "Maintenance_ID": row.sheets_id or "",
-            "Hardware_ID": row.sheets_hardware_id or "",
+            "Hardware_ID": hardware_sheets_id or row.sheets_hardware_id or "",
             "Date": row.performed_at.date().isoformat() if row.performed_at else "",
             "Action_Type": row.action or "",
             "Notes": row.notes or "",

@@ -9,6 +9,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.catalog import CatalogBean
 from app.models.inventory import InventoryBag
 
 
@@ -71,29 +72,40 @@ class SqlInventoryRepo:
 
     async def list(self, status: str | None = "Active") -> builtins.list[dict[str, Any]]:
         """Return inventory bags, optionally filtered by status."""
-        q = select(InventoryBag)
+        q = select(InventoryBag, CatalogBean.sheets_id.label("catalog_sheets_id")).outerjoin(
+            CatalogBean, InventoryBag.catalog_id == CatalogBean.id
+        )
         if status is not None:
             q = q.where(InventoryBag.status == status)
         result = await self._db.execute(q)
-        return [self._to_dict(r) for r in result.scalars().all()]
+        return [self._to_dict(bag, cat_id) for bag, cat_id in result.all()]
 
     async def list_all(self) -> builtins.list[dict[str, Any]]:
         """Return all inventory bags regardless of status."""
-        result = await self._db.execute(select(InventoryBag))
-        return [self._to_dict(r) for r in result.scalars().all()]
+        q = select(InventoryBag, CatalogBean.sheets_id.label("catalog_sheets_id")).outerjoin(
+            CatalogBean, InventoryBag.catalog_id == CatalogBean.id
+        )
+        result = await self._db.execute(q)
+        return [self._to_dict(bag, cat_id) for bag, cat_id in result.all()]
 
     async def get(self, bag_id: str) -> dict[str, Any] | None:
         """Fetch a single inventory bag by Sheets Bag_ID."""
-        result = await self._db.execute(
-            select(InventoryBag).where(InventoryBag.sheets_id == bag_id)
+        q = (
+            select(InventoryBag, CatalogBean.sheets_id.label("catalog_sheets_id"))
+            .outerjoin(CatalogBean, InventoryBag.catalog_id == CatalogBean.id)
+            .where(InventoryBag.sheets_id == bag_id)
         )
-        row = result.scalar_one_or_none()
-        return self._to_dict(row) if row else None
+        result = await self._db.execute(q)
+        row = result.one_or_none()
+        if row is None:
+            return None
+        bag, cat_id = row
+        return self._to_dict(bag, cat_id)
 
-    def _to_dict(self, row: InventoryBag) -> dict[str, Any]:
+    def _to_dict(self, row: InventoryBag, catalog_sheets_id: str | None = None) -> dict[str, Any]:
         return {
             "Bag_ID": row.sheets_id or "",
-            "Catalog_ID": row.sheets_catalog_id or "",
+            "Catalog_ID": catalog_sheets_id or row.sheets_catalog_id or "",
             "Beans": row.beans or "",
             "Display_Name": row.display_name or row.beans or "",
             "RoastDate": row.roast_date.isoformat() if row.roast_date else "",
