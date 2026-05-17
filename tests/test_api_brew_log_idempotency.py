@@ -15,7 +15,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -161,7 +161,9 @@ async def test_duplicate_key_returns_200():
     body = {**_POST_BODY_BASE, "idempotency_key": "dedup-key-test-001"}
 
     try:
-        with patch("app.routers.api_brew_log.asyncio.create_task"):
+        with patch(
+            "app.routers.api_brew_log.get_ai_feedback", AsyncMock(return_value="mocked feedback")
+        ):
             async with _client_ctx() as client:
                 client.cookies.set("session", _AUTHED_COOKIE)
                 r1 = await client.post("/api/brew-log", json=body)
@@ -226,7 +228,10 @@ async def test_concurrent_duplicates_single_write():
             patch.object(store, "check_and_set_sentinel", barrier_cas),
             patch.object(BrewLogRepo, "list_existing_ids", return_value=[]),
             patch.object(BrewLogRepo, "add", tracking_add),
-            patch("app.routers.api_brew_log.asyncio.create_task"),
+            patch(
+                "app.routers.api_brew_log.get_ai_feedback",
+                AsyncMock(return_value="mocked feedback"),
+            ),
         ):
             async with _client_ctx() as client:
                 client.cookies.set("session", _AUTHED_COOKIE)
@@ -265,7 +270,9 @@ async def test_ttl_expiry_treats_as_fresh():
     body = {**_POST_BODY_BASE, "idempotency_key": "ttl-expiry-key-abc"}
 
     try:
-        with patch("app.routers.api_brew_log.asyncio.create_task"):
+        with patch(
+            "app.routers.api_brew_log.get_ai_feedback", AsyncMock(return_value="mocked feedback")
+        ):
             async with _client_ctx() as client:
                 client.cookies.set("session", _AUTHED_COOKIE)
 
@@ -300,7 +307,9 @@ async def test_fail_open_no_key():
     ]
 
     try:
-        with patch("app.routers.api_brew_log.asyncio.create_task"):
+        with patch(
+            "app.routers.api_brew_log.get_ai_feedback", AsyncMock(return_value="mocked feedback")
+        ):
             async with _client_ctx() as client:
                 client.cookies.set("session", _AUTHED_COOKIE)
                 for body in sub_cases:
@@ -335,7 +344,10 @@ async def test_write_failure_no_cache_entry():
     try:
         with (
             patch.object(BrewLogRepo, "add", failing_then_succeeding_add),
-            patch("app.routers.api_brew_log.asyncio.create_task"),
+            patch(
+                "app.routers.api_brew_log.get_ai_feedback",
+                AsyncMock(return_value="mocked feedback"),
+            ),
         ):
             async with AsyncClient(
                 transport=ASGITransport(app=app, raise_app_exceptions=False),
@@ -377,7 +389,9 @@ async def test_multi_unique_keys_all_written():
     statuses: list[int] = []
 
     try:
-        with patch("app.routers.api_brew_log.asyncio.create_task"):
+        with patch(
+            "app.routers.api_brew_log.get_ai_feedback", AsyncMock(return_value="mocked feedback")
+        ):
             async with _client_ctx() as client:
                 client.cookies.set("session", _AUTHED_COOKIE)
                 for k in keys:
@@ -402,7 +416,9 @@ async def test_duplicate_response_payload_shape():
     body = {**_POST_BODY_BASE, "idempotency_key": "payload-shape-key-001"}
 
     try:
-        with patch("app.routers.api_brew_log.asyncio.create_task"):
+        with patch(
+            "app.routers.api_brew_log.get_ai_feedback", AsyncMock(return_value="mocked feedback")
+        ):
             async with _client_ctx() as client:
                 client.cookies.set("session", _AUTHED_COOKIE)
                 r1 = await client.post("/api/brew-log", json=body)
@@ -423,3 +439,51 @@ async def test_duplicate_response_payload_shape():
     assert data["dose_in_g"] == 18.0
     assert data["yield_out_g"] == 36.0
     assert data["time_sec"] == 28.0
+
+
+async def test_brew_log_create_ai_timeout_no_500():
+    """Timeout in get_ai_feedback is caught; POST still returns 201."""
+    fake = _make_fake_client()
+    _install_overrides(fake)
+
+    try:
+        with patch(
+            "app.routers.api_brew_log.asyncio.wait_for",
+            side_effect=asyncio.TimeoutError,
+        ):
+            async with _client_ctx() as client:
+                client.cookies.set("session", _AUTHED_COOKIE)
+                r = await client.post("/api/brew-log", json=_POST_BODY_BASE)
+    finally:
+        _remove_overrides()
+
+    assert r.status_code == 201, f"Expected 201 when AI times out, got {r.status_code}"
+
+
+async def test_brew_log_create_llm_error_no_500():
+    """LLMError raised inside get_ai_feedback is handled gracefully; POST still returns 201.
+
+    get_ai_feedback catches LLMError internally and returns a graceful string.
+    We verify this by injecting a failing LLM client — the route must return 201.
+    """
+    from app.services.inference import LLMError
+
+    class _FailingLLMClient:
+        async def complete(self, prompt: str) -> str:
+            raise LLMError("simulated LLM failure")
+
+    from app.deps import get_llm_client
+
+    fake = _make_fake_client()
+    _install_overrides(fake)
+    app.dependency_overrides[get_llm_client] = lambda: _FailingLLMClient()
+
+    try:
+        async with _client_ctx() as client:
+            client.cookies.set("session", _AUTHED_COOKIE)
+            r = await client.post("/api/brew-log", json=_POST_BODY_BASE)
+    finally:
+        app.dependency_overrides.pop(get_llm_client, None)
+        _remove_overrides()
+
+    assert r.status_code == 201, f"Expected 201 when LLM raises, got {r.status_code}"

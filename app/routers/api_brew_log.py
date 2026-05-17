@@ -221,7 +221,7 @@ async def api_brew_log_create(
     }
     await brew_log_repo.add(row)
 
-    # Fire-and-forget AI feedback
+    # Await AI feedback inline — fire-and-forget loses the task on Cloud Run scale-to-zero
     bags, catalog, hardware = await _build_lookups(inventory_repo, catalog_repo, hardware_repo)
     names = _resolve_names_from_dicts(row, bags, catalog, hardware)
     extra_context = {
@@ -232,11 +232,18 @@ async def api_brew_log_create(
         "taste_summary": body.taste_summary,
         "storage_method": body.storage_method or "",
     }
-    asyncio.create_task(
-        get_ai_feedback(
-            shot_id, brew_log_repo, maintenance_repo, llm_client, extra_context=extra_context
+    try:
+        await asyncio.wait_for(
+            get_ai_feedback(
+                shot_id, brew_log_repo, maintenance_repo, llm_client, extra_context=extra_context
+            ),
+            timeout=35.0,
         )
-    )
+    except asyncio.TimeoutError:
+        logger.warning(
+            "get_ai_feedback timed out after 35 s for shot_id=%r — proceeding without feedback",
+            shot_id,
+        )
 
     shot_out = _shot_to_out(row, names)
 
