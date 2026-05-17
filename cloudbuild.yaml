@@ -144,12 +144,6 @@ steps:
       # config.py parses the blob at startup — individual env vars take precedence.
       # To add a new secret: update the APP_SECRETS JSON blob value in Secret Manager.
       - '--set-secrets=APP_SECRETS=APP_SECRETS:latest,DATABASE_URL=DATABASE_URL:latest'
-      # Attach the Cloud SQL Auth Proxy sidecar so the container can reach Postgres
-      # via Unix socket (/cloudsql/<instance>).  Without this flag the socket does not
-      # exist and every DATABASE_URL connection attempt fails with a 500 on all
-      # SQL-backed endpoints (catalog, inventory, brew log, etc.).
-      # _CLOUDSQL_INSTANCE format: PROJECT:REGION:INSTANCE (e.g. my-proj:us-west1:espresso-logs)
-      - '--add-cloudsql-instances=$_CLOUDSQL_INSTANCE'
       # Pin the startup probe to /health so console drift cannot re-break deployments.
       # /health is an unauthenticated endpoint (app/routers/health.py) — no OAuth redirect.
       # initialDelaySeconds=15: gives Python time to import modules before first probe fires.

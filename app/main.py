@@ -77,6 +77,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
     if _E2E_AUTH_BYPASS:
         logger.warning("⚠️  E2E_AUTH_BYPASS is ACTIVE — authentication is bypassed for all requests")
     yield
+    if settings.use_postgres:
+        from app.models.base import close_engine
+
+        await close_engine()
+        logger.info("Database engine and Cloud SQL Connector closed")
 
 
 app = FastAPI(title="Coffee Tracker", lifespan=lifespan)

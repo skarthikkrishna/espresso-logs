@@ -30,7 +30,7 @@ async def upload_image_to_gcs(
     """
 
     def _sync_upload() -> str:
-        from google.cloud import storage  # type: ignore[import-untyped]
+        from google.cloud import storage  # type: ignore[attr-defined]
 
         client = storage.Client()
         bucket = client.bucket(bucket_name)
