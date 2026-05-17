@@ -3,8 +3,6 @@
 #   _RUNTIME_SA       — Cloud Run runtime service account email
 #   _CLOUDBUILD_SA    — Cloud Build service account email
 #   _SERVICE_URL      — Deployed Cloud Run service URL (e.g. https://my-app-xxx.a.run.app)
-#   _CLOUDSQL_INSTANCE — Full Cloud SQL connection name: PROJECT:REGION:INSTANCE
-#                        (e.g. my-gcp-project:us-west1:espresso-logs)
 # Built-in substitution used: $PROJECT_ID (automatically set by Cloud Build)
 steps:
   # Step 1: Confirm uv is available (ghcr.io/astral-sh/uv image has uv pre-installed)
@@ -78,8 +76,7 @@ steps:
   # OPERATOR REQUIREMENTS:
   #   - $_CLOUDBUILD_SA must have roles/secretmanager.secretAccessor on DATABASE_URL and APP_SECRETS.
   #   - $_CLOUDBUILD_SA must have roles/cloudsql.client on the Cloud SQL instance.
-  #   - _CLOUDSQL_INSTANCE must be set in the Cloud Build trigger to the full instance
-  #     connection name: PROJECT:REGION:INSTANCE (e.g. espresso-logs-prod:us-west1:espresso-logs-db)
+  #   - _CLOUDSQL_INSTANCE is hardcoded in substitutions (not sensitive — infra identifier).
   #
   # Split into two steps:
   #   migrate-proxy-install: copies the proxy binary from the official image into /workspace
@@ -214,7 +211,4 @@ substitutions:
   _RUNTIME_SA: <SET_IN_TRIGGER>
   _CLOUDBUILD_SA: <SET_IN_TRIGGER>
   _SERVICE_URL: ''
-  # Full Cloud SQL instance connection name: PROJECT:REGION:INSTANCE
-  # Example: my-gcp-project:us-west1:espresso-logs
-  # Set this in the Cloud Build trigger substitution variables.
-  _CLOUDSQL_INSTANCE: <SET_IN_TRIGGER>
+  _CLOUDSQL_INSTANCE: espresso-logs-prod:us-west1:espresso-logs-db
