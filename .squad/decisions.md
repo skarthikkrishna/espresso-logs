@@ -586,3 +586,645 @@ No logic changes — purely documentation/comment correctness.
 **What:** DIRECT_PERMITTED — 5 governance file updates (`.squad/` only)  
 **Scope:** templates, skills, inbox merge — no feature work, no code, no tests  
 **Rationale:** Mechanical template maintenance and policy wording. No SpecKit trigger; no blocking dependencies.
+
+---
+
+# Routing Decision — Beans/Catalog Hotfix
+
+**Date:** 2026-05-15  
+**Agent:** Priya  
+**Decision:** DIRECT_PERMITTED  
+**Trigger:** Three user-reported production bugs in the beans/catalog domain
+
+---
+
+## Bugs Under Investigation
+
+1. Cannot add new beans
+2. Cannot view catalog or add to catalog
+3. New brew log form shows empty beans dropdown
+
+---
+
+## Investigation Summary
+
+### Backend (all clean)
+- `app/routers/api_catalog.py` — routes correctly registered; all async/await patterns correct
+- `app/repos/catalog.py` + `_DualWriteCatalogRepo` — properly wired; `list`, `get`, `upsert`, `_fetch_all` all present
+- `app/routers/api_inventory.py` — `_resolve_display_name` correctly falls back when catalog entry is absent
+- `app/main.py` — `api_catalog.router` is included
+- **400 tests pass**, `mypy --strict` clean, `ruff check` clean
+- No route conflicts: `POST /api/catalog` and `POST /api/catalog/infer` are distinct paths
+
+### Frontend (builds clean, type-checks pass)
+- `frontend/src/api/catalog.ts` — all API calls correctly typed and targeted
+- `frontend/src/pages/CatalogList.tsx` — correct error/loading states for the catalog query
+- `frontend/src/components/AddBeanModal.tsx` — **no client-side validation** for required fields (`roast_level`, `roaster`, `bean_name`) before submit
+- `frontend/src/pages/BrewLogAdd.tsx` — **no error handling** for the inventory query (`isError` not destructured); silent failure renders empty dropdown
+
+### Recent commit context
+- `eb1fddb` — react-router-dom 6 → 7 (May 12, Dependabot); API-compatible, no breaking usage
+- `a8471c4` — TypeScript 5 → 6 (May 12, Dependabot); compiles cleanly
+- `68d7505` — `USE_POSTGRES` moved into `APP_SECRETS` blob (May 15); if production APP_SECRETS blob does not include `use_postgres: true`, `use_postgres` defaults to `False`, reads fall back to Sheets. Sheets writes are always first in the dual-write pattern so Sheets data should be intact — this is low-suspicion for the catalog list failure but should be verified in production.
+
+---
+
+## Root Cause Hypothesis (per bug)
+
+### Bug 1 — Cannot add new beans
+**Primary cause:** `AddBeanModal.tsx` has no client-side validation for required fields. When `roast_level` is empty (inference returned no roast level and user did not select one), the backend returns HTTP 422. The catch block surfaces a generic "Failed to save bean. Please try again." with no field-level guidance. Users retry and fail repeatedly, perceiving the feature as broken.
+
+**Fix target:** `frontend/src/components/AddBeanModal.tsx` — add field-presence checks before calling `createCatalogItem`; surface which field is missing.
+
+### Bug 2 — Cannot view catalog or add to catalog
+**Two sub-causes:**
+- **2a (add to catalog):** Same as Bug 1 — save silently fails due to missing `roast_level`. "Add to catalog" is the modal's save path; it errors with no useful feedback.
+- **2b (view catalog):** If production `APP_SECRETS` blob is missing `use_postgres: true` after the M5 migration, `use_postgres` defaults to `False`. Reads go to Sheets. If Sheets auth credentials are stale or misconfigured on the current Cloud Run revision, `GET /api/catalog` returns 500 and `CatalogList` enters its error state. This is a production-environment issue, not a code defect, but worth noting.
+
+**Fix targets:**
+- `frontend/src/components/AddBeanModal.tsx` (same as Bug 1)
+- Production: verify APP_SECRETS blob contains `use_postgres` and that Sheets service-account credentials are valid
+
+### Bug 3 — Empty beans dropdown in brew log form
+**Primary cause:** `BrewLogAdd.tsx` does not handle the error state for the inventory query. `isError` is not destructured from `useQuery`; when `listInventory('Active')` fails, `inventory` is `undefined` and `inventory?.map()` renders zero options silently. The user sees only "Select bag…" — indistinguishable from "no active bags."
+
+**Secondary cause (data):** If there are genuinely no bags with status "Active" in inventory (e.g. all bags are "Finished"), the dropdown is also empty — correct behaviour but uninformative.
+
+**Fix target:** `frontend/src/pages/BrewLogAdd.tsx` — destructure `isError` from the inventory query; show an inline error or retry prompt when the query fails.
+
+---
+
+## Scope Confirmation
+
+All changes are frontend-only (plus optional production config verification):
+
+| File | Change |
+|---|---|
+| `frontend/src/components/AddBeanModal.tsx` | Add client-side required-field validation; improve save-error message |
+| `frontend/src/pages/BrewLogAdd.tsx` | Add `isError` handling for inventory query; surface load failure to user |
+| Production APP_SECRETS (out-of-band) | Verify `use_postgres` key present and Sheets credentials valid |
+
+No new API endpoints, no schema changes, no new feature surface. Changes are self-contained within two component files.
+
+---
+
+## Routing Decision
+
+**status: DIRECT_PERMITTED**
+
+Rationale: All three bugs trace to bounded, identifiable defects in existing frontend components (missing validation, missing error state) plus a probable production config state to verify out-of-band. No new features, no data model changes, no cross-service impact. A hotfix touching two component files is the correct response. SpecKit cycle is not warranted.
+# Decision Drop — Priya routing assessment
+# 2026-05-15 — Hardware maintenance display + Brew log internal IDs
+
+**Agent:** Priya (Product Manager)
+**Date:** 2026-05-15
+**Scope:** Bugs reported post-Postgres-migration
+
+---
+
+## Bugs assessed
+
+### Bug 1 — Hardware view does not show maintenance logs
+
+**Status: DIRECT_PERMITTED**
+
+**Symptom:** Hardware detail panel always shows "No maintenance records." regardless of whether events
+exist in Google Sheets.
+
+**Root cause (confirmed by source inspection):**
+
+The `maintenance_log` table has a `sheets_hardware_id TEXT` column added by migration 0005
+(2026-05-14). That migration adds the column with no backfill SQL. Before 0005 was applied to
+production, `SqlMaintenanceRepo.add()` tried to insert rows with `sheets_hardware_id` into a table
+that didn't have that column yet. SQLAlchemy raised a DB error. `_DualWriteMaintenanceRepo.add()`
+silently catches all SQL exceptions and continues. Result: every maintenance event written during
+the period when 0005 was un-applied was accepted by Sheets but **rejected from Postgres without
+surfacing an error to the caller**. The data exists in Sheets; it does not exist in Postgres.
+
+After migration 0005 was applied (via `alembic upgrade head` in the PR #73 session), the column
+now exists but there is no Postgres data to filter by. `SqlMaintenanceRepo.list(hardware_id=...)`
+executes `WHERE sheets_hardware_id = ?` and returns an empty result. The frontend renders
+"No maintenance records."
+
+Additionally: `MaintenanceLog.hardware_id` (UUID FK → `hardware.id`) is never populated by
+`SqlMaintenanceRepo.add()`. There is therefore no UUID-based join path that could be used for a
+pure-SQL backfill. The data must be re-read from Sheets.
+
+**Fix scope (bounded, no product decisions needed):**
+1. Add a `SqlMaintenanceRepo.upsert()` method that inserts or updates by `sheets_id` (unique
+   constraint exists) — prevents duplicate rows during backfill.
+2. Add a startup backfill hook (or `POST /api/admin/resync-maintenance` endpoint) that reads all
+   maintenance events from the Sheets-backed `MaintenanceRepo`, then calls
+   `SqlMaintenanceRepo.upsert()` for each row. This populates `sheets_hardware_id` from
+   `row["Hardware_ID"]`.
+3. No schema migration needed (column already exists after 0005).
+4. No frontend changes (frontend code is correct; it correctly renders `detail.maintenance`).
+
+---
+
+### Bug 2 — Brew Log and home page show internal Bag_IDs instead of bean/catalog names
+
+**Status: DIRECT_PERMITTED**
+
+**Symptom:** Brew log list and detail views display raw IDs like `Ve20250201M` instead of
+"Roaster — Bean name".
+
+**Root cause (confirmed by source inspection):**
+
+`_resolve_names_from_dicts()` in `app/routers/api_brew_log.py` resolves bean display names by:
+
+```
+shot["Bag_ID"] → bags[bag_id]["Catalog_ID"] → catalog[catalog_id]["Roaster"] + ["Bean_Name"]
+```
+
+When `use_postgres=True`, `bags` is populated from `SqlInventoryRepo.list_all()` which returns
+`"Catalog_ID": row.sheets_catalog_id or ""`.
+
+`sheets_catalog_id` was added to `inventory_bags` by migration 0006 (2026-05-15). That migration
+adds the column with no backfill. Before 0006 was applied, `SqlInventoryRepo.upsert()` tried to
+set `existing.sheets_catalog_id` — a column that didn't exist in the DB yet — and received a DB
+error that was silently caught by `_DualWriteInventoryRepo`. Inventory bags may exist in Postgres
+(written before the `sheets_catalog_id` attribute was added to the ORM model), but those rows
+have `sheets_catalog_id = NULL`.
+
+Result: `bag_row.get("Catalog_ID", "")` returns `""` for all existing bags →
+`catalog.get("", {})` returns `{}` → neither `Roaster` nor `Bean_Name` is resolved →
+`bag_display` falls back to `bag_id` (the internal Sheets composite key like `Ve20250201M`).
+
+This is a V1 core functional requirement violation (spec §9.2: "List view: frosted-glass cards;
+date, **bean name**, roast level…"; §9.7: "no internal IDs in UI").
+
+**Relationship to PR #73:** PR #73 fixes the migration pipeline (cloudbuild.yaml) and the
+`DATABASE_URL` injection gap. Migration 0006 was applied manually to production during that
+session. However, PR #73 does **not** backfill existing `inventory_bags` rows. All rows written
+before 0006 was applied still have `sheets_catalog_id = NULL`. This bug is NOT fixed by PR #73
+merging — it requires a separate backfill.
+
+**Fix scope (bounded, no product decisions needed):**
+1. A Sheets→Postgres backfill for existing `inventory_bags` rows: read all bags from
+   `InventoryRepo` (Sheets-backed), call `SqlInventoryRepo.upsert(row)` for each. Since
+   `upsert()` already handles INSERT vs UPDATE by `sheets_id`, and the column now exists, this
+   will set `sheets_catalog_id = row["Catalog_ID"]` for all existing rows.
+2. Implement as a startup backfill hook (idempotent: `WHERE sheets_catalog_id IS NULL`) or as an
+   admin endpoint `POST /api/admin/resync-inventory`.
+3. No schema migration needed (0006 already added the column and was applied to production).
+4. No frontend changes (frontend correctly uses `entry.bag_display`).
+
+---
+
+## Combined routing verdict
+
+| Bug | Status | Rationale |
+|-----|--------|-----------|
+| Hardware maintenance not displayed | DIRECT_PERMITTED | Pure data backfill regression. No product decisions. Backend only. |
+| Brew log shows internal IDs | DIRECT_PERMITTED | Pure data backfill regression. V1 spec violation but fix is a Sheets→Postgres re-sync. No product decisions. Backend only. |
+
+**Both bugs can be addressed on a single new branch off `main`.**
+Branch name suggestion: `fix/postgres-backfill-maintenance-catalog`
+
+**Relationship to open work:**
+- PR #73 (`hotfix/beans-catalog-brew-log`): Addresses configuration and CI gaps. Not overlapping.
+  Both PRs can coexist; this new work is complementary. However, PR #73 should merge first (or
+  this branch should be based on PR #73's branch) since PR #73 includes the `cloudbuild.yaml`
+  migration step that ensures this doesn't regress on future deploys.
+- No SpecKit artifacts required. No Quinn gate required (no new user-facing behaviour; pure
+  regression fix restoring V1 spec compliance).
+
+**Implementation note for Alex:**
+Both fixes follow the same pattern — a startup idempotent backfill via the DualWrite repos.
+Consider a single `_backfill_postgres_from_sheets()` coroutine (or equivalent) called from
+`app/main.py` `lifespan()` when `USE_POSTGRES=True`, covering both entities. Guard with
+`WHERE sheets_catalog_id IS NULL` / `WHERE sheets_hardware_id IS NULL` so subsequent deploys
+are no-ops.
+# RCA: CI/format Failure on PR #73 — hotfix/beans-catalog-brew-log
+
+**Author:** Tariq  
+**Date:** 2026-05-16  
+**Run ID:** 25954236107  
+**PR:** #73  
+**Branch:** hotfix/beans-catalog-brew-log  
+**Failing job:** `CI/format`  
+**Status:** Root cause identified. No fix applied. Awaiting operator authorisation.
+
+---
+
+## What Failed
+
+```
+Would reformat: app/routers/api_catalog.py
+1 file would be reformatted, 109 files already formatted
+Process completed with exit code 1
+```
+
+`ruff format --check app/ tests/` exits 1 because `app/routers/api_catalog.py` does not
+comply with ruff's output format. All other 109 files pass.
+
+---
+
+## Why It Failed
+
+**Proximate cause:** Commit `1e9a15c0ba24e4f81b695c562c533639a2449ad7` ("ci: force
+synchronize event on PR #73") appended a trailing blank line to the end of
+`app/routers/api_catalog.py`.
+
+**Exact change:**
+```diff
+-    return JSONResponse({"image_path": image_path})
++    return JSONResponse({"image_path": image_path})
++
+```
+
+The file now ends with two newline characters (`\n\n`) — a blank trailing line after the
+final statement. Ruff's formatter requires exactly one trailing newline with no blank line
+after the last code line. The extra blank line causes ruff to report the file as needing
+reformatting.
+
+**Verified locally:**
+```
+$ uv run ruff format --check app/ tests/
+Would reformat: app/routers/api_catalog.py
+1 file would be reformatted, 109 files already formatted
+Exit code: 1
+```
+
+---
+
+## Scope
+
+- **Only one file is affected:** `app/routers/api_catalog.py`, line 470 (trailing blank line).
+- All other CI jobs (lint, mypy, pytest) pass. This is an isolated formatting issue.
+- No logic, types, or tests are involved.
+
+---
+
+## Minimal Fix (authorisation required before applying)
+
+Remove the trailing blank line from `app/routers/api_catalog.py` so the file ends with
+exactly one newline after `return JSONResponse({"image_path": image_path})`. Equivalently,
+run `uv run ruff format app/routers/api_catalog.py` and commit the result.
+
+After the fix:
+```
+$ uv run ruff format --check app/ tests/
+110 files already formatted
+Exit code: 0
+```
+
+---
+
+## Decision
+
+**No fix has been applied.** This RCA is submitted to the coordinator for authorisation
+per Inviolable Rule 3 (build failures trigger Tariq triage before any fix attempt).
+
+The fix is trivial and self-contained. Once authorised, it can be committed directly on
+`hotfix/beans-catalog-brew-log` with a `[skip ci]` commit message prefix, then CI should
+be re-triggered on the resulting push to confirm green.
+# Decision Drop — Cloud Build Shell Variable Escape Fix
+
+**Date:** 2026-05-17  
+**Agent:** Tariq (CI/CD)  
+**Type:** Hotfix  
+**Status:** Committed (not pushed)
+
+## Context
+
+Deploy workflow run 25978094988 failed at submission time with:
+
+```
+ERROR: (gcloud.builds.submit) INVALID_ARGUMENT: generic::invalid_argument:
+invalid value for 'build.substitutions': key in the template "PROXY_PID"
+is not a valid built-in substitution
+```
+
+## Root Cause
+
+In the `migrate` step of `cloudbuild.yaml`, the shell script used `$!` and `$PROXY_PID` as
+POSIX shell variables to track the Cloud SQL Auth Proxy PID. Cloud Build parses **all** `$VAR`
+references in step `args` as substitution variables at submission time — before the shell
+ever executes. `PROXY_PID` is not a declared substitution variable, so the build was rejected
+before any step ran.
+
+## Decision
+
+Escape both shell variable references with `$$` syntax (Cloud Build's escape sequence for a
+literal `$` passed through to the shell):
+
+- `PROXY_PID=$!`  →  `PROXY_PID=$$!`
+- `kill $PROXY_PID || true`  →  `kill $$PROXY_PID || true`
+
+`$_CLOUDSQL_INSTANCE` on the same line is a declared substitution variable and requires no
+change.
+
+## Validation
+
+All four local CI checks passed after the fix:
+- `ruff check` — ✅ All checks passed
+- `ruff format --check` — ✅ 110 files already formatted
+- `mypy --strict` — ✅ No issues found in 53 source files
+- `pytest` — ✅ 403 passed, 4 skipped
+
+## Commit
+
+`fix(deploy): escape shell variables in cloudbuild migrate step`
+
+## Rule Applied
+
+Cloud Build YAML convention: shell variables in multi-line bash `args` must use `$$VAR`
+syntax to prevent Cloud Build from interpreting them as substitution variables at submission time.
+# Decision: _CLOUDSQL_INSTANCE placement in Cloud Build pipeline
+
+**Date:** 2026-05-17  
+**Authors:** Maya (architect) + Alex (backend engineer)  
+**Status:** DECIDED  
+**Urgency:** Production deploy was blocked — decision needed immediately.
+
+---
+
+## Decision
+
+**Option A — Hardcode in `cloudbuild.yaml` substitutions block.**
+
+`_CLOUDSQL_INSTANCE: espresso-logs-prod:us-west1:espresso-logs-db` is committed directly in the `substitutions:` block of `cloudbuild.yaml`. This is already the current state as of this decision.
+
+---
+
+## Rationale
+
+### Maya (architectural view)
+
+Option B (set in Cloud Build trigger via GCP Console) was invalidated by a concrete infrastructure fact: `buildtrigger.tf` in the tf-infra repo **explicitly states that `google_cloudbuild_trigger` resources have been removed**. Builds are triggered by GitHub Actions via `gcloud builds submit` — there is no GCP Console trigger to configure. Option B does not exist as an operational path.
+
+Option C (parse from APP_SECRETS at build time) adds unjustified complexity. APP_SECRETS is a Cloud Run runtime secret injected by Cloud Run's `--set-secrets` mechanism — it is not available to Cloud Build steps without additional `secretEnv` wiring and JSON parsing logic. The complexity cost is high; the benefit (avoiding a single non-sensitive string in code) is negligible.
+
+Option A is therefore the only viable choice, and it is architecturally sound:
+- `_CLOUDSQL_INSTANCE` is **not sensitive**. Cloud SQL instance connection names appear in Cloud Run `--add-cloudsql-instances` flags, logs, and IAM bindings — they are infra identifiers, not secrets.
+- **Precedent already exists in this file**: `_REGION: us-west1` and `_SERVICE_NAME: coffee-tracker` are hardcoded in the same substitutions block. `_CLOUDSQL_INSTANCE` is structurally identical — a non-sensitive, environment-specific infra identifier.
+- Keeping it in code makes the build fully self-describing. Any developer can read `cloudbuild.yaml` and understand exactly what instance the migrate step connects to, without consulting GCP Console or a separate config store.
+
+If the Cloud SQL instance ever changes, a one-line commit to `cloudbuild.yaml` is the correct mechanism — auditable, reviewable, and version-controlled.
+
+### Alex (implementation view)
+
+The value is already present in `cloudbuild.yaml` line 214 as of this decision:
+```yaml
+_CLOUDSQL_INSTANCE: espresso-logs-prod:us-west1:espresso-logs-db
+```
+
+No further implementation action is required for this variable. The migrate step (Step 5b-2) consumes it correctly:
+```bash
+/workspace/cloud-sql-proxy --unix-socket=/cloudsql $_CLOUDSQL_INSTANCE &
+```
+
+And the deploy step consumes it:
+```
+--add-cloudsql-instances=$_CLOUDSQL_INSTANCE
+```
+
+The only variables that legitimately belong in `<SET_IN_TRIGGER>` are those that **cannot be known at commit time** or that are **service-account email addresses** (which vary by GCP project setup and are closer to infrastructure identity than app config). `_RUNTIME_SA` and `_CLOUDBUILD_SA` correctly remain as `<SET_IN_TRIGGER>` — they are passed via `--substitutions` in the GitHub Actions workflow.
+
+---
+
+## Conditions and future considerations
+
+- If the project ever moves back to GCP Console-managed Cloud Build triggers (e.g., Terraform codifies a `google_cloudbuild_trigger` resource again), `_CLOUDSQL_INSTANCE` should be migrated to that trigger's substitutions block to keep all environment-specific config in one place.
+- If espresso-logs ever becomes multi-environment (staging vs. prod triggers), `_CLOUDSQL_INSTANCE` should be parameterised per trigger at that point.
+- Neither condition applies today.
+
+---
+
+## Alternatives considered and rejected
+
+| Option | Verdict | Reason |
+|--------|---------|--------|
+| B — GCP Console trigger | Rejected | No Cloud Build trigger exists; builds run via `gcloud builds submit` from GitHub Actions |
+| C — Parse from APP_SECRETS | Rejected | APP_SECRETS is a Cloud Run runtime secret; making it available at build time requires extra `secretEnv` wiring and JSON parsing — unjustified complexity for a non-sensitive value |
+# Decision Drop — Cloud Run Health Probe 302 Redirect: Root Cause Analysis
+
+**Date:** 2026-05-17T06:29:25Z  
+**Agent:** Tariq  
+**Status:** DIAGNOSIS COMPLETE — fix required before next deploy  
+**Type:** Deployment failure RCA
+
+---
+
+## Symptom
+
+Cloud Run probes `GET /health` on the new revision and receives `302 Found` (redirect to `/auth/login`). Cloud Run requires a 2xx response to declare the revision healthy. The revision remains in "Deploying" state until the deploy step times out.
+
+---
+
+## Root Cause
+
+### There is no `/health` route in the application.
+
+`app/routers/health.py` exposes only two unauthenticated endpoints:
+
+```
+GET /livez   → {"status": "ok"}
+GET /readyz  → {"status": "ok"}
+```
+
+`GET /health` is not defined. It was never defined — `git log` shows `health.py` has existed unchanged since the initial commit (`ed413fe`).
+
+### What happens when Cloud Run probes `/health`
+
+1. Request hits FastAPI. No router matches `/health`.
+2. Falls through to the SPA catch-all in `app/main.py`:
+   ```python
+   @app.get("/{full_path:path}", include_in_schema=False)
+   async def spa_catch_all(full_path: str, _user: CurrentUser) -> HTMLResponse:
+   ```
+3. `CurrentUser` → `_get_current_user(request)` → no session cookie on a Cloud Run probe → raises `_RequiresLogin`.
+4. `requires_login_handler` in `app/main.py` catches `_RequiresLogin`:
+   ```python
+   @app.exception_handler(_RequiresLogin)
+   async def requires_login_handler(request: Request, exc: _RequiresLogin) -> RedirectResponse:
+       return RedirectResponse(url="/auth/login", status_code=302)
+   ```
+5. Cloud Run receives `302` → not 2xx → health check failure → deploy timeout.
+
+### Why `cloudbuild.yaml` doesn't protect against this
+
+The `gcloud run deploy` step in `cloudbuild.yaml` does not specify `--startup-probe` or any health check path. Cloud Run inherits whatever probe is persisted in the service's existing configuration. This configuration is set outside `cloudbuild.yaml` — most likely via the GCP Console or a prior `gcloud` invocation that explicitly set an HTTP startup probe at `/health`.
+
+### Why it worked before
+
+The most likely explanation: the Cloud Run service originally used **TCP probing** (the default for Cloud Run Gen1, and the initial Cloud Run Gen2 default when no probe is configured). TCP probing only checks that the container is listening on port 8080 — it doesn't make an HTTP request. This always succeeds once the app starts.
+
+Something changed the probe to **HTTP GET `/health`** — either:
+- A manual change in the GCP Console (Health checks tab on the revision or service)
+- A previous `gcloud run deploy` call that included `--startup-probe=httpGet.path=/health`
+- A Cloud Run platform update that changed default probe behaviour for this service generation
+
+Once set, this probe configuration persists across all deployments because `cloudbuild.yaml` never explicitly configures or resets it.
+
+---
+
+## Evidence Summary
+
+| Finding | File | Detail |
+|---|---|---|
+| No `/health` route | `app/routers/health.py` | Only `/livez` and `/readyz` defined |
+| SPA catch-all requires auth | `app/main.py:196` | `CurrentUser` dependency on `/{full_path:path}` |
+| Auth failure → 302 | `app/main.py:131-133` | `_RequiresLogin` → `RedirectResponse(url="/auth/login", status_code=302)` |
+| No probe config in CI | `cloudbuild.yaml:125-152` | `gcloud run deploy` step has no `--startup-probe` flag |
+| `/health` never existed | `git log -- app/routers/health.py` | Single commit: `ed413fe` initial commit |
+
+---
+
+## Fix Options
+
+### Option A — Add `/health` to the application (recommended primary fix)
+
+Add an unauthenticated `GET /health` route to `app/routers/health.py`:
+
+```python
+@router.get("/health")
+async def health() -> JSONResponse:
+    """Cloud Run startup probe — returns 200 as long as the process is running."""
+    return JSONResponse({"status": "ok"})
+```
+
+**Pros:** Application explicitly handles the probe path. Works regardless of what probe path is configured in Cloud Run or any other infrastructure. Zero config change required in Cloud Build or GCP Console.
+
+**Cons:** Slightly duplicates `/livez` functionality. (Acceptable — the paths serve different audiences: Cloud Run infrastructure vs Kubernetes-style tooling.)
+
+### Option B — Pin the startup probe in `cloudbuild.yaml` (recommended defence-in-depth)
+
+Add `--startup-probe=httpGet.path=/livez,port=8080` to the `gcloud run deploy` step:
+
+```yaml
+- '--startup-probe=httpGet.path=/livez,port=8080'
+```
+
+This makes the probe configuration explicit and version-controlled. Any manually-set probe in the GCP Console will be overridden on the next deploy.
+
+**Pros:** Infrastructure-as-code — probe path is declared in the repo, not hidden in GCP Console. Explicit intent.  
+**Cons:** Requires an operator to push a change to trigger the override.
+
+### Recommendation
+
+**Apply both.** A is the immediate unblock — it makes the app respond 200 on any probe path the infra team has configured. B is the long-term guard — it pins the probe to `/livez` in source and prevents this class of misconfiguration from recurring.
+
+Do not apply B alone: if the GCP Console probe is still set to `/health`, B only fixes the probe on the next deploy. If Option A is applied first, both `/health` and `/livez` respond 200 and the deploy unblocks immediately.
+
+---
+
+## Action Required
+
+1. **Alex or Karthik** to implement Fix A (`GET /health` in `health.py`) — one-line change, no auth, no deps.
+2. **Karthik** to add Fix B (`--startup-probe` in `cloudbuild.yaml`) as the follow-up defence.
+3. Verify by re-triggering the Cloud Build pipeline after Fix A is merged to main.
+
+**Blocked state:** Every deploy will fail until Fix A or an equivalent probe reconfiguration (pointing `/health` to `/livez` via a Cloud Run console update) is in place.
+
+---
+
+## Out of Scope
+
+- Investigating the exact mechanism that changed the probe to `/health` (Cloud Run console audit log would show this but is not accessible from this repo)
+- Changing the existing `/livez` or `/readyz` routes
+- Any changes to auth middleware or `_RequiresLogin` handling
+# Routing Decision — Bean Name Display + Maintenance Log Bugs
+
+**Agent:** Alex (Backend Engineer)  
+**Date:** 2026-05-17  
+**Status:** DIRECT_PERMITTED  
+**Requested by:** skarthikkrishna  
+
+---
+
+## Decision
+
+`status: DIRECT_PERMITTED`
+
+Both bugs are caused by the same structural flaw: the Postgres migration stored UUID FK references, but the SQL repo layer uses Sheets string IDs for cross-table lookups. The `sheets_*` TEXT bridge columns (`sheets_catalog_id`, `sheets_hardware_id`) were added in migrations 0005/0006 but were **never backfilled** from the FK relationships.
+
+This is a bounded SQL repo fix — no new entities, no schema changes, no router or frontend changes.
+
+---
+
+## Root Cause Diagnosis
+
+### Bug 1: Brew log shows `bag-uuid` instead of bean name
+
+**Lookup chain in `api_brew_log.py`:**
+1. `_build_lookups()` → `inventory_repo.list_all()` → builds `bags` dict keyed by `Bag_ID` = `InventoryBag.sheets_id` ✅
+2. `_resolve_names_from_dicts()` → `bag_row = bags.get(brew_log["Bag_ID"])` — this lookup works ✅
+3. `catalog_row = catalog.get(bag_row.get("Catalog_ID", ""))` — **this lookup fails** ❌
+
+**Why it fails:**  
+`SqlInventoryRepo._to_dict()` returns `"Catalog_ID": row.sheets_catalog_id or ""`.  
+`InventoryBag.sheets_catalog_id` is **NULL** for all migrated records — migration `0006` added the column but the migration script (`_mapping.py: from_sheets_dict_inventory`) only stored `catalog_id` (Postgres UUID FK), never `sheets_catalog_id`.  
+So `catalog.get("", {})` returns `{}`, `roaster + bean_name = ""`, fallback fires → displays `bag_id`.
+
+**Confirmed in `_mapping.py: from_sheets_dict_inventory`:**
+```python
+return {
+    "sheets_id": sheets_id,
+    "catalog_id": catalog_id,   # ← UUID FK populated ✅
+    # "sheets_catalog_id": ...  # ← MISSING — never written ❌
+    ...
+}
+```
+
+### Bug 2: Maintenance logs not showing in hardware detail view
+
+**Lookup in `api_hardware.py`:**
+```python
+events = await maintenance_repo.list(hardware_id=hardware_id)  # hardware_id = "M01" (Sheets ID)
+```
+
+**`SqlMaintenanceRepo.list(hardware_id=...)`:**
+```python
+q = q.where(MaintenanceLog.sheets_hardware_id == hardware_id)
+```
+
+`MaintenanceLog.sheets_hardware_id` is **NULL** for all migrated records — migration `0005` added the column but the migration script (`from_sheets_dict_maintenance`) only stored `hardware_id` (Postgres UUID FK), never `sheets_hardware_id`.  
+So `WHERE sheets_hardware_id = 'M01'` returns 0 rows → empty maintenance list.
+
+**Confirmed in `_mapping.py: from_sheets_dict_maintenance`:**
+```python
+return {
+    "sheets_id": sheets_id,
+    "hardware_id": hardware_id,   # ← UUID FK populated ✅
+    # "sheets_hardware_id": ...   # ← MISSING — never written ❌
+    ...
+}
+```
+
+---
+
+## Fix Scope
+
+### Files that will change
+
+| File | Change |
+|------|--------|
+| `app/repos/sql/inventory.py` | `list()` and `list_all()` — JOIN to `catalog` table via `catalog_id` FK; populate `Catalog_ID` in `_to_dict()` as `catalog.sheets_id` |
+| `app/repos/sql/maintenance.py` | `list(hardware_id=...)` — when `hardware_id` is a Sheets string, JOIN to `hardware` table via UUID FK to filter by `hardware.sheets_id` |
+| `tests/` | New test coverage for both repo JOIN paths |
+
+### Files that will NOT change
+- `app/routers/api_brew_log.py` — logic is correct; fixes land in repo layer only
+- `app/routers/api_hardware.py` — same; no change needed
+- `app/models/` — no ORM model changes
+- `alembic/versions/` — no new migrations needed (JOIN approach avoids needing backfill)
+- Frontend — no changes; field names and API contract unchanged
+
+---
+
+## Why DIRECT_PERMITTED
+
+- No new entities, tables, or API fields
+- No spec ambiguity — functional spec clearly requires resolved names; this is a regression from the migration
+- Fix is entirely within the SQL repo layer
+- Both bugs share the same fix pattern (JOIN over FK instead of filtering by unpopulated TEXT column)
+- Low blast radius — only `SqlInventoryRepo` and `SqlMaintenanceRepo` change
+- Existing tests can be extended to cover the JOIN paths without new infrastructure
+### 2026-05-17T06:36:45-07:00: Operator authorised resumption post-RCA
+
+**By:** skarthikkrishna (operator)
+**What:** Operator has read Tariq's RCA (`.squad/log/20260517T133037Z-rca.md`) covering four Inviolable Rule violations (no squad dispatch, direct pushes to main, no operator push approval, integration tests skipped) and has explicitly authorised work to resume under correct protocol.
+**Why:** Satisfies Remediation Step R6 — formal operator acknowledgment required before work continues.

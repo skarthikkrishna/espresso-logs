@@ -7,6 +7,7 @@ import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.catalog import CatalogBean
 from app.models.inventory import InventoryBag
 from app.repos.sql.inventory import SqlInventoryRepo
 
@@ -112,3 +113,94 @@ async def test_get_returns_inserted_row(db_session: AsyncSession) -> None:
     assert result["Bag_ID"] == "BAG-002"
     assert result["Beans"] == "Kenya AA"
     assert result["RoastDate"] == "2026-04-20"
+
+
+# ---------------------------------------------------------------------------
+# T-INV-JOIN-01..04 — LEFT OUTER JOIN CatalogBean tests
+# ---------------------------------------------------------------------------
+
+
+async def test_inv_join_01_list_all_returns_catalog_sheets_id_when_joined_via_uuid_fk(
+    db_session: AsyncSession,
+) -> None:
+    """T-INV-JOIN-01: list_all() resolves Catalog_ID via UUID FK JOIN."""
+    catalog = CatalogBean(roaster="T", bean_name="T", sheets_id="C-JOIN-01")
+    db_session.add(catalog)
+    await db_session.flush()
+
+    bag = InventoryBag(
+        sheets_id="BAG-JOIN-01",
+        catalog_id=catalog.id,
+        sheets_catalog_id=None,
+        beans="T",
+        status="Active",
+    )
+    db_session.add(bag)
+    await db_session.flush()
+
+    repo = SqlInventoryRepo(db=db_session)
+    results = await repo.list_all()
+    assert len(results) == 1
+    assert results[0]["Catalog_ID"] == "C-JOIN-01"
+
+
+async def test_inv_join_02_list_returns_sheets_catalog_id_fallback_when_no_uuid_fk(
+    db_session: AsyncSession,
+) -> None:
+    """T-INV-JOIN-02: list() returns legacy sheets_catalog_id when catalog_id FK is NULL."""
+    bag = InventoryBag(
+        catalog_id=None,
+        sheets_catalog_id="C-LEGACY-01",
+        beans="L",
+        status="Active",
+    )
+    db_session.add(bag)
+    await db_session.flush()
+
+    repo = SqlInventoryRepo(db=db_session)
+    results = await repo.list()
+    assert len(results) == 1
+    assert results[0]["Catalog_ID"] == "C-LEGACY-01"
+
+
+async def test_inv_join_03_get_returns_catalog_sheets_id_via_uuid_fk(
+    db_session: AsyncSession,
+) -> None:
+    """T-INV-JOIN-03: get() resolves Catalog_ID via UUID FK JOIN."""
+    catalog = CatalogBean(roaster="T", bean_name="T", sheets_id="C-JOIN-03")
+    db_session.add(catalog)
+    await db_session.flush()
+
+    bag = InventoryBag(
+        sheets_id="BAG-JOIN-03",
+        catalog_id=catalog.id,
+        sheets_catalog_id=None,
+        beans="T",
+        status="Active",
+    )
+    db_session.add(bag)
+    await db_session.flush()
+
+    repo = SqlInventoryRepo(db=db_session)
+    result = await repo.get("BAG-JOIN-03")
+    assert result is not None
+    assert result["Catalog_ID"] == "C-JOIN-03"
+
+
+async def test_inv_join_04_list_returns_empty_catalog_id_when_no_catalog_link(
+    db_session: AsyncSession,
+) -> None:
+    """T-INV-JOIN-04: list_all() returns empty Catalog_ID when no FK and no sheets column."""
+    bag = InventoryBag(
+        catalog_id=None,
+        sheets_catalog_id=None,
+        beans="NoCatalog",
+        status="Active",
+    )
+    db_session.add(bag)
+    await db_session.flush()
+
+    repo = SqlInventoryRepo(db=db_session)
+    results = await repo.list_all()
+    assert len(results) == 1
+    assert results[0]["Catalog_ID"] == ""
