@@ -61,17 +61,39 @@ def _parse_cloud_sql_url(url: str) -> tuple[str, str, str, str]:
     return instance, user, password, database
 
 
-def _build_engine_with_connector(url: str) -> AsyncEngine:
-    """Build an async SQLAlchemy engine using the Cloud SQL Python Connector.
+def _build_engine_with_connector_sync(url: str) -> AsyncEngine:
+    """Build an async SQLAlchemy engine for non-Cloud-SQL URLs (local dev / CI).
 
-    The connector authenticates via ADC and manages TLS, eliminating the need
-    for a Cloud SQL Auth Proxy sidecar in Cloud Run.
+    For Cloud SQL URLs in production, use ``init_async_engine()`` instead,
+    which must be awaited inside a running event loop.
     """
-    global _connector
-    from google.cloud.sql.connector import Connector
+    return create_async_engine(
+        url,
+        pool_size=5,
+        max_overflow=5,
+        echo=False,
+    )
+
+
+async def init_async_engine(url: str) -> None:
+    """Initialize the async engine using the Cloud SQL Python Connector.
+
+    Must be called from within the running event loop (FastAPI lifespan startup).
+    ``create_async_connector()`` binds the connector to the current loop, which
+    prevents the ``ConnectorLoopError`` raised when ``Connector()`` is constructed
+    outside the event loop and later used inside it.
+
+    Sets the module-level ``_engine`` and ``_connector`` singletons.
+    No-op if the engine is already initialized.
+    """
+    global _engine, _connector
+    if _engine is not None:
+        return
+
+    from google.cloud.sql.connector import create_async_connector
 
     instance, user, password, database = _parse_cloud_sql_url(url)
-    _connector = Connector()
+    _connector = await create_async_connector()
 
     async def getconn() -> Any:
         return await _connector.connect_async(
@@ -82,7 +104,7 @@ def _build_engine_with_connector(url: str) -> AsyncEngine:
             db=database,
         )
 
-    return create_async_engine(
+    _engine = create_async_engine(
         "postgresql+asyncpg://",
         async_creator=getconn,
         pool_size=5,
@@ -94,8 +116,12 @@ def _build_engine_with_connector(url: str) -> AsyncEngine:
 def get_engine() -> AsyncEngine:
     """Return the shared async SQLAlchemy engine, creating it on first call.
 
+    For Cloud SQL URLs, ``init_async_engine()`` must have been awaited during
+    the FastAPI lifespan before the first request reaches this function.
+
     Raises:
-        RuntimeError: When DATABASE_URL is not configured.
+        RuntimeError: When DATABASE_URL is not configured or init_async_engine()
+            was not called before the first Cloud SQL access.
     """
     global _engine
     if _engine is None:
@@ -105,14 +131,11 @@ def get_engine() -> AsyncEngine:
             raise RuntimeError("DATABASE_URL is not set. Cannot create database engine.")
 
         if _is_cloud_sql_url(settings.database_url):
-            _engine = _build_engine_with_connector(settings.database_url)
-        else:
-            _engine = create_async_engine(
-                settings.database_url,
-                pool_size=5,
-                max_overflow=5,
-                echo=False,
+            raise RuntimeError(
+                "Cloud SQL engine must be initialized via init_async_engine() "
+                "in the FastAPI lifespan before the first request."
             )
+        _engine = _build_engine_with_connector_sync(settings.database_url)
     return _engine
 
 

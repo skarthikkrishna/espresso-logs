@@ -180,6 +180,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
     logger.info("Coffee Tracker starting up (env=%s)", settings.app_env)
     if _E2E_AUTH_BYPASS:
         logger.warning("⚠️  E2E_AUTH_BYPASS is ACTIVE — authentication is bypassed for all requests")
+    if settings.use_postgres and settings.database_url:
+        from app.models.base import _is_cloud_sql_url, init_async_engine
+
+        if _is_cloud_sql_url(settings.database_url):
+            await init_async_engine(settings.database_url)
+            logger.info("Cloud SQL Connector initialized (async, bound to uvicorn event loop)")
     await run_startup_backfill()
     yield
     if settings.use_postgres:
