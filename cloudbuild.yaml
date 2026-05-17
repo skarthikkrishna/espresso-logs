@@ -97,10 +97,10 @@ steps:
         chmod +x /usr/local/bin/cloud-sql-proxy
         mkdir -p /cloudsql
         /usr/local/bin/cloud-sql-proxy --unix-socket=/cloudsql $_CLOUDSQL_INSTANCE &
-        PROXY_PID=$!
+        PROXY_PID=$$!
         sleep 3
         uv run alembic upgrade head
-        kill $PROXY_PID || true
+        kill $$PROXY_PID || true
     dir: /workspace
 
   # Step 6: Deploy pre-built image to Cloud Run (no nested build — avoids Compute SA dependency)
