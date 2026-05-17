@@ -170,13 +170,12 @@ images:
   - '$_REGION-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/$_SERVICE_NAME:$_COMMIT_SHA'
   - '$_REGION-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/$_SERVICE_NAME:latest'
 
-# Expose APP_SECRETS (JSON blob) to the migrate step via secretEnv.
+# Expose DATABASE_URL to the migrate step via secretEnv.
 # The Cloud Build SA ($_CLOUDBUILD_SA) must have roles/secretmanager.secretAccessor
-# on this secret. Individual steps opt-in by declaring secretEnv: ['APP_SECRETS_JSON'].
+# on this secret. Steps opt-in by declaring secretEnv: ['DATABASE_URL'].
+# APP_SECRETS is injected at runtime by Cloud Run (--set-secrets in the deploy step).
 availableSecrets:
   secretManager:
-    - versionName: 'projects/$PROJECT_ID/secrets/APP_SECRETS/versions/latest'
-      env: 'APP_SECRETS_JSON'
     - versionName: 'projects/$PROJECT_ID/secrets/DATABASE_URL/versions/latest'
       env: 'DATABASE_URL'
 
