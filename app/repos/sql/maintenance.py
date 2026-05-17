@@ -30,6 +30,41 @@ class SqlMaintenanceRepo:
     def __init__(self, db: AsyncSession) -> None:
         self._db = db
 
+    async def upsert(self, row: dict[str, Any]) -> None:
+        """Insert or update a maintenance event by sheets_id.
+
+        Behaviour:
+        - If no row with ``sheets_id`` exists → INSERT with all fields from *row*.
+        - If a row exists and ``sheets_hardware_id`` is NULL → UPDATE only that field.
+        - If a row exists and ``sheets_hardware_id`` is already set → no-op.
+
+        ``performed_at``, ``action``, and ``notes`` are never overwritten on
+        existing rows — the update scope is strictly limited to ``sheets_hardware_id``.
+        """
+        sheets_id = row.get("Maintenance_ID")
+        existing: MaintenanceLog | None = None
+        if sheets_id:
+            result = await self._db.execute(
+                select(MaintenanceLog).where(MaintenanceLog.sheets_id == sheets_id)
+            )
+            existing = result.scalar_one_or_none()
+
+        if existing is not None:
+            if existing.sheets_hardware_id is None:
+                existing.sheets_hardware_id = row.get("Hardware_ID")
+                await self._db.commit()
+            # else: sheets_hardware_id already set — no-op
+        else:
+            event = MaintenanceLog(
+                sheets_id=sheets_id,
+                sheets_hardware_id=row.get("Hardware_ID"),
+                performed_at=_parse_datetime(row.get("Date")),
+                action=row.get("Action_Type", ""),
+                notes=row.get("Notes"),
+            )
+            self._db.add(event)
+            await self._db.commit()
+
     async def add(self, row: dict[str, Any]) -> None:
         """Append a maintenance event. household_id intentionally NULL (M5)."""
         event = MaintenanceLog(
