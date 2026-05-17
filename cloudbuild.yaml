@@ -150,6 +150,9 @@ steps:
       # SQL-backed endpoints (catalog, inventory, brew log, etc.).
       # _CLOUDSQL_INSTANCE format: PROJECT:REGION:INSTANCE (e.g. my-proj:us-west1:espresso-logs)
       - '--add-cloudsql-instances=$_CLOUDSQL_INSTANCE'
+      # Pin the startup probe to /health so console drift cannot re-break deployments.
+      # /health is an unauthenticated endpoint (app/routers/health.py) — no OAuth redirect.
+      - '--startup-probe=httpGet.path=/health,httpGet.port=8080'
 
   # Steps 7+8: E2E smoke tests.
   #

@@ -14,3 +14,9 @@ async def livez() -> JSONResponse:
 async def readyz() -> JSONResponse:
     """Readiness probe — returns ``{"status": "ok"}``; extend here when startup checks are added."""
     return JSONResponse({"status": "ok"})
+
+
+@router.get("/health")
+async def health() -> JSONResponse:
+    """Cloud Run startup probe target — unauthenticated, returns ``{"status": "ok"}``."""
+    return JSONResponse({"status": "ok"})

@@ -156,6 +156,8 @@ async def test_public_routes_no_auth():
     ) as client:
         livez = await client.get("/livez")
         readyz = await client.get("/readyz")
+        health = await client.get("/health")
 
     assert livez.status_code == 200
     assert readyz.status_code == 200
+    assert health.status_code == 200
