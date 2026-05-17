@@ -89,13 +89,20 @@ steps:
   # Both steps intentionally run AFTER push and BEFORE deploy so a failed migration
   # blocks the deploy.
 
-  # Step 5b-1: Copy the Cloud SQL proxy binary from the official proxy image into /workspace.
-  # /workspace is shared between all Cloud Build steps; the slim uv image in the next step
-  # has no curl or wget, so we extract the binary here instead of downloading it at runtime.
-  - name: 'gcr.io/cloud-sql-connectors/cloud-sql-proxy:2'
+  # Step 5b-1: Download the Cloud SQL proxy binary into /workspace.
+  # cloud-sql-proxy:2 is a distroless image (no shell, no cp, no utilities) so it cannot
+  # be used as an entrypoint for file operations.  cloud-sdk:slim has curl pre-installed
+  # and is the standard Cloud Build utility image for download steps.
+  # /workspace is shared between all Cloud Build steps.
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
     id: 'migrate-proxy-install'
-    entrypoint: 'cp'
-    args: ['/cloud-sql-proxy', '/workspace/cloud-sql-proxy']
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        curl -sSL -o /workspace/cloud-sql-proxy \
+          https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.15.2/cloud-sql-proxy.linux.amd64
+        chmod +x /workspace/cloud-sql-proxy
     waitFor: ['push']
 
   # Step 5b-2: Run alembic migrations using the proxy binary copied in the previous step.
