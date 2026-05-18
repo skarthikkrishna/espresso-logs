@@ -1,42 +1,33 @@
 ---
-updated_at: 2026-05-17T16:30:00Z
-focus_area: Spec 031 complete — PR #76 open, data remediation done, awaiting CI + Copilot review
+updated_at: 2026-05-18T06:30:07Z
+focus_area: Session closure — maintain PR #76 merge readiness and track next production follow-up
 active_issues:
   - pr: 76
     repo: espresso-logs
     status: open
     branch: fix/031-brew-log-duplication-missing-ai
+  - task: post-deploy verification
+    repo: espresso-logs
+    status: pending
+    detail: confirm single brew-log write and AI feedback rendering in production after PR #76 deploy
+  - task: health endpoint follow-up
+    repo: espresso-logs
+    status: queued
+    detail: add GET /health route per Tariq RCA 20260517T062925Z
 ---
 
 # What We're Focused On
 
-## Active Work — Spec 031: Brew Log Duplication + Missing AI Feedback
+## Current Team Focus
 
-**PR #76 open** (`fix/031-brew-log-duplication-missing-ai → main`) — implementation complete, data remediation complete, awaiting CI green and `@copilot` review before merge.
+Close out Spec 031 safely: keep **PR #76** moving to merge (CI green + Copilot review), then validate production behavior immediately post-deploy.
 
-### Context
+## Open Work State
 
-- Spec 031 fixed two linked production bugs: duplicate brew log entries on submission (`_first_call` guard removed) and AI tasting feedback not appearing (`create_task` → `wait_for` timeout=35s).
-- 418 tests pass. All four CI checks green locally.
+1. **PR #76** (`fix/031-brew-log-duplication-missing-ai`) remains open; waiting for final CI/review completion and merge.
+2. **Post-deploy verification** is pending: verify brew log submission writes exactly one entry and AI feedback appears in production.
+3. **Queued follow-up:** implement `GET /health` endpoint to support Cloud Run health probing and reduce deploy risk.
 
-### Data Remediation — Complete
+## Blockers
 
-- Diagnosed production Brew_Log: **2 Case A duplicate sets** (rows 78+80, same Shot_ID). Postgres: clean.
-- Deleted duplicate rows 80 and 78 (higher index first). Backfilled `AI_Feedback` for `SH-20260516-01` and `SH-20260517-01`. **0 errors.**
-- Remediation scripts dropped (not committed — one-time operational use).
-
-## Open / Next
-
-1. **espresso-logs PR #76** — await CI green + Copilot review; merge when approved.
-2. **Post-deploy:** Verify brew log submission creates exactly one entry and AI feedback renders correctly in production.
-3. **Follow-up (unblocked after merge):** Add `GET /health` route (Tariq's health-probe RCA, `20260517T062925Z`) to unblock Cloud Run deploys.
-
-## No Open Blockers
-
-## Completed
-
-- Spec 031 implementation committed (`547511c`) and pushed. PR #76 open and tagged for review.
-- Spec 031 data remediation: 2 duplicates deleted, 2 AI feedbacks backfilled.
-- PR #73 merged (`hotfix/beans-catalog-brew-log`) — catalog, brew log, and inventory hotfix live.
-- M4 DONE: PR #62 merged. Production migration complete. 75 brew logs live in Cloud SQL. System reads from Postgres in production.
-- ADR-001 (household transition strategy) committed to `docs/architecture/adr-001-household-transition.md`.
+None currently recorded for session closure.
