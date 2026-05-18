@@ -541,7 +541,7 @@ When the multi-user auth milestone arrives, the `default_household` (seeded in M
 **Agent:** Tariq  
 **Triggered by:** hotfix/beans-catalog-brew-log
 
-`cloudbuild.yaml` updated to mount `DATABASE_URL` via `--set-secrets` and pass `--add-cloudsql-instances`. Cloud Build SA (`coffee-tracker-cloudbuild@espresso-logs-prod.iam.gserviceaccount.com`) required two new IAM grants:
+`cloudbuild.yaml` updated to mount `DATABASE_URL` via `--set-secrets` and pass `--add-cloudsql-instances`. Cloud Build SA (`coffee-tracker-cloudbuild@<your-gcp-project>.iam.gserviceaccount.com`) required two new IAM grants:
 
 - `roles/secretmanager.secretAccessor` on `DATABASE_URL` secret (resource-scoped)
 - `roles/cloudsql.client` at project level
@@ -945,7 +945,7 @@ syntax to prevent Cloud Build from interpreting them as substitution variables a
 
 **Option A — Hardcode in `cloudbuild.yaml` substitutions block.**
 
-`_CLOUDSQL_INSTANCE: espresso-logs-prod:us-west1:espresso-logs-db` is committed directly in the `substitutions:` block of `cloudbuild.yaml`. This is already the current state as of this decision.
+`_CLOUDSQL_INSTANCE: <your-gcp-project>:us-west1:espresso-logs-db` is committed directly in the `substitutions:` block of `cloudbuild.yaml`. This is already the current state as of this decision.
 
 ---
 
@@ -968,7 +968,7 @@ If the Cloud SQL instance ever changes, a one-line commit to `cloudbuild.yaml` i
 
 The value is already present in `cloudbuild.yaml` line 214 as of this decision:
 ```yaml
-_CLOUDSQL_INSTANCE: espresso-logs-prod:us-west1:espresso-logs-db
+_CLOUDSQL_INSTANCE: <your-gcp-project>:us-west1:espresso-logs-db
 ```
 
 No further implementation action is required for this variable. The migrate step (Step 5b-2) consumes it correctly:
@@ -1603,7 +1603,7 @@ syntax to prevent Cloud Build from interpreting them as substitution variables a
 
 **Option A — Hardcode in `cloudbuild.yaml` substitutions block.**
 
-`_CLOUDSQL_INSTANCE: espresso-logs-prod:us-west1:espresso-logs-db` is committed directly in the `substitutions:` block of `cloudbuild.yaml`. This is already the current state as of this decision.
+`_CLOUDSQL_INSTANCE: <your-gcp-project>:us-west1:espresso-logs-db` is committed directly in the `substitutions:` block of `cloudbuild.yaml`. This is already the current state as of this decision.
 
 ---
 
@@ -1626,7 +1626,7 @@ If the Cloud SQL instance ever changes, a one-line commit to `cloudbuild.yaml` i
 
 The value is already present in `cloudbuild.yaml` line 214 as of this decision:
 ```yaml
-_CLOUDSQL_INSTANCE: espresso-logs-prod:us-west1:espresso-logs-db
+_CLOUDSQL_INSTANCE: <your-gcp-project>:us-west1:espresso-logs-db
 ```
 
 No further implementation action is required for this variable. The migrate step (Step 5b-2) consumes it correctly:
