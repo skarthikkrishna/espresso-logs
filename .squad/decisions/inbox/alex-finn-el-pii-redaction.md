@@ -6,7 +6,7 @@ decision: |
   - cloudbuild.yaml _CLOUDSQL_INSTANCE hardcoded value removed (set to '')
   - cloudbuild.yaml comment updated to reflect secret-based supply
   - deploy.yml updated to pass _CLOUDSQL_INSTANCE=${{ secrets.GCP_CLOUDSQL_INSTANCE }}
-  - .squad/decisions.md: skarthikkrishna → skarthikkrishna (3 occurrences)
+  - .squad/decisions.md: full legal name → skarthikkrishna (3 occurrences)
   - .env (gitignored, local only): ALLOWLIST_EMAILS email redacted locally — not a tracked file,
     no HEAD risk, but redacted for local hygiene.
   - Full grep validation clean on HEAD state (tracked files only).

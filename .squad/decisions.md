@@ -426,7 +426,7 @@ Row deletion by primary key is a standard repo operation — exposed as public m
 
 ## 2026-05-13: User Directive — No Git Push Without Approval
 
-**By:** Karthik (via Copilot)  
+**By:** skarthikkrishna (via Copilot)  
 **Date:** 2026-05-13T20:36:58Z
 
 No agent may run `git push`, `git commit`, or trigger CI without explicit user approval. Every push burns a GitHub Actions CI run and costs real money. Agents stage changes locally and wait. Coordinator asks "ready to push?" before commit+push.
@@ -1113,8 +1113,8 @@ Do not apply B alone: if the GCP Console probe is still set to `/health`, B only
 
 ## Action Required
 
-1. **Alex or Karthik** to implement Fix A (`GET /health` in `health.py`) — one-line change, no auth, no deps.
-2. **Karthik** to add Fix B (`--startup-probe` in `cloudbuild.yaml`) as the follow-up defence.
+1. **Alex or skarthikkrishna** to implement Fix A (`GET /health` in `health.py`) — one-line change, no auth, no deps.
+2. **skarthikkrishna** to add Fix B (`--startup-probe` in `cloudbuild.yaml`) as the follow-up defence.
 3. Verify by re-triggering the Cloud Build pipeline after Fix A is merged to main.
 
 **Blocked state:** Every deploy will fail until Fix A or an equivalent probe reconfiguration (pointing `/health` to `/livez` via a Cloud Run console update) is in place.
@@ -1774,8 +1774,8 @@ Do not apply B alone: if the GCP Console probe is still set to `/health`, B only
 
 ## Action Required
 
-1. **Alex or Karthik** to implement Fix A (`GET /health` in `health.py`) — one-line change, no auth, no deps.
-2. **Karthik** to add Fix B (`--startup-probe` in `cloudbuild.yaml`) as the follow-up defence.
+1. **Alex or skarthikkrishna** to implement Fix A (`GET /health` in `health.py`) — one-line change, no auth, no deps.
+2. **skarthikkrishna** to add Fix B (`--startup-probe` in `cloudbuild.yaml`) as the follow-up defence.
 3. Verify by re-triggering the Cloud Build pipeline after Fix A is merged to main.
 
 **Blocked state:** Every deploy will fail until Fix A or an equivalent probe reconfiguration (pointing `/health` to `/livez` via a Cloud Run console update) is in place.
