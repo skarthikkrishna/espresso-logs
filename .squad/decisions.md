@@ -541,7 +541,7 @@ When the multi-user auth milestone arrives, the `default_household` (seeded in M
 **Agent:** Tariq  
 **Triggered by:** hotfix/beans-catalog-brew-log
 
-`cloudbuild.yaml` updated to mount `DATABASE_URL` via `--set-secrets` and pass `--add-cloudsql-instances`. Cloud Build SA (`coffee-tracker-cloudbuild@espresso-logs-prod.iam.gserviceaccount.com`) required two new IAM grants:
+`cloudbuild.yaml` updated to mount `DATABASE_URL` via `--set-secrets` and pass `--add-cloudsql-instances`. Cloud Build SA (`coffee-tracker-cloudbuild@<your-gcp-project>.iam.gserviceaccount.com`) required two new IAM grants:
 
 - `roles/secretmanager.secretAccessor` on `DATABASE_URL` secret (resource-scoped)
 - `roles/cloudsql.client` at project level
@@ -945,7 +945,7 @@ syntax to prevent Cloud Build from interpreting them as substitution variables a
 
 **Option A — Hardcode in `cloudbuild.yaml` substitutions block.**
 
-`_CLOUDSQL_INSTANCE: espresso-logs-prod:us-west1:espresso-logs-db` is committed directly in the `substitutions:` block of `cloudbuild.yaml`. This is already the current state as of this decision.
+`_CLOUDSQL_INSTANCE: <your-gcp-project>:us-west1:espresso-logs-db` is committed directly in the `substitutions:` block of `cloudbuild.yaml`. This is already the current state as of this decision.
 
 ---
 
@@ -968,7 +968,7 @@ If the Cloud SQL instance ever changes, a one-line commit to `cloudbuild.yaml` i
 
 The value is already present in `cloudbuild.yaml` line 214 as of this decision:
 ```yaml
-_CLOUDSQL_INSTANCE: espresso-logs-prod:us-west1:espresso-logs-db
+_CLOUDSQL_INSTANCE: <your-gcp-project>:us-west1:espresso-logs-db
 ```
 
 No further implementation action is required for this variable. The migrate step (Step 5b-2) consumes it correctly:
@@ -1603,7 +1603,7 @@ syntax to prevent Cloud Build from interpreting them as substitution variables a
 
 **Option A — Hardcode in `cloudbuild.yaml` substitutions block.**
 
-`_CLOUDSQL_INSTANCE: espresso-logs-prod:us-west1:espresso-logs-db` is committed directly in the `substitutions:` block of `cloudbuild.yaml`. This is already the current state as of this decision.
+`_CLOUDSQL_INSTANCE: <your-gcp-project>:us-west1:espresso-logs-db` is committed directly in the `substitutions:` block of `cloudbuild.yaml`. This is already the current state as of this decision.
 
 ---
 
@@ -1626,7 +1626,7 @@ If the Cloud SQL instance ever changes, a one-line commit to `cloudbuild.yaml` i
 
 The value is already present in `cloudbuild.yaml` line 214 as of this decision:
 ```yaml
-_CLOUDSQL_INSTANCE: espresso-logs-prod:us-west1:espresso-logs-db
+_CLOUDSQL_INSTANCE: <your-gcp-project>:us-west1:espresso-logs-db
 ```
 
 No further implementation action is required for this variable. The migrate step (Step 5b-2) consumes it correctly:
@@ -1887,3 +1887,51 @@ return {
 - Both bugs share the same fix pattern (JOIN over FK instead of filtering by unpopulated TEXT column)
 - Low blast radius — only `SqlInventoryRepo` and `SqlMaintenanceRepo` change
 - Existing tests can be extended to cover the JOIN paths without new infrastructure
+
+
+---
+
+## 2026-05-18T06:29:04Z: Scribe Inbox Merge
+
+### 20260518T062708Z-tariq-routing-pr-review-fix-032.md
+
+```md
+---
+date: 2026-05-18
+agent: Tariq
+topic: Routing decision for PR comment '@copilot can you review this please' on "fix(032): redact live GCP service account emails from HEAD"
+status: DIRECT_PERMITTED
+decision: |
+  Direct implementation is permitted. Scope is strictly bounded to PR review/triage workflow for an existing PR comment trigger,
+  with no product-scope, architecture, or cross-phase requirements changes. No SpecKit cycle is required for this request.
+scope_confirmation: |
+  Authorized scope is limited to handling the review request on the existing PR only.
+  It does not include feature development, requirement changes, or infrastructure redesign.
+---
+```
+
+### alex-finn-el-pii-redaction.md
+
+```md
+---
+date: 2026-05-18
+agent: Alex + Finn
+topic: espresso-logs HEAD PII redaction + CLOUDSQL secret migration — spec-032 T-EL-01 + T-EL-02
+decision: |
+  - cloudbuild.yaml _CLOUDSQL_INSTANCE hardcoded value removed (set to '')
+  - cloudbuild.yaml comment updated to reflect secret-based supply
+  - deploy.yml updated to pass _CLOUDSQL_INSTANCE=${{ secrets.GCP_CLOUDSQL_INSTANCE }}
+  - .squad/decisions.md: full legal name → skarthikkrishna (3 occurrences)
+  - .env (gitignored, local only): ALLOWLIST_EMAILS email redacted locally — not a tracked file,
+    no HEAD risk, but redacted for local hygiene.
+  - Full grep validation clean on HEAD state (tracked files only).
+  CRITICAL: T-CLOSE-01 pending — operator must add GCP_CLOUDSQL_INSTANCE secret to espresso-logs
+  repo settings before next deploy triggers. Without it, Cloud Build will receive an empty
+  _CLOUDSQL_INSTANCE substitution and the migrate step will fail at proxy startup.
+files_changed:
+  - cloudbuild.yaml
+  - .github/workflows/deploy.yml
+  - .squad/decisions.md
+status: committed — branch chore/032-pii-redaction
+---
+```
