@@ -28,11 +28,18 @@ jobs:
       - name: Set up gcloud CLI
         uses: google-github-actions/setup-gcloud@v3
 
+      - name: Validate required secrets
+        run: |
+          if [ -z "${{ secrets.GCP_CLOUDSQL_INSTANCE }}" ]; then
+            echo "::error::GCP_CLOUDSQL_INSTANCE secret is not set. Add it in repo Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
       - name: Submit Cloud Build job
         run: |
           gcloud builds submit \
             --config=cloudbuild.yaml \
             --project="${{ secrets.GCP_PROJECT_ID }}" \
             --gcs-source-staging-dir="gs://${{ secrets.GCP_PROJECT_ID }}-cloudbuild-source/source" \
-            --substitutions="_SERVICE_NAME=coffee-tracker,_REGION=us-west1,_COMMIT_SHA=${{ github.sha }},_RUNTIME_SA=${{ secrets.GCP_RUNTIME_SA }},_CLOUDBUILD_SA=${{ secrets.GCP_CLOUDBUILD_SA }},_SERVICE_URL=${{ secrets.GCP_SERVICE_URL }}" \
+            --substitutions="_SERVICE_NAME=coffee-tracker,_REGION=us-west1,_COMMIT_SHA=${{ github.sha }},_RUNTIME_SA=${{ secrets.GCP_RUNTIME_SA }},_CLOUDBUILD_SA=${{ secrets.GCP_CLOUDBUILD_SA }},_SERVICE_URL=${{ secrets.GCP_SERVICE_URL }},_CLOUDSQL_INSTANCE=${{ secrets.GCP_CLOUDSQL_INSTANCE }}" \
             .
