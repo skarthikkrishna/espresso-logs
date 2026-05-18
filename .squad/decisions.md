@@ -1131,7 +1131,7 @@ Do not apply B alone: if the GCP Console probe is still set to `/health`, B only
 **Agent:** Alex (Backend Engineer)  
 **Date:** 2026-05-17  
 **Status:** DIRECT_PERMITTED  
-**Requested by:** Karthik Krishna Subramanian  
+**Requested by:** skarthikkrishna  
 
 ---
 
@@ -1225,7 +1225,7 @@ return {
 - Existing tests can be extended to cover the JOIN paths without new infrastructure
 ### 2026-05-17T06:36:45-07:00: Operator authorised resumption post-RCA
 
-**By:** Karthik Krishna Subramanian (operator)
+**By:** skarthikkrishna (operator)
 **What:** Operator has read Tariq's RCA (`.squad/log/20260517T133037Z-rca.md`) covering four Inviolable Rule violations (no squad dispatch, direct pushes to main, no operator push approval, integration tests skipped) and has explicitly authorised work to resume under correct protocol.
 **Why:** Satisfies Remediation Step R6 — formal operator acknowledgment required before work continues.
 
@@ -1795,7 +1795,7 @@ Do not apply B alone: if the GCP Console probe is still set to `/health`, B only
 **Agent:** Alex (Backend Engineer)  
 **Date:** 2026-05-17  
 **Status:** DIRECT_PERMITTED  
-**Requested by:** Karthik Krishna Subramanian  
+**Requested by:** skarthikkrishna  
 
 ---
 

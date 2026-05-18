@@ -76,7 +76,7 @@ steps:
   # OPERATOR REQUIREMENTS:
   #   - $_CLOUDBUILD_SA must have roles/secretmanager.secretAccessor on DATABASE_URL and APP_SECRETS.
   #   - $_CLOUDBUILD_SA must have roles/cloudsql.client on the Cloud SQL instance.
-  #   - _CLOUDSQL_INSTANCE is hardcoded in substitutions (not sensitive — infra identifier).
+  #   - _CLOUDSQL_INSTANCE is supplied at runtime via GCP_CLOUDSQL_INSTANCE GitHub secret.
   #
   # Split into two steps:
   #   migrate-proxy-install: copies the proxy binary from the official image into /workspace
@@ -209,4 +209,4 @@ substitutions:
   _RUNTIME_SA: <SET_IN_TRIGGER>
   _CLOUDBUILD_SA: <SET_IN_TRIGGER>
   _SERVICE_URL: ''
-  _CLOUDSQL_INSTANCE: espresso-logs-prod:us-west1:espresso-logs-db
+  _CLOUDSQL_INSTANCE: ''
