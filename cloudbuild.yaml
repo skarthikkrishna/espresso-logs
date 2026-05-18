@@ -5,9 +5,24 @@
 #   _SERVICE_URL      — Deployed Cloud Run service URL (e.g. https://my-app-xxx.a.run.app)
 # Built-in substitution used: $PROJECT_ID (automatically set by Cloud Build)
 steps:
+  # Step 0: Fail fast if _CLOUDSQL_INSTANCE has not been set in the Cloud Build trigger.
+  # An empty or sentinel value passes silently until the Cloud SQL proxy fails deep in
+  # the migrate step. This guard surfaces the misconfiguration immediately.
+  - name: 'bash'
+    id: 'check-substitutions'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        if [ -z "$_CLOUDSQL_INSTANCE" ] || [ "$_CLOUDSQL_INSTANCE" = "<SET_IN_TRIGGER>" ]; then
+          echo "ERROR: _CLOUDSQL_INSTANCE substitution is not set. Pass it via --substitutions or set it in the Cloud Build trigger." >&2
+          exit 1
+        fi
+
   # Step 1: Confirm uv is available (ghcr.io/astral-sh/uv image has uv pre-installed)
   - name: 'ghcr.io/astral-sh/uv:0.7.0'
     id: 'check-uv'
+    waitFor: ['check-substitutions']
     args: ['--version']
 
   # Step 2: Install all project dependencies (frozen — never modifies uv.lock)
@@ -209,4 +224,4 @@ substitutions:
   _RUNTIME_SA: <SET_IN_TRIGGER>
   _CLOUDBUILD_SA: <SET_IN_TRIGGER>
   _SERVICE_URL: ''
-  _CLOUDSQL_INSTANCE: ''
+  _CLOUDSQL_INSTANCE: '<SET_IN_TRIGGER>'

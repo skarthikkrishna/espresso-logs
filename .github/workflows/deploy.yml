@@ -28,6 +28,13 @@ jobs:
       - name: Set up gcloud CLI
         uses: google-github-actions/setup-gcloud@v3
 
+      - name: Validate required secrets
+        run: |
+          if [ -z "${{ secrets.GCP_CLOUDSQL_INSTANCE }}" ]; then
+            echo "::error::GCP_CLOUDSQL_INSTANCE secret is not set. Add it in repo Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
       - name: Submit Cloud Build job
         run: |
           gcloud builds submit \
