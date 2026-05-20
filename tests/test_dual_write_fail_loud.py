@@ -83,3 +83,39 @@ async def test_post_brew_log_surfaces_sql_failure_as_http_500() -> None:
         app.dependency_overrides.pop(get_sheets_client, None)
 
     assert response.status_code == 500
+
+
+async def test_add_many_surfaces_postgres_failure() -> None:
+    """A Postgres batch-write failure in add_many() must not be silently swallowed.
+
+    Intent: add_many() is used by the reconciliation script to backfill rows.
+    If the SQL mirror raises during batch insert, the exception must propagate
+    so the caller knows the batch did not fully land in Postgres.
+    """
+    sheets = MagicMock()
+    sql = AsyncMock()
+    # add_many iterates and calls sql.add() per row — patch that method
+    sql.add.side_effect = Exception("simulated PG batch failure")
+    sql._db.rollback = AsyncMock()
+    repo = _DualWriteBrewLogRepo(sheets=sheets, sql=sql)
+    rows = [
+        {"Shot_ID": "SH-BATCH-001", "Date": "2026-05-15"},
+        {"Shot_ID": "SH-BATCH-002", "Date": "2026-05-16"},
+    ]
+
+    with pytest.raises(Exception, match="simulated PG batch failure"):
+        await repo.add_many(rows)
+
+    sheets.add_many.assert_called_once_with(rows)
+    sql._db.rollback.assert_awaited_once()
+
+
+async def test_add_many_postgres_none_no_exception() -> None:
+    """When Postgres is not configured, add_many() must remain Sheets-only and not raise."""
+    sheets = MagicMock()
+    repo = _DualWriteBrewLogRepo(sheets=sheets, sql=None)
+    rows = [{"Shot_ID": "SH-NO-SQL-001", "Date": "2026-05-15"}]
+
+    await repo.add_many(rows)
+
+    sheets.add_many.assert_called_once_with(rows)
