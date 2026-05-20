@@ -60,6 +60,15 @@ class BrewLogEntryOut(BaseModel):
     ai_feedback: str | None = None
 
 
+class BrewLogPageOut(BaseModel):
+    items: list[BrewLogEntryOut]
+    page: int
+    per_page: int
+    total_count: int
+    has_next: bool
+    sync_alert: bool = False
+
+
 class DashboardBagOut(BaseModel):
     bag_id: str
     display_name: str

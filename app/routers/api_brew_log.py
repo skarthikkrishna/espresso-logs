@@ -5,12 +5,13 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import date
-from typing import Any, List
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from app.config import settings
 from app.deps import (
     CurrentUser,
     _DualWriteBrewLogRepo,
@@ -26,7 +27,7 @@ from app.deps import (
     get_llm_client,
     get_maintenance_repo,
 )
-from app.models.api import BrewLogEntryOut, FeedbackOut
+from app.models.api import BrewLogEntryOut, BrewLogPageOut, FeedbackOut
 from app.services.idempotency_store import IdempotencyStore
 from app.services.ids import make_shot_id
 from app.services.inference import LLMClient, get_ai_feedback
@@ -116,17 +117,28 @@ def _shot_to_out(shot: dict[str, Any], names: dict[str, Any]) -> BrewLogEntryOut
     )
 
 
-@router.get("/brew-log", response_model=List[BrewLogEntryOut])
+@router.get("/brew-log", response_model=BrewLogPageOut)
 async def api_brew_log_list(
     user: CurrentUser,
+    page: int = 1,
+    per_page: int = 100,
     brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
     inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
     catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
     hardware_repo: _DualWriteHardwareRepo = Depends(get_hardware_repo),
-) -> list[BrewLogEntryOut]:
-    shots = await brew_log_repo.list_recent(20)
+) -> BrewLogPageOut:
+    per_page = min(per_page, 100)
+    shots, total_count = await brew_log_repo.list_paginated(page, per_page)
     bags, catalog, hardware = await _build_lookups(inventory_repo, catalog_repo, hardware_repo)
-    return [_shot_to_out(s, _resolve_names_from_dicts(s, bags, catalog, hardware)) for s in shots]
+    items = [_shot_to_out(s, _resolve_names_from_dicts(s, bags, catalog, hardware)) for s in shots]
+    return BrewLogPageOut(
+        items=items,
+        page=page,
+        per_page=per_page,
+        total_count=total_count,
+        has_next=(page * per_page) < total_count,
+        sync_alert=settings.brew_log_sync_alert,
+    )
 
 
 @router.get("/brew-log/{shot_id}/feedback", response_model=FeedbackOut)

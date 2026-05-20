@@ -132,6 +132,7 @@ def _make_mock_brew_log_repo(shots=None):
     shots = shots if shots is not None else [_SHOT_ROW.copy()]
     repo.list_recent = AsyncMock(return_value=shots)
     repo.list = AsyncMock(return_value=shots)
+    repo.list_paginated = AsyncMock(return_value=(shots, len(shots)))
     repo.list_all = AsyncMock(return_value=shots)
     repo.list_existing_ids = AsyncMock(return_value=[s["Shot_ID"] for s in shots])
     repo.get = AsyncMock(return_value=shots[0] if shots else None)
@@ -244,9 +245,9 @@ async def test_brew_log_list_handles_missing_bag_id():
 
     assert resp.status_code == 200
     data = resp.json()
-    assert len(data) == 1
+    assert len(data["items"]) == 1
     # bag_display must be "" or the raw id — never an unhandled exception
-    assert data[0]["bag_display"] in ("", shot_no_bag["Bag_ID"])
+    assert data["items"][0]["bag_display"] in ("", shot_no_bag["Bag_ID"])
 
 
 @pytest.mark.asyncio
@@ -290,8 +291,8 @@ async def test_brew_log_list_handles_missing_hardware_ids():
 
     assert resp.status_code == 200
     data = resp.json()
-    assert len(data) == 1
-    entry = data[0]
+    assert len(data["items"]) == 1
+    entry = data["items"][0]
     # All hardware names should be None or "" — never a KeyError / 500
     assert entry["machine_name"] in (None, "")
     assert entry["grinder_name"] in (None, "")

@@ -195,6 +195,17 @@ class _DualWriteBrewLogRepo:
             return await self._sql.list_recent(n)
         return self._sheets.list_recent(n)
 
+    async def list_paginated(
+        self, page: int, per_page: int
+    ) -> tuple[builtins.list[dict[str, Any]], int]:
+        """Paginated list — delegates to SQL when USE_POSTGRES=true, else in-memory pagination."""
+        if settings.use_postgres and self._sql is not None:
+            return await self._sql.list_paginated(page, per_page)
+        all_rows = self._sheets.list_recent(9999)
+        total_count = len(all_rows)
+        offset = (page - 1) * per_page
+        return all_rows[offset : offset + per_page], total_count
+
     async def list_for_bag(self, bag_id: str) -> builtins.list[dict[str, Any]]:
         if settings.use_postgres and self._sql is not None:
             return await self._sql.list_for_bag(bag_id)
@@ -227,6 +238,7 @@ class _DualWriteBrewLogRepo:
                     "error": str(exc),
                 },
             )
+            raise
 
     async def add_many(self, rows: builtins.list[dict[str, Any]]) -> None:
         self._sheets.add_many(rows)
@@ -246,6 +258,7 @@ class _DualWriteBrewLogRepo:
                         "error": str(exc),
                     },
                 )
+                raise
 
     async def update_feedback(self, shot_id: str, ai_feedback: str) -> None:
         self._sheets.update_feedback(shot_id, ai_feedback)

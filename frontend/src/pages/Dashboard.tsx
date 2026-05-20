@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import { getDashboard } from '../api/dashboard'
 import { listBrewLog } from '../api/brewLog'
+import type { BrewLogPage } from '../api/brewLog'
 import Chip from '../components/Chip'
 import type { DashboardBag, BrewLogEntry } from '../types/entities'
 
@@ -16,7 +17,7 @@ export default function Dashboard() {
   const { data: recentShots = [] } = useQuery({
     queryKey: ['brew-log'],
     queryFn: listBrewLog,
-    select: (shots: BrewLogEntry[]) => shots.slice(0, 5),
+    select: (page: BrewLogPage) => page.items.slice(0, 5),
   })
 
   if (isLoading) return (
