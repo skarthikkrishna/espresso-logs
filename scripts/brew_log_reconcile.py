@@ -77,7 +77,9 @@ def _filter_rows(
         if since is not None or until is not None:
             raw_date = str(row.get("Date") or "").strip()
             try:
-                brewed_on = date.fromisoformat(raw_date)
+                # Accept both plain dates ("2026-05-14") and full ISO datetimes
+                # ("2026-05-14T23:59:00Z", "2026-05-14T23:59:00+00:00").
+                brewed_on = date.fromisoformat(raw_date[:10])
             except ValueError as exc:
                 raise ValueError(
                     f"Shot_ID {shot_id!r} has non-ISO Date value {raw_date!r}"

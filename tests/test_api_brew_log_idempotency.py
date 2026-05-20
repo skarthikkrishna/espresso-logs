@@ -487,3 +487,49 @@ async def test_brew_log_create_llm_error_no_500():
         _remove_overrides()
 
     assert r.status_code == 201, f"Expected 201 when LLM raises, got {r.status_code}"
+
+
+async def test_postgres_mirror_failure_does_not_cache_success():
+    """POST /api/brew-log with a brew-log-repo write failure must not cache a 201 response.
+
+    Intent: if the brew log repo add() raises (e.g. dual-write Postgres failure
+    re-raises), the idempotency store must not record a completed success entry —
+    a subsequent replay with the same key must not return a cached 201. The
+    failure must be surfaced, not silently stored as success.
+    """
+    from app.deps import _DualWriteBrewLogRepo
+
+    fake = _make_fake_client()
+    _install_overrides(fake)
+
+    key = "idem-pg-fail-test-001"
+    body = {**_POST_BODY_BASE, "idempotency_key": key}
+
+    try:
+        # raise_app_exceptions=False so the unhandled repo exception comes back
+        # as an HTTP 500 instead of propagating into the test.
+        with patch.object(_DualWriteBrewLogRepo, "add", new_callable=AsyncMock) as mock_add:
+            mock_add.side_effect = Exception("simulated dual-write failure")
+            async with AsyncClient(
+                transport=ASGITransport(app=app, raise_app_exceptions=False),
+                base_url="http://test",
+            ) as client:
+                client.cookies.set("session", _AUTHED_COOKIE)
+                r = await client.post("/api/brew-log", json=body)
+
+            # The write failed — route must surface 500, not 201
+            assert r.status_code == 500, (
+                f"Expected 500 when brew log repo add() fails, got {r.status_code}"
+            )
+
+            # The idempotency store must not have a completed cache entry
+            from app.deps import get_idempotency_store
+
+            store = get_idempotency_store()
+            entry = store._cache.get(key)
+            assert entry is None or entry.get("in_flight") is True, (
+                "Failed write must not leave a completed cache entry; "
+                f"found: {entry}"
+            )
+    finally:
+        _remove_overrides()
