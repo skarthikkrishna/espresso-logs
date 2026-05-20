@@ -141,3 +141,25 @@ async def test_brew_log_per_page_clamped() -> None:
     assert len(payload["items"]) == 100
     assert payload["total_count"] == 150
     assert payload["has_next"] is True
+
+
+async def test_brew_log_page_zero_clamped() -> None:
+    """page=0 must be treated as page=1 — negative offsets must never reach the data layer."""
+    payload = await _get_brew_log(
+        _make_fake_client([_brew_row("SH-20260515-001", "2026-05-15")]),
+        "/api/brew-log?page=0",
+    )
+
+    assert payload["page"] == 1
+    assert len(payload["items"]) == 1
+
+
+async def test_brew_log_negative_page_clamped() -> None:
+    """page=-5 must be treated as page=1 — Python negative-index slicing must not be reachable."""
+    payload = await _get_brew_log(
+        _make_fake_client([_brew_row("SH-20260515-001", "2026-05-15")]),
+        "/api/brew-log?page=-5",
+    )
+
+    assert payload["page"] == 1
+    assert len(payload["items"]) == 1

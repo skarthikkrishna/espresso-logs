@@ -127,6 +127,7 @@ async def api_brew_log_list(
     catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
     hardware_repo: _DualWriteHardwareRepo = Depends(get_hardware_repo),
 ) -> BrewLogPageOut:
+    page = max(1, page)
     per_page = max(1, min(per_page, 100))
     shots, total_count = await brew_log_repo.list_paginated(page, per_page)
     bags, catalog, hardware = await _build_lookups(inventory_repo, catalog_repo, hardware_repo)

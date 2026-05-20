@@ -16,7 +16,7 @@ export default function Dashboard() {
 
   const { data: recentShots = [] } = useQuery({
     queryKey: ['brew-log'],
-    queryFn: listBrewLog,
+    queryFn: () => listBrewLog(1, 5),
     select: (page: BrewLogPage) => page.items.slice(0, 5),
   })
 
