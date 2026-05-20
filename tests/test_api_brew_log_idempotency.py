@@ -528,8 +528,7 @@ async def test_postgres_mirror_failure_does_not_cache_success():
             store = get_idempotency_store()
             entry = store._cache.get(key)
             assert entry is None or entry.get("in_flight") is True, (
-                "Failed write must not leave a completed cache entry; "
-                f"found: {entry}"
+                f"Failed write must not leave a completed cache entry; found: {entry}"
             )
     finally:
         _remove_overrides()

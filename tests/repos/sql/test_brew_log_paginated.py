@@ -58,9 +58,7 @@ async def test_list_paginated_offset_formula(db_session: AsyncSession) -> None:
     assert page2_total == 10
     assert len(page1_rows) == 5
     assert len(page2_rows) == 5
-    assert {row["Shot_ID"] for row in page1_rows}.isdisjoint(
-        {row["Shot_ID"] for row in page2_rows}
-    )
+    assert {row["Shot_ID"] for row in page1_rows}.isdisjoint({row["Shot_ID"] for row in page2_rows})
     assert [row["Shot_ID"] for row in page1_rows] == [
         "SH-20260510-01",
         "SH-20260509-01",

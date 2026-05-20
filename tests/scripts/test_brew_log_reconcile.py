@@ -40,7 +40,9 @@ async def test_reconcile_dry_run_reports_missing(capsys: pytest.CaptureFixture[s
         patch.object(reconcile, "_is_cloud_sql_url", return_value=False),
         patch.object(reconcile, "get_sheets_client", return_value=fake_sheets),
         patch.object(reconcile, "get_session_factory", return_value=_session_factory(MagicMock())),
-        patch.object(reconcile.SqlBrewLogRepo, "list_existing_ids", AsyncMock(return_value=["SH-001"])),
+        patch.object(
+            reconcile.SqlBrewLogRepo, "list_existing_ids", AsyncMock(return_value=["SH-001"])
+        ),
     ):
         exit_code = await reconcile._run([])
 
@@ -95,7 +97,9 @@ async def test_reconcile_apply_inserts_only_missing() -> None:
         patch.object(reconcile, "_is_cloud_sql_url", return_value=False),
         patch.object(reconcile, "get_sheets_client", return_value=fake_sheets),
         patch.object(reconcile, "get_session_factory", return_value=_session_factory(MagicMock())),
-        patch.object(reconcile.SqlBrewLogRepo, "list_existing_ids", AsyncMock(return_value=["SH-001"])),
+        patch.object(
+            reconcile.SqlBrewLogRepo, "list_existing_ids", AsyncMock(return_value=["SH-001"])
+        ),
         patch.object(reconcile.SqlBrewLogRepo, "add", _track_add),
     ):
         exit_code = await reconcile._run(["--apply"])

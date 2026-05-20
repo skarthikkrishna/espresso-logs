@@ -132,7 +132,9 @@ async def test_brew_log_date_boundary() -> None:
 
 async def test_brew_log_per_page_clamped() -> None:
     """Large per_page values must be clamped to 100 to prevent response amplification."""
-    brew_rows = [_brew_row(f"SH-20260515-{idx:03d}", f"2026-05-{(idx % 28) + 1:02d}") for idx in range(150)]
+    brew_rows = [
+        _brew_row(f"SH-20260515-{idx:03d}", f"2026-05-{(idx % 28) + 1:02d}") for idx in range(150)
+    ]
 
     with patch("app.routers.api_brew_log.settings.brew_log_sync_alert", False):
         payload = await _get_brew_log(_make_fake_client(brew_rows), "/api/brew-log?per_page=500")

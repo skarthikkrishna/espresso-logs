@@ -95,15 +95,20 @@ async def test_read_methods_delegate_to_sheets_only() -> None:
     sql_mock.list.assert_not_called()  # Postgres never queried for reads
 
 
-async def test_brew_log_add_postgres_failure_suppressed(caplog) -> None:  # type: ignore[no-untyped-def]
-    """BrewLog dual-write: Postgres add() failure does not propagate."""
+async def test_brew_log_add_postgres_failure_propagates(caplog) -> None:  # type: ignore[no-untyped-def]
+    """BrewLog dual-write: Postgres add() failure re-raises after rollback (fail-loud)."""
+    import pytest
+
     sheets_mock = MagicMock()
     sql_mock = AsyncMock()
     sql_mock.add.side_effect = Exception("asyncpg pool exhausted")
 
     wrapper = _DualWriteBrewLogRepo(sheets=sheets_mock, sql=sql_mock)
 
-    with caplog.at_level(logging.WARNING, logger="app.deps.dual_write"):
+    with (
+        caplog.at_level(logging.WARNING, logger="app.deps.dual_write"),
+        pytest.raises(Exception, match="asyncpg pool exhausted"),
+    ):
         await wrapper.add({"Dose_In_g": "18.0", "User_Notes": "Test"})
 
     sheets_mock.add.assert_called_once()
