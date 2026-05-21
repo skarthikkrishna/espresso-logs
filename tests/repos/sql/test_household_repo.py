@@ -1,0 +1,157 @@
+"""Unit tests for HouseholdRepo (US-2.2).
+
+Requires DATABASE_URL env var pointing to a live Postgres instance.
+Tests are auto-skipped when DATABASE_URL is not set (see tests/repos/sql/conftest.py).
+"""
+
+from __future__ import annotations
+
+import uuid
+
+import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.repos.sql.household import HouseholdRepo
+from app.repos.sql.user import UserRepo
+
+
+async def _make_user(db: AsyncSession, username: str) -> uuid.UUID:
+    repo = UserRepo()
+    user = await repo.create(
+        db,
+        username=username,
+        password_hash="pw",
+        google_sub=None,
+        email=None,
+        display_name=username,
+        picture_url=None,
+    )
+    await db.commit()
+    return user.id
+
+
+@pytest.mark.anyio
+async def test_create_household_creates_admin_member(db_session: AsyncSession) -> None:
+    user_id = await _make_user(db_session, "hh_admin")
+    repo = HouseholdRepo()
+    household = await repo.create_household(db_session, name="TestHH", created_by=user_id)
+    await db_session.commit()
+
+    member = await repo.get_member(db_session, household.id, user_id)
+    assert member is not None
+    assert member.role == "admin"
+
+
+@pytest.mark.anyio
+async def test_count_admins(db_session: AsyncSession) -> None:
+    user_id = await _make_user(db_session, "cnt_admin")
+    repo = HouseholdRepo()
+    household = await repo.create_household(db_session, name="CntHH", created_by=user_id)
+    await db_session.commit()
+
+    count = await repo.count_admins(db_session, household.id)
+    assert count == 1
+
+
+@pytest.mark.anyio
+async def test_update_member_role_prevents_demoting_sole_admin(
+    db_session: AsyncSession,
+) -> None:
+    from fastapi import HTTPException
+
+    user_id = await _make_user(db_session, "sole_admin")
+    repo = HouseholdRepo()
+    household = await repo.create_household(db_session, name="SoleAdminHH", created_by=user_id)
+    await db_session.commit()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await repo.update_member_role(
+            db_session, household_id=household.id, user_id=user_id, new_role="member"
+        )
+    assert exc_info.value.status_code == 409
+
+
+@pytest.mark.anyio
+async def test_remove_member_prevents_removing_sole_admin(
+    db_session: AsyncSession,
+) -> None:
+    from fastapi import HTTPException
+
+    user_id = await _make_user(db_session, "rm_sole_admin")
+    repo = HouseholdRepo()
+    household = await repo.create_household(db_session, name="RmSoleHH", created_by=user_id)
+    await db_session.commit()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await repo.remove_member(db_session, household_id=household.id, user_id=user_id)
+    assert exc_info.value.status_code == 409
+
+
+@pytest.mark.anyio
+async def test_accept_invitation_sets_accepted_at(db_session: AsyncSession) -> None:
+    user_id = await _make_user(db_session, "inv_admin")
+    repo = HouseholdRepo()
+    household = await repo.create_household(db_session, name="InvHH", created_by=user_id)
+    await db_session.commit()
+
+    invitation = await repo.create_invitation(
+        db_session,
+        household_id=household.id,
+        invited_by_user_id=user_id,
+        token_hash="deadbeef01234567",
+    )
+    await db_session.commit()
+
+    await repo.accept_invitation(db_session, invitation.id)
+    await db_session.commit()
+
+    fetched = await repo.get_invitation_by_token_hash(db_session, "deadbeef01234567")
+    assert fetched is not None
+    assert fetched.accepted_at is not None
+
+
+@pytest.mark.anyio
+async def test_revoke_previous_guest_tokens(db_session: AsyncSession) -> None:
+    user_id = await _make_user(db_session, "gt_admin")
+    repo = HouseholdRepo()
+    household = await repo.create_household(db_session, name="GTHHH", created_by=user_id)
+    await db_session.commit()
+
+    await repo.create_guest_token(
+        db_session,
+        household_id=household.id,
+        created_by=user_id,
+        token_hash="gt_hash_01",
+    )
+    await repo.create_guest_token(
+        db_session,
+        household_id=household.id,
+        created_by=user_id,
+        token_hash="gt_hash_02",
+    )
+    await db_session.commit()
+
+    await repo.revoke_previous_guest_tokens(db_session, household.id)
+    await db_session.commit()
+
+    result1 = await repo.get_guest_token_by_hash(db_session, "gt_hash_01")
+    result2 = await repo.get_guest_token_by_hash(db_session, "gt_hash_02")
+    assert result1 is None
+    assert result2 is None
+
+
+@pytest.mark.anyio
+async def test_seed_default_household_assigns_orphan_rows(
+    db_session: AsyncSession,
+) -> None:
+    """seed_default_household returns a Household with admin membership."""
+    user_id = await _make_user(db_session, "seed_user")
+    repo = HouseholdRepo()
+
+    household = await repo.seed_default_household(db_session, user_id)
+    await db_session.commit()
+
+    assert household.name == "Home"
+    member = await repo.get_member(db_session, household.id, user_id)
+    assert member is not None
+    assert member.role == "admin"

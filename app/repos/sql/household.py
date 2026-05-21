@@ -1,0 +1,272 @@
+"""HouseholdRepo — async SQLAlchemy data access for household management (M5)."""
+
+from __future__ import annotations
+
+import datetime
+import uuid
+
+import sqlalchemy as sa
+from fastapi import HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.household import (
+    GuestToken,
+    Household,
+    HouseholdMember,
+    PendingInvitation,
+)
+
+
+class HouseholdRepo:
+    """Data access for households, memberships, invitations, and guest tokens."""
+
+    # ── Household ────────────────────────────────────────────────────────────
+
+    async def create_household(
+        self, db: AsyncSession, *, name: str, created_by: uuid.UUID
+    ) -> Household:
+        """Atomically create a household and add the creator as admin (AC-070)."""
+        household = Household(name=name, created_by=created_by)
+        db.add(household)
+        await db.flush()
+        await db.refresh(household)
+
+        member = HouseholdMember(
+            household_id=household.id,
+            user_id=created_by,
+            role="admin",
+            invited_by=None,
+        )
+        db.add(member)
+        await db.flush()
+        return household
+
+    async def get_by_id(self, db: AsyncSession, household_id: uuid.UUID) -> Household | None:
+        result = await db.execute(sa.select(Household).where(Household.id == household_id))
+        return result.scalar_one_or_none()
+
+    # ── Members ───────────────────────────────────────────────────────────────
+
+    async def get_member(
+        self, db: AsyncSession, household_id: uuid.UUID, user_id: uuid.UUID
+    ) -> HouseholdMember | None:
+        result = await db.execute(
+            sa.select(HouseholdMember).where(
+                HouseholdMember.household_id == household_id,
+                HouseholdMember.user_id == user_id,
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def get_memberships_for_user(
+        self, db: AsyncSession, user_id: uuid.UUID
+    ) -> list[HouseholdMember]:
+        result = await db.execute(
+            sa.select(HouseholdMember).where(HouseholdMember.user_id == user_id)
+        )
+        return list(result.scalars().all())
+
+    async def add_member(
+        self,
+        db: AsyncSession,
+        *,
+        household_id: uuid.UUID,
+        user_id: uuid.UUID,
+        role: str,
+        invited_by: uuid.UUID,
+    ) -> HouseholdMember:
+        member = HouseholdMember(
+            household_id=household_id,
+            user_id=user_id,
+            role=role,
+            invited_by=invited_by,
+        )
+        db.add(member)
+        await db.flush()
+        await db.refresh(member)
+        return member
+
+    async def remove_member(
+        self, db: AsyncSession, *, household_id: uuid.UUID, user_id: uuid.UUID
+    ) -> None:
+        """Remove a household member; raises 409 if target is the last admin (AC-075)."""
+        member = await self.get_member(db, household_id, user_id)
+        if member is None:
+            return
+        if member.role == "admin":
+            admin_count = await self.count_admins(db, household_id)
+            if admin_count <= 1:
+                raise HTTPException(status_code=409, detail="Cannot remove the sole admin")
+        await db.execute(
+            sa.delete(HouseholdMember).where(
+                HouseholdMember.household_id == household_id,
+                HouseholdMember.user_id == user_id,
+            )
+        )
+        await db.flush()
+
+    async def update_member_role(
+        self,
+        db: AsyncSession,
+        *,
+        household_id: uuid.UUID,
+        user_id: uuid.UUID,
+        new_role: str,
+    ) -> HouseholdMember:
+        """Update membership role; raises 409 when demoting the last admin (AC-076)."""
+        member = await self.get_member(db, household_id, user_id)
+        if member is None:
+            raise HTTPException(status_code=404, detail="Member not found")
+        if member.role == "admin" and new_role != "admin":
+            admin_count = await self.count_admins(db, household_id)
+            if admin_count <= 1:
+                raise HTTPException(status_code=409, detail="Cannot remove sole admin role")
+        await db.execute(
+            sa.update(HouseholdMember)
+            .where(
+                HouseholdMember.household_id == household_id,
+                HouseholdMember.user_id == user_id,
+            )
+            .values(role=new_role)
+        )
+        await db.flush()
+        updated = await self.get_member(db, household_id, user_id)
+        assert updated is not None  # noqa: S101
+        return updated
+
+    async def count_admins(self, db: AsyncSession, household_id: uuid.UUID) -> int:
+        result = await db.execute(
+            sa.select(sa.func.count()).where(
+                HouseholdMember.household_id == household_id,
+                HouseholdMember.role == "admin",
+            )
+        )
+        return int(result.scalar_one())
+
+    async def get_members(self, db: AsyncSession, household_id: uuid.UUID) -> list[HouseholdMember]:
+        result = await db.execute(
+            sa.select(HouseholdMember).where(HouseholdMember.household_id == household_id)
+        )
+        return list(result.scalars().all())
+
+    # ── Invitations ───────────────────────────────────────────────────────────
+
+    async def create_invitation(
+        self,
+        db: AsyncSession,
+        *,
+        household_id: uuid.UUID,
+        invited_by_user_id: uuid.UUID,
+        token_hash: str,
+    ) -> PendingInvitation:
+        """Create invitation expiring 7 days from now (ADR-M5-004)."""
+        expires = datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(days=7)
+        invitation = PendingInvitation(
+            household_id=household_id,
+            invited_by_user_id=invited_by_user_id,
+            token_hash=token_hash,
+            expires_at=expires,
+        )
+        db.add(invitation)
+        await db.flush()
+        await db.refresh(invitation)
+        return invitation
+
+    async def get_invitation_by_token_hash(
+        self, db: AsyncSession, token_hash: str
+    ) -> PendingInvitation | None:
+        """Return the invitation or None if not found (caller checks expiry/revoke)."""
+        result = await db.execute(
+            sa.select(PendingInvitation).where(PendingInvitation.token_hash == token_hash)
+        )
+        return result.scalar_one_or_none()
+
+    async def accept_invitation(self, db: AsyncSession, invitation_id: uuid.UUID) -> None:
+        """Mark invitation accepted using atomic UPDATE ... WHERE accepted_at IS NULL.
+
+        Race-condition guard: raises 410 if the invitation was already accepted.
+        """
+        result = await db.execute(
+            sa.update(PendingInvitation)
+            .where(
+                PendingInvitation.id == invitation_id,
+                PendingInvitation.accepted_at.is_(None),
+            )
+            .values(accepted_at=sa.text("NOW()"))
+            .returning(PendingInvitation.id)
+        )
+        row = result.fetchone()
+        if row is None:
+            raise HTTPException(status_code=410, detail="Invitation already accepted or not found")
+        await db.flush()
+
+    # ── Guest tokens ──────────────────────────────────────────────────────────
+
+    async def create_guest_token(
+        self,
+        db: AsyncSession,
+        *,
+        household_id: uuid.UUID,
+        created_by: uuid.UUID,
+        token_hash: str,
+    ) -> GuestToken:
+        token = GuestToken(
+            household_id=household_id,
+            created_by_user_id=created_by,
+            token_hash=token_hash,
+        )
+        db.add(token)
+        await db.flush()
+        await db.refresh(token)
+        return token
+
+    async def get_guest_token_by_hash(self, db: AsyncSession, token_hash: str) -> GuestToken | None:
+        """Return None if not found or revoked."""
+        result = await db.execute(
+            sa.select(GuestToken).where(
+                GuestToken.token_hash == token_hash,
+                GuestToken.revoked_at.is_(None),
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def revoke_previous_guest_tokens(self, db: AsyncSession, household_id: uuid.UUID) -> None:
+        """Revoke all active guest tokens for a household (AC-077)."""
+        await db.execute(
+            sa.update(GuestToken)
+            .where(
+                GuestToken.household_id == household_id,
+                GuestToken.revoked_at.is_(None),
+            )
+            .values(revoked_at=sa.text("NOW()"))
+        )
+        await db.flush()
+
+    # ── Seeding ───────────────────────────────────────────────────────────────
+
+    async def seed_default_household(self, db: AsyncSession, user_id: uuid.UUID) -> Household:
+        """Create 'Home' household, add user as admin, and assign all orphan rows (AC-090).
+
+        Orphan rows are rows in the 5 tenant tables where household_id IS NULL.
+        All operations happen within the caller's transaction.
+        """
+        household = await self.create_household(db, name="Home", created_by=user_id)
+
+        # Assign orphan rows across all 5 tenant tables
+        tenant_tables = [
+            "brew_log",
+            "catalog",
+            "inventory_bags",
+            "hardware",
+            "maintenance_log",
+        ]
+        for table in tenant_tables:
+            await db.execute(
+                sa.text(
+                    f"UPDATE {table} SET household_id = :hid WHERE household_id IS NULL"  # noqa: S608
+                ),
+                {"hid": str(household.id)},
+            )
+
+        await db.flush()
+        return household
