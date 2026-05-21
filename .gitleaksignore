@@ -1,0 +1,5 @@
+# Fingerprints for gitleaks false positives.
+# Each line is a fingerprint: <commit>:<file>:<rule>:<line>
+
+# "idem-pg-fail-test-001" — test idempotency key string, not a real credential.
+130abee2cfe22228124d879c4223b3f87c6b2084:tests/test_api_brew_log_idempotency.py:generic-api-key:505
