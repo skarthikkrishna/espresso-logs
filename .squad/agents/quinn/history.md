@@ -91,3 +91,8 @@ Green light for implementation fan-out. Alex (backend), Finn (frontend), Quinn (
 - **set_config() third arg:** `set_config(name, value, is_local)` — `is_local = true` is equivalent to `SET LOCAL` (transaction-scoped). `is_local = false` is equivalent to `SET` (session-scoped).
 - **Same-second JWT tokens:** `create_access_token` uses `int(now.timestamp())` — two calls within the same second produce identical tokens. Don't assert `new_token != old_token` in tests; assert the refresh cookie was rotated instead.
 - **Integration test autouse override pattern:** `integration_client` fixture pops autouse auth dep overrides (from conftest `_patch_auth_deps`) and restores them in teardown. This lets the full JWT → DB auth chain run for integration tests while keeping unit tests isolated.
+
+## Session 20260521 — M5 Implementation Complete
+- Completed 5 waves of M5 spec-034 implementation
+- All quality gates passed
+- 484 tests passing

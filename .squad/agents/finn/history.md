@@ -92,3 +92,8 @@ See `.squad/orchestration-log/` for agent-level summaries.
 - **Mock pattern used:** `vi.hoisted()` for `useNavigate` mock reference (needed across tests); `vi.mock` + `vi.mocked(fn).mockRejectedValue()` for API stubs; `makeAxiosError(status)` helper creates `{ isAxiosError: true, response: { status } }` objects that pass `axios.isAxiosError()` check.
 - **Key learning:** Login.tsx initialises `isOAuthProcessing` from `window.location.search` in `useState(() => ...)` — this is read at component mount, not via `useSearchParams`. To test the OAuth spinner, use `window.history.pushState({}, '', '/?oauth_success=1')` BEFORE `render()`.
 - **All checks:** `npm run test` ✅ 161/161 (18 files), `npm run lint` ✅ 0 warnings, `npm run build` ✅.
+
+## Session 20260521 — M5 Implementation Complete
+- Completed 5 waves of M5 spec-034 implementation
+- All quality gates passed
+- 484 tests passing
