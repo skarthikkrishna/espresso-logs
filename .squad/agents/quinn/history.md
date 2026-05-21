@@ -15,3 +15,29 @@
 - **SAVEPOINT isolation**: The `db_session` fixture uses `join_transaction_mode="create_savepoint"` — `repo.add()` / `repo.upsert()` call `session.commit()` internally but it issues a SAVEPOINT release, not a real commit. Each test sees a clean DB thanks to the outer rollback.
 
 - **SQL tests auto-skip locally**: `tests/repos/sql/conftest.py` calls `pytest.skip(allow_module_level=True)` when `DATABASE_URL` is not set. No boilerplate needed in individual test functions.
+
+---
+
+## 2026-05-21: M5 Spec-034 Pre-Implementation Gate
+
+**Scope:** Quinn Gate + Quality Review  
+**Status:** COMPLETE  
+**Commits:** 1 (quinn-gate)
+
+### Work Summary
+
+- **Pre-Implementation Gate:** Status `APPROVED_WITH_NOTES`
+  - Spec coherence: PASS
+  - Plan completeness: PASS
+  - Task clarity: PASS
+  - Test coverage: 6 minor notes (no blockers)
+- **Quality Assessment:** LOW risk; implementation team prepared
+- **Test Recommendations:** Integration tests for session migration, permission edge cases
+
+### Key Outputs
+
+- `specs/034/quinn-gate.md` — committed (APPROVED_WITH_NOTES status)
+
+### Handoff
+
+Green light for implementation fan-out. Alex (backend), Finn (frontend), Quinn (quality) can begin Wave 1 in parallel.

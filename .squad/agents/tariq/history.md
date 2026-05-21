@@ -56,3 +56,30 @@ Created `scripts/pre-push-check.sh` with all four required CI checks (ruff check
 - SPREADSHEET_ID=dummy is set for pytest as required by copilot-instructions.md
 - Script runs from repo root using `git rev-parse --show-toplevel` for robustness
 
+
+---
+
+## 2026-05-21: M5 Spec-034 Task Sequencing & Operability
+
+**Scope:** Tasks + Runbook  
+**Status:** COMPLETE  
+**Commits:** 1 (tasks)
+
+### Work Summary
+
+- **Task Generation:** Created 34 tasks across 5 waves
+  - Wave 1: Backend auth infrastructure + schema migration (hard gate)
+  - Waves 2-5: Frontend UI, permission enforcement, testing, release
+- **Dependency Validation:** Backend tasks gate frontend; hard dependencies honored
+- **Operability:** Updated runbook with deployment checklist, rollback procedures, infrastructure requirements
+- **Decision Record:** Documented task sequencing rationale (decision drop)
+
+### Key Outputs
+
+- `specs/034/tasks.md` — committed (34 tasks, 5 waves)
+- `docs/runbooks/spec-034-deployment.md` — updated
+- `.squad/decisions.md` — merged task sequencing decision
+
+### Handoff
+
+Tasks ready for Quinn gate. Wave 1 → 2 gate transition coordinated via run-book. Implementation fan-out ready.
