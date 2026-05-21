@@ -1,6 +1,15 @@
 import { apiClient } from './client'
 import type { BrewLogEntry } from '../types/entities'
 
+export interface BrewLogPage {
+  items: BrewLogEntry[]
+  page: number
+  per_page: number
+  total_count: number
+  has_next: boolean
+  sync_alert: boolean
+}
+
 export interface SubmitShotPayload {
   bag_id: string
   machine_id?: string
@@ -17,8 +26,10 @@ export interface SubmitShotPayload {
   idempotency_key: string
 }
 
-export const listBrewLog = () =>
-  apiClient.get<BrewLogEntry[]>('/api/brew-log').then((r) => r.data)
+export const listBrewLog = (page = 1, perPage = 100) =>
+  apiClient
+    .get<BrewLogPage>('/api/brew-log', { params: { page, per_page: perPage } })
+    .then((r) => r.data)
 
 export const getBrewLogDetail = (id: string) =>
   apiClient.get<BrewLogEntry>(`/api/brew-log/${id}`).then((r) => r.data)

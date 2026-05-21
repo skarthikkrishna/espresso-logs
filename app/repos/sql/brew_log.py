@@ -6,7 +6,7 @@ import builtins
 import datetime
 from typing import Any
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.brew_log import BrewLog
@@ -94,6 +94,26 @@ class SqlBrewLogRepo:
         """Return the N most recent brew log entries."""
         result = await self._db.execute(select(BrewLog).order_by(BrewLog.brewed_at.desc()).limit(n))
         return [self._to_dict(r) for r in result.scalars().all()]
+
+    async def list_paginated(
+        self, page: int, per_page: int
+    ) -> tuple[builtins.list[dict[str, Any]], int]:
+        """Return a paginated slice and total count.
+
+        Returns (rows, total_count) where rows is ordered newest-first.
+        """
+        count_result = await self._db.execute(select(func.count()).select_from(BrewLog))
+        total_count: int = count_result.scalar_one()
+
+        offset = (page - 1) * per_page
+        result = await self._db.execute(
+            select(BrewLog)
+            .order_by(BrewLog.brewed_at.desc(), BrewLog.id.desc())
+            .limit(per_page)
+            .offset(offset)
+        )
+        rows = [self._to_dict(r) for r in result.scalars().all()]
+        return rows, total_count
 
     async def list_for_bag(self, bag_id: str) -> builtins.list[dict[str, Any]]:
         """Return all brew log entries for a given bag."""

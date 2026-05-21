@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { listBrewLog, getBrewLogDetail } from '../api/brewLog'
 import LoadingSpinner from '../components/LoadingSpinner'
 
@@ -9,12 +9,17 @@ export default function BrewLogList() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const toastParam = searchParams.get('toast')
+  const pageParam = searchParams.get('page')
+  const _p = pageParam ? parseInt(pageParam, 10) : 1
+  const page = Number.isFinite(_p) && _p >= 1 ? _p : 1
   const [toast, setToast] = useState<string | null>(null)
+  const [syncAlertDismissed, setSyncAlertDismissed] = useState(false)
   const queryClient = useQueryClient()
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['brew-log'],
-    queryFn: listBrewLog,
+  const { data, isLoading, isPlaceholderData, error } = useQuery({
+    queryKey: ['brew-log', page, 100],
+    queryFn: () => listBrewLog(page, 100),
+    placeholderData: keepPreviousData,
   })
 
   useEffect(() => {
@@ -47,36 +52,68 @@ export default function BrewLogList() {
         </div>,
         document.body
       )}
-      {!data?.length ? (
+      {data?.sync_alert && !syncAlertDismissed && (
+        <div role="alert" className="alert alert-warning mb-4">
+          <span>Your brew log history may be incomplete. Contact support or run the sync check.</span>
+          <button className="btn btn-sm btn-ghost" onClick={() => setSyncAlertDismissed(true)}>✕</button>
+        </div>
+      )}
+      {!data?.items?.length ? (
         <p className="text-amber-200/60 text-sm">No shots logged yet.</p>
       ) : (
-        <div data-testid="brew-log-list" className="space-y-2">
-          {data.map((entry) => (
-            <Link
-              data-testid="brew-log-entry"
-              key={entry.shot_id}
-              to={`/brew-log/${entry.shot_id}`}
-              onMouseEnter={() => {
-                queryClient.prefetchQuery({
-                  queryKey: ['brew-log', entry.shot_id],
-                  queryFn: () => getBrewLogDetail(entry.shot_id),
-                  staleTime: 60_000,
-                })
-              }}
-              className="frosted-brew-card hover:border-amber-500/40 transition-colors"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="text-sm md:text-base text-amber-100 truncate">{entry.bag_display}</p>
-                <p className="text-xs md:text-sm text-amber-200/50">{entry.date}</p>
-              </div>
-              {entry.dose_in_g != null && entry.yield_out_g != null && (
-                <span className="text-xs md:text-sm text-amber-300 font-mono ml-3 shrink-0">
-                  {entry.dose_in_g}g → {entry.yield_out_g}g
-                </span>
-              )}
-            </Link>
-          ))}
-        </div>
+        <>
+          <div data-testid="brew-log-list" className="space-y-2">
+            {data.items.map((entry) => (
+              <Link
+                data-testid="brew-log-entry"
+                key={entry.shot_id}
+                to={`/brew-log/${entry.shot_id}`}
+                onMouseEnter={() => {
+                  queryClient.prefetchQuery({
+                    queryKey: ['brew-log', entry.shot_id],
+                    queryFn: () => getBrewLogDetail(entry.shot_id),
+                    staleTime: 60_000,
+                  })
+                }}
+                className="frosted-brew-card hover:border-amber-500/40 transition-colors"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm md:text-base text-amber-100 truncate">{entry.bag_display}</p>
+                  <p className="text-xs md:text-sm text-amber-200/50">{entry.date}</p>
+                </div>
+                {entry.dose_in_g != null && entry.yield_out_g != null && (
+                  <span className="text-xs md:text-sm text-amber-300 font-mono ml-3 shrink-0">
+                    {entry.dose_in_g}g → {entry.yield_out_g}g
+                  </span>
+                )}
+              </Link>
+            ))}
+          </div>
+          <nav aria-label="Brew log pagination" className="flex justify-center mt-4">
+            <div className="join">
+              <button
+                className="join-item btn btn-sm"
+                disabled={page <= 1 || isPlaceholderData}
+                onClick={() => setSearchParams({ page: String(page - 1) })}
+              >
+                Previous
+              </button>
+              <span
+                className="join-item btn btn-sm btn-active"
+                aria-current="page"
+              >
+                {page}
+              </span>
+              <button
+                className="join-item btn btn-sm"
+                disabled={!data?.has_next || isPlaceholderData}
+                onClick={() => setSearchParams({ page: String(page + 1) })}
+              >
+                Next
+              </button>
+            </div>
+          </nav>
+        </>
       )}
 
       {/* Add shot FAB — portalled to document.body so backdrop-filter on #main-content

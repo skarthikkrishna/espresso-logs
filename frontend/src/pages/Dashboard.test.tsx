@@ -58,13 +58,20 @@ beforeEach(() => {
       roast_level: 'Medium',
     },
   ])
-  vi.mocked(listBrewLog).mockResolvedValue([
-    {
-      shot_id: 'shot-1',
-      date: '2025-07-29',
-      bag_display: 'Test Roaster — Test Bean',
-    },
-  ])
+  vi.mocked(listBrewLog).mockResolvedValue({
+    items: [
+      {
+        shot_id: 'shot-1',
+        date: '2025-07-29',
+        bag_display: 'Test Roaster — Test Bean',
+      },
+    ],
+    page: 1,
+    per_page: 100,
+    total_count: 1,
+    has_next: false,
+    sync_alert: false,
+  })
 })
 
 describe('Dashboard — portal regression', () => {

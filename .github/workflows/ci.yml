@@ -92,7 +92,7 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: uv sync --frozen
-      - run: uv run pip-audit    # PyPA-maintained; OSV database; no auth required
+      - run: uv run pip-audit --ignore-vuln PYSEC-2025-185  # python-jose: no fix published
 
   test:
     runs-on: ubuntu-latest

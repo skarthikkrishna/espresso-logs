@@ -544,9 +544,11 @@ async def test_api_brew_log_list_unauthenticated():
 async def test_api_brew_log_list_authenticated():
     status, data = await _authed("GET", "/api/brew-log")
     assert status == 200
-    assert isinstance(data, list)
-    assert len(data) == 1
-    entry = data[0]
+    assert {"items", "total_count", "page", "per_page", "has_next", "sync_alert"}.issubset(
+        data.keys()
+    )
+    assert len(data["items"]) == 1
+    entry = data["items"][0]
     # Must have bag_display (not bag_id) as the display field
     assert "bag_display" in entry
     assert "shot_id" in entry

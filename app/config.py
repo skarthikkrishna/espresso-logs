@@ -76,6 +76,9 @@ class Settings(BaseSettings):
     # (APP_ENV, OAUTH_REDIRECT_URI) stays as standalone Cloud Run env vars.
     # For local dev, set USE_POSTGRES in .env directly.
     use_postgres: bool = False
+    # BREW_LOG_SYNC_ALERT: set True to show a user-facing sync gap banner on the Brew Log list.
+    # Clear after confirming zero drift via scripts/brew_log_reconcile.py.
+    brew_log_sync_alert: bool = False
 
     # APP_SECRETS JSON blob (Cloud Run): single Secret Manager secret containing all
     # secret values as a JSON object. config.py parses it at startup via _load_app_secrets.

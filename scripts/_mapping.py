@@ -26,15 +26,21 @@ ROAST_LEVEL_ENUM: frozenset[str] = frozenset(
 INVENTORY_STATUS_ENUM: frozenset[str] = frozenset({"Active", "Finished"})
 STORAGE_METHOD_ENUM: frozenset[str] = frozenset(
     {
-        "Freezer", "Fridge", "Pantry", "Airtight Container", "Valve Bag", "Open Bag", "Mylar Bag",
+        "Freezer",
+        "Fridge",
+        "Pantry",
+        "Airtight Container",
+        "Valve Bag",
+        "Open Bag",
+        "Mylar Bag",
         # Extended values found in production Sheets data
-        "Frozen — Bag", "Frozen — Glass Tube", "Frozen — Knodos Glass Tube",
+        "Frozen — Bag",
+        "Frozen — Glass Tube",
+        "Frozen — Knodos Glass Tube",
         "Ambient — Bag",
     }
 )
-HARDWARE_CATEGORY_ENUM: frozenset[str] = frozenset(
-    {"Machine", "Grinder", "Basket", "Storage"}
-)
+HARDWARE_CATEGORY_ENUM: frozenset[str] = frozenset({"Machine", "Grinder", "Basket", "Storage"})
 MAINTENANCE_ACTION_ENUM: frozenset[str] = frozenset(
     {"Re-zero", "Backflush", "Descale", "Steam Wand Clean"}
 )
@@ -43,10 +49,19 @@ SHOT_ELIGIBILITY_ENUM: frozenset[str] = frozenset(
 )
 TASTE_SUMMARY_ENUM: frozenset[str] = frozenset(
     {
-        "Sour", "Bitter", "Balanced", "Fruity", "Nutty", "Chocolatey", "Floral",
+        "Sour",
+        "Bitter",
+        "Balanced",
+        "Fruity",
+        "Nutty",
+        "Chocolatey",
+        "Floral",
         # Extended values found in production Sheets data
-        "Weak & Sour", "Sweet & Balanced", "Salty / Channeled",
-        "Harsh & Bitter", "Strong & Muddy",
+        "Weak & Sour",
+        "Sweet & Balanced",
+        "Salty / Channeled",
+        "Harsh & Bitter",
+        "Strong & Muddy",
     }
 )
 
@@ -394,7 +409,9 @@ def from_sheets_dict_brew_log(
         "dose_g": _parse_float_1dp(str(row.get("Dose_In_g", "")).strip(), "Dose_In_g"),
         "yield_g": _parse_float_1dp(str(row.get("Yield_Out_g", "")).strip(), "Yield_Out_g"),
         "time_sec": _parse_int(str(row.get("Time_Sec", "")).strip(), "Time_Sec"),
-        "grind_setting": _parse_float_1dp(str(row.get("Grind_Setting", "")).strip(), "Grind_Setting"),
+        "grind_setting": _parse_float_1dp(
+            str(row.get("Grind_Setting", "")).strip(), "Grind_Setting"
+        ),
         "shot_eligibility": _validate_enum(
             str(row.get("Shot_Eligibility", "")).strip(), SHOT_ELIGIBILITY_ENUM, "Shot_Eligibility"
         ),
