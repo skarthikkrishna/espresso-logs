@@ -10,7 +10,8 @@ export default function BrewLogList() {
   const [searchParams, setSearchParams] = useSearchParams()
   const toastParam = searchParams.get('toast')
   const pageParam = searchParams.get('page')
-  const page = pageParam ? parseInt(pageParam, 10) : 1
+  const _p = pageParam ? parseInt(pageParam, 10) : 1
+  const page = Number.isFinite(_p) && _p >= 1 ? _p : 1
   const [toast, setToast] = useState<string | null>(null)
   const [syncAlertDismissed, setSyncAlertDismissed] = useState(false)
   const queryClient = useQueryClient()

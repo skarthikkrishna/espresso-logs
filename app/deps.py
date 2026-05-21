@@ -201,7 +201,11 @@ class _DualWriteBrewLogRepo:
         """Paginated list — delegates to SQL when USE_POSTGRES=true, else in-memory pagination."""
         if settings.use_postgres and self._sql is not None:
             return await self._sql.list_paginated(page, per_page)
-        all_rows = self._sheets.list_recent(9999)
+        all_rows = sorted(
+            self._sheets.list(),
+            key=lambda r: (r.get("Date", ""), r.get("Shot_ID", "")),
+            reverse=True,
+        )
         total_count = len(all_rows)
         offset = (page - 1) * per_page
         return all_rows[offset : offset + per_page], total_count

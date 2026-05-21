@@ -26,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app.config import settings
 from app.deps import get_sheets_client
 from app.models.base import _is_cloud_sql_url, close_engine, get_session_factory, init_async_engine
+from app.repos.base import TTLCache
 from app.repos.brew_log import BrewLogRepo
 from app.repos.sql.brew_log import SqlBrewLogRepo
 
@@ -112,7 +113,9 @@ async def _run(argv: list[str] | None = None) -> int:
     if _is_cloud_sql_url(database_url):
         await init_async_engine(database_url)
 
-    sheets_repo = BrewLogRepo(client=get_sheets_client())
+    # Use TTL=0 so every run fetches fresh data from Sheets, bypassing the
+    # process-level cache that could mask real drift or report false drift.
+    sheets_repo = BrewLogRepo(client=get_sheets_client(), cache=TTLCache(ttl=0))
     sheets_rows = _filter_rows(sheets_repo.list(), args.since, args.until, set(args.shot_ids))
 
     async with get_session_factory()() as session:

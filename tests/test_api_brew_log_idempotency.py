@@ -502,7 +502,7 @@ async def test_postgres_mirror_failure_does_not_cache_success():
     fake = _make_fake_client()
     _install_overrides(fake)
 
-    key = "idem-pg-fail-test-001"
+    key = "idem-pg-fail-test-001"  # gitleaks:allow
     body = {**_POST_BODY_BASE, "idempotency_key": key}
 
     try:
