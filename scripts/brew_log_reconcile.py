@@ -26,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app.config import settings
 from app.deps import get_sheets_client
 from app.models.base import _is_cloud_sql_url, close_engine, get_session_factory, init_async_engine
+from app.models.household import Household  # noqa: F401 — registers FK target in metadata
 from app.repos.base import TTLCache
 from app.repos.brew_log import BrewLogRepo
 from app.repos.sql.brew_log import SqlBrewLogRepo

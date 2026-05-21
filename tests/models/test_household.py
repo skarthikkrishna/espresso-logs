@@ -52,8 +52,8 @@ def test_guest_token_has_household_id_index() -> None:
     assert "ix_guest_tokens_household_id" in index_names
 
 
-def test_guest_token_token_is_unique() -> None:
-    # UNIQUE constraint on token creates an implicit Postgres index;
-    # the explicit ix_guest_tokens_token was redundant and has been removed.
-    col = GuestToken.__table__.columns["token"]
+def test_guest_token_token_hash_is_unique() -> None:
+    # M5: UUID token replaced with token_hash TEXT (SHA-256 hex digest).
+    # UNIQUE constraint on token_hash ensures no duplicate hashes are stored.
+    col = GuestToken.__table__.columns["token_hash"]
     assert col.unique

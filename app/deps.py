@@ -113,6 +113,7 @@ class _DualWriteCatalogRepo:
     def __init__(self, sheets: CatalogRepo, sql: SqlCatalogRepo | None) -> None:
         self._sheets = sheets
         self._sql = sql
+        _dw_log.debug("DualWrite Sheets write path disabled (M5)")
 
     async def list(self) -> builtins.list[dict[str, Any]]:
         if settings.use_postgres and self._sql is not None:
@@ -130,7 +131,6 @@ class _DualWriteCatalogRepo:
         return self._sheets._fetch_all()
 
     async def upsert(self, row: dict[str, Any]) -> None:
-        self._sheets.upsert(row)
         if self._sql is None:
             return
         try:
@@ -148,7 +148,6 @@ class _DualWriteCatalogRepo:
             )
 
     async def add_many(self, rows: builtins.list[dict[str, Any]]) -> None:
-        self._sheets.add_many(rows)
         if self._sql is None:
             return
         for row in rows:
@@ -167,10 +166,10 @@ class _DualWriteCatalogRepo:
                 )
 
     def delete_rows(self, start_row: int, end_row: int) -> None:
-        self._sheets.delete_rows(start_row, end_row)
+        _dw_log.debug("DualWrite Sheets write path disabled (M5)")
 
     def delete_by_pk(self, pk_col: str, pk_val: str) -> None:
-        self._sheets.delete_by_pk(pk_col, pk_val)
+        _dw_log.debug("DualWrite Sheets write path disabled (M5)")
 
 
 class _DualWriteBrewLogRepo:
@@ -184,6 +183,7 @@ class _DualWriteBrewLogRepo:
     def __init__(self, sheets: BrewLogRepo, sql: SqlBrewLogRepo | None) -> None:
         self._sheets = sheets
         self._sql = sql
+        _dw_log.debug("DualWrite Sheets write path disabled (M5)")
 
     async def list(self) -> builtins.list[dict[str, Any]]:
         if settings.use_postgres and self._sql is not None:
@@ -226,7 +226,6 @@ class _DualWriteBrewLogRepo:
         return self._sheets.get(shot_id)
 
     async def add(self, row: dict[str, Any]) -> None:
-        self._sheets.add(row)
         if self._sql is None:
             return
         try:
@@ -245,7 +244,6 @@ class _DualWriteBrewLogRepo:
             raise
 
     async def add_many(self, rows: builtins.list[dict[str, Any]]) -> None:
-        self._sheets.add_many(rows)
         if self._sql is None:
             return
         for row in rows:
@@ -265,7 +263,6 @@ class _DualWriteBrewLogRepo:
                 raise
 
     async def update_feedback(self, shot_id: str, ai_feedback: str) -> None:
-        self._sheets.update_feedback(shot_id, ai_feedback)
         if self._sql is not None and settings.use_postgres:
             try:
                 await self._sql.update_feedback(shot_id, ai_feedback)
@@ -282,7 +279,7 @@ class _DualWriteBrewLogRepo:
                 )
 
     def delete_rows(self, start_row: int, end_row: int) -> None:
-        self._sheets.delete_rows(start_row, end_row)
+        _dw_log.debug("DualWrite Sheets write path disabled (M5)")
 
 
 class _DualWriteInventoryRepo:
@@ -296,6 +293,7 @@ class _DualWriteInventoryRepo:
     def __init__(self, sheets: InventoryRepo, sql: SqlInventoryRepo | None) -> None:
         self._sheets = sheets
         self._sql = sql
+        _dw_log.debug("DualWrite Sheets write path disabled (M5)")
 
     async def list(self, status: str | None = "Active") -> builtins.list[dict[str, Any]]:
         if settings.use_postgres and self._sql is not None:
@@ -313,7 +311,6 @@ class _DualWriteInventoryRepo:
         return self._sheets.get(bag_id)
 
     async def upsert(self, row: dict[str, Any]) -> None:
-        self._sheets.upsert(row)
         if self._sql is None:
             return
         try:
@@ -331,7 +328,6 @@ class _DualWriteInventoryRepo:
             )
 
     async def add_many(self, rows: builtins.list[dict[str, Any]]) -> None:
-        self._sheets.add_many(rows)
         if self._sql is None:
             return
         for row in rows:
@@ -350,10 +346,10 @@ class _DualWriteInventoryRepo:
                 )
 
     def delete_rows(self, start_row: int, end_row: int) -> None:
-        self._sheets.delete_rows(start_row, end_row)
+        _dw_log.debug("DualWrite Sheets write path disabled (M5)")
 
     def delete_by_pk(self, pk_col: str, pk_val: str) -> None:
-        self._sheets.delete_by_pk(pk_col, pk_val)
+        _dw_log.debug("DualWrite Sheets write path disabled (M5)")
 
 
 class _DualWriteHardwareRepo:
@@ -368,6 +364,7 @@ class _DualWriteHardwareRepo:
     def __init__(self, sheets: HardwareRepo, sql: SqlHardwareRepo | None) -> None:
         self._sheets = sheets
         self._sql = sql
+        _dw_log.debug("DualWrite Sheets write path disabled (M5)")
 
     async def list(self, category: str | None = None) -> builtins.list[dict[str, Any]]:
         if settings.use_postgres and self._sql is not None:
@@ -383,7 +380,6 @@ class _DualWriteHardwareRepo:
         return self._sheets.next_id(category)
 
     async def upsert(self, row: dict[str, Any]) -> None:
-        self._sheets.upsert(row)
         if self._sql is None:
             return
         try:
@@ -401,7 +397,6 @@ class _DualWriteHardwareRepo:
             )
 
     async def add_many(self, rows: builtins.list[dict[str, Any]]) -> None:
-        self._sheets.add_many(rows)
         if self._sql is None:
             return
         for row in rows:
@@ -420,7 +415,7 @@ class _DualWriteHardwareRepo:
                 )
 
     def delete_rows(self, start_row: int, end_row: int) -> None:
-        self._sheets.delete_rows(start_row, end_row)
+        _dw_log.debug("DualWrite Sheets write path disabled (M5)")
 
 
 class _DualWriteMaintenanceRepo:
@@ -434,6 +429,7 @@ class _DualWriteMaintenanceRepo:
     def __init__(self, sheets: MaintenanceRepo, sql: SqlMaintenanceRepo | None) -> None:
         self._sheets = sheets
         self._sql = sql
+        _dw_log.debug("DualWrite Sheets write path disabled (M5)")
 
     async def list(self, hardware_id: str | None = None) -> builtins.list[dict[str, Any]]:
         if settings.use_postgres and self._sql is not None:
@@ -446,7 +442,6 @@ class _DualWriteMaintenanceRepo:
         return self._sheets.get(maintenance_id)
 
     async def add(self, row: dict[str, Any]) -> None:
-        self._sheets.add(row)
         if self._sql is None:
             return
         try:
@@ -464,7 +459,6 @@ class _DualWriteMaintenanceRepo:
             )
 
     async def add_many(self, rows: builtins.list[dict[str, Any]]) -> None:
-        self._sheets.add_many(rows)
         if self._sql is None:
             return
         for row in rows:
@@ -483,7 +477,7 @@ class _DualWriteMaintenanceRepo:
                 )
 
     def delete_rows(self, start_row: int, end_row: int) -> None:
-        self._sheets.delete_rows(start_row, end_row)
+        _dw_log.debug("DualWrite Sheets write path disabled (M5)")
 
 
 # ---------------------------------------------------------------------------

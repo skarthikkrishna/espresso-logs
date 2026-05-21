@@ -180,6 +180,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
     logger.info("Coffee Tracker starting up (env=%s)", settings.app_env)
     if _E2E_AUTH_BYPASS:
         logger.warning("⚠️  E2E_AUTH_BYPASS is ACTIVE — authentication is bypassed for all requests")
+    if settings.allowlist_emails:
+        logger.warning(
+            "ALLOWLIST_EMAILS is set but is no longer enforced in M5. "
+            "Remove this environment variable — the new access gate is household membership."
+        )
     if settings.use_postgres and settings.database_url:
         from app.models.base import _is_cloud_sql_url, init_async_engine
 

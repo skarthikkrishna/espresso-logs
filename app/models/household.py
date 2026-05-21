@@ -1,7 +1,8 @@
 """SQLAlchemy ORM models for household management.
 
-Tables: households, household_members, pending_invitations, guest_tokens.
+Tables: households, household_members, pending_invitations, guest_tokens, oauth_states.
 Role constraint uses canonical term 'admin' (not 'manager') per DEC-T01.
+M5: token_hash columns replace UUID token columns; invited_by FK corrected to users(id).
 """
 
 from __future__ import annotations
@@ -35,6 +36,11 @@ class Household(Base):
         sa.ForeignKey("users.id"),
         nullable=False,
     )
+    is_guest_accessible: Mapped[bool] = mapped_column(
+        sa.Boolean,
+        nullable=False,
+        server_default=sa.text("FALSE"),
+    )
 
 
 class HouseholdMember(Base):
@@ -64,7 +70,7 @@ class HouseholdMember(Base):
     role: Mapped[str] = mapped_column(sa.Text, nullable=False)
     invited_by: Mapped[uuid.UUID | None] = mapped_column(
         sa.UUID(as_uuid=True),
-        sa.ForeignKey("household_members.id", ondelete="SET NULL"),
+        sa.ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
     joined_at: Mapped[datetime.datetime] = mapped_column(
@@ -75,7 +81,7 @@ class HouseholdMember(Base):
 
 
 class PendingInvitation(Base):
-    """A pending invitation to join a household, identified by a UUID token."""
+    """A pending invitation to join a household, identified by a hashed token."""
 
     __tablename__ = "pending_invitations"
 
@@ -90,12 +96,7 @@ class PendingInvitation(Base):
         nullable=False,
     )
     invited_email: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
-    token: Mapped[uuid.UUID] = mapped_column(
-        sa.UUID(as_uuid=True),
-        nullable=False,
-        unique=True,
-        server_default=sa.text("gen_random_uuid()"),
-    )
+    token_hash: Mapped[str] = mapped_column(sa.Text, nullable=False, unique=True)
     invited_by_user_id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
         sa.ForeignKey("users.id"),
@@ -112,6 +113,9 @@ class PendingInvitation(Base):
         server_default=sa.text("now() + INTERVAL '72 hours'"),
     )
     accepted_at: Mapped[datetime.datetime | None] = mapped_column(
+        sa.TIMESTAMP(timezone=True), nullable=True
+    )
+    revoked_at: Mapped[datetime.datetime | None] = mapped_column(
         sa.TIMESTAMP(timezone=True), nullable=True
     )
 
@@ -132,12 +136,7 @@ class GuestToken(Base):
         sa.ForeignKey("households.id", ondelete="CASCADE"),
         nullable=False,
     )
-    token: Mapped[uuid.UUID] = mapped_column(
-        sa.UUID(as_uuid=True),
-        nullable=False,
-        unique=True,
-        server_default=sa.text("gen_random_uuid()"),
-    )
+    token_hash: Mapped[str] = mapped_column(sa.Text, nullable=False, unique=True)
     created_by_user_id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
         sa.ForeignKey("users.id"),
@@ -148,6 +147,27 @@ class GuestToken(Base):
         nullable=False,
         server_default=sa.text("now()"),
     )
+    expires_at: Mapped[datetime.datetime | None] = mapped_column(
+        sa.TIMESTAMP(timezone=True), nullable=True
+    )
     revoked_at: Mapped[datetime.datetime | None] = mapped_column(
         sa.TIMESTAMP(timezone=True), nullable=True
+    )
+
+
+class OAuthState(Base):
+    """PKCE OAuth state record — replaces SessionMiddleware for verifier storage."""
+
+    __tablename__ = "oauth_states"
+    __table_args__ = (sa.Index("ix_oauth_states_state_hash", "state_hash"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        sa.UUID(as_uuid=True),
+        primary_key=True,
+        server_default=sa.text("gen_random_uuid()"),
+    )
+    state_hash: Mapped[str] = mapped_column(sa.Text, nullable=False, unique=True)
+    pkce_verifier: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    expires_at: Mapped[datetime.datetime] = mapped_column(
+        sa.TIMESTAMP(timezone=True), nullable=False
     )

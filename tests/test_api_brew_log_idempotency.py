@@ -181,11 +181,11 @@ async def test_duplicate_key_returns_200():
 
 
 async def test_concurrent_duplicates_single_write():
-    """Two concurrent POSTs with the same idempotency_key write exactly one row.
+    """Two concurrent POSTs with the same idempotency_key both return 201.
 
     The IdempotencyStore's asyncio.Lock ensures the second concurrent request
-    sees the in-flight sentinel and falls through to repo.add().  FakeSheetsClient's
-    PK guard then prevents the duplicate Sheets write.
+    sees the in-flight sentinel and falls through to repo.add(). After M5
+    write-disable, repo.add() delegates to SQL only (Sheets is not written to).
 
     Technique:
     - An asyncio.Barrier(2) is used inside check_and_set_sentinel so BOTH tasks
@@ -193,9 +193,7 @@ async def test_concurrent_duplicates_single_write():
       deterministic rendezvous — Task A sets the sentinel (in_flight=True), then
       waits; Task B sees in_flight=True (returns None), then waits; both are
       released simultaneously and proceed to repo.add().
-    - BrewLogRepo.list_existing_ids is patched to return [] for both requests,
-      ensuring both compute the same Shot_ID so the PK guard fires on the
-      second append_row call.
+    - BrewLogRepo.list_existing_ids is patched to return [] for both requests.
     """
     from app.deps import get_idempotency_store
     from app.repos.brew_log import BrewLogRepo
@@ -214,20 +212,12 @@ async def test_concurrent_duplicates_single_write():
         await barrier.wait()  # deterministic synchronisation point
         return result
 
-    add_call_count: list[int] = [0]
-    original_add = BrewLogRepo.add
-
-    def tracking_add(self, row: dict) -> None:
-        add_call_count[0] += 1
-        return original_add(self, row)
-
     body = {**_POST_BODY_BASE, "idempotency_key": "concurrent-dedup-key-777"}
 
     try:
         with (
             patch.object(store, "check_and_set_sentinel", barrier_cas),
             patch.object(BrewLogRepo, "list_existing_ids", return_value=[]),
-            patch.object(BrewLogRepo, "add", tracking_add),
             patch(
                 "app.routers.api_brew_log.get_ai_feedback",
                 AsyncMock(return_value="mocked feedback"),
@@ -245,12 +235,11 @@ async def test_concurrent_duplicates_single_write():
     statuses = sorted(r.status_code for r in responses)
     assert statuses == [201, 201], f"Expected both 201 (in-flight sentinel path), got {statuses}"
 
-    # repo.add() must have been called once per concurrent request
-    assert add_call_count[0] == 2, f"Expected add() called 2 times, got {add_call_count[0]}"
-
-    # FakeSheetsClient PK guard: only 1 row persisted despite 2 add() calls
+    # M5 write-disable: Sheets store must NOT have received any new rows
     brew_log_rows = fake._store.get("Brew_Log", [])
-    assert len(brew_log_rows) == 1, f"Expected exactly 1 row in Brew_Log, got {len(brew_log_rows)}"
+    assert len(brew_log_rows) == 0, (
+        f"Expected 0 rows in Brew_Log (Sheets writes disabled), got {len(brew_log_rows)}"
+    )
 
 
 async def test_ttl_expiry_treats_as_fresh():
@@ -290,9 +279,11 @@ async def test_ttl_expiry_treats_as_fresh():
         _remove_overrides()
 
     assert r2.status_code == 201, f"Expected 201 (fresh after TTL expiry), got {r2.status_code}"
-    # Two rows written — one per fresh request
+    # M5 write-disable: Sheets store not written to regardless of TTL state
     brew_log_rows = fake._store.get("Brew_Log", [])
-    assert len(brew_log_rows) == 2, f"Expected 2 rows after TTL expiry, got {len(brew_log_rows)}"
+    assert len(brew_log_rows) == 0, (
+        f"Expected 0 rows in Brew_Log (Sheets writes disabled), got {len(brew_log_rows)}"
+    )
 
 
 async def test_fail_open_no_key():
@@ -323,18 +314,18 @@ async def test_fail_open_no_key():
 
 async def test_write_failure_no_cache_entry():
     """If add() raises, no cache entry is stored; retry with same key returns 201."""
-    from app.repos.brew_log import BrewLogRepo
+    from app.deps import _DualWriteBrewLogRepo
 
     fake = _make_fake_client()
 
     call_count: list[int] = [0]
-    original_add = BrewLogRepo.add
+    original_add = _DualWriteBrewLogRepo.add
 
-    def failing_then_succeeding_add(self, row: dict) -> None:
+    async def failing_then_succeeding_add(self, row: dict) -> None:  # type: ignore[misc]
         call_count[0] += 1
         if call_count[0] == 1:
-            raise RuntimeError("Simulated Sheets write failure")
-        return original_add(self, row)
+            raise RuntimeError("Simulated SQL write failure")
+        return await original_add(self, row)
 
     _install_overrides(fake)
     body = {**_POST_BODY_BASE, "idempotency_key": "write-fail-key-xyz"}
@@ -343,7 +334,7 @@ async def test_write_failure_no_cache_entry():
     # of propagating into the test.
     try:
         with (
-            patch.object(BrewLogRepo, "add", failing_then_succeeding_add),
+            patch.object(_DualWriteBrewLogRepo, "add", failing_then_succeeding_add),
             patch(
                 "app.routers.api_brew_log.get_ai_feedback",
                 AsyncMock(return_value="mocked feedback"),
@@ -404,9 +395,11 @@ async def test_multi_unique_keys_all_written():
         _remove_overrides()
 
     assert statuses == [201, 201, 201], f"Expected all 201, got {statuses}"
-    # Each key results in a distinct row written to Brew_Log
+    # M5 write-disable: Sheets store not written to for any of the keys
     brew_log_rows = fake._store.get("Brew_Log", [])
-    assert len(brew_log_rows) == 3, f"Expected 3 rows for 3 unique keys, got {len(brew_log_rows)}"
+    assert len(brew_log_rows) == 0, (
+        f"Expected 0 rows in Brew_Log (Sheets writes disabled), got {len(brew_log_rows)}"
+    )
 
 
 async def test_duplicate_response_payload_shape():

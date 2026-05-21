@@ -828,11 +828,12 @@ _BREW_LOG_POST_BODY = {
 
 @pytest.mark.asyncio
 async def test_api_brew_log_create_taste_summary_written():
-    """POST /api/brew-log writes Taste_Summary field to the row."""
+    """POST /api/brew-log succeeds; Sheets write path is disabled in M5 (writes go to SQL only)."""
     from unittest.mock import AsyncMock, patch
     from app.deps import get_sheets_client
 
     fake = _make_fake_client()
+    initial_row_count = len(fake._store.get("Brew_Log", []))
     app.dependency_overrides[get_sheets_client] = lambda: fake
     try:
         # Patch get_ai_feedback to suppress inline AI call during test
@@ -846,9 +847,8 @@ async def test_api_brew_log_create_taste_summary_written():
                 resp = await client.post("/api/brew-log", json=_BREW_LOG_POST_BODY)
 
         assert resp.status_code == 201
-        brew_log_rows = fake._store.get("Brew_Log", [])
-        new_row = brew_log_rows[-1]
-        assert new_row["Taste_Summary"] == "Sweet & balanced"
+        # M5 write-disable: Sheets store must NOT receive the new row
+        assert len(fake._store.get("Brew_Log", [])) == initial_row_count
     finally:
         app.dependency_overrides.pop(get_sheets_client, None)
 

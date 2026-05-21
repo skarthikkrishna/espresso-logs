@@ -47,19 +47,21 @@ async def test_dual_write_surfaces_postgres_failure() -> None:
     with pytest.raises(Exception, match="simulated PG failure"):
         await repo.add(row)
 
-    sheets.add.assert_called_once_with(row)
+    # M5 write-disable: Sheets is NOT written to; SQL is attempted and raises
+    sheets.add.assert_not_called()
     sql._db.rollback.assert_awaited_once()
 
 
 async def test_dual_write_postgres_none_no_exception() -> None:
-    """When Postgres is not configured, add() must remain Sheets-only and not raise."""
+    """When Postgres is not configured, add() is a no-op (M5: Sheets writes disabled)."""
     sheets = MagicMock()
     repo = _DualWriteBrewLogRepo(sheets=sheets, sql=None)
     row = {"Shot_ID": "SH-NO-SQL-001", "Date": "2026-05-15"}
 
+    # Must not raise, and Sheets must NOT be called (M5 write-disable)
     await repo.add(row)
 
-    sheets.add.assert_called_once_with(row)
+    sheets.add.assert_not_called()
 
 
 async def test_post_brew_log_surfaces_sql_failure_as_http_500() -> None:
@@ -106,16 +108,18 @@ async def test_add_many_surfaces_postgres_failure() -> None:
     with pytest.raises(Exception, match="simulated PG batch failure"):
         await repo.add_many(rows)
 
-    sheets.add_many.assert_called_once_with(rows)
+    # M5 write-disable: Sheets is NOT written to; SQL is attempted and raises
+    sheets.add_many.assert_not_called()
     sql._db.rollback.assert_awaited_once()
 
 
 async def test_add_many_postgres_none_no_exception() -> None:
-    """When Postgres is not configured, add_many() must remain Sheets-only and not raise."""
+    """When Postgres is not configured, add_many() is a no-op (M5: Sheets writes disabled)."""
     sheets = MagicMock()
     repo = _DualWriteBrewLogRepo(sheets=sheets, sql=None)
     rows = [{"Shot_ID": "SH-NO-SQL-001", "Date": "2026-05-15"}]
 
+    # Must not raise, and Sheets must NOT be called (M5 write-disable)
     await repo.add_many(rows)
 
-    sheets.add_many.assert_called_once_with(rows)
+    sheets.add_many.assert_not_called()
