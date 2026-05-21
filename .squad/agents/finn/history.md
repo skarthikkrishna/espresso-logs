@@ -60,3 +60,14 @@ See `.squad/orchestration-log/` for agent-level summaries.
 - **Base classes:** `badge badge-sm text-xs px-2 py-0.5` (consistent padding/size enforced in one place)
 - **Null-safe:** returns `null` if `label` is falsy — no conditional wrapping needed at call sites
 - **Rule:** All future categorical label chips (roast type, machine category, etc.) should use `<Chip />` with the appropriate variant. Do not add inline badge spans to page files.
+
+### 2026-05-21: AuthContext.tsx scaffold — US-1.8 Wave 1
+
+- **File created:** `frontend/src/contexts/AuthContext.tsx`
+- **Pattern:** `AuthProvider` + `useAuth()` hook exported from same file; `eslint-disable-next-line react-refresh/only-export-components` required on the hook export to satisfy ESLint zero-warnings policy — standard for context modules.
+- **CurrentUser type:** Imported from `../types/entities` (already existed with `{ email, name?, picture? }`). US-3.12 will update the shape to the full M5 model `{ id, username, display_name, email, picture_url, household_id, role }`.
+- **Token security (AC-103):** Access token stored only in `useState` — never `localStorage`/`sessionStorage`. Cookie credentials passed via `credentials: 'include'` on fetch calls.
+- **Network calls:** Wave 1 uses `fetch` directly (no `auth.ts` dependency). Wave 3 (US-3.10) wires the full auth API client.
+- **Endpoints used:** `POST /auth/refresh`, `GET /auth/me`, `POST /auth/logout`
+- **Cleanup guard:** `cancelled` flag in `useEffect` prevents state updates on unmounted component during async refresh.
+- **All checks:** lint ✅ 0 warnings, build ✅ zero TypeScript errors.
