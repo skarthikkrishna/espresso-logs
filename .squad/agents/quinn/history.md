@@ -65,3 +65,29 @@ Green light for implementation fan-out. Alex (backend), Finn (frontend), Quinn (
 - **422 ≠ rate-limited:** slowapi rate limit check runs after Pydantic body validation. Invalid bodies return 422 without consuming rate limit slots. Tests must send schema-valid payloads.
 - **Mock result sync vs async:** `db.execute()` is async (returns AsyncMock by default). `result.scalar_one_or_none()` is synchronous — must use `MagicMock()` for result, not `AsyncMock()`.
 - **`_DualWrite*` classes are importable:** Despite underscore prefix, they can be imported directly from `app.deps` for unit testing. mypy `# type: ignore[attr-defined]` needed at import.
+
+---
+
+## Wave 5 — US-5.2 Integration Tests
+
+**Spec:** 034-m5-household-roles  
+**Status:** COMPLETE  
+**Tests added:** 4 integration tests (`tests/test_integration.py`)
+
+### Work Summary
+
+- **US-5.2** (`test_integration.py`, 4 tests): Real-Postgres integration suite.
+  - `test_register_login_refresh_logout_full_cycle` (AC-088): Full auth lifecycle against real DB + real JWT validation.
+  - `test_brew_log_scoped_to_household` (AC-097): RLS isolation via `FORCE ROW LEVEL SECURITY` (espresso owner bypasses RLS by default).
+  - `test_delete_brew_log_requires_admin` (AC-103): `DELETE /api/brew-log/{shot_id}` — 403 for members, 204 for admins.
+  - `test_seed_orphan_rows_on_first_login` (AC-090–092): Orphan row seeding on first register + idempotency on second login.
+- **Bug fix:** `DELETE /api/brew-log/{shot_id}` endpoint was missing entirely. Added `SqlBrewLogRepo.delete_by_shot_id`, `_DualWriteBrewLogRepo.delete_by_shot_id`, and route in `api_brew_log.py`.
+- **Bug fix (asyncpg):** `SET LOCAL app.current_household_id = :hid` fails with asyncpg because `SET LOCAL` doesn't support bound parameter syntax (`$1`). Fixed in `current_household_membership` and `resolve_guest_or_member` by replacing with `SELECT set_config('app.current_household_id', :hid, true)`.
+
+### Learnings
+
+- **`SET LOCAL` + asyncpg:** `SET LOCAL setting = :param` fails with asyncpg (`syntax error at or near "$1"`). `SET` commands don't accept parameterized values in Postgres. Use `SELECT set_config('setting', :param, true)` — same effect (transaction-scoped), supports bound params.
+- **FORCE ROW LEVEL SECURITY for owner:** Table owners bypass RLS by default. For integration tests proving household isolation, temporarily enable `FORCE ROW LEVEL SECURITY` on the table and disable in `finally`. In production (Cloud SQL with a non-owner app user), RLS applies automatically.
+- **set_config() third arg:** `set_config(name, value, is_local)` — `is_local = true` is equivalent to `SET LOCAL` (transaction-scoped). `is_local = false` is equivalent to `SET` (session-scoped).
+- **Same-second JWT tokens:** `create_access_token` uses `int(now.timestamp())` — two calls within the same second produce identical tokens. Don't assert `new_token != old_token` in tests; assert the refresh cookie was rotated instead.
+- **Integration test autouse override pattern:** `integration_client` fixture pops autouse auth dep overrides (from conftest `_patch_auth_deps`) and restores them in teardown. This lets the full JWT → DB auth chain run for integration tests while keeping unit tests isolated.
