@@ -140,13 +140,18 @@ def upgrade() -> None:
         )
 
     # ------------------------------------------------------------------
-    # 7. app_admin role with BYPASSRLS (idempotent)
+    # 7. app_admin role with BYPASSRLS (idempotent; skipped gracefully if
+    #    the migration user lacks superuser privilege — expected in local dev).
     # ------------------------------------------------------------------
     op.execute(
         """
         DO $$ BEGIN
           IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_admin') THEN
-            CREATE ROLE app_admin BYPASSRLS;
+            BEGIN
+              CREATE ROLE app_admin BYPASSRLS;
+            EXCEPTION WHEN insufficient_privilege THEN
+              RAISE NOTICE 'Skipping app_admin BYPASSRLS role creation — insufficient privilege (expected in local dev; runs in production with Cloud SQL admin)';
+            END;
           END IF;
         END $$
         """
@@ -154,8 +159,13 @@ def upgrade() -> None:
     op.execute(
         """
         DO $$ BEGIN
-          IF EXISTS (SELECT FROM pg_roles WHERE rolname = 'coffee_tracker_runtime') THEN
-            GRANT app_admin TO coffee_tracker_runtime;
+          IF EXISTS (SELECT FROM pg_roles WHERE rolname = 'coffee_tracker_runtime')
+             AND EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_admin') THEN
+            BEGIN
+              GRANT app_admin TO coffee_tracker_runtime;
+            EXCEPTION WHEN insufficient_privilege THEN
+              RAISE NOTICE 'Skipping GRANT app_admin TO coffee_tracker_runtime — insufficient privilege';
+            END;
           END IF;
         END $$
         """
@@ -180,7 +190,11 @@ def downgrade() -> None:
         """
         DO $$ BEGIN
           IF EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_admin') THEN
-            DROP ROLE app_admin;
+            BEGIN
+              DROP ROLE app_admin;
+            EXCEPTION WHEN insufficient_privilege THEN
+              RAISE NOTICE 'Skipping DROP ROLE app_admin — insufficient privilege';
+            END;
           END IF;
         END $$
         """
