@@ -139,7 +139,7 @@ async def current_household_membership(
         raise HTTPException(status_code=403, detail="Not a member of any household")
     membership = memberships[0]
     await db.execute(
-        sa.text("SET LOCAL app.current_household_id = :hid"),
+        sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
         {"hid": str(membership.household_id)},
     )
     return membership
@@ -187,7 +187,7 @@ async def resolve_guest_or_member(
         if gt is None:
             raise HTTPException(status_code=401, detail="Invalid or expired guest token")
         await db.execute(
-            sa.text("SET LOCAL app.current_household_id = :hid"),
+            sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
             {"hid": str(gt.household_id)},
         )
         return gt
@@ -208,7 +208,7 @@ async def resolve_guest_or_member(
         raise HTTPException(status_code=403, detail="Not a member of any household")
     membership = memberships[0]
     await db.execute(
-        sa.text("SET LOCAL app.current_household_id = :hid"),
+        sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
         {"hid": str(membership.household_id)},
     )
     return membership
@@ -426,6 +426,12 @@ class _DualWriteBrewLogRepo:
 
     def delete_rows(self, start_row: int, end_row: int) -> None:
         _dw_log.debug("DualWrite Sheets write path disabled (M5)")
+
+    async def delete_by_shot_id(self, shot_id: str) -> bool:
+        """Delete a brew log entry by Shot_ID. Returns True if deleted."""
+        if settings.use_postgres and self._sql is not None:
+            return await self._sql.delete_by_shot_id(shot_id)
+        return False
 
 
 class _DualWriteInventoryRepo:

@@ -26,6 +26,7 @@ from app.deps import (
     get_inventory_repo,
     get_llm_client,
     get_maintenance_repo,
+    require_admin,
     resolve_guest_or_member,
 )
 from app.models.api import BrewLogEntryOut, BrewLogPageOut, FeedbackOut
@@ -267,3 +268,15 @@ async def api_brew_log_create(
         await store.store(body.idempotency_key, shot_out.model_dump())
 
     return shot_out
+
+
+@router.delete("/brew-log/{shot_id}", status_code=204)
+async def api_brew_log_delete(
+    shot_id: str,
+    _: HouseholdMember = Depends(require_admin),
+    brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
+) -> None:
+    """Delete a brew log entry by Shot_ID. Admin role required (AC-097)."""
+    deleted = await brew_log_repo.delete_by_shot_id(shot_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Brew log entry not found")
