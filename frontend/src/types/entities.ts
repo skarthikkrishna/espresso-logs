@@ -80,9 +80,13 @@ export interface DefaultsPayload {
 }
 
 export interface CurrentUser {
-  email: string;
-  name?: string;
-  picture?: string;
+  id: string;
+  username: string;
+  display_name: string;
+  email: string | null;
+  picture_url: string | null;
+  household_id: string | null;
+  role: 'admin' | 'member' | null;
 }
 
 export interface CatalogDetail {

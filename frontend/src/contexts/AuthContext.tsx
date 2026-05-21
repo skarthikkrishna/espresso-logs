@@ -1,12 +1,14 @@
 /**
- * AuthContext — Wave 1 scaffold (US-1.8)
+ * AuthContext — M5 wired version (US-3.12 + US-1.8).
  *
  * Provides authentication state (access token + current user) to the React
- * tree via context.  Full auth.ts wiring is added in Wave 3 (US-3.10).
- * For now all network calls use `fetch` directly.
+ * tree via context. Uses auth.ts API client functions (no direct fetch calls).
+ *
+ * The module-level access token in client.ts is kept in sync so that the
+ * Axios request interceptor always injects the latest Bearer token.
  *
  * AC-103: Access token is stored ONLY in React state — never in
- *         localStorage, sessionStorage, or any JS-accessible storage.
+ *         localStorage, sessionStorage, or any JS-accessible persistent storage.
  */
 
 import React, {
@@ -17,6 +19,10 @@ import React, {
   useState,
 } from 'react'
 import type { CurrentUser } from '../types/entities'
+import {
+  setAccessToken as setModuleToken,
+} from '../api/client'
+import { refresh as refreshApi, getMe as getMeApi, logout as logoutApi } from '../api/auth'
 
 // ---------------------------------------------------------------------------
 // Interfaces
@@ -64,42 +70,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     async function attemptRefresh() {
       try {
-        const refreshRes = await fetch('/auth/refresh', {
-          method: 'POST',
-          credentials: 'include',
-        })
-
-        if (!refreshRes.ok) {
-          if (!cancelled) {
-            setAccessTokenState(null)
-            setUserState(null)
-          }
-          return
-        }
-
-        const refreshData = (await refreshRes.json()) as { access_token: string }
-        const token = refreshData.access_token
+        const { access_token } = await refreshApi()
 
         if (cancelled) return
-        setAccessTokenState(token)
+        setAccessTokenState(access_token)
+        setModuleToken(access_token)
 
-        // Hydrate user
-        const meRes = await fetch('/auth/me', {
-          credentials: 'include',
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        const userData = await getMeApi()
 
         if (!cancelled) {
-          if (meRes.ok) {
-            const userData = (await meRes.json()) as CurrentUser
-            setUserState(userData)
-          } else {
-            setUserState(null)
-          }
+          setUserState(userData)
         }
       } catch {
         if (!cancelled) {
           setAccessTokenState(null)
+          setModuleToken(null)
           setUserState(null)
         }
       } finally {
@@ -121,6 +106,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // -------------------------------------------------------------------------
   const setAccessToken = useCallback((token: string | null) => {
     setAccessTokenState(token)
+    setModuleToken(token)
   }, [])
 
   const setUser = useCallback((u: CurrentUser | null) => {
@@ -131,11 +117,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // logout: best-effort POST, then clear state
   // -------------------------------------------------------------------------
   const logout = useCallback(() => {
-    void fetch('/auth/logout', {
-      method: 'POST',
-      credentials: 'include',
-    }).finally(() => {
+    void logoutApi().finally(() => {
       setAccessTokenState(null)
+      setModuleToken(null)
       setUserState(null)
     })
   }, [])

@@ -4,6 +4,9 @@ import { lazy, Suspense } from 'react'
 import AppShell from './components/AppShell'
 import LoadingSpinner from './components/LoadingSpinner'
 import ErrorBoundary from './components/ErrorBoundary'
+import ProtectedRoute from './components/ProtectedRoute'
+import Login from './pages/Login'
+import Register from './pages/Register'
 
 import CatalogDetail from './pages/CatalogDetail'
 import BrewLogDetail from './pages/BrewLogDetail'
@@ -24,19 +27,29 @@ const SuspenseWrapper = ({ children }: { children: React.ReactNode }) => (
 )
 
 export const router = createBrowserRouter([
+  // Public routes — no ProtectedRoute wrapper (N-003)
+  { path: '/login', element: <Login /> },
+  { path: '/register', element: <Register /> },
+
+  // Protected routes — all app routes require authentication
   {
-    path: '/',
-    element: <ErrorBoundary><AppShell /></ErrorBoundary>,
+    element: <ProtectedRoute />,
     children: [
-      { index: true, element: <SuspenseWrapper><Dashboard /></SuspenseWrapper> },
-      { path: 'catalog', element: <SuspenseWrapper><CatalogList /></SuspenseWrapper> },
-      { path: 'catalog/:id', element: <SuspenseWrapper><CatalogDetail /></SuspenseWrapper> },
-      { path: 'hardware', element: <SuspenseWrapper><HardwarePage /></SuspenseWrapper> },
-      { path: 'brew-log', element: <SuspenseWrapper><BrewLogList /></SuspenseWrapper> },
-      { path: 'brew-log/add', element: <SuspenseWrapper><BrewLogAdd /></SuspenseWrapper> },
-      { path: 'brew-log/:id', element: <SuspenseWrapper><BrewLogDetail /></SuspenseWrapper> },
-      { path: 'import', element: <SuspenseWrapper><ImportWizard /></SuspenseWrapper> },
-      { path: '*', element: <SuspenseWrapper><NotFound /></SuspenseWrapper> },
+      {
+        path: '/',
+        element: <ErrorBoundary><AppShell /></ErrorBoundary>,
+        children: [
+          { index: true, element: <SuspenseWrapper><Dashboard /></SuspenseWrapper> },
+          { path: 'catalog', element: <SuspenseWrapper><CatalogList /></SuspenseWrapper> },
+          { path: 'catalog/:id', element: <SuspenseWrapper><CatalogDetail /></SuspenseWrapper> },
+          { path: 'hardware', element: <SuspenseWrapper><HardwarePage /></SuspenseWrapper> },
+          { path: 'brew-log', element: <SuspenseWrapper><BrewLogList /></SuspenseWrapper> },
+          { path: 'brew-log/add', element: <SuspenseWrapper><BrewLogAdd /></SuspenseWrapper> },
+          { path: 'brew-log/:id', element: <SuspenseWrapper><BrewLogDetail /></SuspenseWrapper> },
+          { path: 'import', element: <SuspenseWrapper><ImportWizard /></SuspenseWrapper> },
+          { path: '*', element: <SuspenseWrapper><NotFound /></SuspenseWrapper> },
+        ],
+      },
     ],
   },
 ])
