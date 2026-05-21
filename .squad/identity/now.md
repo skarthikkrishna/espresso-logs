@@ -1,33 +1,29 @@
 ---
-updated_at: 2026-05-18T06:30:07Z
-focus_area: Session closure — maintain PR #76 merge readiness and track next production follow-up
+updated_at: 2026-05-21T06:03:35Z
+focus_area: spec-034 M5 — Household, Roles & Sheets Write-Disable — planning complete, implementation ready
 active_issues:
-  - pr: 76
-    repo: espresso-logs
-    status: open
-    branch: fix/031-brew-log-duplication-missing-ai
-  - task: post-deploy verification
-    repo: espresso-logs
-    status: pending
-    detail: confirm single brew-log write and AI feedback rendering in production after PR #76 deploy
-  - task: health endpoint follow-up
+  - spec: 034
+    repo: espresso-logs + coffee_tracker
+    status: implementation-ready
+    branch: feat/034-m5-household-roles (espresso-logs), spec/034-m5-household-roles (coffee_tracker)
+    detail: full SpecKit cycle complete; 34 tasks, 5 waves; Quinn gate APPROVED_WITH_NOTES; all analyze findings fixed
+  - task: brew_log_reconcile dry-run
     repo: espresso-logs
     status: queued
-    detail: add GET /health route per Tariq RCA 20260517T062925Z
+    detail: validate spec-033 Sheets→Postgres row parity before closing spec-033
 ---
 
 # What We're Focused On
 
 ## Current Team Focus
 
-Close out Spec 031 safely: keep **PR #76** moving to merge (CI green + Copilot review), then validate production behavior immediately post-deploy.
+spec-034 M5 planning is complete and implementation-ready. The next session should begin with Wave 1 implementation (Alex: migrations + auth service + DualWrite disable). The brew_log_reconcile dry-run for spec-033 close is queued but does not block M5.
 
 ## Open Work State
 
-1. **PR #76** (`fix/031-brew-log-duplication-missing-ai`) remains open; waiting for final CI/review completion and merge.
-2. **Post-deploy verification** is pending: verify brew log submission writes exactly one entry and AI feedback appears in production.
-3. **Queued follow-up:** implement `GET /health` endpoint to support Cloud Run health probing and reduce deploy risk.
+1. **spec-034 M5** (`feat/034-m5-household-roles`) is implementation-ready. Wave 1 tasks (US-1.1 – US-1.8) can begin immediately. All CI checks must pass before pushing.
+2. **spec-033 close** (`scripts/brew_log_reconcile.py --since <M4-date> --dry-run`) is queued; run before closing spec-033 but does not block M5.
 
 ## Blockers
 
-None currently recorded for session closure.
+None.
