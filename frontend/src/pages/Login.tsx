@@ -159,6 +159,7 @@ export default function Login() {
 
           {formError && (
             <div
+              id="login-form-error"
               role="alert"
               aria-live="polite"
               className="text-error text-sm mb-4 text-center"
@@ -186,6 +187,8 @@ export default function Login() {
                 autoComplete="username"
                 required
                 className="input input-bordered w-full bg-[var(--input-bg)]"
+                aria-invalid={formError ? 'true' : 'false'}
+                aria-describedby={formError ? 'login-form-error' : undefined}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
               />
@@ -203,6 +206,8 @@ export default function Login() {
                 autoComplete="current-password"
                 required
                 className="input input-bordered w-full bg-[var(--input-bg)]"
+                aria-invalid={formError ? 'true' : 'false'}
+                aria-describedby={formError ? 'login-form-error' : undefined}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />

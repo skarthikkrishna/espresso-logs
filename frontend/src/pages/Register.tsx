@@ -48,7 +48,7 @@ function validateConfirm(value: string, password: string): string | null {
 function FieldError({ id, message }: { id: string; message: string | null }) {
   if (!message) return null
   return (
-    <p id={id} className="text-error text-sm mt-1" role="alert">
+    <p id={id} className="text-error text-sm mt-1" role="alert" aria-live="polite">
       {message}
     </p>
   )
