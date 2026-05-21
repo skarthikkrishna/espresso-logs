@@ -82,3 +82,13 @@ See `.squad/orchestration-log/` for agent-level summaries.
 - **entities.ts / router.tsx / App.tsx / main.tsx (US-3.12):** `CurrentUser` updated to M5 shape. Router restructured: public `/login`+`/register` at top level, all app routes wrapped in `<ProtectedRoute>` child group. `App.tsx` wraps `RouterProvider` in `AuthProvider`; `main.tsx` renders `<App />` instead of `RouterProvider` directly.
 - **AuthContext.tsx:** Replaced direct `fetch` calls with `refreshApi`/`getMeApi`/`logoutApi` from `auth.ts`. `setAccessToken` callback now calls `setModuleToken` (from client.ts) in addition to React state setter, keeping the Axios interceptor in sync.
 - **All checks:** lint ✅ 0 warnings, build ✅ zero TypeScript errors.
+
+### 2026-05-21: Wave 4 US-4.6 — Login/Register Vitest tests + accessibility polish
+
+- **Login.test.tsx (7 tests):** Form render, OAuth spinner (reads `window.location.search` directly via `useState` initializer — mock with `window.history.pushState`, not `useSearchParams`), 401/429 error states, submit-disabled during in-flight, register link href check, forgot-password static text.
+- **Register.test.tsx (6 tests):** Form render (all 4 fields), blur validation (username too short, password too short, mismatch), 409 server error, submit-disabled during in-flight.
+- **Login.tsx a11y fixes:** Added `id="login-form-error"` to error div; added `aria-invalid` + `aria-describedby` to username and password inputs referencing the error id.
+- **Register.tsx a11y fix:** Added `aria-live="polite"` to `FieldError` component (supplements existing `role="alert"` for less assertive screen-reader announcements on blur validation).
+- **Mock pattern used:** `vi.hoisted()` for `useNavigate` mock reference (needed across tests); `vi.mock` + `vi.mocked(fn).mockRejectedValue()` for API stubs; `makeAxiosError(status)` helper creates `{ isAxiosError: true, response: { status } }` objects that pass `axios.isAxiosError()` check.
+- **Key learning:** Login.tsx initialises `isOAuthProcessing` from `window.location.search` in `useState(() => ...)` — this is read at component mount, not via `useSearchParams`. To test the OAuth spinner, use `window.history.pushState({}, '', '/?oauth_success=1')` BEFORE `render()`.
+- **All checks:** `npm run test` ✅ 161/161 (18 files), `npm run lint` ✅ 0 warnings, `npm run build` ✅.
