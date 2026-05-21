@@ -8,12 +8,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.deps import (
-    CurrentUser,
     _DualWriteCatalogRepo,
     _DualWriteInventoryRepo,
+    current_household_membership,
     get_catalog_repo,
     get_inventory_repo,
 )
+from app.models.household import HouseholdMember
 from app.models.api import InventoryBagOut
 
 router = APIRouter(prefix="/api", tags=["inventory"])
@@ -43,7 +44,7 @@ def _bag_to_out(bag: dict[str, Any], display_name: str) -> InventoryBagOut:
 
 @router.get("/inventory", response_model=List[InventoryBagOut])
 async def api_inventory_list(
-    user: CurrentUser,
+    _: HouseholdMember = Depends(current_household_membership),
     status: str | None = "Active",
     inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
     catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
@@ -64,7 +65,7 @@ async def api_inventory_list(
 @router.get("/inventory/{bag_id}", response_model=InventoryBagOut)
 async def api_inventory_detail(
     bag_id: str,
-    user: CurrentUser,
+    _: HouseholdMember = Depends(current_household_membership),
     inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
     catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
 ) -> InventoryBagOut:
@@ -85,7 +86,7 @@ class _BagPatchBody(BaseModel):
 async def api_inventory_patch(
     bag_id: str,
     body: _BagPatchBody,
-    user: CurrentUser,
+    _: HouseholdMember = Depends(current_household_membership),
     inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
     catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
 ) -> InventoryBagOut:

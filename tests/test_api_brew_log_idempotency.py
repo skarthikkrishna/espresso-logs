@@ -95,10 +95,11 @@ def app_fixture():
 @pytest.fixture(autouse=True)
 def _reset_stores(app_fixture):
     """Clear idempotency store and dep overrides before/after each test."""
-    from app.deps import get_idempotency_store
+    from app.deps import get_idempotency_store, get_llm_client, get_sheets_client
     from app.repos.base import get_process_cache
 
-    app_fixture.dependency_overrides.clear()
+    for dep in (get_sheets_client, get_llm_client, get_idempotency_store):
+        app_fixture.dependency_overrides.pop(dep, None)
     get_process_cache()._store.clear()
 
     store = get_idempotency_store()
@@ -106,7 +107,8 @@ def _reset_stores(app_fixture):
 
     yield
 
-    app_fixture.dependency_overrides.clear()
+    for dep in (get_sheets_client, get_llm_client, get_idempotency_store):
+        app_fixture.dependency_overrides.pop(dep, None)
     get_process_cache()._store.clear()
     store.clear()
 

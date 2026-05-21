@@ -4,17 +4,26 @@ import builtins
 import logging
 import os
 import threading
-from typing import TYPE_CHECKING, Annotated, Any, cast
+import uuid
+from typing import TYPE_CHECKING, Annotated, Any
 
 if TYPE_CHECKING:
     from app.services.inference import LLMClient
 
-from fastapi import Depends, Request
+import sqlalchemy as sa
+from fastapi import Depends, HTTPException, Request
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.models.base import get_db
+from app.models.household import GuestToken, HouseholdMember
+from app.models.user import User
 from app.repos.base import TTLCache, get_process_cache
+from app.repos.sql.household import HouseholdRepo
+from app.repos.sql.refresh_tokens import RefreshTokenRepo  # noqa: F401 — re-exported for routers
+from app.repos.sql.user import UserRepo
+from app.services.auth import decode_access_token, hash_token
 from app.repos.brew_log import BrewLogRepo
 from app.repos.catalog import CatalogRepo
 from app.repos.hardware import HardwareRepo
@@ -52,21 +61,158 @@ if _E2E_AUTH_BYPASS:
         )
 
 
-class _RequiresLogin(Exception):
-    """Raised by require_user when no authenticated session is present."""
+# ---------------------------------------------------------------------------
+# E2E synthetic user (consistent ID for test reproducibility)
+# ---------------------------------------------------------------------------
+
+_E2E_USER_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
+_E2E_HOUSEHOLD_ID = uuid.UUID("00000000-0000-0000-0000-000000000002")
 
 
-async def _get_current_user(request: Request) -> dict[str, Any]:
+def _make_e2e_user() -> User:
+    u = User(
+        username="e2e-test-user",
+        display_name="E2E Test User",
+        email="e2e-test@localhost",
+    )
+    u.id = _E2E_USER_ID
+    return u
+
+
+def _make_e2e_member() -> HouseholdMember:
+    m = HouseholdMember(
+        household_id=_E2E_HOUSEHOLD_ID,
+        user_id=_E2E_USER_ID,
+        role="admin",
+    )
+    m.id = uuid.UUID("00000000-0000-0000-0000-000000000003")
+    return m
+
+
+# ---------------------------------------------------------------------------
+# JWT auth dependency injection (M5)
+# ---------------------------------------------------------------------------
+
+_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+
+
+async def current_user(
+    token: str | None = Depends(_oauth2_scheme),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """Validate Bearer JWT and return the authenticated User ORM object.
+
+    When E2E_AUTH_BYPASS=1, returns a synthetic user without DB lookup.
+    Raises HTTPException(401) if the token is absent, invalid, or the user
+    is not found.
+    """
     if _E2E_AUTH_BYPASS:
-        return {"email": "e2e-test@localhost", "name": "E2E Test User"}
-    user = request.session.get("user")
-    if not user:
-        raise _RequiresLogin()
-    return cast(dict[str, Any], user)
+        return _make_e2e_user()
+    if token is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user_id = decode_access_token(token)
+    if db is None:
+        raise HTTPException(status_code=401, detail="Database unavailable")
+    user = await UserRepo().get_by_id(db, user_id)
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
 
 
-require_user = Depends(_get_current_user)
-CurrentUser = Annotated[dict[str, Any], require_user]
+CurrentUser = Annotated[User, Depends(current_user)]
+
+
+async def current_household_membership(
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+) -> HouseholdMember:
+    """Resolve the caller's household membership and set the RLS session variable.
+
+    Raises HTTPException(403) if the user has no household membership.
+    """
+    if _E2E_AUTH_BYPASS:
+        return _make_e2e_member()
+    if db is None:
+        raise HTTPException(status_code=403, detail="Database unavailable")
+    memberships = await HouseholdRepo().get_memberships_for_user(db, user.id)
+    if not memberships:
+        raise HTTPException(status_code=403, detail="Not a member of any household")
+    membership = memberships[0]
+    await db.execute(
+        sa.text("SET LOCAL app.current_household_id = :hid"),
+        {"hid": str(membership.household_id)},
+    )
+    return membership
+
+
+CurrentMembership = Annotated[HouseholdMember, Depends(current_household_membership)]
+
+
+async def require_admin(
+    membership: HouseholdMember = Depends(current_household_membership),
+) -> HouseholdMember:
+    """Require the caller to have the 'admin' role in their household.
+
+    Raises HTTPException(403) if the membership role is not 'admin'.
+    """
+    if membership.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin role required")
+    return membership
+
+
+AdminMembership = Annotated[HouseholdMember, Depends(require_admin)]
+
+
+async def resolve_guest_or_member(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    token: str | None = Depends(_oauth2_scheme),
+) -> HouseholdMember | GuestToken:
+    """Resolve caller as either a household member (JWT) or a guest (token query param).
+
+    Checks for a ``?guest=<raw_token>`` query parameter first.  If present,
+    hashes the raw token, looks it up in ``guest_tokens``, sets the RLS
+    session variable, and returns the ``GuestToken`` ORM object.
+
+    If no guest param is present, falls through to JWT-based membership
+    resolution (same as ``current_household_membership``).
+    """
+    guest_raw = request.query_params.get("guest")
+    if guest_raw is not None:
+        if _E2E_AUTH_BYPASS:
+            return _make_e2e_member()
+        if db is None:
+            raise HTTPException(status_code=401, detail="Database unavailable")
+        gt = await HouseholdRepo().get_guest_token_by_hash(db, hash_token(guest_raw))
+        if gt is None:
+            raise HTTPException(status_code=401, detail="Invalid or expired guest token")
+        await db.execute(
+            sa.text("SET LOCAL app.current_household_id = :hid"),
+            {"hid": str(gt.household_id)},
+        )
+        return gt
+
+    # No guest param — require JWT + household membership
+    if _E2E_AUTH_BYPASS:
+        return _make_e2e_member()
+    if token is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user_id = decode_access_token(token)
+    if db is None:
+        raise HTTPException(status_code=401, detail="Database unavailable")
+    user = await UserRepo().get_by_id(db, user_id)
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not found")
+    memberships = await HouseholdRepo().get_memberships_for_user(db, user.id)
+    if not memberships:
+        raise HTTPException(status_code=403, detail="Not a member of any household")
+    membership = memberships[0]
+    await db.execute(
+        sa.text("SET LOCAL app.current_household_id = :hid"),
+        {"hid": str(membership.household_id)},
+    )
+    return membership
+
 
 # ---------------------------------------------------------------------------
 # Sheets client singleton (double-checked lock)

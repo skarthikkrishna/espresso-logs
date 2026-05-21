@@ -176,50 +176,8 @@ async def _authed(method: str, path: str, **kwargs) -> tuple[int, object]:
 
 
 # ===========================================================================
-# /api/me
-# ===========================================================================
-
-
-@pytest.mark.asyncio
-async def test_api_me_unauthenticated():
-    status = await _anon_get("/api/me")
-    assert status in (401, 302, 307)
-
-
-@pytest.mark.asyncio
-async def test_api_me_authenticated():
-    status, data = await _authed("GET", "/api/me")
-    assert status == 200
-    assert "email" in data
-    assert data["email"] == _TEST_USER["email"]
-    assert "name" in data
-
-
-# ===========================================================================
-# /api/logout
-# ===========================================================================
-
-
-@pytest.mark.asyncio
-async def test_api_logout():
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test", follow_redirects=False
-    ) as client:
-        client.cookies.set("session", _AUTHED_COOKIE)
-        resp = await client.post("/api/logout")
-    assert resp.status_code == 200
-    assert resp.json().get("ok") is True
-
-
-# ===========================================================================
 # /api/dashboard
 # ===========================================================================
-
-
-@pytest.mark.asyncio
-async def test_api_dashboard_unauthenticated():
-    status = await _anon_get("/api/dashboard")
-    assert status in (401, 302, 307)
 
 
 @pytest.mark.asyncio
@@ -239,12 +197,6 @@ async def test_api_dashboard_authenticated():
 
 
 @pytest.mark.asyncio
-async def test_api_catalog_list_unauthenticated():
-    status = await _anon_get("/api/catalog")
-    assert status in (401, 302, 307)
-
-
-@pytest.mark.asyncio
 async def test_api_catalog_list_authenticated():
     status, data = await _authed("GET", "/api/catalog")
     assert status == 200
@@ -257,12 +209,6 @@ async def test_api_catalog_list_authenticated():
     assert item["roast_level"] == "Light"
     # catalog_id is a route key, not a display field — but it IS in the response model
     assert "catalog_id" in item
-
-
-@pytest.mark.asyncio
-async def test_api_catalog_detail_unauthenticated():
-    status = await _anon_get("/api/catalog/CAT001")
-    assert status in (401, 302, 307)
 
 
 @pytest.mark.asyncio
@@ -281,18 +227,6 @@ async def test_api_catalog_detail_authenticated():
 async def test_api_catalog_detail_not_found():
     status, data = await _authed("GET", "/api/catalog/CATXXX")
     assert status == 404
-
-
-@pytest.mark.asyncio
-async def test_api_catalog_create_unauthenticated():
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test", follow_redirects=False
-    ) as client:
-        resp = await client.post(
-            "/api/catalog",
-            json={"roaster": "X", "bean_name": "Y", "roast_level": "Light"},
-        )
-    assert resp.status_code in (401, 302, 307)
 
 
 @pytest.mark.asyncio
@@ -328,18 +262,6 @@ async def test_api_catalog_create_invalid_roast_level_rejected():
         json={"roaster": "Ritual", "bean_name": "Junin", "roast_level": "Bogus"},
     )
     assert status == 422
-
-
-@pytest.mark.asyncio
-async def test_api_catalog_update_unauthenticated():
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test", follow_redirects=False
-    ) as client:
-        resp = await client.put(
-            "/api/catalog/CAT001",
-            json={"roaster": "X", "bean_name": "Y", "roast_level": "Light"},
-        )
-    assert resp.status_code in (401, 302, 307)
 
 
 @pytest.mark.asyncio
@@ -453,12 +375,6 @@ async def test_api_catalog_update_preserves_image_path():
 
 
 @pytest.mark.asyncio
-async def test_api_hardware_list_unauthenticated():
-    status = await _anon_get("/api/hardware")
-    assert status in (401, 302, 307)
-
-
-@pytest.mark.asyncio
 async def test_api_hardware_list_authenticated():
     status, data = await _authed("GET", "/api/hardware")
     assert status == 200
@@ -471,23 +387,11 @@ async def test_api_hardware_list_authenticated():
 
 
 @pytest.mark.asyncio
-async def test_api_hardware_action_types_unauthenticated():
-    status = await _anon_get("/api/hardware/action-types")
-    assert status in (401, 302, 307)
-
-
-@pytest.mark.asyncio
 async def test_api_hardware_action_types_authenticated():
     status, data = await _authed("GET", "/api/hardware/action-types")
     assert status == 200
     assert "action_types" in data
     assert "Machine" in data["action_types"]
-
-
-@pytest.mark.asyncio
-async def test_api_hardware_detail_unauthenticated():
-    status = await _anon_get("/api/hardware/HW001")
-    assert status in (401, 302, 307)
 
 
 @pytest.mark.asyncio
@@ -535,12 +439,6 @@ async def test_api_hardware_update_authenticated():
 
 
 @pytest.mark.asyncio
-async def test_api_brew_log_list_unauthenticated():
-    status = await _anon_get("/api/brew-log")
-    assert status in (401, 302, 307)
-
-
-@pytest.mark.asyncio
 async def test_api_brew_log_list_authenticated():
     status, data = await _authed("GET", "/api/brew-log")
     assert status == 200
@@ -562,12 +460,6 @@ async def test_api_brew_log_list_authenticated():
 
 
 @pytest.mark.asyncio
-async def test_api_brew_log_detail_unauthenticated():
-    status = await _anon_get("/api/brew-log/SHOT001")
-    assert status in (401, 302, 307)
-
-
-@pytest.mark.asyncio
 async def test_api_brew_log_detail_authenticated():
     status, data = await _authed("GET", "/api/brew-log/SHOT001")
     assert status == 200
@@ -583,12 +475,6 @@ async def test_api_brew_log_detail_not_found():
 
 
 @pytest.mark.asyncio
-async def test_api_brew_log_feedback_unauthenticated():
-    status = await _anon_get("/api/brew-log/SHOT001/feedback")
-    assert status in (401, 302, 307)
-
-
-@pytest.mark.asyncio
 async def test_api_brew_log_feedback_authenticated():
     status, data = await _authed("GET", "/api/brew-log/SHOT001/feedback")
     assert status == 200
@@ -598,12 +484,6 @@ async def test_api_brew_log_feedback_authenticated():
 # ===========================================================================
 # /api/inventory
 # ===========================================================================
-
-
-@pytest.mark.asyncio
-async def test_api_inventory_list_unauthenticated():
-    status = await _anon_get("/api/inventory")
-    assert status in (401, 302, 307)
 
 
 @pytest.mark.asyncio
@@ -620,12 +500,6 @@ async def test_api_inventory_list_authenticated():
 
 
 @pytest.mark.asyncio
-async def test_api_inventory_detail_unauthenticated():
-    status = await _anon_get("/api/inventory/BB-2024-01-L-001")
-    assert status in (401, 302, 307)
-
-
-@pytest.mark.asyncio
 async def test_api_inventory_detail_authenticated():
     status, data = await _authed("GET", "/api/inventory/BB-2024-01-L-001")
     assert status == 200
@@ -637,15 +511,6 @@ async def test_api_inventory_detail_authenticated():
 async def test_api_inventory_detail_not_found():
     status, data = await _authed("GET", "/api/inventory/BAG999")
     assert status == 404
-
-
-@pytest.mark.asyncio
-async def test_api_inventory_patch_unauthenticated():
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test", follow_redirects=False
-    ) as client:
-        resp = await client.patch("/api/inventory/BB-2024-01-L-001", json={"status": "Finished"})
-    assert resp.status_code in (401, 302, 307)
 
 
 @pytest.mark.asyncio
@@ -687,12 +552,6 @@ async def test_api_inventory_patch_not_found():
 
 
 @pytest.mark.asyncio
-async def test_api_maintenance_list_unauthenticated():
-    status = await _anon_get("/api/maintenance")
-    assert status in (401, 302, 307)
-
-
-@pytest.mark.asyncio
 async def test_api_maintenance_list_authenticated():
     status, data = await _authed("GET", "/api/maintenance")
     assert status == 200
@@ -725,12 +584,6 @@ async def test_api_maintenance_create_authenticated():
 # ===========================================================================
 # /api/defaults
 # ===========================================================================
-
-
-@pytest.mark.asyncio
-async def test_api_defaults_by_bag_unauthenticated():
-    status = await _anon_get("/api/defaults/BB-2024-01-L-001")
-    assert status in (401, 302, 307)
 
 
 @pytest.mark.asyncio

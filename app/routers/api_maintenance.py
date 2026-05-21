@@ -9,12 +9,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.deps import (
-    CurrentUser,
     _DualWriteHardwareRepo,
     _DualWriteMaintenanceRepo,
+    current_household_membership,
     get_hardware_repo,
     get_maintenance_repo,
 )
+from app.models.household import HouseholdMember
 from app.models.api import MaintenanceEventOut
 from app.services.ids import make_maintenance_id
 
@@ -40,7 +41,7 @@ def _maint_to_out(row: dict[str, Any], hardware_name: str) -> MaintenanceEventOu
 
 @router.get("/maintenance", response_model=List[MaintenanceEventOut])
 async def api_maintenance_list(
-    user: CurrentUser,
+    _: HouseholdMember = Depends(current_household_membership),
     hardware_id: str | None = None,
     maintenance_repo: _DualWriteMaintenanceRepo = Depends(get_maintenance_repo),
     hardware_repo: _DualWriteHardwareRepo = Depends(get_hardware_repo),
@@ -72,7 +73,7 @@ class _MaintenanceCreateBody(BaseModel):
 @router.post("/maintenance", response_model=MaintenanceEventOut, status_code=201)
 async def api_maintenance_create(
     body: _MaintenanceCreateBody,
-    user: CurrentUser,
+    _: HouseholdMember = Depends(current_household_membership),
     hardware_repo: _DualWriteHardwareRepo = Depends(get_hardware_repo),
     maintenance_repo: _DualWriteMaintenanceRepo = Depends(get_maintenance_repo),
 ) -> MaintenanceEventOut:

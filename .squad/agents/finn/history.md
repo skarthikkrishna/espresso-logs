@@ -71,3 +71,14 @@ See `.squad/orchestration-log/` for agent-level summaries.
 - **Endpoints used:** `POST /auth/refresh`, `GET /auth/me`, `POST /auth/logout`
 - **Cleanup guard:** `cancelled` flag in `useEffect` prevents state updates on unmounted component during async refresh.
 - **All checks:** lint ✅ 0 warnings, build ✅ zero TypeScript errors.
+
+### 2026-05-21: Wave 3 Frontend — US-3.7–3.12
+
+- **ProtectedRoute.tsx (US-3.9):** Standard `useAuth()` guard — isLoading → spinner, !isAuthenticated → `<Navigate replace to="/login" />`, else `<Outlet />`.
+- **auth.ts (US-3.10):** Added `register()`, `login()`, `refresh()`, `logout()`, `getMe()` all typed with `RegisterResponse`/`LoginResponse`. Replaced old `/api/me` and `/api/logout` paths with `/auth/me` and `/auth/logout` (N-004 compliance).
+- **client.ts (US-3.11):** Module-level `_accessToken` with `getAccessToken`/`setAccessToken` exports. Request interceptor injects Bearer header. Response interceptor: 401 → silent refresh → retry once with `_retry` flag. `SKIP_REFRESH_PATHS` list (`/auth/login`, `/auth/register`, `/auth/refresh`, `/auth/logout`) prevents the interceptor from looping on auth endpoints that return 401 for credential errors rather than token expiry. Raw `axios.post` used in the interceptor (not `apiClient`) to avoid circular dependency with `auth.ts`.
+- **Login.tsx (US-3.7):** `?oauth_success=1` initialised from `useState(() => ...)` to avoid synchronous setState-in-effect lint error. Effect guards with `if (!isOAuthProcessing) return`. Error states: 401 → invalid creds, 429 → rate limit, network → connection error. Google OAuth `<a href="/auth/google">` with `aria-label`. Focus management: `usernameRef.current?.focus()` on error.
+- **Register.tsx (US-3.8):** Blur+submit validation, `FieldError` helper component, `input-error` + `aria-invalid` + `aria-describedby` pattern. 409 error targets username field. All four fields with correct `autocomplete` attributes.
+- **entities.ts / router.tsx / App.tsx / main.tsx (US-3.12):** `CurrentUser` updated to M5 shape. Router restructured: public `/login`+`/register` at top level, all app routes wrapped in `<ProtectedRoute>` child group. `App.tsx` wraps `RouterProvider` in `AuthProvider`; `main.tsx` renders `<App />` instead of `RouterProvider` directly.
+- **AuthContext.tsx:** Replaced direct `fetch` calls with `refreshApi`/`getMeApi`/`logoutApi` from `auth.ts`. `setAccessToken` callback now calls `setModuleToken` (from client.ts) in addition to React state setter, keeping the Axios interceptor in sync.
+- **All checks:** lint ✅ 0 warnings, build ✅ zero TypeScript errors.

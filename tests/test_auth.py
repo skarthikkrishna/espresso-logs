@@ -1,147 +1,11 @@
-"""Tests for Phase 4 Google OAuth authentication."""
+"""Tests for M5 JWT-based auth and Google OAuth callback."""
 
-import base64
-import json
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from itsdangerous import TimestampSigner
 
 from app.main import app
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-_TEST_SECRET = "dev-insecure-secret-for-testing-only"
-_TEST_USER = {"email": "test@example.com", "name": "Test User", "picture": ""}
-
-
-def _make_session_cookie(data: dict, secret: str = _TEST_SECRET) -> str:
-    """Sign a session payload using the same algorithm Starlette's SessionMiddleware uses."""
-    signer = TimestampSigner(secret)
-    payload = base64.b64encode(json.dumps(data).encode("utf-8"))
-    return signer.sign(payload).decode("utf-8")
-
-
-# ---------------------------------------------------------------------------
-# T003 — anonymous request to protected route redirects to /auth/login
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.asyncio
-async def test_anonymous_redirect():
-    # Unauthenticated GET / must redirect to /auth/login.
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test", follow_redirects=False
-    ) as client:
-        response = await client.get("/")
-    assert response.status_code == 302
-    assert response.headers["location"].endswith("/auth/login")
-
-
-# ---------------------------------------------------------------------------
-# T004 — authenticated user reaches dashboard
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.asyncio
-async def test_authenticated_dashboard():
-    from app.deps import get_sheets_client
-    from tests.doubles import FakeSheetsClient
-
-    fake_client = FakeSheetsClient({"Inventory": [], "Brew_Log": []})
-    app.dependency_overrides[get_sheets_client] = lambda: fake_client
-    try:
-        cookie_value = _make_session_cookie({"user": _TEST_USER})
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test", follow_redirects=False
-        ) as client:
-            client.cookies.set("session", cookie_value)
-            response = await client.get("/")
-        assert response.status_code == 200
-    finally:
-        app.dependency_overrides.pop(get_sheets_client, None)
-
-
-# ---------------------------------------------------------------------------
-# T005 — logout clears the session
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.asyncio
-async def test_logout_clears_session():
-    cookie_value = _make_session_cookie({"user": _TEST_USER})
-
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test", follow_redirects=False
-    ) as client:
-        client.cookies.set("session", cookie_value)
-
-        # Logout should redirect to /auth/login
-        logout_response = await client.get("/auth/logout")
-        assert logout_response.status_code == 302
-        assert logout_response.headers["location"].endswith("/auth/login")
-
-        # Session cookie should be cleared — unauthenticated GET / now redirects to login
-        client.cookies.clear()
-        after_response = await client.get("/")
-        assert after_response.status_code == 302
-        assert after_response.headers["location"].endswith("/auth/login")
-
-
-# ---------------------------------------------------------------------------
-# T010 — allowlisted callback creates session and redirects to /
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.asyncio
-async def test_callback_allowlisted_success():
-    fake_token = {
-        "userinfo": {
-            "email": "test@example.com",
-            "name": "Test User",
-            "picture": "https://example.com/pic.jpg",
-        }
-    }
-
-    with (
-        patch(
-            "app.auth.oauth.google.authorize_access_token",
-            new=AsyncMock(return_value=fake_token),
-        ),
-        patch("app.auth.ALLOWLIST", frozenset(["test@example.com"])),
-    ):
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test", follow_redirects=False
-        ) as client:
-            response = await client.get("/auth/callback")
-
-    assert response.status_code == 302
-    assert response.headers["location"] == "/"
-
-
-@pytest.mark.asyncio
-async def test_callback_non_allowlisted():
-    fake_token = {
-        "userinfo": {
-            "email": "outsider@example.com",
-            "name": "Outsider",
-            "picture": "",
-        }
-    }
-
-    with patch(
-        "app.auth.oauth.google.authorize_access_token",
-        new=AsyncMock(return_value=fake_token),
-    ):
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test", follow_redirects=False
-        ) as client:
-            response = await client.get("/auth/callback")
-
-    assert response.status_code == 403
 
 
 # ---------------------------------------------------------------------------
@@ -161,3 +25,119 @@ async def test_public_routes_no_auth():
     assert livez.status_code == 200
     assert readyz.status_code == 200
     assert health.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# T003 — SPA catch-all serves index (or placeholder) without requiring auth
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_spa_catchall_no_auth_required():
+    """GET / now serves the SPA without server-side auth (auth is client-side in React)."""
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test", follow_redirects=False
+    ) as client:
+        response = await client.get("/")
+    # Should be 200 (SPA placeholder or built index.html), not a redirect
+    assert response.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# T010 — OAuth callback success redirects to /login?oauth_success=1
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_callback_success_redirects_to_spa():
+    """Successful OAuth callback redirects to /login?oauth_success=1 and sets rt cookie."""
+    import uuid
+    from unittest.mock import AsyncMock, MagicMock
+
+    from app.main import app
+    from app.models.base import get_db
+
+    fake_token = {
+        "userinfo": {
+            "sub": "google-123",
+            "email": "test@example.com",
+            "name": "Test User",
+            "picture": "https://example.com/pic.jpg",
+        }
+    }
+
+    fake_user = MagicMock()
+    fake_user.id = uuid.UUID("00000000-0000-0000-0000-000000000099")
+    fake_user.email = "test@example.com"
+    fake_user.display_name = "Test User"
+    fake_user.picture_url = None
+
+    mock_db = AsyncMock()
+
+    async def _fake_db_dep():
+        yield mock_db
+
+    mock_user_repo = MagicMock()
+    mock_user_repo.return_value.get_by_google_sub = AsyncMock(return_value=None)
+    mock_user_repo.return_value.create = AsyncMock(return_value=fake_user)
+
+    mock_household_repo = MagicMock()
+    mock_household_repo.return_value.get_memberships_for_user = AsyncMock(return_value=[])
+    mock_household_repo.return_value.seed_default_household = AsyncMock()
+
+    mock_rt_repo = MagicMock()
+    mock_rt_repo.return_value.create = AsyncMock()
+
+    app.dependency_overrides[get_db] = _fake_db_dep
+    try:
+        with (
+            patch(
+                "app.auth.oauth.google.authorize_access_token",
+                new=AsyncMock(return_value=fake_token),
+            ),
+            patch("app.auth.UserRepo", mock_user_repo),
+            patch("app.auth.HouseholdRepo", mock_household_repo),
+            patch("app.auth.RefreshTokenRepo", mock_rt_repo),
+        ):
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test", follow_redirects=False
+            ) as client:
+                response = await client.get("/auth/google/callback")
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+    assert response.status_code == 302
+    assert "oauth_success=1" in response.headers.get("location", "")
+
+
+# ---------------------------------------------------------------------------
+# T005 — GET /auth/logout redirects to /auth/login (legacy redirect kept)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_get_logout_redirects():
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test", follow_redirects=False
+    ) as client:
+        response = await client.get("/auth/logout")
+    assert response.status_code == 302
+    assert "/auth/login" in response.headers.get("location", "")
+
+
+# ---------------------------------------------------------------------------
+# T012 — POST /auth/logout clears rt cookie
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_post_logout_clears_rt_cookie():
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test", follow_redirects=False
+    ) as client:
+        response = await client.post("/auth/logout")
+    assert response.status_code == 200
+    # The rt cookie should be cleared (Max-Age=0)
+    set_cookie = response.headers.get("set-cookie", "")
+    assert "rt=" in set_cookie
+    assert "Max-Age=0" in set_cookie

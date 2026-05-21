@@ -8,19 +8,21 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.middleware.sessions import SessionMiddleware
 
 from app.auth import router as auth_router
 from app.config import settings
-from app.deps import CurrentUser, _E2E_AUTH_BYPASS, _RequiresLogin, get_sheets_client
+from app.deps import _E2E_AUTH_BYPASS, get_sheets_client
 from app.models.base import get_session_factory
 from app.models.inventory import InventoryBag
 from app.models.maintenance import MaintenanceLog
+from app.rate_limit import limiter
 from app.repos.base import TTLCache
 from app.repos.inventory import InventoryRepo
 from app.repos.maintenance import MaintenanceRepo
@@ -35,6 +37,7 @@ from app.routers import (
     api_dashboard,
     api_defaults,
     api_hardware,
+    api_households,
     api_inventory,
     api_maintenance,
 )
@@ -216,13 +219,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(
-    SessionMiddleware,
-    secret_key=settings.session_secret,
-    session_cookie="session",
-    https_only=settings.app_env == "production",
-    same_site="lax",
-)
 
 if settings.app_env != "production":
     app.add_middleware(
@@ -232,6 +228,10 @@ if settings.app_env != "production":
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+# slowapi rate limiter (AC-016, AC-025, AC-034)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 
 @app.exception_handler(403)
@@ -247,11 +247,6 @@ h1{font-size:6rem;margin:0;color:#dc2626}a{color:#d97706}</style></head>
 <a href="/auth/login">Sign in with a different account</a></body></html>""",
         status_code=403,
     )
-
-
-@app.exception_handler(_RequiresLogin)
-async def requires_login_handler(request: Request, exc: _RequiresLogin) -> RedirectResponse:
-    return RedirectResponse(url="/auth/login", status_code=302)
 
 
 # Mount static files only when the directory exists (the static/ dir is
@@ -295,6 +290,7 @@ if os.path.isdir(_static_dir):
 app.include_router(auth_router)
 app.include_router(health.router)
 app.include_router(api_auth.router)
+app.include_router(api_households.router, prefix="/households")
 app.include_router(api_dashboard.router)
 app.include_router(api_catalog.router)
 app.include_router(api_hardware.router)
@@ -315,7 +311,8 @@ _spa_index = pathlib.Path(__file__).parent / "static" / "spa" / "index.html"
 
 
 @app.get("/{full_path:path}", include_in_schema=False)
-async def spa_catch_all(full_path: str, _user: CurrentUser) -> HTMLResponse:
+async def spa_catch_all(full_path: str) -> HTMLResponse:  # noqa: ARG001
+    """Serve the SPA for all unmatched routes; auth is enforced client-side."""
     if _spa_index.exists():
         return HTMLResponse(_spa_index.read_text())
     return HTMLResponse(

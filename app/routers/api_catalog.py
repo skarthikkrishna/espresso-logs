@@ -15,17 +15,18 @@ from pydantic import BaseModel
 
 from app.config import settings
 from app.deps import (
-    CurrentUser,
     _DualWriteBrewLogRepo,
     _DualWriteCatalogRepo,
     _DualWriteHardwareRepo,
     _DualWriteInventoryRepo,
+    current_household_membership,
     get_brew_log_repo,
     get_catalog_repo,
     get_hardware_repo,
     get_inventory_repo,
     get_llm_client,
 )
+from app.models.household import HouseholdMember
 from app.services.inference import LLMClient
 from app.models.api import BrewLogEntryOut, CatalogDetailOut, CatalogItemOut, InventoryBagOut
 from app.services.ids import make_inventory_id
@@ -113,7 +114,7 @@ def _shot_to_out(
 
 @router.get("/catalog", response_model=List[CatalogItemOut])
 async def api_catalog_list(
-    user: CurrentUser,
+    _: HouseholdMember = Depends(current_household_membership),
     catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
 ) -> list[CatalogItemOut]:
     return [_catalog_to_out(row) for row in await catalog_repo.list()]
@@ -122,7 +123,7 @@ async def api_catalog_list(
 @router.get("/catalog/{catalog_id}", response_model=CatalogDetailOut)
 async def api_catalog_detail(
     catalog_id: str,
-    user: CurrentUser,
+    _: HouseholdMember = Depends(current_household_membership),
     catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
     inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
     brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
@@ -202,7 +203,7 @@ class InferCatalogOut(BaseModel):
 @router.post("/catalog", response_model=CatalogItemOut, status_code=201)
 async def api_catalog_create(
     body: _CatalogCreateBody,
-    user: CurrentUser,
+    _: HouseholdMember = Depends(current_household_membership),
     catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
     llm_client: LLMClient = Depends(get_llm_client),
 ) -> CatalogItemOut:
@@ -278,7 +279,7 @@ class _CatalogUpdateBody(BaseModel):
 async def api_catalog_update(
     catalog_id: str,
     body: _CatalogUpdateBody,
-    user: CurrentUser,
+    _: HouseholdMember = Depends(current_household_membership),
     catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
 ) -> CatalogItemOut:
     """Update an editable catalog entry. Preserves Local_Image_Path; use the
@@ -328,7 +329,7 @@ _EMPTY_INFER = InferCatalogOut(roaster="", bean_name="", roast_level="", image_p
 @router.post("/catalog/infer", response_model=InferCatalogOut, status_code=200)
 async def api_catalog_infer(
     body: _InferCatalogBody,
-    user: CurrentUser,
+    _: HouseholdMember = Depends(current_household_membership),
     llm_client: LLMClient = Depends(get_llm_client),
 ) -> InferCatalogOut:
     """Infer catalog fields from a product URL using page scrape + LLM.
@@ -416,7 +417,7 @@ class _BagCreateBody(BaseModel):
 async def api_catalog_add_bag(
     catalog_id: str,
     body: _BagCreateBody,
-    user: CurrentUser,
+    _: HouseholdMember = Depends(current_household_membership),
     catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
     inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
 ) -> InventoryBagOut:
@@ -451,7 +452,7 @@ async def api_catalog_add_bag(
 @router.post("/catalog/{catalog_id}/image")
 async def api_catalog_upload_image(
     catalog_id: str,
-    user: CurrentUser,
+    _: HouseholdMember = Depends(current_household_membership),
     file: UploadFile = File(...),
     catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
 ) -> JSONResponse:

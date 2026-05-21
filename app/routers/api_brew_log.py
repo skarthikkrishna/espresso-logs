@@ -13,12 +13,12 @@ from pydantic import BaseModel
 
 from app.config import settings
 from app.deps import (
-    CurrentUser,
     _DualWriteBrewLogRepo,
     _DualWriteCatalogRepo,
     _DualWriteHardwareRepo,
     _DualWriteInventoryRepo,
     _DualWriteMaintenanceRepo,
+    current_household_membership,
     get_brew_log_repo,
     get_catalog_repo,
     get_hardware_repo,
@@ -26,8 +26,10 @@ from app.deps import (
     get_inventory_repo,
     get_llm_client,
     get_maintenance_repo,
+    resolve_guest_or_member,
 )
 from app.models.api import BrewLogEntryOut, BrewLogPageOut, FeedbackOut
+from app.models.household import GuestToken, HouseholdMember
 from app.services.idempotency_store import IdempotencyStore
 from app.services.ids import make_shot_id
 from app.services.inference import LLMClient, get_ai_feedback
@@ -119,7 +121,7 @@ def _shot_to_out(shot: dict[str, Any], names: dict[str, Any]) -> BrewLogEntryOut
 
 @router.get("/brew-log", response_model=BrewLogPageOut)
 async def api_brew_log_list(
-    user: CurrentUser,
+    _: HouseholdMember | GuestToken = Depends(resolve_guest_or_member),
     page: int = 1,
     per_page: int = 100,
     brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
@@ -145,7 +147,7 @@ async def api_brew_log_list(
 @router.get("/brew-log/{shot_id}/feedback", response_model=FeedbackOut)
 async def api_brew_log_feedback(
     shot_id: str,
-    user: CurrentUser,
+    _: HouseholdMember = Depends(current_household_membership),
     brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
 ) -> FeedbackOut:
     shot = await brew_log_repo.get(shot_id)
@@ -157,7 +159,7 @@ async def api_brew_log_feedback(
 @router.get("/brew-log/{shot_id}", response_model=BrewLogEntryOut)
 async def api_brew_log_detail(
     shot_id: str,
-    user: CurrentUser,
+    _: HouseholdMember = Depends(current_household_membership),
     brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
     inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
     catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
@@ -191,7 +193,7 @@ class _BrewLogCreateBody(BaseModel):
 @router.post("/brew-log", response_model=BrewLogEntryOut, status_code=201)
 async def api_brew_log_create(
     body: _BrewLogCreateBody,
-    user: CurrentUser,
+    _: HouseholdMember = Depends(current_household_membership),
     brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
     inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
     catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),

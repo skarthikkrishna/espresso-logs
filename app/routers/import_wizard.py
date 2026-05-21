@@ -11,10 +11,9 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Request
-from app.deps import (
-    require_user,
-)
+from fastapi import APIRouter, Depends, Request
+
+from app.deps import current_household_membership
 from app.services.image_sourcer import source_bean_image, fetch_image_bytes
 from app.services.importer import (
     ImportState,
@@ -28,7 +27,7 @@ from app.services.importer import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(dependencies=[require_user])
+router = APIRouter(dependencies=[Depends(current_household_membership)])
 
 
 # Template-friendly sorted-list version of CANONICAL_ENUM_VALUES
