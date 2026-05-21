@@ -41,3 +41,27 @@
 ### Handoff
 
 Green light for implementation fan-out. Alex (backend), Finn (frontend), Quinn (quality) can begin Wave 1 in parallel.
+
+---
+
+## Session: Wave 4 Tests (US-4.1–4.5) — 2026-05-21
+
+**Spec:** 034-m5-household-roles  
+**Status:** COMPLETE  
+**Tests added:** 61 (25 + 18 + 10 + 5 + 3)
+
+### Work Summary
+
+- **US-4.1** (`test_auth_wave4.py`, 25 tests): Auth lifecycle — register, login, refresh, logout, me, admin reset, N-Q2 OAuth merge, N-Q6 allowlist. Key fix: rate limiter cross-test isolation via `limiter._storage.reset()` autouse fixture. Account lockout at 10 failures within 10/min rate limit requires 9 wrong-password priming before triggering lockout.
+- **US-4.2** (`test_households.py`, 18 tests): Household CRUD, invitations, member management, guest-token AC-094/095/096. Critical discovery: all API routes are under `/api` prefix (not bare `/`); SPA catch-all `/{full_path:path}` intercepts bare paths. Dep overrides must use `app.dependency_overrides[dep_fn]` pattern, not `patch("module.dep")`.
+- **US-4.3** (`test_deps.py`, 10 tests): Dep unit tests called directly (not via HTTP). `decode_access_token` raises `HTTPException(401)` directly (not custom exception). N-Q3 OAuth PKCE callback verified via DB execute call_args inspection.
+- **US-4.4** (`test_dual_write_disabled.py`, 5 tests): `_DualWrite*` private classes importable from `app.deps`. `sql=None` guard means all 5 write methods skip Sheets entirely. Pattern: construct with real AsyncMock sql, assert `_sheets.method.assert_not_called()`.
+- **US-4.5** (`test_rate_limits.py`, 3 tests): Rate limit boundary tests require valid Pydantic request bodies (422 responses don't consume rate limit slots). Each test uses dedicated X-Forwarded-For IP + autouse limiter reset.
+
+### Learnings
+
+- **SPA catch-all swallows bare paths:** `/brew-log`, `/catalog` etc. are frontend routes. All API routes require `/api` prefix. Tests must use `/api/brew-log`, `/api/catalog` etc.
+- **Dep override pattern:** `app.dependency_overrides[dep_fn] = lambda: value` is the only reliable pattern. `patch("module.dep_fn")` at import level does NOT override FastAPI's resolved dep references.
+- **422 ≠ rate-limited:** slowapi rate limit check runs after Pydantic body validation. Invalid bodies return 422 without consuming rate limit slots. Tests must send schema-valid payloads.
+- **Mock result sync vs async:** `db.execute()` is async (returns AsyncMock by default). `result.scalar_one_or_none()` is synchronous — must use `MagicMock()` for result, not `AsyncMock()`.
+- **`_DualWrite*` classes are importable:** Despite underscore prefix, they can be imported directly from `app.deps` for unit testing. mypy `# type: ignore[attr-defined]` needed at import.
