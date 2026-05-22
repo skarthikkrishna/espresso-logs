@@ -26,6 +26,14 @@ down_revision: Union[str, None] = "0006"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
+TENANT_SCOPED_TABLES: tuple[str, ...] = (
+    "brew_log",
+    "catalog",
+    "inventory_bags",
+    "hardware",
+    "maintenance_log",
+)
+
 
 def upgrade() -> None:
     # ------------------------------------------------------------------
@@ -118,13 +126,11 @@ def upgrade() -> None:
     # ------------------------------------------------------------------
     # 6. Enable RLS on all 5 tenant tables + household_isolation policy
     # ------------------------------------------------------------------
-    op.execute("ALTER TABLE brew_log ENABLE ROW LEVEL SECURITY")
-    op.execute("ALTER TABLE catalog ENABLE ROW LEVEL SECURITY")
-    op.execute("ALTER TABLE inventory_bags ENABLE ROW LEVEL SECURITY")
-    op.execute("ALTER TABLE hardware ENABLE ROW LEVEL SECURITY")
-    op.execute("ALTER TABLE maintenance_log ENABLE ROW LEVEL SECURITY")
+    for table in TENANT_SCOPED_TABLES:
+        op.execute(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")
+        op.execute(f"ALTER TABLE {table} FORCE ROW LEVEL SECURITY")
 
-    for table in ("brew_log", "catalog", "inventory_bags", "hardware", "maintenance_log"):
+    for table in TENANT_SCOPED_TABLES:
         op.execute(
             f"""
             DO $$ BEGIN
@@ -169,21 +175,8 @@ def upgrade() -> None:
     # That grant was intentionally removed (Maya review 2026-05-21) because
     # BYPASSRLS on the runtime role defeats DB-level tenant isolation.
 
-    # ------------------------------------------------------------------
-    # 8. FORCE ROW LEVEL SECURITY on all tenant-scoped tables so that even
-    #    the table owner cannot bypass policies at runtime.
-    # ------------------------------------------------------------------
-    for table in ("brew_log", "catalog", "inventory_bags", "hardware", "maintenance_log"):
-        op.execute(f"ALTER TABLE {table} FORCE ROW LEVEL SECURITY")
-
 
 def downgrade() -> None:
-    # ------------------------------------------------------------------
-    # 8. Remove FORCE ROW LEVEL SECURITY
-    # ------------------------------------------------------------------
-    for table in ("brew_log", "catalog", "inventory_bags", "hardware", "maintenance_log"):
-        op.execute(f"ALTER TABLE {table} NO FORCE ROW LEVEL SECURITY")
-
     # ------------------------------------------------------------------
     # 7. Drop app_admin role (no REVOKE needed — it was never granted to runtime)
     # ------------------------------------------------------------------
@@ -204,8 +197,9 @@ def downgrade() -> None:
     # ------------------------------------------------------------------
     # 6. Disable RLS and drop policies
     # ------------------------------------------------------------------
-    for table in ("brew_log", "catalog", "inventory_bags", "hardware", "maintenance_log"):
+    for table in TENANT_SCOPED_TABLES:
         op.execute(f"DROP POLICY IF EXISTS household_isolation ON {table}")
+        op.execute(f"ALTER TABLE {table} NO FORCE ROW LEVEL SECURITY")
         op.execute(f"ALTER TABLE {table} DISABLE ROW LEVEL SECURITY")
 
     # ------------------------------------------------------------------
