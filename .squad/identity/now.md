@@ -1,12 +1,12 @@
 ---
-updated_at: 2026-05-21T06:03:35Z
-focus_area: spec-034 M5 — Household, Roles & Sheets Write-Disable — planning complete, implementation ready
+updated_at: 2026-05-21T20:32:52Z
+focus_area: spec-034 M5 — Household, Roles & Sheets Write-Disable — implementation complete, architectural review in progress
 active_issues:
   - spec: 034
-    repo: espresso-logs + coffee_tracker
-    status: implementation-ready
-    branch: feat/034-m5-household-roles (espresso-logs), spec/034-m5-household-roles (coffee_tracker)
-    detail: full SpecKit cycle complete; 34 tasks, 5 waves; Quinn gate APPROVED_WITH_NOTES; all analyze findings fixed
+    repo: espresso-logs
+    status: review-in-progress
+    branch: feat/034-m5-household-roles
+    detail: all 5 waves complete, 484 tests passing, architectural review against functional spec underway
   - task: brew_log_reconcile dry-run
     repo: espresso-logs
     status: queued
@@ -17,11 +17,11 @@ active_issues:
 
 ## Current Team Focus
 
-spec-034 M5 planning is complete and implementation-ready. The next session should begin with Wave 1 implementation (Alex: migrations + auth service + DualWrite disable). The brew_log_reconcile dry-run for spec-033 close is queued but does not block M5.
+spec-034 M5 implementation is complete. All 5 waves were delivered (Alex × 3, Finn × 3, Quinn × 2, Tariq × 1); 484 tests are passing. The branch `feat/034-m5-household-roles` is now in architectural review against the functional spec. The brew_log_reconcile dry-run for spec-033 close remains queued but does not block the review.
 
 ## Open Work State
 
-1. **spec-034 M5** (`feat/034-m5-household-roles`) is implementation-ready. Wave 1 tasks (US-1.1 – US-1.8) can begin immediately. All CI checks must pass before pushing.
+1. **spec-034 M5** (`feat/034-m5-household-roles`) — implementation done, all CI green, 484 tests passing. Architectural review against functional spec is underway before PR merge.
 2. **spec-033 close** (`scripts/brew_log_reconcile.py --since <M4-date> --dry-run`) is queued; run before closing spec-033 but does not block M5.
 
 ## Blockers
