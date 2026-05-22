@@ -79,12 +79,14 @@ export interface DefaultsPayload {
   grind_setting?: string;
 }
 
-export interface HouseholdMembership {
+export interface Membership {
   household_id: string;
   household_name: string;
   role: 'admin' | 'member';
   joined_at: string;
 }
+
+export type HouseholdMembership = Membership;
 
 export interface CurrentUser {
   id: string;
@@ -92,11 +94,12 @@ export interface CurrentUser {
   display_name: string;
   email: string | null;
   picture_url: string | null;
+  created_at?: string | null;
   /** Legacy single-household fields — present when backend has not yet migrated to memberships[]. */
   household_id: string | null;
   role: 'admin' | 'member' | null;
   /** M5 multi-household model — returned by updated /auth/me. */
-  memberships?: HouseholdMembership[];
+  memberships?: Membership[];
   active_household_id?: string | null;
 }
 

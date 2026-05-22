@@ -11,15 +11,21 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { apiClient } from '../api/client'
+import { apiClient, setStoredActiveHouseholdId } from '../api/client'
 import { getMe } from '../api/auth'
 import { useAuth } from '../contexts/AuthContext'
 
 function validateName(value: string): string | null {
   if (!value.trim()) return 'Household name is required'
-  if (value.trim().length < 2) return 'Name must be at least 2 characters'
   if (value.trim().length > 50) return 'Name must be 50 characters or less'
   return null
+}
+
+interface CreateHouseholdResponse {
+  id: string
+  name: string
+  created_at: string
+  role: 'admin'
 }
 
 export default function HouseholdNew() {
@@ -45,10 +51,13 @@ export default function HouseholdNew() {
     setIsSubmitting(true)
 
     try {
-      await apiClient.post('/households', { name: name.trim() })
-      const userData = await getMe()
-      setUser(userData)
-      navigate('/', { replace: true })
+    const { data } = await apiClient.post<CreateHouseholdResponse>('/households', {
+      name: name.trim(),
+    })
+    setStoredActiveHouseholdId(data.id)
+    const userData = await getMe()
+    setUser(userData)
+    navigate('/', { replace: true })
     } catch (err) {
       if (axios.isAxiosError(err)) {
         if (err.response?.status === 409) {

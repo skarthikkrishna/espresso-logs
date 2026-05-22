@@ -62,6 +62,7 @@ export default function Login() {
 
   const inviteToken = searchParams.get('invite')
   const returnTo = searchParams.get('from')
+  const authQuery = searchParams.toString()
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -304,7 +305,7 @@ export default function Login() {
 
           <p className="text-center text-sm mt-4">
             Don&apos;t have an account?{' '}
-            <Link to="/register" className="link link-hover text-amber-400">
+            <Link to={authQuery ? `/register?${authQuery}` : '/register'} className="link link-hover text-amber-400">
               Register
             </Link>
           </p>

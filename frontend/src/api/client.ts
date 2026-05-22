@@ -1,6 +1,6 @@
 /**
- * client.ts — shared Axios instance with Bearer token injection and silent
- * 401 refresh.
+ * client.ts — shared Axios instance with Bearer token injection, active-household
+ * header injection, and silent 401 refresh.
  *
  * AC-102: On 401, attempt one silent token refresh before hard-redirecting
  *         to /login. The _retry flag prevents infinite loops.
@@ -10,6 +10,8 @@
 
 import axios from 'axios'
 import type { InternalAxiosRequestConfig } from 'axios'
+
+export const ACTIVE_HOUSEHOLD_STORAGE_KEY = 'espresso.activeHouseholdId'
 
 // ---------------------------------------------------------------------------
 // Module-level access token store (AC-103)
@@ -21,6 +23,22 @@ export const getAccessToken = (): string | null => _accessToken
 
 export const setAccessToken = (token: string | null): void => {
   _accessToken = token
+}
+
+export const getStoredActiveHouseholdId = (): string | null => {
+  if (typeof window === 'undefined') return null
+  return window.localStorage.getItem(ACTIVE_HOUSEHOLD_STORAGE_KEY)
+}
+
+export const setStoredActiveHouseholdId = (householdId: string | null): void => {
+  if (typeof window === 'undefined') return
+
+  if (householdId) {
+    window.localStorage.setItem(ACTIVE_HOUSEHOLD_STORAGE_KEY, householdId)
+    return
+  }
+
+  window.localStorage.removeItem(ACTIVE_HOUSEHOLD_STORAGE_KEY)
 }
 
 // ---------------------------------------------------------------------------
@@ -36,13 +54,19 @@ export const apiClient = axios.create({
 })
 
 // ---------------------------------------------------------------------------
-// Request interceptor — inject Bearer header
+// Request interceptor — inject Bearer header + active household header
 // ---------------------------------------------------------------------------
 
 apiClient.interceptors.request.use((config) => {
   if (_accessToken) {
     config.headers['Authorization'] = `Bearer ${_accessToken}`
   }
+
+  const activeHouseholdId = getStoredActiveHouseholdId()
+  if (activeHouseholdId) {
+    config.headers['X-Household-Id'] = activeHouseholdId
+  }
+
   return config
 })
 
@@ -50,8 +74,6 @@ apiClient.interceptors.request.use((config) => {
 // Response interceptor — silent 401 refresh (AC-102)
 // ---------------------------------------------------------------------------
 
-// Auth endpoints that return 401 for credential errors, not token expiry.
-// These must not trigger the silent refresh loop.
 const SKIP_REFRESH_PATHS = [
   '/auth/login',
   '/auth/register',
@@ -84,7 +106,6 @@ apiClient.interceptors.response.use(
     if (shouldRetry && originalRequest) {
       originalRequest._retry = true
       try {
-        // Use raw axios (not apiClient) to avoid re-triggering this interceptor.
         const { data } = await axios.post<RefreshResponse>(
           '/auth/refresh',
           null,
@@ -92,6 +113,12 @@ apiClient.interceptors.response.use(
         )
         setAccessToken(data.access_token)
         originalRequest.headers['Authorization'] = `Bearer ${data.access_token}`
+
+        const activeHouseholdId = getStoredActiveHouseholdId()
+        if (activeHouseholdId) {
+          originalRequest.headers['X-Household-Id'] = activeHouseholdId
+        }
+
         return apiClient(originalRequest)
       } catch {
         setAccessToken(null)

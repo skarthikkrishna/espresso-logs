@@ -23,10 +23,9 @@ import { useAuth } from '../contexts/AuthContext'
 function validateUsername(value: string): string | null {
   if (value.length < 3) return 'Username must be at least 3 characters'
   if (value.length > 30) return 'Username must be 30 characters or less'
-  if (!/^[a-zA-Z0-9_]+$/.test(value))
+  if (!/^[a-zA-Z0-9_]{3,30}$/.test(value)) {
     return 'Username can only contain letters, numbers, and underscores'
-  if (/^_/.test(value) || /_$/.test(value))
-    return 'Username cannot start or end with an underscore'
+  }
   return null
 }
 
@@ -64,6 +63,7 @@ export default function Register() {
 
   const inviteToken = searchParams.get('invite')
   const returnTo = searchParams.get('from')
+  const authQuery = searchParams.toString()
 
   const [username, setUsername] = useState('')
   const [displayName, setDisplayName] = useState('')
@@ -307,7 +307,7 @@ export default function Register() {
 
           <p className="text-center text-sm mt-6">
             Already have an account?{' '}
-            <Link to="/login" className="link link-hover text-amber-400">
+            <Link to={authQuery ? `/login?${authQuery}` : '/login'} className="link link-hover text-amber-400">
               Sign in
             </Link>
           </p>

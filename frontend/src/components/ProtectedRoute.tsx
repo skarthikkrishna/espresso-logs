@@ -1,18 +1,16 @@
 /**
- * ProtectedRoute — auth guard for React Router v6 nested routes.
- *
- * Shows a full-screen loading spinner while the initial token refresh is
- * in-flight, redirects unauthenticated users to /login, and renders
- * <Outlet /> for authenticated users.
- *
- * AC-102: Unauthenticated users are redirected to /login.
+ * ProtectedRoute — auth + optional role guard for React Router v6 nested routes.
  */
 
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
-export default function ProtectedRoute() {
-  const { isLoading, isAuthenticated } = useAuth()
+interface ProtectedRouteProps {
+  requiredRole?: 'admin' | 'member'
+}
+
+export default function ProtectedRoute({ requiredRole }: ProtectedRouteProps) {
+  const { isLoading, isAuthenticated, activeMembership } = useAuth()
 
   if (isLoading) {
     return (
@@ -24,6 +22,10 @@ export default function ProtectedRoute() {
 
   if (!isAuthenticated) {
     return <Navigate replace to="/login" />
+  }
+
+  if (requiredRole === 'admin' && activeMembership?.role !== 'admin') {
+    return <Navigate replace to="/" />
   }
 
   return <Outlet />

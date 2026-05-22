@@ -48,7 +48,7 @@ export default function InviteAccept() {
   // Redirect unauthenticated users to login, preserving the invite token
   useEffect(() => {
     if (!authLoading && !isAuthenticated && token) {
-      navigate(`/login?invite=${encodeURIComponent(token)}&from=${encodeURIComponent(`/invite/accept?token=${token}`)}`, { replace: true })
+      navigate(`/login?invite=${encodeURIComponent(token)}&from=${encodeURIComponent('/invite/accept')}`, { replace: true })
     }
   }, [authLoading, isAuthenticated, token, navigate])
 
@@ -63,8 +63,12 @@ export default function InviteAccept() {
         setInviteInfo(data)
       } catch (err) {
         if (axios.isAxiosError(err)) {
-          if (err.response?.status === 404 || err.response?.status === 410) {
+          if (err.response?.status === 410) {
             navigate('/invite/expired', { replace: true })
+            return
+          }
+          if (err.response?.status === 404) {
+            navigate('/invite/invalid', { replace: true })
             return
           }
         }
@@ -88,8 +92,12 @@ export default function InviteAccept() {
       navigate('/', { replace: true })
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        if (err.response?.status === 404 || err.response?.status === 410) {
+        if (err.response?.status === 410) {
           navigate('/invite/expired', { replace: true })
+          return
+        }
+        if (err.response?.status === 404) {
+          navigate('/invite/invalid', { replace: true })
           return
         }
         if (err.response?.status === 409) {

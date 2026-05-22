@@ -1,13 +1,5 @@
 /**
- * ProtectedRoute tests — AC-102
- *
- * Covers (current behavior):
- *   - Loading: shows spinner while isLoading is true
- *   - Unauthenticated: redirects to /login via <Navigate replace>
- *   - Authenticated: renders <Outlet /> (protected children visible)
- *
- * Forward-looking role guard tests (requiredRole prop not yet implemented):
- *   - Marked with it.todo — CI-safe, documents expected future behavior.
+ * ProtectedRoute tests — auth and role-based route protection.
  */
 
 import React from 'react'
@@ -35,11 +27,11 @@ import ProtectedRoute from './ProtectedRoute'
 // Helpers
 // ---------------------------------------------------------------------------
 
-function renderProtected(initialPath = '/') {
+function renderProtected(initialPath = '/', requiredRole?: 'admin' | 'member') {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
       <Routes>
-        <Route element={<ProtectedRoute />}>
+        <Route element={<ProtectedRoute requiredRole={requiredRole} />}>
           <Route path="/" element={<div data-testid="protected-content">secret</div>} />
         </Route>
         <Route path="/login" element={<div data-testid="login-page">login</div>} />
@@ -62,7 +54,7 @@ beforeEach(() => {
 
 describe('ProtectedRoute', () => {
   it('shows loading spinner while auth is bootstrapping', () => {
-    mockUseAuth.mockReturnValue({ isLoading: true, isAuthenticated: false })
+    mockUseAuth.mockReturnValue({ isLoading: true, isAuthenticated: false, activeMembership: null })
 
     renderProtected()
 
@@ -72,7 +64,7 @@ describe('ProtectedRoute', () => {
   })
 
   it('redirects unauthenticated users to /login', () => {
-    mockUseAuth.mockReturnValue({ isLoading: false, isAuthenticated: false })
+    mockUseAuth.mockReturnValue({ isLoading: false, isAuthenticated: false, activeMembership: null })
 
     renderProtected()
 
@@ -81,7 +73,11 @@ describe('ProtectedRoute', () => {
   })
 
   it('renders children/outlet when authenticated', () => {
-    mockUseAuth.mockReturnValue({ isLoading: false, isAuthenticated: true })
+    mockUseAuth.mockReturnValue({
+      isLoading: false,
+      isAuthenticated: true,
+      activeMembership: { role: 'member' },
+    })
 
     renderProtected()
 
@@ -90,26 +86,50 @@ describe('ProtectedRoute', () => {
   })
 
   it('does not show spinner when auth check is complete', () => {
-    mockUseAuth.mockReturnValue({ isLoading: false, isAuthenticated: true })
+    mockUseAuth.mockReturnValue({
+      isLoading: false,
+      isAuthenticated: true,
+      activeMembership: { role: 'member' },
+    })
 
     renderProtected()
 
     expect(screen.queryByLabelText('Loading')).not.toBeInTheDocument()
   })
 
-  // ---------------------------------------------------------------------------
-  // Forward-looking role guard tests
-  // requiredRole prop is not yet implemented on ProtectedRoute.
-  // These are marked todo — CI-safe, preserved to guide future implementation.
-  // ---------------------------------------------------------------------------
+  it('blocks member-role user from admin-only route', () => {
+    mockUseAuth.mockReturnValue({
+      isLoading: false,
+      isAuthenticated: true,
+      activeMembership: { role: 'member' },
+    })
 
-  it.todo('blocks member-role user from admin-only route (requiredRole="admin")')
+    renderProtected('/', 'admin')
 
-  it.todo('allows admin user to access admin-only route (requiredRole="admin")')
+    expect(screen.queryByTestId('protected-content')).not.toBeInTheDocument()
+  })
 
-  it.todo('allows member user to access member-scoped route (requiredRole="member")')
+  it('allows admin user to access admin-only route', () => {
+    mockUseAuth.mockReturnValue({
+      isLoading: false,
+      isAuthenticated: true,
+      activeMembership: { role: 'admin' },
+    })
 
-  it.todo('redirects to /unauthorized when user is authenticated but role is insufficient')
+    renderProtected('/', 'admin')
 
-  it.todo('renders outlet when requiredRole matches active membership role')
+    expect(screen.getByTestId('protected-content')).toBeInTheDocument()
+  })
+
+  it('allows member user to access member-scoped route', () => {
+    mockUseAuth.mockReturnValue({
+      isLoading: false,
+      isAuthenticated: true,
+      activeMembership: { role: 'member' },
+    })
+
+    renderProtected('/', 'member')
+
+    expect(screen.getByTestId('protected-content')).toBeInTheDocument()
+  })
 })

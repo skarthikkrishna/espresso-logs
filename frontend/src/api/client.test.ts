@@ -12,8 +12,13 @@
 
 import axios, { AxiosError } from 'axios'
 import type { InternalAxiosRequestConfig, AxiosResponse } from 'axios'
-import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest'
-import { apiClient, getAccessToken, setAccessToken } from './client'
+import { describe, it, expect, vi, beforeAll, beforeEach, afterAll, afterEach } from 'vitest'
+import {
+  ACTIVE_HOUSEHOLD_STORAGE_KEY,
+  apiClient,
+  getAccessToken,
+  setAccessToken,
+} from './client'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -43,26 +48,63 @@ function makeOkResponse<T>(data: T, config: InternalAxiosRequestConfig): AxiosRe
 }
 
 // ---------------------------------------------------------------------------
-// Save / restore adapter between tests
+// Save / restore adapter and window.location between tests
 // ---------------------------------------------------------------------------
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let originalAdapter: any
+let originalAdapter: typeof apiClient.defaults.adapter
+let originalLocation: Location
+let originalLocalStorage: Storage
+const storageState = new Map<string, string>()
+
+const localStorageMock: Storage = {
+  get length() {
+    return storageState.size
+  },
+  clear() {
+    storageState.clear()
+  },
+  getItem(key: string) {
+    return storageState.get(key) ?? null
+  },
+  key(index: number) {
+    return Array.from(storageState.keys())[index] ?? null
+  },
+  removeItem(key: string) {
+    storageState.delete(key)
+  },
+  setItem(key: string, value: string) {
+    storageState.set(key, value)
+  },
+}
 
 beforeAll(() => {
   originalAdapter = apiClient.defaults.adapter
+  originalLocation = window.location
+  originalLocalStorage = window.localStorage
+  Object.defineProperty(window, 'localStorage', {
+    configurable: true,
+    value: localStorageMock,
+  })
 })
 
 beforeEach(() => {
   setAccessToken(null)
+  storageState.clear()
   vi.clearAllMocks()
 })
 
 afterEach(() => {
   apiClient.defaults.adapter = originalAdapter
   vi.restoreAllMocks()
-  // Reset location back to root so window.location checks are isolated
+  Object.defineProperty(window, 'location', { configurable: true, value: originalLocation })
   window.history.pushState({}, '', '/')
+})
+
+afterAll(() => {
+  Object.defineProperty(window, 'localStorage', {
+    configurable: true,
+    value: originalLocalStorage,
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -71,6 +113,21 @@ afterEach(() => {
 
 describe('apiClient', () => {
   describe('request interceptor — Bearer token injection', () => {
+    it('injects X-Household-Id header when active household is stored', async () => {
+      window.localStorage.setItem(ACTIVE_HOUSEHOLD_STORAGE_KEY, 'hh-123')
+
+      let capturedConfig: InternalAxiosRequestConfig | undefined
+
+      apiClient.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
+        capturedConfig = config
+        return makeOkResponse({}, config)
+      }
+
+      await apiClient.get('/api/test')
+
+      expect(capturedConfig?.headers?.['X-Household-Id']).toBe('hh-123')
+    })
+
     it('injects Authorization header when access token is set', async () => {
       setAccessToken('my-access-token')
 
@@ -133,6 +190,11 @@ describe('apiClient', () => {
     it('clears module token and redirects to /login when refresh fails', async () => {
       setAccessToken('old-token')
 
+      // jsdom's window.location doesn't fully process href assignments as navigation.
+      // Replace with a plain writable mock so we can capture the assigned value.
+      const locationMock = { href: 'http://localhost/' }
+      Object.defineProperty(window, 'location', { configurable: true, writable: true, value: locationMock })
+
       apiClient.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
         throw make401Error(config)
       }
@@ -142,7 +204,7 @@ describe('apiClient', () => {
       await expect(apiClient.get('/api/protected')).rejects.toBeTruthy()
 
       expect(getAccessToken()).toBeNull()
-      expect(window.location.pathname).toBe('/login')
+      expect(locationMock.href).toBe('/login')
     })
 
     it('does not attempt refresh for /auth/login 401 (skip path)', async () => {

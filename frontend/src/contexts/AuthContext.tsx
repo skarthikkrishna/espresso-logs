@@ -1,21 +1,8 @@
 /**
- * AuthContext — M5 wired version (US-3.12 + US-1.8 + multi-household).
+ * AuthContext — M5 auth state, memberships, and active-household coordination.
  *
- * Provides authentication state (access token + current user + memberships)
- * to the React tree via context. Uses auth.ts API client functions.
- *
- * The module-level access token in client.ts is kept in sync so that the
- * Axios request interceptor always injects the latest Bearer token.
- *
- * AC-103: Access token is stored ONLY in React state — never in
- *         localStorage, sessionStorage, or any JS-accessible persistent storage.
- *
- * Multi-household model:
- *   - memberships[] is derived from user.memberships (M5 /auth/me response).
- *   - activeHouseholdId tracks the current household context.
- *   - switchHousehold() updates the active context via POST /auth/switch-household.
- *   - Falls back gracefully to legacy single-household fields when backend
- *     has not yet migrated (memberships undefined).
+ * Access tokens stay in React/module memory only. Household context is stored
+ * separately so the API client can inject X-Household-Id on every request.
  */
 
 import React, {
@@ -26,24 +13,27 @@ import React, {
   useMemo,
   useState,
 } from 'react'
-import type { CurrentUser, HouseholdMembership } from '../types/entities'
+import type { CurrentUser, Membership } from '../types/entities'
 import {
+  getStoredActiveHouseholdId,
   setAccessToken as setModuleToken,
+  setStoredActiveHouseholdId,
 } from '../api/client'
-import { refresh as refreshApi, getMe as getMeApi, logout as logoutApi, switchHousehold as switchHouseholdApi } from '../api/auth'
-
-// ---------------------------------------------------------------------------
-// Interfaces
-// ---------------------------------------------------------------------------
+import {
+  getMe as getMeApi,
+  logout as logoutApi,
+  refresh as refreshApi,
+  switchHousehold as switchHouseholdApi,
+} from '../api/auth'
 
 interface AuthState {
   accessToken: string | null
   user: CurrentUser | null
   isLoading: boolean
   isAuthenticated: boolean
-  memberships: HouseholdMembership[]
+  memberships: Membership[]
   activeHouseholdId: string | null
-  activeMembership: HouseholdMembership | null
+  activeMembership: Membership | null
 }
 
 interface AuthContextValue extends AuthState {
@@ -53,79 +43,137 @@ interface AuthContextValue extends AuthState {
   switchHousehold: (householdId: string) => Promise<void>
 }
 
-// ---------------------------------------------------------------------------
-// Context
-// ---------------------------------------------------------------------------
-
 const AuthContext = createContext<AuthContextValue | null>(null)
-
-// ---------------------------------------------------------------------------
-// Provider
-// ---------------------------------------------------------------------------
 
 interface AuthProviderProps {
   children: React.ReactNode
 }
 
+function deriveMemberships(user: CurrentUser | null): Membership[] {
+  if (!user) return []
+
+  if (Array.isArray(user.memberships) && user.memberships.length > 0) {
+    return user.memberships
+  }
+
+  if (user.household_id && user.role) {
+    return [
+      {
+        household_id: user.household_id,
+        household_name: 'Household',
+        role: user.role,
+        joined_at: user.created_at ?? '',
+      },
+    ]
+  }
+
+  return []
+}
+
+function resolveActiveHouseholdId(
+  user: CurrentUser,
+  memberships: Membership[],
+  preferredHouseholdId?: string | null,
+): string | null {
+  const candidates = [
+    preferredHouseholdId,
+    user.active_household_id,
+    getStoredActiveHouseholdId(),
+    user.household_id,
+    memberships[0]?.household_id ?? null,
+  ]
+
+  for (const candidate of candidates) {
+    if (!candidate) continue
+    if (memberships.some((membership) => membership.household_id === candidate)) {
+      return candidate
+    }
+  }
+
+  return null
+}
+
+function normalizeUser(
+  incomingUser: CurrentUser,
+  preferredHouseholdId?: string | null,
+): CurrentUser {
+  const memberships = deriveMemberships(incomingUser)
+  const activeHouseholdId = resolveActiveHouseholdId(
+    incomingUser,
+    memberships,
+    preferredHouseholdId,
+  )
+  const activeMembership = memberships.find(
+    (membership) => membership.household_id === activeHouseholdId,
+  )
+
+  return {
+    ...incomingUser,
+    memberships,
+    active_household_id: activeHouseholdId,
+    household_id: incomingUser.household_id ?? activeHouseholdId,
+    role: incomingUser.role ?? activeMembership?.role ?? null,
+  }
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const [accessToken, setAccessTokenState] = useState<string | null>(null)
   const [user, setUserState] = useState<CurrentUser | null>(null)
+  const [memberships, setMemberships] = useState<Membership[]>([])
+  const [activeHouseholdId, setActiveHouseholdId] = useState<string | null>(
+    () => getStoredActiveHouseholdId(),
+  )
   const [isLoading, setIsLoading] = useState(true)
 
   const isAuthenticated = accessToken !== null
 
-  // Derive memberships from user — supports both legacy and M5 response shapes.
-  const memberships: HouseholdMembership[] = useMemo(() => {
-    if (!user) return []
-    if (user.memberships && user.memberships.length > 0) return user.memberships
-    // Legacy fallback: synthesise a single-membership array from flat fields.
-    if (user.household_id && user.role) {
-      return [{
-        household_id: user.household_id,
-        household_name: 'Home',
-        role: user.role,
-        joined_at: '',
-      }]
-    }
-    return []
-  }, [user])
+  const syncUserState = useCallback(
+    (incomingUser: CurrentUser | null, preferredHouseholdId?: string | null) => {
+      if (!incomingUser) {
+        setUserState(null)
+        setMemberships([])
+        setActiveHouseholdId(null)
+        setStoredActiveHouseholdId(null)
+        return
+      }
 
-  // Active household: prefer user.active_household_id, else first membership.
-  const activeHouseholdId: string | null = useMemo(() => {
-    if (!user) return null
-    if (user.active_household_id) return user.active_household_id
-    return memberships[0]?.household_id ?? null
-  }, [user, memberships])
+      const normalizedUser = normalizeUser(incomingUser, preferredHouseholdId)
+      const nextMemberships = normalizedUser.memberships ?? []
+      const nextActiveHouseholdId = normalizedUser.active_household_id ?? null
 
-  const activeMembership: HouseholdMembership | null = useMemo(() => {
+      setUserState(normalizedUser)
+      setMemberships(nextMemberships)
+      setActiveHouseholdId(nextActiveHouseholdId)
+      setStoredActiveHouseholdId(nextActiveHouseholdId)
+    },
+    [],
+  )
+
+  const activeMembership: Membership | null = useMemo(() => {
     if (!activeHouseholdId) return null
-    return memberships.find((m) => m.household_id === activeHouseholdId) ?? memberships[0] ?? null
-  }, [memberships, activeHouseholdId])
+    return memberships.find((membership) => membership.household_id === activeHouseholdId) ?? null
+  }, [activeHouseholdId, memberships])
 
-  // -------------------------------------------------------------------------
-  // On mount: attempt cookie-based token refresh, then hydrate user
-  // -------------------------------------------------------------------------
   useEffect(() => {
     let cancelled = false
 
     async function attemptRefresh() {
       try {
         const { access_token } = await refreshApi()
-
         if (cancelled) return
+
         setAccessTokenState(access_token)
         setModuleToken(access_token)
 
         const userData = await getMeApi()
-
         if (!cancelled) {
-          setUserState(userData)
+          syncUserState(userData)
         }
       } catch {
         if (!cancelled) {
           setAccessTokenState(null)
           setModuleToken(null)
-          setUserState(null)
+          syncUserState(null)
         }
       } finally {
         if (!cancelled) {
@@ -139,39 +187,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [syncUserState])
 
-  // -------------------------------------------------------------------------
-  // Public setters
-  // -------------------------------------------------------------------------
   const setAccessToken = useCallback((token: string | null) => {
     setAccessTokenState(token)
     setModuleToken(token)
   }, [])
 
-  const setUser = useCallback((u: CurrentUser | null) => {
-    setUserState(u)
-  }, [])
+  const setUser = useCallback(
+    (incomingUser: CurrentUser | null) => {
+      syncUserState(incomingUser)
+    },
+    [syncUserState],
+  )
 
-  // -------------------------------------------------------------------------
-  // switchHousehold: POST to backend, then refresh user state
-  // -------------------------------------------------------------------------
-  const switchHousehold = useCallback(async (householdId: string) => {
-    await switchHouseholdApi(householdId)
-    const userData = await getMeApi()
-    setUserState(userData)
-  }, [])
+  const switchHousehold = useCallback(
+    async (householdId: string) => {
+      await switchHouseholdApi(householdId)
+      const userData = await getMeApi()
+      syncUserState(userData, householdId)
+    },
+    [syncUserState],
+  )
 
-  // -------------------------------------------------------------------------
-  // logout: best-effort POST, then clear state
-  // -------------------------------------------------------------------------
   const logout = useCallback(() => {
     void logoutApi().finally(() => {
       setAccessTokenState(null)
       setModuleToken(null)
-      setUserState(null)
+      syncUserState(null)
     })
-  }, [])
+  }, [syncUserState])
 
   const value: AuthContextValue = {
     accessToken,
@@ -189,10 +234,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
-
-// ---------------------------------------------------------------------------
-// useAuth hook
-// ---------------------------------------------------------------------------
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function useAuth(): AuthContextValue {
