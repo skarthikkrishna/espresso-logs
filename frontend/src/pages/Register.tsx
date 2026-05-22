@@ -3,31 +3,30 @@
  *
  * Client-side validation fires on blur and on submit. Server 409 renders
  * inline under the username field. Success (201) stores token and navigates
- * to /.
+ * to /welcome (new users have no household) or accepts a pending invite.
  *
  * AC-101: /register renders with all four fields.
  * AC-011: 409 error shows under username field.
- * AC-103: Access token stored in AuthContext state only.
+ * AC-103: Access token stored in AuthContext state only (no module-level setter).
  */
 
 import { useState, useRef } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import { register, getMe } from '../api/auth'
-import { setAccessToken } from '../api/client'
 import { useAuth } from '../contexts/AuthContext'
 
 // ---------------------------------------------------------------------------
-// Validation helpers
+// Validation helpers — aligned with spec: 3–30 chars, alphanumeric + undersscores only
 // ---------------------------------------------------------------------------
 
 function validateUsername(value: string): string | null {
   if (value.length < 3) return 'Username must be at least 3 characters'
-  if (value.length > 32) return 'Username must be 32 characters or less'
-  if (!/^[a-zA-Z0-9_-]+$/.test(value))
-    return 'Username can only contain letters, numbers, hyphens, and underscores'
-  if (/^[-_]/.test(value) || /[-_]$/.test(value))
-    return 'Username cannot start or end with a hyphen or underscore'
+  if (value.length > 30) return 'Username must be 30 characters or less'
+  if (!/^[a-zA-Z0-9_]+$/.test(value))
+    return 'Username can only contain letters, numbers, and underscores'
+  if (/^_/.test(value) || /_$/.test(value))
+    return 'Username cannot start or end with an underscore'
   return null
 }
 
@@ -61,6 +60,10 @@ function FieldError({ id, message }: { id: string; message: string | null }) {
 export default function Register() {
   const { setAccessToken: ctxSetToken, setUser } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  const inviteToken = searchParams.get('invite')
+  const returnTo = searchParams.get('from')
 
   const [username, setUsername] = useState('')
   const [displayName, setDisplayName] = useState('')
@@ -133,11 +136,17 @@ export default function Register() {
 
     try {
       const { access_token } = await register(username, password, displayName)
-      setAccessToken(access_token)
       ctxSetToken(access_token)
       const userData = await getMe()
       setUser(userData)
-      navigate('/', { replace: true })
+      // New users have no household — send to onboarding unless invite token present
+      if (inviteToken) {
+        navigate(`/invite/accept?token=${encodeURIComponent(inviteToken)}`, { replace: true })
+      } else if (returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')) {
+        navigate(returnTo, { replace: true })
+      } else {
+        navigate('/welcome', { replace: true })
+      }
     } catch (err) {
       if (axios.isAxiosError(err)) {
         if (err.response?.status === 409) {

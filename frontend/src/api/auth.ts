@@ -66,3 +66,7 @@ export const logout = (): Promise<void> =>
 
 export const getMe = (): Promise<CurrentUser> =>
   apiClient.get<CurrentUser>('/auth/me').then((r) => r.data)
+
+/** POST /auth/switch-household — sets active household context server-side. */
+export const switchHousehold = (householdId: string): Promise<void> =>
+  apiClient.post('/auth/switch-household', { household_id: householdId }).then(() => undefined)

@@ -5,6 +5,8 @@
  *   - Standard username/password login
  *   - Google OAuth success redirect (?oauth_success=1)
  *   - 401 / 429 / network error states
+ *   - Invite token preservation (?invite=<tok>) across auth flow
+ *   - Return-to redirect (?from=<path>) after successful login
  *
  * AC-100: /login renders per aria-gate.md layout spec.
  * AC-061: ?oauth_success=1 shows spinner, calls refresh, navigates to /.
@@ -12,10 +14,9 @@
  */
 
 import { useState, useEffect, useRef } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import { login, refresh, getMe } from '../api/auth'
-import { setAccessToken } from '../api/client'
 import { useAuth } from '../contexts/AuthContext'
 
 // ---------------------------------------------------------------------------
@@ -55,11 +56,19 @@ function GoogleIcon() {
 // ---------------------------------------------------------------------------
 
 export default function Login() {
-  const { setAccessToken: ctxSetToken, setUser, isAuthenticated } = useAuth()
+  const { setAccessToken: ctxSetToken, setUser, isAuthenticated, memberships } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  const inviteToken = searchParams.get('invite')
+  const returnTo = searchParams.get('from')
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<{ username: string | null; password: string | null }>({
+    username: null,
+    password: null,
+  })
   const [formError, setFormError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   // Initialise from URL so the effect body never calls setState synchronously
@@ -68,13 +77,39 @@ export default function Login() {
   )
 
   const usernameRef = useRef<HTMLInputElement>(null)
+  const passwordRef = useRef<HTMLInputElement>(null)
+
+  // Determine where to navigate after successful auth
+  const getPostAuthDestination = (user: ReturnType<typeof getMe> extends Promise<infer U> ? U : never) => {
+    // If invite token present, go to accept flow
+    if (inviteToken) {
+      return `/invite/accept?token=${encodeURIComponent(inviteToken)}`
+    }
+    // If explicit return-to provided and it's a safe relative path, use it
+    if (returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')) {
+      return returnTo
+    }
+    // Zero-membership users → onboarding
+    const hasMembership =
+      (user.memberships && user.memberships.length > 0) ||
+      Boolean(user.household_id)
+    return hasMembership ? '/' : '/welcome'
+  }
 
   // Redirect immediately if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/', { replace: true })
+      // Determine destination based on memberships from context
+      if (inviteToken) {
+        navigate(`/invite/accept?token=${encodeURIComponent(inviteToken)}`, { replace: true })
+      } else if (returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')) {
+        navigate(returnTo, { replace: true })
+      } else {
+        const hasMembership = memberships.length > 0
+        navigate(hasMembership ? '/' : '/welcome', { replace: true })
+      }
     }
-  }, [isAuthenticated, navigate])
+  }, [isAuthenticated, navigate, inviteToken, returnTo, memberships])
 
   // Detect ?oauth_success=1 on mount and complete the OAuth flow
   useEffect(() => {
@@ -83,11 +118,10 @@ export default function Login() {
     void (async () => {
       try {
         const { access_token } = await refresh()
-        setAccessToken(access_token)
         ctxSetToken(access_token)
         const userData = await getMe()
         setUser(userData)
-        navigate('/', { replace: true })
+        navigate(getPostAuthDestination(userData), { replace: true })
       } catch {
         setIsOAuthProcessing(false)
         setFormError('Google sign-in failed. Please try again.')
@@ -98,15 +132,28 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setFormError(null)
+
+    // Client-side required-field validation
+    const usernameErr = username.trim() ? null : 'Username is required'
+    const passwordErr = password ? null : 'Password is required'
+    setFieldErrors({ username: usernameErr, password: passwordErr })
+    if (usernameErr) {
+      usernameRef.current?.focus()
+      return
+    }
+    if (passwordErr) {
+      passwordRef.current?.focus()
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
       const { access_token } = await login(username, password)
-      setAccessToken(access_token)
       ctxSetToken(access_token)
       const userData = await getMe()
       setUser(userData)
-      navigate('/', { replace: true })
+      navigate(getPostAuthDestination(userData), { replace: true })
     } catch (err) {
       if (axios.isAxiosError(err)) {
         if (err.response?.status === 401) {
@@ -186,12 +233,17 @@ export default function Login() {
                 type="text"
                 autoComplete="username"
                 required
-                className="input input-bordered w-full bg-[var(--input-bg)]"
-                aria-invalid={formError ? 'true' : 'false'}
-                aria-describedby={formError ? 'login-form-error' : undefined}
+                className={`input input-bordered w-full bg-[var(--input-bg)] ${fieldErrors.username ? 'input-error' : ''}`}
+                aria-invalid={fieldErrors.username ? 'true' : 'false'}
+                aria-describedby={fieldErrors.username ? 'login-username-error' : formError ? 'login-form-error' : undefined}
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => { setUsername(e.target.value); setFieldErrors((fe) => ({ ...fe, username: null })) }}
               />
+              {fieldErrors.username && (
+                <p id="login-username-error" className="text-error text-sm mt-1" role="alert" aria-live="polite">
+                  {fieldErrors.username}
+                </p>
+              )}
             </div>
 
             {/* Password */}
@@ -200,17 +252,23 @@ export default function Login() {
                 <span className="label-text text-sm font-medium">Password</span>
               </label>
               <input
+                ref={passwordRef}
                 id="login-password"
                 name="password"
                 type="password"
                 autoComplete="current-password"
                 required
-                className="input input-bordered w-full bg-[var(--input-bg)]"
-                aria-invalid={formError ? 'true' : 'false'}
-                aria-describedby={formError ? 'login-form-error' : undefined}
+                className={`input input-bordered w-full bg-[var(--input-bg)] ${fieldErrors.password ? 'input-error' : ''}`}
+                aria-invalid={fieldErrors.password ? 'true' : 'false'}
+                aria-describedby={fieldErrors.password ? 'login-password-error' : formError ? 'login-form-error' : undefined}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); setFieldErrors((fe) => ({ ...fe, password: null })) }}
               />
+              {fieldErrors.password && (
+                <p id="login-password-error" className="text-error text-sm mt-1" role="alert" aria-live="polite">
+                  {fieldErrors.password}
+                </p>
+              )}
             </div>
 
             <button
