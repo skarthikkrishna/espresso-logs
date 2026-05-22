@@ -140,8 +140,17 @@ def upgrade() -> None:
         )
 
     # ------------------------------------------------------------------
-    # 7. app_admin role with BYPASSRLS (idempotent; skipped gracefully if
-    #    the migration user lacks superuser privilege — expected in local dev).
+    # 7. app_admin role with BYPASSRLS (operational tooling ONLY).
+    #
+    # SECURITY: app_admin (BYPASSRLS) must NEVER be granted to the
+    # coffee_tracker_runtime service role. Doing so would defeat all RLS
+    # policies and allow the application to read/write any household's data.
+    # app_admin is reserved exclusively for out-of-band operational scripts
+    # run by a human operator (e.g., backfill jobs, data migrations).
+    #
+    # The correct runtime isolation model is:
+    #   coffee_tracker_runtime (no BYPASSRLS)  →  SET LOCAL app.current_household_id
+    #   → RLS policy filters rows to the active household automatically.
     # ------------------------------------------------------------------
     op.execute(
         """
@@ -156,36 +165,28 @@ def upgrade() -> None:
         END $$
         """
     )
-    op.execute(
-        """
-        DO $$ BEGIN
-          IF EXISTS (SELECT FROM pg_roles WHERE rolname = 'coffee_tracker_runtime')
-             AND EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_admin') THEN
-            BEGIN
-              GRANT app_admin TO coffee_tracker_runtime;
-            EXCEPTION WHEN insufficient_privilege THEN
-              RAISE NOTICE 'Skipping GRANT app_admin TO coffee_tracker_runtime — insufficient privilege';
-            END;
-          END IF;
-        END $$
-        """
-    )
+    # NOTE: Do NOT grant app_admin to coffee_tracker_runtime.
+    # That grant was intentionally removed (Maya review 2026-05-21) because
+    # BYPASSRLS on the runtime role defeats DB-level tenant isolation.
+
+    # ------------------------------------------------------------------
+    # 8. FORCE ROW LEVEL SECURITY on all tenant-scoped tables so that even
+    #    the table owner cannot bypass policies at runtime.
+    # ------------------------------------------------------------------
+    for table in ("brew_log", "catalog", "inventory_bags", "hardware", "maintenance_log"):
+        op.execute(f"ALTER TABLE {table} FORCE ROW LEVEL SECURITY")
 
 
 def downgrade() -> None:
     # ------------------------------------------------------------------
-    # 7. Revoke app_admin role
+    # 8. Remove FORCE ROW LEVEL SECURITY
     # ------------------------------------------------------------------
-    op.execute(
-        """
-        DO $$ BEGIN
-          IF EXISTS (SELECT FROM pg_roles WHERE rolname = 'coffee_tracker_runtime')
-             AND EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_admin') THEN
-            REVOKE app_admin FROM coffee_tracker_runtime;
-          END IF;
-        END $$
-        """
-    )
+    for table in ("brew_log", "catalog", "inventory_bags", "hardware", "maintenance_log"):
+        op.execute(f"ALTER TABLE {table} NO FORCE ROW LEVEL SECURITY")
+
+    # ------------------------------------------------------------------
+    # 7. Drop app_admin role (no REVOKE needed — it was never granted to runtime)
+    # ------------------------------------------------------------------
     op.execute(
         """
         DO $$ BEGIN

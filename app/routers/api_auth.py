@@ -310,10 +310,14 @@ async def get_me(
 @router.post("/admin/reset-password")
 async def admin_reset_password(
     body: AdminPasswordResetRequest,
-    _: HouseholdMember = Depends(require_admin),
+    caller: HouseholdMember = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, bool]:
-    """Allow an admin to reset another user's password (US-012)."""
+    """Allow an admin to reset another user's password within the same household (US-012).
+
+    Security: the target user must be a member of the caller's active household.
+    Return 404 (not 403) to avoid leaking user existence across household boundaries.
+    """
     if len(body.new_password) < 12:
         raise HTTPException(status_code=422, detail="Password must be at least 12 characters")
     if len(body.new_password.encode()) > 1024:
@@ -321,6 +325,12 @@ async def admin_reset_password(
 
     target = await UserRepo().get_by_username(db, body.username)
     if target is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Verify target is a member of the caller's household before resetting.
+    # Using 404 deliberately — do not leak whether a user from another household exists.
+    shared_membership = await HouseholdRepo().get_member(db, caller.household_id, target.id)
+    if shared_membership is None:
         raise HTTPException(status_code=404, detail="User not found")
 
     new_hash = hash_password(body.new_password)

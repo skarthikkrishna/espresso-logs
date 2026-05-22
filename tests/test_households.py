@@ -564,3 +564,59 @@ async def test_get_brew_log_with_revoked_guest_token_returns_401(
     app.dependency_overrides.pop(resolve_guest_or_member, None)
 
     assert resp.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# N-Q5: Revoked and declined invitation paths
+# ---------------------------------------------------------------------------
+
+
+async def test_accept_revoked_invitation_rejected(db_override: AsyncMock) -> None:
+    """Accepting a revoked invitation returns 410 (revoked_at is set).
+
+    After an admin revokes an invitation its revoked_at timestamp is non-null.
+    A subsequent accept attempt must return 404 or 410 — never 200.
+    """
+    hh_id = uuid.uuid4()
+    raw_token = "revokedtoken1234567"
+    inv = _fake_invitation(hh_id, token_hash=hash_token(raw_token), revoked=True)
+
+    with patch("app.routers.api_households.HouseholdRepo") as MockHHRepo:
+        MockHHRepo.return_value.get_invitation_by_token_hash = AsyncMock(return_value=inv)
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post("/households/accept-invite", json={"token": raw_token})
+
+    assert resp.status_code in (404, 410), (
+        f"Expected 404 or 410 for revoked invitation, got {resp.status_code}: {resp.text}"
+    )
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="Alex fix pending: decline invitation endpoint not yet implemented — "
+    "POST/DELETE /households/decline-invite or equivalent does not exist",
+)
+async def test_decline_invitation(db_override: AsyncMock) -> None:
+    """Invitee declines an invitation; the invite must no longer be pending.
+
+    Expects a 200 response from a decline endpoint and verifies that a
+    subsequent accept of the same token returns 404 or 410.
+    """
+    mock_db = db_override
+    hh_id = uuid.uuid4()
+    raw_token = "declinetoken123456"
+    inv = _fake_invitation(hh_id, token_hash=hash_token(raw_token))
+
+    with patch("app.routers.api_households.HouseholdRepo") as MockHHRepo:
+        MockHHRepo.return_value.get_invitation_by_token_hash = AsyncMock(return_value=inv)
+        MockHHRepo.return_value.revoke_invitation = AsyncMock()
+        mock_db.commit = AsyncMock()
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            # Decline endpoint — expected at POST /households/decline-invite
+            resp = await client.post("/households/decline-invite", json={"token": raw_token})
+
+    assert resp.status_code == 200, (
+        f"Expected 200 from decline-invite endpoint, got {resp.status_code}: {resp.text}"
+    )

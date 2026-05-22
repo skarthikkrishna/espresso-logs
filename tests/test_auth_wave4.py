@@ -851,3 +851,109 @@ async def test_allowlist_emails_does_not_block_registration(auth_client: AsyncMo
     assert resp.status_code == 201, (
         f"ALLOWLIST_EMAILS must not block registration, got {resp.status_code}: {resp.text}"
     )
+
+
+# ---------------------------------------------------------------------------
+# N-Q3: Expired refresh token path (AC-034)
+# ---------------------------------------------------------------------------
+
+
+async def test_refresh_expired_token_rejected(auth_client: AsyncMock) -> None:
+    """Non-revoked but expired refresh token returns 401 (AC-034)."""
+    mock_db = auth_client
+    user_id = uuid.uuid4()
+    expired_rt = _fake_refresh_token(
+        user_id,
+        revoked=False,
+        expires_at=datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1),
+    )
+
+    from app.services.auth import generate_refresh_token
+
+    raw_rt, _ = generate_refresh_token()
+
+    with patch("app.routers.api_auth.RefreshTokenRepo") as MockRtRepo:
+        MockRtRepo.return_value.get_by_hash = AsyncMock(return_value=expired_rt)
+        mock_db.commit = AsyncMock()
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post("/auth/refresh", cookies={"rt": raw_rt})
+
+    assert resp.status_code == 401
+    assert "expired" in resp.json().get("detail", "").lower()
+
+
+# ---------------------------------------------------------------------------
+# N-Q4: Admin reset-password cross-household isolation
+# ---------------------------------------------------------------------------
+
+
+async def test_admin_reset_password_cross_household_blocked(db_override: AsyncMock) -> None:
+    """Admin in household A cannot reset password for user only in household B (404, no leak).
+
+    The admin's require_admin dep confirms they are admin of household A.
+    The target user exists but has no membership in household A; the endpoint
+    must return 404 (not 200) to avoid leaking cross-household user existence.
+    """
+    mock_db = db_override
+    admin_id = uuid.UUID("00000000-0000-0000-0000-000000000001")
+    household_a_id = uuid.UUID("00000000-0000-0000-0000-000000000010")
+    admin_member = _fake_member(admin_id, household_a_id, role="admin")
+
+    target_user = _fake_user(username="bob-in-b")
+    target_user_id = uuid.uuid4()
+    target_user.id = target_user_id
+
+    from app.deps import require_admin
+
+    app.dependency_overrides[require_admin] = lambda: admin_member
+
+    with (
+        patch("app.routers.api_auth.UserRepo") as MockUserRepo,
+        patch("app.routers.api_auth.HouseholdRepo") as MockHHRepo,
+    ):
+        MockUserRepo.return_value.get_by_username = AsyncMock(return_value=target_user)
+        # Target user has NO membership in household A
+        MockHHRepo.return_value.get_member = AsyncMock(return_value=None)
+        mock_db.commit = AsyncMock()
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post(
+                "/auth/admin/reset-password",
+                json={"username": "bob-in-b", "new_password": "TempPass123!"},
+            )
+
+    app.dependency_overrides.pop(require_admin, None)
+
+    assert resp.status_code == 404, (
+        f"Expected 404 for cross-household reset, got {resp.status_code}: {resp.text}"
+    )
+
+
+async def test_admin_reset_password_same_household_succeeds(db_override: AsyncMock) -> None:
+    """Admin resets password for a member of the same household → 200 (N-Q4 happy path)."""
+    mock_db = db_override
+    admin_id = uuid.UUID("00000000-0000-0000-0000-000000000001")
+    household_a_id = uuid.UUID("00000000-0000-0000-0000-000000000010")
+    admin_member = _fake_member(admin_id, household_a_id, role="admin")
+    target_user = _fake_user(username="carol")
+
+    from app.deps import require_admin
+
+    app.dependency_overrides[require_admin] = lambda: admin_member
+
+    with patch("app.routers.api_auth.UserRepo") as MockUserRepo:
+        MockUserRepo.return_value.get_by_username = AsyncMock(return_value=target_user)
+        MockUserRepo.return_value.update_password_hash = AsyncMock()
+        mock_db.commit = AsyncMock()
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post(
+                "/auth/admin/reset-password",
+                json={"username": "carol", "new_password": "TempPass123!"},
+            )
+
+    app.dependency_overrides.pop(require_admin, None)
+
+    assert resp.status_code == 200
+    assert resp.json().get("ok") is True

@@ -441,3 +441,376 @@ async def test_seed_orphan_rows_on_first_login(
         )
         count: int = result.scalar_one()
     assert count == 1, f"Expected 1 household membership after second login, got {count}"
+
+
+# ---------------------------------------------------------------------------
+# AC-097 extension: scoped to active household
+# ---------------------------------------------------------------------------
+
+
+async def test_brew_log_scoped_to_active_household(
+    integration_client: AsyncClient,
+    pg_engine: AsyncEngine,
+) -> None:
+    """Brew log reads use the caller's active (first) household membership.
+
+    When a user has exactly one household, requests return only that household's
+    data.  A second user in a different household cannot see the first user's
+    brew log entries even when both call the same endpoint.
+    """
+    from app.rate_limit import limiter as _limiter
+
+    _limiter._storage.reset()
+
+    client = integration_client
+
+    ua = _uname()
+    r = await client.post("/auth/register", json={"username": ua, "password": "ActiveA12345!"})
+    assert r.status_code == 201, r.text
+    token_a: str = r.json()["access_token"]
+
+    _limiter._storage.reset()
+
+    ub = _uname()
+    r = await client.post("/auth/register", json={"username": ub, "password": "ActiveB12345!"})
+    assert r.status_code == 201, r.text
+    token_b: str = r.json()["access_token"]
+
+    r = await client.get("/auth/me", headers={"Authorization": f"Bearer {token_a}"})
+    assert r.status_code == 200
+    hh_a_id: str = r.json()["household_id"]
+
+    shot_id = f"ACTIVE-{uuid.uuid4().hex[:8]}"
+
+    async with pg_engine.connect() as conn:
+        await conn.execute(sa.text("ALTER TABLE brew_log FORCE ROW LEVEL SECURITY"))
+        await conn.commit()
+
+    try:
+        async with pg_engine.begin() as conn:
+            await conn.execute(
+                sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+                {"hid": hh_a_id},
+            )
+            await conn.execute(
+                sa.text("INSERT INTO brew_log (sheets_id, household_id) VALUES (:sid, :hid)"),
+                {"sid": shot_id, "hid": hh_a_id},
+            )
+
+        # User A (active household = A) can see their entry
+        r = await client.get("/api/brew-log", headers={"Authorization": f"Bearer {token_a}"})
+        assert r.status_code == 200, r.text
+        shot_ids_a = [item["shot_id"] for item in r.json()["items"]]
+        assert shot_id in shot_ids_a, f"User A's active household should contain {shot_id!r}"
+
+        # User B (active household = B) cannot see user A's entry
+        r = await client.get("/api/brew-log", headers={"Authorization": f"Bearer {token_b}"})
+        assert r.status_code == 200, r.text
+        shot_ids_b = [item["shot_id"] for item in r.json()["items"]]
+        assert shot_id not in shot_ids_b, (
+            f"Active household scoping violated: user B sees {shot_id!r}"
+        )
+
+    finally:
+        async with pg_engine.connect() as conn:
+            await conn.execute(sa.text("ALTER TABLE brew_log NO FORCE ROW LEVEL SECURITY"))
+            await conn.commit()
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="Alex fix pending: X-Household-ID header not implemented — "
+    "current_household_membership always uses memberships[0]; no header-based switching exists",
+)
+async def test_wrong_household_id_header_rejected(
+    integration_client: AsyncClient,
+    pg_engine: AsyncEngine,
+) -> None:
+    """Sending a mismatched X-Household-ID header for a household the user does not belong to
+    must be rejected (403 or 404), not silently ignored.
+    """
+    from app.rate_limit import limiter as _limiter
+
+    _limiter._storage.reset()
+
+    client = integration_client
+
+    ua = _uname()
+    r = await client.post("/auth/register", json={"username": ua, "password": "HdrTest12345!"})
+    assert r.status_code == 201, r.text
+    token_a: str = r.json()["access_token"]
+
+    wrong_hh_id = str(uuid.uuid4())
+
+    r = await client.get(
+        "/api/brew-log",
+        headers={
+            "Authorization": f"Bearer {token_a}",
+            "X-Household-ID": wrong_hh_id,
+        },
+    )
+    assert r.status_code in (403, 404), (
+        f"Wrong household header must be rejected, got {r.status_code}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# RLS cross-household isolation: catalog, inventory, hardware, maintenance
+# ---------------------------------------------------------------------------
+
+
+async def test_rls_catalog_cross_household_blocked(
+    integration_client: AsyncClient,
+    pg_engine: AsyncEngine,
+) -> None:
+    """RLS on catalog: user B must not see user A's catalog entries (AC-097 pattern)."""
+    from app.rate_limit import limiter as _limiter
+
+    _limiter._storage.reset()
+
+    client = integration_client
+
+    ua = _uname()
+    r = await client.post("/auth/register", json={"username": ua, "password": "CatRLS12345!"})
+    assert r.status_code == 201, r.text
+    token_a = r.json()["access_token"]
+
+    _limiter._storage.reset()
+
+    ub = _uname()
+    r = await client.post("/auth/register", json={"username": ub, "password": "CatRLS_B1234!"})
+    assert r.status_code == 201, r.text
+    token_b = r.json()["access_token"]
+
+    r = await client.get("/auth/me", headers={"Authorization": f"Bearer {token_a}"})
+    assert r.status_code == 200
+    hh_a_id: str = r.json()["household_id"]
+
+    cat_sid = f"RLS-CAT-{uuid.uuid4().hex[:8]}"
+
+    async with pg_engine.connect() as conn:
+        await conn.execute(sa.text("ALTER TABLE catalog FORCE ROW LEVEL SECURITY"))
+        await conn.commit()
+
+    try:
+        async with pg_engine.begin() as conn:
+            await conn.execute(
+                sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+                {"hid": hh_a_id},
+            )
+            await conn.execute(
+                sa.text(
+                    "INSERT INTO catalog (sheets_id, roaster, bean_name, household_id) "
+                    "VALUES (:sid, 'RLS Roaster', 'RLS Bean', :hid)"
+                ),
+                {"sid": cat_sid, "hid": hh_a_id},
+            )
+
+        r = await client.get("/api/catalog", headers={"Authorization": f"Bearer {token_b}"})
+        assert r.status_code == 200, r.text
+        ids_b = [item["catalog_id"] for item in r.json()]
+        assert cat_sid not in ids_b, (
+            f"RLS violation: user B's catalog contains user A's entry {cat_sid!r}"
+        )
+
+        r = await client.get("/api/catalog", headers={"Authorization": f"Bearer {token_a}"})
+        assert r.status_code == 200, r.text
+        ids_a = [item["catalog_id"] for item in r.json()]
+        assert cat_sid in ids_a, f"User A should see their own catalog entry {cat_sid!r}"
+
+    finally:
+        async with pg_engine.connect() as conn:
+            await conn.execute(sa.text("ALTER TABLE catalog NO FORCE ROW LEVEL SECURITY"))
+            await conn.commit()
+
+
+async def test_rls_inventory_cross_household_blocked(
+    integration_client: AsyncClient,
+    pg_engine: AsyncEngine,
+) -> None:
+    """RLS on inventory_bags: user B must not see user A's bags (AC-097 pattern)."""
+    from app.rate_limit import limiter as _limiter
+
+    _limiter._storage.reset()
+
+    client = integration_client
+
+    ua = _uname()
+    r = await client.post("/auth/register", json={"username": ua, "password": "InvRLS12345!"})
+    assert r.status_code == 201, r.text
+    token_a = r.json()["access_token"]
+
+    _limiter._storage.reset()
+
+    ub = _uname()
+    r = await client.post("/auth/register", json={"username": ub, "password": "InvRLS_B1234!"})
+    assert r.status_code == 201, r.text
+    token_b = r.json()["access_token"]
+
+    r = await client.get("/auth/me", headers={"Authorization": f"Bearer {token_a}"})
+    assert r.status_code == 200
+    hh_a_id: str = r.json()["household_id"]
+
+    bag_sid = f"RLS-BAG-{uuid.uuid4().hex[:8]}"
+
+    async with pg_engine.connect() as conn:
+        await conn.execute(sa.text("ALTER TABLE inventory_bags FORCE ROW LEVEL SECURITY"))
+        await conn.commit()
+
+    try:
+        async with pg_engine.begin() as conn:
+            await conn.execute(
+                sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+                {"hid": hh_a_id},
+            )
+            await conn.execute(
+                sa.text("INSERT INTO inventory_bags (sheets_id, household_id) VALUES (:sid, :hid)"),
+                {"sid": bag_sid, "hid": hh_a_id},
+            )
+
+        r = await client.get("/api/inventory", headers={"Authorization": f"Bearer {token_b}"})
+        assert r.status_code == 200, r.text
+        ids_b = [item["bag_id"] for item in r.json()]
+        assert bag_sid not in ids_b, (
+            f"RLS violation: user B's inventory contains user A's bag {bag_sid!r}"
+        )
+
+        r = await client.get("/api/inventory", headers={"Authorization": f"Bearer {token_a}"})
+        assert r.status_code == 200, r.text
+        ids_a = [item["bag_id"] for item in r.json()]
+        assert bag_sid in ids_a, f"User A should see their own bag {bag_sid!r}"
+
+    finally:
+        async with pg_engine.connect() as conn:
+            await conn.execute(sa.text("ALTER TABLE inventory_bags NO FORCE ROW LEVEL SECURITY"))
+            await conn.commit()
+
+
+async def test_rls_hardware_cross_household_blocked(
+    integration_client: AsyncClient,
+    pg_engine: AsyncEngine,
+) -> None:
+    """RLS on hardware: user B must not see user A's hardware (AC-097 pattern)."""
+    from app.rate_limit import limiter as _limiter
+
+    _limiter._storage.reset()
+
+    client = integration_client
+
+    ua = _uname()
+    r = await client.post("/auth/register", json={"username": ua, "password": "HwRLS123456!"})
+    assert r.status_code == 201, r.text
+    token_a = r.json()["access_token"]
+
+    _limiter._storage.reset()
+
+    ub = _uname()
+    r = await client.post("/auth/register", json={"username": ub, "password": "HwRLS_B12345!"})
+    assert r.status_code == 201, r.text
+    token_b = r.json()["access_token"]
+
+    r = await client.get("/auth/me", headers={"Authorization": f"Bearer {token_a}"})
+    assert r.status_code == 200
+    hh_a_id: str = r.json()["household_id"]
+
+    hw_sid = f"RLS-HW-{uuid.uuid4().hex[:8]}"
+
+    async with pg_engine.connect() as conn:
+        await conn.execute(sa.text("ALTER TABLE hardware FORCE ROW LEVEL SECURITY"))
+        await conn.commit()
+
+    try:
+        async with pg_engine.begin() as conn:
+            await conn.execute(
+                sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+                {"hid": hh_a_id},
+            )
+            await conn.execute(
+                sa.text(
+                    "INSERT INTO hardware (sheets_id, category, name, household_id) "
+                    "VALUES (:sid, 'Grinder', 'RLS Grinder', :hid)"
+                ),
+                {"sid": hw_sid, "hid": hh_a_id},
+            )
+
+        r = await client.get("/api/hardware", headers={"Authorization": f"Bearer {token_b}"})
+        assert r.status_code == 200, r.text
+        ids_b = [item["hardware_id"] for item in r.json()]
+        assert hw_sid not in ids_b, (
+            f"RLS violation: user B's hardware list contains user A's entry {hw_sid!r}"
+        )
+
+        r = await client.get("/api/hardware", headers={"Authorization": f"Bearer {token_a}"})
+        assert r.status_code == 200, r.text
+        ids_a = [item["hardware_id"] for item in r.json()]
+        assert hw_sid in ids_a, f"User A should see their own hardware {hw_sid!r}"
+
+    finally:
+        async with pg_engine.connect() as conn:
+            await conn.execute(sa.text("ALTER TABLE hardware NO FORCE ROW LEVEL SECURITY"))
+            await conn.commit()
+
+
+async def test_rls_maintenance_cross_household_blocked(
+    integration_client: AsyncClient,
+    pg_engine: AsyncEngine,
+) -> None:
+    """RLS on maintenance_log: user B must not see user A's events (AC-097 pattern)."""
+    from app.rate_limit import limiter as _limiter
+
+    _limiter._storage.reset()
+
+    client = integration_client
+
+    ua = _uname()
+    r = await client.post("/auth/register", json={"username": ua, "password": "MaintRLS1234!"})
+    assert r.status_code == 201, r.text
+    token_a = r.json()["access_token"]
+
+    _limiter._storage.reset()
+
+    ub = _uname()
+    r = await client.post("/auth/register", json={"username": ub, "password": "MaintRLS_B12!"})
+    assert r.status_code == 201, r.text
+    token_b = r.json()["access_token"]
+
+    r = await client.get("/auth/me", headers={"Authorization": f"Bearer {token_a}"})
+    assert r.status_code == 200
+    hh_a_id: str = r.json()["household_id"]
+
+    maint_sid = f"RLS-ML-{uuid.uuid4().hex[:8]}"
+
+    async with pg_engine.connect() as conn:
+        await conn.execute(sa.text("ALTER TABLE maintenance_log FORCE ROW LEVEL SECURITY"))
+        await conn.commit()
+
+    try:
+        async with pg_engine.begin() as conn:
+            await conn.execute(
+                sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+                {"hid": hh_a_id},
+            )
+            await conn.execute(
+                sa.text(
+                    "INSERT INTO maintenance_log (sheets_id, action, household_id) "
+                    "VALUES (:sid, 'Cleaned', :hid)"
+                ),
+                {"sid": maint_sid, "hid": hh_a_id},
+            )
+
+        r = await client.get("/api/maintenance", headers={"Authorization": f"Bearer {token_b}"})
+        assert r.status_code == 200, r.text
+        ids_b = [item["maintenance_id"] for item in r.json()]
+        assert maint_sid not in ids_b, (
+            f"RLS violation: user B's maintenance log contains user A's entry {maint_sid!r}"
+        )
+
+        r = await client.get("/api/maintenance", headers={"Authorization": f"Bearer {token_a}"})
+        assert r.status_code == 200, r.text
+        ids_a = [item["maintenance_id"] for item in r.json()]
+        assert maint_sid in ids_a, f"User A should see their own maintenance event {maint_sid!r}"
+
+    finally:
+        async with pg_engine.connect() as conn:
+            await conn.execute(sa.text("ALTER TABLE maintenance_log NO FORCE ROW LEVEL SECURITY"))
+            await conn.commit()
