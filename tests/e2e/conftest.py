@@ -1,32 +1,40 @@
 """Shared fixtures for Playwright browser tests.
 
-Requires E2E_BASE_URL to be set in the environment (e.g.
-  E2E_BASE_URL=https://<your-cloud-run-service-url>
-  E2E_BASE_URL=http://localhost:8000   # local dev
-).
-
-For ASGI httpx client tests, see tests/integration/.
+Uses a session-scoped uvicorn server with fake Sheets data when ``E2E_BASE_URL``
+is not provided. Defaults the E2E environment to the local auth-bypass mode so
+browser tests can exercise the SPA without a live auth backend.
 """
 
 from __future__ import annotations
 
-import base64
 import json
 import os
 import socket
 import threading
 import time
+from typing import Any
+from urllib.parse import urlparse
 
+import httpx
 import pytest
 import uvicorn
-from itsdangerous import TimestampSigner
+
+os.environ.setdefault("APP_ENV", "local")
+os.environ.setdefault("SPREADSHEET_ID", "dummy")
+os.environ.setdefault("E2E_AUTH_BYPASS", "1")
 
 # ---------------------------------------------------------------------------
 # Test constants
 # ---------------------------------------------------------------------------
 
-_TEST_SECRET = "dev-insecure-secret-for-testing-only"
-_TEST_USER = {"email": "test@example.com", "name": "Test User", "picture": ""}
+_E2E_ACCESS_TOKEN = "e2e-access-token"
+_E2E_REFRESH_TOKEN = "e2e-refresh-token"
+_E2E_HOUSEHOLD_ID = "00000000-0000-0000-0000-000000000002"
+_E2E_USER_ID = "00000000-0000-0000-0000-000000000001"
+_E2E_USERNAME = "e2e-test-user"
+_E2E_DISPLAY_NAME = "E2E Test User"
+_E2E_EMAIL = "e2e-test@localhost"
+_E2E_PASSWORD = "VerySecurePass123!"
 
 # ---------------------------------------------------------------------------
 # Rich fake data — realistic enough to exercise all ID-display rules
@@ -142,18 +150,7 @@ FAKE_SHEETS_DATA = {
 
 
 # ---------------------------------------------------------------------------
-# Session cookie helper
-# ---------------------------------------------------------------------------
-
-
-def make_session_cookie(data: dict = None, secret: str = _TEST_SECRET) -> str:
-    signer = TimestampSigner(secret)
-    payload = base64.b64encode(json.dumps(data or {"user": _TEST_USER}).encode())
-    return signer.sign(payload).decode()
-
-
-# ---------------------------------------------------------------------------
-# Live server fixture — starts real uvicorn with fake Sheets data injected
+# Helpers
 # ---------------------------------------------------------------------------
 
 
@@ -168,18 +165,131 @@ class _UvicornThread(threading.Thread):
         super().__init__(daemon=True)
         self.server = uvicorn.Server(config)
 
-    def run(self):
+    def run(self) -> None:
         self.server.run()
 
-    def stop(self):
+    def stop(self) -> None:
         self.server.should_exit = True
 
 
-@pytest.fixture(scope="session")
-def live_server():
-    """Start a uvicorn server with fake Sheets data. Session-scoped — one server for all E2E tests."""
-    import httpx
+def _refresh_cookie(base_url: str, value: str) -> dict[str, Any]:
+    parsed = urlparse(base_url)
+    domain = parsed.hostname or "localhost"
+    return {
+        "name": "rt",
+        "value": value,
+        "domain": domain,
+        "path": "/auth",
+        "httpOnly": True,
+        "secure": parsed.scheme == "https",
+        "sameSite": "Lax",
+    }
 
+
+def _auth_headers(access_token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {access_token}"}
+
+
+def _me_payload() -> dict[str, Any]:
+    return {
+        "id": _E2E_USER_ID,
+        "username": _E2E_USERNAME,
+        "display_name": _E2E_DISPLAY_NAME,
+        "email": _E2E_EMAIL,
+        "picture_url": None,
+        "household_id": _E2E_HOUSEHOLD_ID,
+        "role": "admin",
+        "active_household_id": _E2E_HOUSEHOLD_ID,
+        "memberships": [
+            {
+                "household_id": _E2E_HOUSEHOLD_ID,
+                "household_name": "Home",
+                "role": "admin",
+                "joined_at": "2025-01-01T00:00:00Z",
+            }
+        ],
+    }
+
+
+def _install_auth_bypass(page: Any, base_url: str) -> None:
+    context = page.context
+    context.set_extra_http_headers(_auth_headers(_E2E_ACCESS_TOKEN))
+    context.add_cookies([_refresh_cookie(base_url, _E2E_REFRESH_TOKEN)])
+    page.add_init_script(
+        f"window.localStorage.setItem('espresso.activeHouseholdId', '{_E2E_HOUSEHOLD_ID}');"
+    )
+
+    def _fulfill_json(route: Any, payload: dict[str, Any]) -> None:
+        route.fulfill(
+            status=200,
+            content_type="application/json",
+            body=json.dumps(payload),
+        )
+
+    context.route(
+        "**/auth/refresh",
+        lambda route: _fulfill_json(
+            route,
+            {"access_token": _E2E_ACCESS_TOKEN, "token_type": "bearer"},
+        ),
+    )
+    context.route("**/auth/me", lambda route: _fulfill_json(route, _me_payload()))
+
+
+def _authenticate_via_api(page: Any, base_url: str) -> None:
+    username = f"e2e-{int(time.time() * 1000)}"
+    refresh_token: str | None = None
+
+    with httpx.Client(base_url=base_url, follow_redirects=False, timeout=10.0) as client:
+        response = client.post(
+            "/auth/register",
+            json={
+                "username": username,
+                "password": _E2E_PASSWORD,
+                "display_name": _E2E_DISPLAY_NAME,
+            },
+        )
+        if response.status_code == 409:
+            response = client.post(
+                "/auth/login",
+                json={"username": username, "password": _E2E_PASSWORD},
+            )
+        response.raise_for_status()
+        payload = response.json()
+        refresh_token = client.cookies.get("rt") or response.cookies.get("rt")
+
+        page.context.set_extra_http_headers(_auth_headers(payload["access_token"]))
+
+        me_response = client.get("/auth/me", headers=_auth_headers(payload["access_token"]))
+        if me_response.is_success:
+            household_id = me_response.json().get("active_household_id")
+            if household_id:
+                page.add_init_script(
+                    f"window.localStorage.setItem('espresso.activeHouseholdId', '{household_id}');"
+                )
+
+    if refresh_token is not None:
+        page.context.add_cookies([_refresh_cookie(base_url, refresh_token)])
+
+
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limiter() -> None:
+    """Reset the in-memory slowapi limiter between E2E tests."""
+    from app.rate_limit import limiter
+
+    limiter._storage.reset()
+    yield
+    limiter._storage.reset()
+
+
+@pytest.fixture(scope="session")
+def live_server() -> str:
+    """Start a uvicorn server with fake Sheets data. Session-scoped."""
     from app.deps import get_sheets_client
     from app.main import app
     from tests.doubles import FakeSheetsClient
@@ -200,12 +310,11 @@ def live_server():
     thread = _UvicornThread(config)
     thread.start()
 
-    # Wait up to 10s for the server to be ready
     deadline = time.time() + 10
     while time.time() < deadline:
         try:
-            r = httpx.get(f"{base}/livez", timeout=1)
-            if r.status_code == 200:
+            response = httpx.get(f"{base}/livez", timeout=1)
+            if response.status_code == 200:
                 break
         except Exception:
             time.sleep(0.1)
@@ -220,32 +329,19 @@ def live_server():
 
 
 @pytest.fixture
-def auth_page(page, live_server):
-    """Playwright page with session cookie pre-injected — starts authenticated."""
-    page.context.add_cookies(
-        [
-            {
-                "name": "session",
-                "value": make_session_cookie(),
-                "url": live_server,
-                "httpOnly": False,
-                "secure": False,
-                "sameSite": "Lax",
-            }
-        ]
-    )
+def auth_page(page: Any, base_url: str) -> Any:
+    """Playwright page bootstrapped into an authenticated JWT session."""
+    if os.environ.get("E2E_AUTH_BYPASS") == "1":
+        _install_auth_bypass(page, base_url)
+    else:
+        _authenticate_via_api(page, base_url)
     return page
 
 
-# ---------------------------------------------------------------------------
-# Legacy fixture for tests that use E2E_BASE_URL (kept for backward compat)
-# ---------------------------------------------------------------------------
-
-
 @pytest.fixture(scope="session")
-def base_url() -> str:
-    """Return E2E_BASE_URL for Playwright browser tests.
-
-    Returns empty string when not set; browser tests skip themselves when empty.
-    """
-    return os.environ.get("E2E_BASE_URL", "").rstrip("/")
+def base_url(request: pytest.FixtureRequest) -> str:
+    """Return E2E_BASE_URL, defaulting to the session live server."""
+    configured = os.environ.get("E2E_BASE_URL", "").rstrip("/")
+    if configured:
+        return configured
+    return str(request.getfixturevalue("live_server")).rstrip("/")

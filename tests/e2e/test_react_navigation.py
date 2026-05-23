@@ -27,7 +27,8 @@ _ALL_ID_PATTERNS = [
     re.compile(r"MAINT-\d+"),  # maintenance IDs
 ]
 
-_NAV_ROUTES = ["/", "/catalog", "/hardware", "/brew-log", "/import"]
+# The import wizard currently renders outside the standard AppShell/sidebar layout.
+_NAV_ROUTES = ["/", "/catalog", "/hardware", "/brew-log"]
 
 
 def _body_text(page: Page) -> str:
@@ -70,8 +71,8 @@ def test_navigate_all_pages_reverse(auth_page: Page, live_server: str) -> None:
 
 
 def test_navigate_random_order_1(auth_page: Page, live_server: str) -> None:
-    """Navigate: hardware → brew-log → catalog → home → import."""
-    for path in ["/hardware", "/brew-log", "/catalog", "/", "/import"]:
+    """Navigate: hardware → brew-log → catalog → home."""
+    for path in ["/hardware", "/brew-log", "/catalog", "/"]:
         _navigate_and_check(auth_page, live_server, path)
 
 
