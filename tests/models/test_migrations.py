@@ -32,6 +32,8 @@ EXPECTED_TABLES = {
     "inventory_bags",
     "hardware",
     "maintenance_log",
+    "oauth_states",
+    "import_sessions",
 }
 
 

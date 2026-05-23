@@ -4,20 +4,23 @@ from __future__ import annotations
 
 import asyncio
 import dataclasses
-import json
+import datetime
 import logging
-import tempfile
 import uuid
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, Request
+import sqlalchemy as sa
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.deps import current_household_membership
-from app.services.image_sourcer import source_bean_image, fetch_image_bytes
+from app.deps import require_admin
+from app.models.base import get_db
+from app.models.household import HouseholdMember, ImportSession
+from app.services.image_sourcer import fetch_image_bytes, source_bean_image
 from app.services.importer import (
-    ImportState,
     CANONICAL_ENUM_VALUES,
+    ImportState,
     migrate_grinder_calibration_row,
     normalize_brew_log_row,
     normalize_catalog_row,
@@ -27,7 +30,11 @@ from app.services.importer import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(dependencies=[Depends(current_household_membership)])
+router = APIRouter(dependencies=[Depends(require_admin)])
+
+_IMPORT_SESSION_COOKIE = "import_session_id"
+_IMPORT_FILE_PREFIX = "coffee_import_"
+_IMPORT_TMP_DIR = Path(__file__).resolve().parents[2] / ".import-wizard-cache"
 
 
 # Template-friendly sorted-list version of CANONICAL_ENUM_VALUES
@@ -66,60 +73,77 @@ def _compute_dry_run(state: ImportState) -> dict[str, list[dict[str, Any]]]:
     return preview
 
 
-_IMPORT_TMP_DIR = Path(tempfile.gettempdir())
-_IMPORT_FILE_PREFIX = "coffee_import_"
-
-
-def _state_path(import_id: str) -> Path:
-    return _IMPORT_TMP_DIR / f"{_IMPORT_FILE_PREFIX}{import_id}.json"
-
-
-def _load_state(request: Request) -> ImportState | None:
-    """Load ImportState from a /tmp file keyed by the session import_id.
-
-    Browser cookie stores only the UUID (tiny); full state lives in /tmp.
-    Returns None if the session has no import_id or the file is missing/corrupt
-    (e.g. Cloud Run instance was replaced mid-wizard).
-    """
-    import_id = request.session.get("import_id")
-    if not import_id:
-        return None
-    path = _state_path(import_id)
-    if not path.exists():
+async def _get_import_session(
+    db: AsyncSession,
+    request: Request,
+    membership: HouseholdMember,
+) -> ImportSession | None:
+    """Return the active import session from the cookie when it is still valid."""
+    import_session_id = request.cookies.get(_IMPORT_SESSION_COOKIE)
+    if not import_session_id:
         return None
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-        return ImportState(**data)
+        session_id = uuid.UUID(import_session_id)
+    except ValueError:
+        return None
+    result = await db.execute(
+        sa.select(ImportSession).where(
+            ImportSession.id == session_id,
+            ImportSession.household_id == membership.household_id,
+            ImportSession.created_by == membership.user_id,
+            ImportSession.expires_at > sa.func.now(),
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def _load_state(
+    db: AsyncSession,
+    request: Request,
+    membership: HouseholdMember,
+) -> ImportState | None:
+    """Load ImportState from the DB-backed import session."""
+    import_session = await _get_import_session(db, request, membership)
+    if import_session is None:
+        return None
+    try:
+        return ImportState(**import_session.state)
     except Exception:
         return None
 
 
-def _save_state(request: Request, state: ImportState) -> None:
-    """Persist ImportState to /tmp; store the UUID key in the session cookie.
+async def _save_state(
+    db: AsyncSession,
+    import_session_id: uuid.UUID,
+    state: ImportState,
+) -> None:
+    """Persist ImportState to the import_sessions table."""
+    await db.execute(
+        sa.update(ImportSession)
+        .where(ImportSession.id == import_session_id)
+        .values(state=dataclasses.asdict(state))
+    )
+    await db.flush()
 
-    The full state can be 10s of KB (raw rows + mappings) — far beyond the 4 KB
-    browser cookie limit. Writing to /tmp avoids silent cookie truncation.
-    """
-    import_id = request.session.get("import_id")
-    if not import_id:
-        import_id = str(uuid.uuid4())
-        request.session["import_id"] = import_id
-    _state_path(import_id).write_text(json.dumps(dataclasses.asdict(state)), encoding="utf-8")
+
+async def _clear_state(db: AsyncSession, import_session_id: uuid.UUID) -> None:
+    """Delete the DB-backed import session."""
+    await db.execute(sa.delete(ImportSession).where(ImportSession.id == import_session_id))
+    await db.flush()
 
 
-def _clear_state(request: Request) -> None:
-    """Delete the /tmp state file and any image tmp files, then clear the session key."""
-    import_id = request.session.pop("import_id", None)
-    if import_id:
-        try:
-            _state_path(import_id).unlink(missing_ok=True)
-        except Exception:  # nosec B110  # best-effort cleanup; silently skip unlink failures
-            pass
-        for f in _IMPORT_TMP_DIR.glob(f"{_IMPORT_FILE_PREFIX}{import_id}_img_*"):
-            try:
-                f.unlink(missing_ok=True)
-            except Exception:  # nosec B110  # best-effort cleanup; silently skip unlink failures
-                pass
+async def _create_import_session(db: AsyncSession, membership: HouseholdMember) -> ImportSession:
+    """Create a fresh DB-backed import wizard session."""
+    import_session = ImportSession(
+        household_id=membership.household_id,
+        created_by=membership.user_id,
+        state={},
+        expires_at=datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=2),
+    )
+    db.add(import_session)
+    await db.flush()
+    await db.refresh(import_session)
+    return import_session
 
 
 def _has_fresh_local_image_path(row: dict[str, Any]) -> bool:
@@ -133,11 +157,7 @@ async def _enrich_catalog_images(
     llm_client: Any,
     import_id: str,
 ) -> list[dict[str, Any]]:
-    """Source image for each catalog row; download bytes to /tmp.
-
-    tmp path: /tmp/coffee_import_{import_id}_img_{catalog_id}.bin
-    All rows are processed concurrently (asyncio.gather).
-    """
+    """Source images for catalog rows and cache bytes in a project-local directory."""
 
     async def _enrich_one(row: dict[str, Any]) -> dict[str, Any]:
         if _has_fresh_local_image_path(row):
@@ -153,13 +173,37 @@ async def _enrich_catalog_images(
             result = await fetch_image_bytes(image_url)
             if result and catalog_id:
                 img_bytes, content_type = result
-                tmp_path = (
+                _IMPORT_TMP_DIR.mkdir(parents=True, exist_ok=True)
+                bin_path = (
                     _IMPORT_TMP_DIR / f"{_IMPORT_FILE_PREFIX}{import_id}_img_{catalog_id}.bin"
                 )
-                tmp_path.write_bytes(img_bytes)
-                ct_path = _IMPORT_TMP_DIR / f"{_IMPORT_FILE_PREFIX}{import_id}_img_{catalog_id}.ct"
-                ct_path.write_text(content_type, encoding="utf-8")
-        # Row gets empty Local_Image_Path; actual URL set at commit time from GCS
-        return row  # leave Local_Image_Path unchanged (still "")
+                bin_path.write_bytes(img_bytes)
+                content_type_path = _IMPORT_TMP_DIR / (
+                    f"{_IMPORT_FILE_PREFIX}{import_id}_img_{catalog_id}.ct"
+                )
+                content_type_path.write_text(content_type, encoding="utf-8")
+        return row
 
     return list(await asyncio.gather(*[_enrich_one(row) for row in catalog_rows]))
+
+
+@router.get("/import")
+async def start_import_wizard(
+    response: Response,
+    membership: HouseholdMember = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    """Start the import wizard and issue a DB-backed session id."""
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+    import_session = await _create_import_session(db, membership)
+    await db.commit()
+    response.set_cookie(
+        _IMPORT_SESSION_COOKIE,
+        str(import_session.id),
+        httponly=True,
+        samesite="lax",
+        path="/import",
+        max_age=7200,
+    )
+    return {"session_id": str(import_session.id)}

@@ -249,6 +249,30 @@ async def test_admin_can_rename_household(real_auth_client: AsyncMock) -> None:
     )
 
 
+async def test_member_cannot_access_import_wizard(real_auth_client: AsyncMock) -> None:
+    """Members cannot access the import wizard start route."""
+    _ = real_auth_client
+    user_id = uuid.uuid4()
+    household_id = uuid.uuid4()
+    member = _fake_member_obj(user_id, household_id, role="member")
+    user = _fake_user_obj(user_id)
+    token = create_access_token(user_id)
+
+    with (
+        patch("app.deps.UserRepo") as MockUserRepo,
+        patch("app.deps.HouseholdRepo") as MockHHRepo,
+    ):
+        MockUserRepo.return_value.get_by_id = AsyncMock(return_value=user)
+        MockHHRepo.return_value.get_memberships_for_user = AsyncMock(return_value=[member])
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.get("/import", headers={"Authorization": f"Bearer {token}"})
+
+    assert resp.status_code == 403, (
+        f"Member must not access import wizard, got {resp.status_code}: {resp.text}"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Group 7: Guest token revoke flow — real resolve_guest_or_member dep
 # ---------------------------------------------------------------------------

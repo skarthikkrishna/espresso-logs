@@ -9,9 +9,10 @@ from __future__ import annotations
 
 import datetime
 import uuid
-from typing import Literal, TypeAlias
+from typing import Any, Literal, TypeAlias
 
 import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
@@ -181,6 +182,43 @@ class GuestToken(Base):
     )
     revoked_at: Mapped[datetime.datetime | None] = mapped_column(
         sa.TIMESTAMP(timezone=True), nullable=True
+    )
+
+
+class ImportSession(Base):
+    """DB-backed import wizard session state."""
+
+    __tablename__ = "import_sessions"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        sa.UUID(as_uuid=True),
+        primary_key=True,
+        server_default=sa.text("gen_random_uuid()"),
+    )
+    household_id: Mapped[uuid.UUID] = mapped_column(
+        sa.UUID(as_uuid=True),
+        sa.ForeignKey("households.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        sa.UUID(as_uuid=True),
+        sa.ForeignKey("users.id"),
+        nullable=False,
+    )
+    state: Mapped[dict[str, Any]] = mapped_column(
+        JSONB,
+        nullable=False,
+        server_default=sa.text("'{}'::jsonb"),
+    )
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        sa.TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=sa.text("now()"),
+    )
+    expires_at: Mapped[datetime.datetime] = mapped_column(
+        sa.TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=sa.text("now() + interval '2 hours'"),
     )
 
 

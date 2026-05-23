@@ -5,7 +5,13 @@ Unit tests — no database connection required.
 
 from __future__ import annotations
 
-from app.models.household import GuestToken, Household, HouseholdMember, PendingInvitation
+from app.models.household import (
+    GuestToken,
+    Household,
+    HouseholdMember,
+    ImportSession,
+    PendingInvitation,
+)
 
 
 def test_household_table_name() -> None:
@@ -22,6 +28,10 @@ def test_pending_invitation_table_name() -> None:
 
 def test_guest_token_table_name() -> None:
     assert GuestToken.__tablename__ == "guest_tokens"
+
+
+def test_import_session_table_name() -> None:
+    assert ImportSession.__tablename__ == "import_sessions"
 
 
 def test_household_member_role_check_constraint() -> None:
