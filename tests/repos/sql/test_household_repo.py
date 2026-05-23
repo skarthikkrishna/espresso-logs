@@ -253,6 +253,42 @@ async def test_create_invitation_rejects_when_household_has_ten_members(
 
 
 @pytest.mark.anyio
+async def test_create_invitation_enforces_per_admin_24_hour_rate_limit(
+    db_session: AsyncSession,
+) -> None:
+    from fastapi import HTTPException
+
+    admin_id = await _make_user(db_session, "rate_limit_admin")
+    repo = HouseholdRepo()
+    household = await repo.create_household(db_session, name="RateLimitHH", created_by=admin_id)
+    await db_session.commit()
+
+    for index in range(10):
+        await repo.create_invitation(
+            db_session,
+            household_id=household.id,
+            invited_by_user_id=admin_id,
+            invited_email=f"invitee{index}@example.com",
+            invited_role="member",
+            token_hash=f"rate-limit-token-{index}",
+        )
+    await db_session.commit()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await repo.create_invitation(
+            db_session,
+            household_id=household.id,
+            invited_by_user_id=admin_id,
+            invited_email="invitee10@example.com",
+            invited_role="member",
+            token_hash="rate-limit-token-10",
+        )
+
+    assert exc_info.value.status_code == 429
+    assert exc_info.value.detail == "Invitation rate limit exceeded for this household."
+
+
+@pytest.mark.anyio
 async def test_revoke_previous_guest_tokens(db_session: AsyncSession) -> None:
     user_id = await _make_user(db_session, "gt_admin")
     repo = HouseholdRepo()

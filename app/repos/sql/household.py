@@ -253,6 +253,21 @@ class HouseholdRepo:
                 detail="Household has reached the maximum of 10 members.",
             )
 
+        invite_window_start = now - datetime.timedelta(hours=24)
+        recent_invitation_count = await db.execute(
+            sa.select(sa.func.count()).where(
+                PendingInvitation.household_id == household_id,
+                PendingInvitation.invited_by_user_id == invited_by_user_id,
+                PendingInvitation.invited_at >= invite_window_start,
+                PendingInvitation.status.in_(("pending", "accepted")),
+            )
+        )
+        if int(recent_invitation_count.scalar_one()) >= 10:
+            raise HTTPException(
+                status_code=429,
+                detail="Invitation rate limit exceeded for this household.",
+            )
+
         if invited_email is not None:
             normalized_email = invited_email.lower()
             duplicate_invitation = await db.execute(
