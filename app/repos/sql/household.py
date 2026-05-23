@@ -13,6 +13,7 @@ from app.models.household import (
     GuestToken,
     Household,
     HouseholdMember,
+    HouseholdRole,
     PendingInvitation,
 )
 
@@ -158,12 +159,17 @@ class HouseholdRepo:
         household_id: uuid.UUID,
         invited_by_user_id: uuid.UUID,
         token_hash: str,
+        invited_email: str | None,
+        invited_role: HouseholdRole,
     ) -> PendingInvitation:
-        """Create invitation expiring 7 days from now (ADR-M5-004)."""
-        expires = datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(days=7)
+        """Create a pending invitation expiring 72 hours from now."""
+        expires = datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(hours=72)
         invitation = PendingInvitation(
             household_id=household_id,
             invited_by_user_id=invited_by_user_id,
+            invited_email=invited_email,
+            invited_role=invited_role,
+            status="pending",
             token_hash=token_hash,
             expires_at=expires,
         )
@@ -181,24 +187,73 @@ class HouseholdRepo:
         )
         return result.scalar_one_or_none()
 
-    async def accept_invitation(self, db: AsyncSession, invitation_id: uuid.UUID) -> None:
-        """Mark invitation accepted using atomic UPDATE ... WHERE accepted_at IS NULL.
+    async def get_invitation_by_id(
+        self, db: AsyncSession, invitation_id: uuid.UUID
+    ) -> PendingInvitation | None:
+        result = await db.execute(
+            sa.select(PendingInvitation).where(PendingInvitation.id == invitation_id)
+        )
+        return result.scalar_one_or_none()
 
-        Race-condition guard: raises 410 if the invitation was already accepted.
-        """
+    async def accept_invitation(self, db: AsyncSession, invitation_id: uuid.UUID) -> None:
+        """Mark a pending invitation accepted using an atomic update."""
         result = await db.execute(
             sa.update(PendingInvitation)
             .where(
                 PendingInvitation.id == invitation_id,
-                PendingInvitation.accepted_at.is_(None),
+                PendingInvitation.status == "pending",
             )
-            .values(accepted_at=sa.text("NOW()"))
+            .values(status="accepted", accepted_at=sa.text("NOW()"))
             .returning(PendingInvitation.id)
         )
         row = result.fetchone()
         if row is None:
-            raise HTTPException(status_code=410, detail="Invitation already accepted or not found")
+            raise HTTPException(status_code=410, detail="Invitation is no longer pending")
         await db.flush()
+
+    async def decline_invitation(self, db: AsyncSession, invitation_id: uuid.UUID) -> None:
+        """Mark a pending invitation declined."""
+        result = await db.execute(
+            sa.update(PendingInvitation)
+            .where(
+                PendingInvitation.id == invitation_id,
+                PendingInvitation.status == "pending",
+            )
+            .values(status="declined")
+            .returning(PendingInvitation.id)
+        )
+        if result.fetchone() is None:
+            raise HTTPException(status_code=410, detail="Invitation is no longer pending")
+        await db.flush()
+
+    async def revoke_invitation(self, db: AsyncSession, invitation_id: uuid.UUID) -> None:
+        """Mark an invitation revoked."""
+        result = await db.execute(
+            sa.update(PendingInvitation)
+            .where(PendingInvitation.id == invitation_id)
+            .values(status="revoked", revoked_at=sa.text("NOW()"))
+            .returning(PendingInvitation.id)
+        )
+        if result.fetchone() is None:
+            raise HTTPException(status_code=404, detail="Invitation not found")
+        await db.flush()
+
+    async def resend_invitation(
+        self, db: AsyncSession, invitation_id: uuid.UUID
+    ) -> PendingInvitation:
+        """Reset an invitation to pending with a fresh 72-hour expiry."""
+        expires = datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(hours=72)
+        result = await db.execute(
+            sa.update(PendingInvitation)
+            .where(PendingInvitation.id == invitation_id)
+            .values(expires_at=expires, status="pending")
+            .returning(PendingInvitation)
+        )
+        invitation = result.scalar_one_or_none()
+        if invitation is None:
+            raise HTTPException(status_code=404, detail="Invitation not found")
+        await db.flush()
+        return invitation
 
     # ── Guest tokens ──────────────────────────────────────────────────────────
 

@@ -57,3 +57,22 @@ def test_guest_token_token_hash_is_unique() -> None:
     # UNIQUE constraint on token_hash ensures no duplicate hashes are stored.
     col = GuestToken.__table__.columns["token_hash"]
     assert col.unique
+
+
+def test_pending_invitation_role_and_status_constraints() -> None:
+    import sqlalchemy as sa
+
+    constraint_names = {c.name for c in PendingInvitation.__table__.constraints}
+    assert "pending_invitations_invited_role_check" in constraint_names
+    assert "pending_invitations_status_check" in constraint_names
+
+    checks = [
+        c for c in PendingInvitation.__table__.constraints if isinstance(c, sa.CheckConstraint)
+    ]
+    sql_text = " ".join(str(check.sqltext) for check in checks)
+    assert "admin" in sql_text
+    assert "member" in sql_text
+    assert "pending" in sql_text
+    assert "accepted" in sql_text
+    assert "declined" in sql_text
+    assert "revoked" in sql_text

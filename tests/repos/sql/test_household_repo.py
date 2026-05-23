@@ -6,6 +6,7 @@ Tests are auto-skipped when DATABASE_URL is not set (see tests/repos/sql/conftes
 
 from __future__ import annotations
 
+import datetime
 import uuid
 
 import pytest
@@ -98,6 +99,8 @@ async def test_accept_invitation_sets_accepted_at(db_session: AsyncSession) -> N
         db_session,
         household_id=household.id,
         invited_by_user_id=user_id,
+        invited_email=None,
+        invited_role="member",
         token_hash="deadbeef01234567",
     )
     await db_session.commit()
@@ -108,6 +111,34 @@ async def test_accept_invitation_sets_accepted_at(db_session: AsyncSession) -> N
     fetched = await repo.get_invitation_by_token_hash(db_session, "deadbeef01234567")
     assert fetched is not None
     assert fetched.accepted_at is not None
+    assert fetched.status == "accepted"
+
+
+@pytest.mark.anyio
+async def test_create_invitation_uses_72_hour_expiry_and_role(db_session: AsyncSession) -> None:
+    user_id = await _make_user(db_session, "invite_admin")
+    repo = HouseholdRepo()
+    household = await repo.create_household(db_session, name="InvRoleHH", created_by=user_id)
+    await db_session.commit()
+
+    before = datetime.datetime.now(datetime.timezone.utc)
+    invitation = await repo.create_invitation(
+        db_session,
+        household_id=household.id,
+        invited_by_user_id=user_id,
+        invited_email="invitee@example.com",
+        invited_role="admin",
+        token_hash="admin-invite-token",
+    )
+    await db_session.commit()
+    after = datetime.datetime.now(datetime.timezone.utc)
+
+    assert invitation.invited_email == "invitee@example.com"
+    assert invitation.invited_role == "admin"
+    assert invitation.status == "pending"
+    lower = before + datetime.timedelta(hours=72) - datetime.timedelta(seconds=5)
+    upper = after + datetime.timedelta(hours=72) + datetime.timedelta(seconds=5)
+    assert lower <= invitation.expires_at <= upper
 
 
 @pytest.mark.anyio
@@ -138,6 +169,41 @@ async def test_revoke_previous_guest_tokens(db_session: AsyncSession) -> None:
     result2 = await repo.get_guest_token_by_hash(db_session, "gt_hash_02")
     assert result1 is None
     assert result2 is None
+
+
+@pytest.mark.anyio
+async def test_decline_and_resend_invitation_update_status(db_session: AsyncSession) -> None:
+    user_id = await _make_user(db_session, "decline_admin")
+    repo = HouseholdRepo()
+    household = await repo.create_household(db_session, name="DeclineHH", created_by=user_id)
+    await db_session.commit()
+
+    invitation = await repo.create_invitation(
+        db_session,
+        household_id=household.id,
+        invited_by_user_id=user_id,
+        invited_email=None,
+        invited_role="member",
+        token_hash="decline-token-hash",
+    )
+    await db_session.commit()
+
+    await repo.decline_invitation(db_session, invitation.id)
+    await db_session.commit()
+    declined = await repo.get_invitation_by_token_hash(db_session, "decline-token-hash")
+    assert declined is not None
+    assert declined.status == "declined"
+
+    resent = await repo.resend_invitation(db_session, invitation.id)
+    await db_session.commit()
+    assert resent.status == "pending"
+
+    await repo.revoke_invitation(db_session, invitation.id)
+    await db_session.commit()
+    revoked = await repo.get_invitation_by_token_hash(db_session, "decline-token-hash")
+    assert revoked is not None
+    assert revoked.status == "revoked"
+    assert revoked.revoked_at is not None
 
 
 @pytest.mark.anyio

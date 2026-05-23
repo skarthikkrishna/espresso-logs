@@ -9,10 +9,15 @@ from __future__ import annotations
 
 import datetime
 import uuid
+from typing import Literal, TypeAlias
+
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
+
+HouseholdRole: TypeAlias = Literal["admin", "member"]
+InvitationStatus: TypeAlias = Literal["pending", "accepted", "declined", "revoked"]
 
 
 class Household(Base):
@@ -84,6 +89,16 @@ class PendingInvitation(Base):
     """A pending invitation to join a household, identified by a hashed token."""
 
     __tablename__ = "pending_invitations"
+    __table_args__ = (
+        sa.CheckConstraint(
+            "invited_role IN ('admin', 'member')",
+            name="pending_invitations_invited_role_check",
+        ),
+        sa.CheckConstraint(
+            "status IN ('pending', 'accepted', 'declined', 'revoked')",
+            name="pending_invitations_status_check",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
@@ -96,6 +111,16 @@ class PendingInvitation(Base):
         nullable=False,
     )
     invited_email: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    invited_role: Mapped[HouseholdRole] = mapped_column(
+        sa.Text,
+        nullable=False,
+        server_default="member",
+    )
+    status: Mapped[InvitationStatus] = mapped_column(
+        sa.Text,
+        nullable=False,
+        server_default="pending",
+    )
     token_hash: Mapped[str] = mapped_column(sa.Text, nullable=False, unique=True)
     invited_by_user_id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),

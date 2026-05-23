@@ -191,10 +191,6 @@ async def test_member_cannot_delete_household(real_auth_client: AsyncMock) -> No
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Alex fix pending: DELETE /households/{id}/invitations/{invite_id} route not yet implemented",
-)
 async def test_member_cannot_revoke_invite(real_auth_client: AsyncMock) -> None:
     """Member (role='member') cannot revoke an invitation → 403."""
     _ = real_auth_client  # fixture activates dependency overrides

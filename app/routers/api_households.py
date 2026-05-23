@@ -10,8 +10,9 @@ import base64
 import datetime
 import secrets
 import uuid
+from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -65,6 +66,17 @@ class InviteOut(BaseModel):
     invitation_id: uuid.UUID
     token: str
     expires_at: datetime.datetime
+    invited_email: str | None
+    invited_role: Literal["admin", "member"]
+    status: Literal["pending", "accepted", "declined", "revoked"]
+
+
+class InvitationOut(BaseModel):
+    invitation_id: uuid.UUID
+    expires_at: datetime.datetime
+    invited_email: str | None
+    invited_role: Literal["admin", "member"]
+    status: Literal["pending", "accepted", "declined", "revoked"]
 
 
 class AcceptInviteOut(BaseModel):
@@ -98,6 +110,11 @@ class CreateHouseholdRequest(BaseModel):
         if not (1 <= len(v) <= 64):
             raise ValueError("Household name must be 1–64 characters")
         return v
+
+
+class CreateInvitationRequest(BaseModel):
+    invited_email: str | None = None
+    invited_role: Literal["admin", "member"] = "member"
 
 
 class AcceptInviteRequest(BaseModel):
@@ -180,6 +197,7 @@ async def get_household(
 @router.post("/{household_id}/invite", response_model=InviteOut, status_code=201)
 async def create_invite(
     household_id: uuid.UUID,
+    body: CreateInvitationRequest,
     membership: HouseholdMember = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ) -> InviteOut:
@@ -191,6 +209,8 @@ async def create_invite(
         db,
         household_id=household_id,
         invited_by_user_id=membership.user_id,
+        invited_email=body.invited_email,
+        invited_role=body.invited_role,
         token_hash=hash_token(raw_token),
     )
     await db.commit()
@@ -199,6 +219,9 @@ async def create_invite(
         invitation_id=invitation.id,
         token=raw_token,
         expires_at=invitation.expires_at,
+        invited_email=invitation.invited_email,
+        invited_role=invitation.invited_role,
+        status=invitation.status,
     )
 
 
@@ -216,10 +239,8 @@ async def accept_invite(
     now = datetime.datetime.now(datetime.timezone.utc)
     if invitation.expires_at < now:
         raise HTTPException(status_code=410, detail="Invitation expired")
-    if invitation.accepted_at is not None:
-        raise HTTPException(status_code=410, detail="Invitation already accepted")
-    if invitation.revoked_at is not None:
-        raise HTTPException(status_code=410, detail="Invitation revoked")
+    if invitation.status != "pending":
+        raise HTTPException(status_code=410, detail="Invitation is no longer pending")
 
     existing = await HouseholdRepo().get_member(db, invitation.household_id, user.id)
     if existing is not None:
@@ -229,7 +250,7 @@ async def accept_invite(
         db,
         household_id=invitation.household_id,
         user_id=user.id,
-        role="member",
+        role=invitation.invited_role,
         invited_by=invitation.invited_by_user_id,
     )
     await HouseholdRepo().accept_invitation(db, invitation.id)
@@ -240,7 +261,68 @@ async def accept_invite(
     return AcceptInviteOut(
         household_id=invitation.household_id,
         household_name=household_name,
-        role="member",
+        role=invitation.invited_role,
+    )
+
+
+@router.post("/{household_id}/invitations/{token}/decline", status_code=204)
+async def decline_invitation(
+    household_id: uuid.UUID,
+    token: str,
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    """Decline a pending invitation without requiring authentication."""
+    invitation = await HouseholdRepo().get_invitation_by_token_hash(db, hash_token(token))
+    if invitation is None or invitation.household_id != household_id:
+        raise HTTPException(status_code=404, detail="Invitation not found")
+    if invitation.expires_at < datetime.datetime.now(datetime.timezone.utc):
+        raise HTTPException(status_code=410, detail="Invitation expired")
+    if invitation.status != "pending":
+        raise HTTPException(status_code=410, detail="Invitation is no longer pending")
+    await HouseholdRepo().decline_invitation(db, invitation.id)
+    await db.commit()
+    return Response(status_code=204)
+
+
+@router.delete("/{household_id}/invitations/{invitation_id}", status_code=204)
+async def revoke_invitation(
+    household_id: uuid.UUID,
+    invitation_id: uuid.UUID,
+    membership: HouseholdMember = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    """Revoke an invitation for the household."""
+    if membership.household_id != household_id:
+        raise HTTPException(status_code=403, detail="Not an admin of this household")
+    invitation = await HouseholdRepo().get_invitation_by_id(db, invitation_id)
+    if invitation is None or invitation.household_id != household_id:
+        raise HTTPException(status_code=404, detail="Invitation not found")
+    await HouseholdRepo().revoke_invitation(db, invitation_id)
+    await db.commit()
+    return Response(status_code=204)
+
+
+@router.post("/{household_id}/invitations/{invitation_id}/resend", response_model=InvitationOut)
+async def resend_invitation(
+    household_id: uuid.UUID,
+    invitation_id: uuid.UUID,
+    membership: HouseholdMember = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> InvitationOut:
+    """Reset an invitation to pending with a fresh 72-hour expiry."""
+    if membership.household_id != household_id:
+        raise HTTPException(status_code=403, detail="Not an admin of this household")
+    invitation = await HouseholdRepo().get_invitation_by_id(db, invitation_id)
+    if invitation is None or invitation.household_id != household_id:
+        raise HTTPException(status_code=404, detail="Invitation not found")
+    invitation = await HouseholdRepo().resend_invitation(db, invitation_id)
+    await db.commit()
+    return InvitationOut(
+        invitation_id=invitation.id,
+        expires_at=invitation.expires_at,
+        invited_email=invitation.invited_email,
+        invited_role=invitation.invited_role,
+        status=invitation.status,
     )
 
 

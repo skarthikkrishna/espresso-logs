@@ -82,16 +82,24 @@ def _fake_invitation(
     expired: bool = False,
     accepted: bool = False,
     revoked: bool = False,
+    declined: bool = False,
+    invited_role: str = "member",
+    invited_email: str | None = None,
 ) -> MagicMock:
     inv = MagicMock()
     inv.id = uuid.uuid4()
     inv.household_id = household_id
     inv.invited_by_user_id = uuid.uuid4()
+    inv.invited_email = invited_email
+    inv.invited_role = invited_role
     inv.token_hash = token_hash
     if expired:
         inv.expires_at = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)
     else:
-        inv.expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=7)
+        inv.expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=72)
+    inv.status = (
+        "accepted" if accepted else "revoked" if revoked else "declined" if declined else "pending"
+    )
     inv.accepted_at = datetime.datetime.now(datetime.timezone.utc) if accepted else None
     inv.revoked_at = datetime.datetime.now(datetime.timezone.utc) if revoked else None
     return inv
@@ -203,8 +211,11 @@ async def test_invite_by_admin_returns_201_with_token(db_override: AsyncMock) ->
     invitation = MagicMock()
     invitation.id = uuid.uuid4()
     invitation.expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
-        days=7
+        hours=72
     )
+    invitation.invited_email = "invitee@example.com"
+    invitation.invited_role = "member"
+    invitation.status = "pending"
 
     from app.deps import require_admin
 
@@ -216,7 +227,10 @@ async def test_invite_by_admin_returns_201_with_token(db_override: AsyncMock) ->
         mock_db.refresh = AsyncMock()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            resp = await client.post(f"/households/{hh_id}/invite")
+            resp = await client.post(
+                f"/households/{hh_id}/invite",
+                json={"invited_email": "invitee@example.com", "invited_role": "member"},
+            )
 
     app.dependency_overrides.pop(require_admin, None)
 
@@ -224,6 +238,51 @@ async def test_invite_by_admin_returns_201_with_token(db_override: AsyncMock) ->
     body = resp.json()
     assert "token" in body
     assert "invitation_id" in body
+    assert body["invited_email"] == "invitee@example.com"
+    assert body["invited_role"] == "member"
+    assert body["status"] == "pending"
+    kwargs = MockHHRepo.return_value.create_invitation.await_args.kwargs
+    assert kwargs["invited_email"] == "invitee@example.com"
+    assert kwargs["invited_role"] == "member"
+
+
+async def test_invite_expires_after_72_hours(db_override: AsyncMock) -> None:
+    """Invitations created by the repo use a 72-hour expiry window."""
+    mock_db = db_override
+    user_id = uuid.UUID("00000000-0000-0000-0000-000000000001")
+    hh_id = uuid.UUID("00000000-0000-0000-0000-000000000002")
+    admin_member = _fake_member(user_id, hh_id, role="admin")
+    invitation = MagicMock()
+    invitation.id = uuid.uuid4()
+    invitation.expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
+        hours=72
+    )
+    invitation.invited_email = None
+    invitation.invited_role = "member"
+    invitation.status = "pending"
+
+    from app.deps import require_admin
+
+    app.dependency_overrides[require_admin] = lambda: admin_member
+
+    with patch("app.routers.api_households.HouseholdRepo") as MockHHRepo:
+        MockHHRepo.return_value.create_invitation = AsyncMock(return_value=invitation)
+        mock_db.commit = AsyncMock()
+        mock_db.refresh = AsyncMock()
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post(f"/households/{hh_id}/invite", json={})
+
+    app.dependency_overrides.pop(require_admin, None)
+
+    assert resp.status_code == 201
+    expires_at = datetime.datetime.fromisoformat(resp.json()["expires_at"].replace("Z", "+00:00"))
+    remaining = expires_at - datetime.datetime.now(datetime.timezone.utc)
+    assert (
+        datetime.timedelta(hours=71, minutes=59)
+        <= remaining
+        <= datetime.timedelta(hours=72, minutes=1)
+    )
 
 
 async def test_invite_by_member_returns_403(db_override: AsyncMock) -> None:
@@ -238,7 +297,10 @@ async def test_invite_by_member_returns_403(db_override: AsyncMock) -> None:
 
     hh_id = uuid.uuid4()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        resp = await client.post(f"/households/{hh_id}/invite")
+        resp = await client.post(
+            f"/households/{hh_id}/invite",
+            json={"invited_email": "invitee@example.com", "invited_role": "member"},
+        )
 
     app.dependency_overrides.pop(require_admin, None)
 
@@ -268,6 +330,31 @@ async def test_accept_invite_valid_token_creates_membership(db_override: AsyncMo
     body = resp.json()
     assert body["role"] == "member"
     assert str(body["household_id"]) == str(hh_id)
+
+
+async def test_accept_invite_as_admin_creates_admin_member(db_override: AsyncMock) -> None:
+    """Admin invitations create admin memberships on acceptance."""
+    mock_db = db_override
+    hh_id = uuid.uuid4()
+    raw_token = "adminrawtoken12345"
+    inv = _fake_invitation(hh_id, token_hash=hash_token(raw_token), invited_role="admin")
+    hh = _fake_household(household_id=hh_id, name="Home")
+
+    with patch("app.routers.api_households.HouseholdRepo") as MockHHRepo:
+        MockHHRepo.return_value.get_invitation_by_token_hash = AsyncMock(return_value=inv)
+        MockHHRepo.return_value.get_member = AsyncMock(return_value=None)
+        MockHHRepo.return_value.add_member = AsyncMock()
+        MockHHRepo.return_value.accept_invitation = AsyncMock()
+        MockHHRepo.return_value.get_by_id = AsyncMock(return_value=hh)
+        mock_db.commit = AsyncMock()
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post("/households/accept-invite", json={"token": raw_token})
+
+    assert resp.status_code == 200
+    assert resp.json()["role"] == "admin"
+    MockHHRepo.return_value.add_member.assert_awaited_once()
+    assert MockHHRepo.return_value.add_member.await_args.kwargs["role"] == "admin"
 
 
 async def test_accept_invite_expired_token_returns_410(db_override: AsyncMock) -> None:
@@ -572,11 +659,7 @@ async def test_get_brew_log_with_revoked_guest_token_returns_401(
 
 
 async def test_accept_revoked_invitation_rejected(db_override: AsyncMock) -> None:
-    """Accepting a revoked invitation returns 410 (revoked_at is set).
-
-    After an admin revokes an invitation its revoked_at timestamp is non-null.
-    A subsequent accept attempt must return 404 or 410 — never 200.
-    """
+    """Accepting a revoked invitation returns 410."""
     hh_id = uuid.uuid4()
     raw_token = "revokedtoken1234567"
     inv = _fake_invitation(hh_id, token_hash=hash_token(raw_token), revoked=True)
@@ -587,22 +670,13 @@ async def test_accept_revoked_invitation_rejected(db_override: AsyncMock) -> Non
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp = await client.post("/households/accept-invite", json={"token": raw_token})
 
-    assert resp.status_code in (404, 410), (
-        f"Expected 404 or 410 for revoked invitation, got {resp.status_code}: {resp.text}"
+    assert resp.status_code == 410, (
+        f"Expected 410 for revoked invitation, got {resp.status_code}: {resp.text}"
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Alex fix pending: decline invitation endpoint not yet implemented — "
-    "POST/DELETE /households/decline-invite or equivalent does not exist",
-)
 async def test_decline_invitation(db_override: AsyncMock) -> None:
-    """Invitee declines an invitation; the invite must no longer be pending.
-
-    Expects a 200 response from a decline endpoint and verifies that a
-    subsequent accept of the same token returns 404 or 410.
-    """
+    """Invitee can decline a pending invitation without creating a membership."""
     mock_db = db_override
     hh_id = uuid.uuid4()
     raw_token = "declinetoken123456"
@@ -610,13 +684,72 @@ async def test_decline_invitation(db_override: AsyncMock) -> None:
 
     with patch("app.routers.api_households.HouseholdRepo") as MockHHRepo:
         MockHHRepo.return_value.get_invitation_by_token_hash = AsyncMock(return_value=inv)
+        MockHHRepo.return_value.decline_invitation = AsyncMock()
+        MockHHRepo.return_value.add_member = AsyncMock()
+        mock_db.commit = AsyncMock()
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post(f"/households/{hh_id}/invitations/{raw_token}/decline")
+
+    assert resp.status_code == 204, (
+        f"Expected 204 from decline endpoint, got {resp.status_code}: {resp.text}"
+    )
+    MockHHRepo.return_value.decline_invitation.assert_awaited_once_with(mock_db, inv.id)
+    MockHHRepo.return_value.add_member.assert_not_called()
+
+
+async def test_admin_can_revoke_invitation(db_override: AsyncMock) -> None:
+    """Admins can revoke invitations for their household."""
+    mock_db = db_override
+    hh_id = uuid.uuid4()
+    invitation_id = uuid.uuid4()
+    admin_member = _fake_member(uuid.uuid4(), hh_id, role="admin")
+    inv = _fake_invitation(hh_id)
+    inv.id = invitation_id
+
+    from app.deps import require_admin
+
+    app.dependency_overrides[require_admin] = lambda: admin_member
+
+    with patch("app.routers.api_households.HouseholdRepo") as MockHHRepo:
+        MockHHRepo.return_value.get_invitation_by_id = AsyncMock(return_value=inv)
         MockHHRepo.return_value.revoke_invitation = AsyncMock()
         mock_db.commit = AsyncMock()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            # Decline endpoint — expected at POST /households/decline-invite
-            resp = await client.post("/households/decline-invite", json={"token": raw_token})
+            resp = await client.delete(f"/households/{hh_id}/invitations/{invitation_id}")
 
-    assert resp.status_code == 200, (
-        f"Expected 200 from decline-invite endpoint, got {resp.status_code}: {resp.text}"
-    )
+    app.dependency_overrides.pop(require_admin, None)
+
+    assert resp.status_code == 204
+    MockHHRepo.return_value.revoke_invitation.assert_awaited_once_with(mock_db, invitation_id)
+
+
+async def test_admin_can_resend_invitation(db_override: AsyncMock) -> None:
+    """Admins can resend invitations and reset them to pending for 72 hours."""
+    mock_db = db_override
+    hh_id = uuid.uuid4()
+    invitation_id = uuid.uuid4()
+    admin_member = _fake_member(uuid.uuid4(), hh_id, role="admin")
+    inv = _fake_invitation(hh_id, revoked=True, invited_email="invitee@example.com")
+    inv.id = invitation_id
+    inv.status = "pending"
+
+    from app.deps import require_admin
+
+    app.dependency_overrides[require_admin] = lambda: admin_member
+
+    with patch("app.routers.api_households.HouseholdRepo") as MockHHRepo:
+        MockHHRepo.return_value.get_invitation_by_id = AsyncMock(return_value=inv)
+        MockHHRepo.return_value.resend_invitation = AsyncMock(return_value=inv)
+        mock_db.commit = AsyncMock()
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post(f"/households/{hh_id}/invitations/{invitation_id}/resend")
+
+    app.dependency_overrides.pop(require_admin, None)
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "pending"
+    assert body["invited_email"] == "invitee@example.com"
