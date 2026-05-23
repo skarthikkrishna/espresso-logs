@@ -1,21 +1,21 @@
 ---
-updated_at: 2026-05-23T18:00:00Z
-focus_area: spec-034 M5 — post-analysis state; implementation/spec-conformance gaps identified; branch ready-but-blocked pending gap resolution and operator push approval
+updated_at: 2026-05-23T16:58:21Z
+focus_area: spec-034 M5 — welcome-flow amendment committed locally; branch focus shifts to implementation alignment and remaining spec-conformance follow-up before any push
 active_issues:
   - spec: 034
     repo: espresso-logs
-    status: implementation-complete-local-with-known-gaps
+    status: docs-amendment-committed-local-follow-up-pending
     branch: feat/034-m5-household-roles
     detail: |
-      All five originally requested M5 remediation items are complete locally on this branch:
-      atomic refresh rotation (6ab408d), invitation overhaul (ccaddda), household rename/delete (07d3c78),
-      active-household header resolution (091d9e3), and import wizard admin-gate + DB-backed state (58e786c).
-      Local CI is green. No push has been performed.
-      A read-only top-down feature analysis session was conducted on 2026-05-23 (no product code changed).
-      One routing decision drop was recorded: 2026-05-23-priya-route-spec034-feature-analysis.md (DIRECT_PERMITTED).
-      The analysis identified spec-conformance gaps between the committed implementation and spec-034 source-of-truth
-      artifacts in coffee_tracker/specs/034-m5-household-roles/. These gaps remain open work.
-      Next action: resolve identified implementation/spec-conformance gaps, then seek operator approval before push/PR.
+      The spec-034 welcome onboarding amendment is committed locally in
+      docs/requirements/spec-034-amendment-welcome-flow.md (6637d3c).
+      It formalises `/welcome` first-sign-in behaviour, zero-membership redirects,
+      and invite-token bypass rules, and explicitly supersedes auth-layer auto-seeding
+      of a default household.
+      No push has been performed.
+      Next action: implement and validate the amendment in backend/frontend auth and
+      onboarding flows, along with any remaining spec-034 conformance items, then seek
+      operator approval before push/PR.
   - task: brew_log_reconcile dry-run
     repo: espresso-logs
     status: queued
@@ -25,17 +25,15 @@ active_issues:
 
 ## Current Team Focus
 
-Spec-034 M5 is on `feat/034-m5-household-roles`. A read-only feature analysis session on 2026-05-23 cross-referenced
-all spec-034 source-of-truth artifacts against the current branch implementation and surfaced conformance gaps.
-No product code was changed in that session. Open work is now the resolution of those gaps before the branch
-can be pushed and a PR opened.
+Spec-034 M5 remains active on `feat/034-m5-household-roles`. The welcome-flow amendment work is complete locally,
+and the branch now has an explicit source-of-truth document for `/welcome` onboarding behaviour.
+Team focus shifts from documenting the onboarding gap to implementing that behaviour cleanly and reconciling the
+remaining spec-034 conformance items before the branch is eligible for push/PR.
 
 ## Open Work State
 
-1. Implementation/spec-conformance gaps identified by the 2026-05-23 feature analysis are unresolved — these are
-   the primary open work items on this branch. They must be addressed (or explicitly waived by the operator) before push.
-2. No push until all gaps are resolved (or waived) AND the operator explicitly approves a push.
-3. One decision drop on record for this session: `2026-05-23-priya-route-spec034-feature-analysis.md` (DIRECT_PERMITTED,
-   read-only analysis scope).
-4. After gap resolution and operator push approval, push `feat/034-m5-household-roles` and follow the PR workflow.
-5. Separate queued follow-up: `brew_log_reconcile` dry-run for spec-033 closeout (unchanged).
+1. `docs/requirements/spec-034-amendment-welcome-flow.md` is committed locally (`6637d3c`) and defines the required `/welcome` onboarding flow; application behaviour still needs to be aligned to that amendment.
+2. Follow-up work remains on first-sign-in/auth behaviour: remove the implicit default-household auto-seed path and enforce the documented `/welcome` vs invite-bypass redirect rules.
+3. Other outstanding spec-034 implementation/conformance gaps remain open until they are resolved or explicitly waived by the operator.
+4. No push has occurred. Before any push: all required local checks must pass and the operator must explicitly approve the push.
+5. Separate queued follow-up remains unchanged: `brew_log_reconcile` dry-run for spec-033 closeout.
