@@ -128,8 +128,8 @@ class RenameHouseholdRequest(BaseModel):
     @classmethod
     def _validate_name(cls, value: str) -> str:
         value = value.strip()
-        if not (1 <= len(value) <= 50):
-            raise ValueError("Household name must be 1–50 characters")
+        if not (1 <= len(value) <= 64):
+            raise ValueError("Household name must be 1–64 characters")
         return value
 
 

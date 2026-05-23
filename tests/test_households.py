@@ -485,6 +485,32 @@ async def test_admin_can_rename_household(db_override: AsyncMock) -> None:
     MockHHRepo.return_value.rename.assert_awaited_once_with(mock_db, hh_id, "Renamed")
 
 
+async def test_admin_can_rename_household_to_64_characters(db_override: AsyncMock) -> None:
+    """Household rename accepts names up to the 64-character spec limit."""
+    mock_db = db_override
+    hh_id = uuid.uuid4()
+    admin_member = _fake_member(uuid.uuid4(), hh_id, role="admin")
+    name = "R" * 64
+    renamed = _fake_household(household_id=hh_id, name=name)
+
+    from app.deps import require_admin
+
+    app.dependency_overrides[require_admin] = lambda: admin_member
+
+    with patch("app.routers.api_households.HouseholdRepo") as MockHHRepo:
+        MockHHRepo.return_value.rename = AsyncMock(return_value=renamed)
+        mock_db.commit = AsyncMock()
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.patch(f"/households/{hh_id}", json={"name": name})
+
+    app.dependency_overrides.pop(require_admin, None)
+
+    assert resp.status_code == 200
+    assert resp.json()["name"] == name
+    MockHHRepo.return_value.rename.assert_awaited_once_with(mock_db, hh_id, name)
+
+
 async def test_admin_cannot_delete_household_with_multiple_members(db_override: AsyncMock) -> None:
     """Soft-delete is blocked while two or more active members remain."""
     from fastapi import HTTPException
