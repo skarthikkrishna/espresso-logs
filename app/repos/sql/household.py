@@ -130,12 +130,16 @@ class HouseholdRepo:
         user_id: uuid.UUID,
         role: str,
         invited_by: uuid.UUID,
+        invited_at: datetime.datetime | None = None,
+        accepted_at: datetime.datetime | None = None,
     ) -> HouseholdMember:
         member = HouseholdMember(
             household_id=household_id,
             user_id=user_id,
             role=role,
             invited_by=invited_by,
+            invited_at=invited_at,
+            accepted_at=accepted_at,
         )
         db.add(member)
         await db.flush()

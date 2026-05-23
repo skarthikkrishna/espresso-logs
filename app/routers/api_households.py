@@ -274,6 +274,8 @@ async def accept_invite(
         user_id=user.id,
         role=invitation.invited_role,
         invited_by=invitation.invited_by_user_id,
+        invited_at=invitation.invited_at,
+        accepted_at=now,
     )
     await repo.accept_invitation(db, invitation.id)
     await db.commit()

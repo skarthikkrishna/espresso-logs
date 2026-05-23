@@ -289,6 +289,32 @@ async def test_create_invitation_enforces_per_admin_24_hour_rate_limit(
 
 
 @pytest.mark.anyio
+async def test_add_member_persists_invitation_timestamps(db_session: AsyncSession) -> None:
+    admin_id = await _make_user(db_session, "timestamp_admin")
+    member_id = await _make_user(db_session, "timestamp_member")
+    repo = HouseholdRepo()
+    household = await repo.create_household(db_session, name="TimestampHH", created_by=admin_id)
+    invited_at = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=1)
+    accepted_at = datetime.datetime.now(datetime.timezone.utc)
+
+    await repo.add_member(
+        db_session,
+        household_id=household.id,
+        user_id=member_id,
+        role="member",
+        invited_by=admin_id,
+        invited_at=invited_at,
+        accepted_at=accepted_at,
+    )
+    await db_session.commit()
+
+    member = await repo.get_member(db_session, household.id, member_id)
+    assert member is not None
+    assert member.invited_at == invited_at
+    assert member.accepted_at == accepted_at
+
+
+@pytest.mark.anyio
 async def test_revoke_previous_guest_tokens(db_session: AsyncSession) -> None:
     user_id = await _make_user(db_session, "gt_admin")
     repo = HouseholdRepo()

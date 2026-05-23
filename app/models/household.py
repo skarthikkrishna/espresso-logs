@@ -83,6 +83,14 @@ class HouseholdMember(Base):
         sa.ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
+    invited_at: Mapped[datetime.datetime | None] = mapped_column(
+        sa.TIMESTAMP(timezone=True),
+        nullable=True,
+    )
+    accepted_at: Mapped[datetime.datetime | None] = mapped_column(
+        sa.TIMESTAMP(timezone=True),
+        nullable=True,
+    )
     joined_at: Mapped[datetime.datetime] = mapped_column(
         sa.TIMESTAMP(timezone=True),
         nullable=False,
