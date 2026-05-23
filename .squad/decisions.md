@@ -485,3 +485,371 @@ P.1 (Runbook update) was successfully completed as part of the speckit.tasks pha
 **Date:** 2026-05-21 08:51:19 UTC  
 **Co-authored-by:** Copilot <223556219+Copilot@users.noreply.github.com>
 
+## 2026-05-23: M5 Spec-034 Routing and Remediation Close-Out
+
+### 2026-05-23-alex-routing-m5-pending.md
+# Decision Drop — Alex Routing: M5 Pending Backend Items 1–5
+
+**Date:** 2026-05-23  
+**Agent:** Alex (Backend Engineer / Routing Agent)  
+**Branch:** `feat/034-m5-household-roles`
+
+## Decision
+**status: DIRECT_PERMITTED**
+
+## Rationale
+This request is a bounded remediation pass on work that was already fully specified under spec-034 and already routed for implementation on this branch. The five requested items are the remaining HIGH-priority backend follow-ups from Maya's 2026-05-21 RED architecture review after the two CRITICAL security fixes were completed.
+
+A new SpecKit cycle is not required because:
+1. The product scope already exists: these items correct missing or incomplete implementation against spec-034 requirements rather than introducing new user stories.
+2. The implementation boundary is explicit: `.squad/agents/alex/pending-m5-work.md` provides concrete file targets, endpoint/schema expectations, acceptance criteria, and named tests for each item.
+3. Planning artifacts already exist: prior spec-034 SpecKit phases were completed, tasks already existed for the milestone, and the branch remains the same implementation branch for that approved work.
+4. The Quinn gate was previously approved for spec-034, so this is completion work within an already-authorised feature envelope rather than a net-new feature needing re-specification.
+5. The requested changes stay within backend/auth/household/import-wizard remediation and do not expand beyond the reviewed M5 household-roles feature boundary.
+
+## Explicit Scope Confirmation
+The following five items are in scope for direct implementation, and no broader re-scoping is authorised under this routing decision:
+
+1. **Atomic Refresh Token Rotation**
+   - Fix refresh rotation race condition with an atomic repo-level rotate operation and concurrent test coverage.
+
+2. **Invitation Model Overhaul**
+   - Align invitation expiry, status model, request body fields, accept-role behaviour, and required decline/revoke/resend endpoints with existing spec-034 requirements.
+
+3. **Household Rename and Soft-Delete**
+   - Add the missing spec-required admin rename and soft-delete endpoints, including delete guards and deleted-household filtering.
+
+4. **Active-Household Resolution via `X-Household-Id` Header**
+   - Fix multi-household dependency resolution and update `/auth/me` membership payloads, with optional switch-household endpoint if implemented within the documented scope.
+
+5. **Import Wizard: Admin-Gate + Replace `request.session`**
+   - Correct admin-only enforcement and replace removed session-middleware usage with DB-backed import-session state.
+
+## Notes
+- This decision covers completion of already-specified M5 backend work only.
+- Any new requirements beyond these five items, or any change that alters spec-034 behaviour outside the documented remediation scope, requires fresh routing.
+
+### 20260521T2032Z-maya-arch-review.md
+# Decision Drop — Maya Architectural Review M5 Spec-034
+Date: 2026-05-21T20:32Z
+Author: Maya (Principal Engineer)
+
+## Decision
+M5 spec-034 implementation reviewed against functional-spec-v2.md and engineering_architecture_v2.md.
+
+**Verdict: RED — NOT READY FOR PR**
+
+Two CRITICAL security failures discovered. Multiple CRITICAL functional gaps. Handoffs to Alex, Finn, and Quinn mandated before this branch can advance to PR.
+
+## Critical Security Issues
+1. Runtime DB role granted BYPASSRLS — DB-enforced tenant isolation defeated (alembic/0007)
+2. Admin password reset has no shared-household validation — cross-household reset possible (api_auth.py:310-329)
+
+## Agent Handoffs Mandated
+- Alex (Backend): 7 items (CRITICAL×2, HIGH×5)
+- Finn (Frontend): 5 items (CRITICAL×2, HIGH×2, MEDIUM×1)
+- Quinn (QE): 3 items (CRITICAL×1, HIGH×2)
+
+## Full Review
+See .squad/orchestration-log/20260521T2032Z-maya-arch-review.md
+
+### 20260522-alex-m5-backend-gaps-routing.md
+# Decision Drop — Alex Routing: M5 Spec-034 Backend Gap Remediation
+Date: 2026-05-22
+Author: Alex (Backend Engineer / Routing Agent)
+Branch: feat/034-m5-household-roles
+
+## Decision
+**status: DIRECT_PERMITTED**
+
+## Rationale
+Maya's architectural review (2026-05-21, decision drop: `.squad/decisions/inbox/20260521T2032Z-maya-arch-review.md`) returned a RED verdict and **explicitly mandated an Alex handoff** for 7 backend items (CRITICAL×2, HIGH×5). All items are gap-remediation against requirements already fully specified in `docs/requirements/functional-spec-v2.md` and `docs/requirements/engineering_architecture_v2.md`. No new product scope is being introduced. The SpecKit cycle for spec-034 (waves 1–5) already produced spec, plan, and tasks.md; the current work corrects deviations from those already-approved artifacts.
+
+A new SpecKit cycle is **not required** because:
+1. The specification is frozen and complete — every item below traces directly to an existing spec/arch requirement.
+2. Maya's review document provides authoritative, line-level scope — it is functionally equivalent to a tasks.md for this remediation pass.
+3. The work is bounded to the existing branch and does not alter the approved feature boundary.
+
+## Explicit Scope Confirmation
+Alex is authorised to implement the following 7 backend items, no more, no less:
+
+### CRITICAL — Security
+1. **Remove runtime BYPASSRLS grant; enforce FORCE ROW LEVEL SECURITY**
+   - File: `alembic/versions/0007_m5_schema_corrections.py:146-171`
+   - Remove `GRANT app_admin TO coffee_tracker_runtime`; add `ALTER TABLE … FORCE ROW LEVEL SECURITY` where appropriate; extend RLS policies to `pending_invitations`, `guest_tokens`, `household_members`.
+   - Tests: integration tests must run under the non-bypass runtime role.
+
+2. **Admin password reset — add shared-household validation**
+   - File: `app/routers/api_auth.py:310-329`
+   - After loading `target`, require `HouseholdRepo().get_member(db, caller_membership.household_id, target.id)` to succeed; return 404/403 otherwise.
+
+### HIGH — Security / Correctness
+3. **Atomic refresh token rotation**
+   - Files: `app/routers/api_auth.py:234-259`, `app/repos/sql/refresh_tokens.py:36-60`
+   - Single DB operation: `UPDATE … SET revoked=TRUE WHERE token_hash=:hash AND revoked=FALSE AND expires_at > NOW() RETURNING user_id`; insert replacement only on success.
+
+4. **Invitation model fixes: 72h expiry, invited_email, invited_role; add decline/revoke/resend endpoints**
+   - Files: `app/repos/sql/household.py:162-169`, `app/models/household.py:98-120`, `app/routers/api_households.py`
+   - Fix expiry to 72 hours; persist `invited_email` and `invited_role` from request body; add `POST /households/{id}/invitations/{token}/decline`, `DELETE /households/{id}/invitations/{token}` (revoke), `POST /households/{id}/invitations/{token}/resend`.
+
+5. **Household rename and delete endpoints**
+   - File: `app/routers/api_households.py`
+   - Add `PATCH /households/{id}` (rename, admin-only) and `DELETE /households/{id}` (admin-only, with member/data cascade guard).
+
+6. **Active-household resolution: X-Household-Id header + auth/me households array**
+   - Files: `app/deps.py:137-145, 206-213`, `app/routers/api_auth.py:294-297`
+   - Resolve active household from `X-Household-Id` request header (validated against caller's memberships); return all memberships as `households[]` array from `GET /auth/me`.
+
+### HIGH — Code Quality / Runtime Safety
+7. **Import wizard: admin gate + DB-backed session state**
+   - Files: `app/routers/import_wizard.py:30, 69-107, 110-122`, `app/main.py`
+   - Replace `current_household_membership` dep with `require_admin`; migrate `request.session` usage to DB-persisted wizard state (since `SessionMiddleware` was removed in M5).
+
+## Out of Scope (not authorised under this drop)
+- Username validation alignment (MEDIUM — separate concern, no security impact)
+- `last_seen_at` update propagation (MEDIUM — no functional regression)
+- N+1 query optimisations (LOW)
+- Allowlist messaging cleanup (LOW)
+- Guest token URL/key contract fix (MEDIUM — Finn scope for frontend; backend shim acceptable)
+- Frontend routes, pages, or UI components (Finn scope)
+- Test expansion for RLS surface (Quinn scope)
+
+## CI Gate
+All four local checks must pass before any push:
+1. `uv run ruff check app/ tests/`
+2. `uv run ruff format --check app/ tests/`
+3. `uv run mypy app/ --strict`
+4. `SPREADSHEET_ID=dummy uv run pytest tests/ -v --ignore=tests/e2e/`
+
+### 20260522-alex-m5-rls-household-reset-routing.md
+# Decision Drop — M5 RLS Hardening + Admin Reset-Password Household Scope
+
+**Agent:** Alex (backend routing)
+**Date:** 2026-05-22
+**Branch:** feat/034-m5-household-roles
+**Status:** DIRECT_PERMITTED
+
+---
+
+## Request Summary
+
+Two changes were assessed:
+
+1. **`alembic/versions/0007_m5_schema_corrections.py`** — Remove the `GRANT app_admin TO coffee_tracker_runtime` block; add `FORCE ROW LEVEL SECURITY` for each of the five tenant-scoped tables (alongside the existing `ENABLE ROW LEVEL SECURITY` statements); update `downgrade()` to mirror; add a comment block explaining why `BYPASSRLS` must never be granted to the runtime role.
+
+2. **`app/routers/api_auth.py`** — Add shared-household boundary validation to `POST /auth/admin/reset-password` so an admin can only reset passwords for users who share the same household. Return 404 (not 403) if the target user is not a member of the caller's household, using `HouseholdRepo` (already imported) and the `household_id` available on the `HouseholdMember` returned by `require_admin`.
+
+---
+
+## Routing Decision: DIRECT_PERMITTED
+
+### Rationale
+
+**Both items are bounded security corrections on already-existing code.** Neither introduces new API surface, new database schema, new routes, new models, or new service dependencies.
+
+#### Item 1 — Migration security hardening
+
+- The migration `0007` already exists and already contains both the `ENABLE RLS` block and the `GRANT app_admin TO coffee_tracker_runtime` block.
+- `FORCE ROW LEVEL SECURITY` is a complementary DDL modifier that prevents table owners from bypassing RLS policies. Adding it alongside `ENABLE RLS` is a security tightening of an already-defined intent, not a new feature.
+- Removing the `GRANT app_admin TO coffee_tracker_runtime` block removes a security gap introduced in the same migration: granting `BYPASSRLS` membership to the runtime role defeats the entire RLS model for tenant isolation.
+- The downgrade update is a mechanical inverse of the upgrade changes.
+- Adding a comment block is documentation only.
+- Scope: one file, no logic changes outside the migration.
+
+#### Item 2 — Household boundary on admin reset-password
+
+- `POST /auth/admin/reset-password` already exists in `api_auth.py`.
+- `require_admin` (already in the dependency chain) returns a `HouseholdMember` which carries `household_id`.
+- `HouseholdRepo` is already imported in the file.
+- The validation pattern (lookup target's memberships, cross-check household_id) is used identically in other household-scoped admin endpoints in the same router file.
+- This is a missing security enforcement (privilege escalation gap), not a new capability.
+- Scope: one function in one file; no schema changes.
+
+### Why SPECKIT is not required
+
+SpecKit is required when a request introduces new user-facing behaviour, new API contracts, new data models, or requires cross-team design alignment. Neither item here meets that bar:
+- No new endpoints.
+- No new columns or tables.
+- No changes to existing API request/response schemas.
+- No changes to the auth flow or token model.
+- Both are corrections to gaps in already-merged M5 work on this branch.
+
+The 404 response for out-of-household targets is a standard security-by-obscurity pattern already used throughout this codebase (consistent with `UserRepo.get_by_username` returning None → 404 at line 323 of `api_auth.py`). No new behaviour contract is established.
+
+---
+
+## Explicit Scope Confirmation
+
+| File | Change type |
+|------|-------------|
+| `alembic/versions/0007_m5_schema_corrections.py` | Remove GRANT block; add FORCE RLS per tenant table; update downgrade; add comment |
+| `app/routers/api_auth.py` | Add household membership check in `admin_reset_password`; rename `_` dep to `admin_member`; 404 if target outside household |
+
+No other files require modification. No new files are created.
+
+---
+
+## Pre-implementation Notes for Implementer
+
+- `FORCE ROW LEVEL SECURITY` goes on the same five tables already receiving `ENABLE ROW LEVEL SECURITY`: `brew_log`, `catalog`, `inventory_bags`, `hardware`, `maintenance_log`.
+- Downgrade must execute `ALTER TABLE {table} NO FORCE ROW LEVEL SECURITY` for each of the five tables (in addition to already-present `DISABLE ROW LEVEL SECURITY`).
+- The comment block must explain: runtime role executes queries scoped by `app.current_household_id`; granting `BYPASSRLS` via role membership would silently skip all `household_isolation` policies for every query, eliminating the tenant boundary entirely.
+- In `admin_reset_password`, rename the existing `_: HouseholdMember = Depends(require_admin)` parameter to expose `household_id`. Use `HouseholdRepo().get_memberships_for_user(db, target.id)` to retrieve target memberships; check any membership's `household_id` matches the caller's. If no matching membership, raise `HTTPException(status_code=404, detail="User not found")` (not 403 — avoids leaking cross-household user existence).
+
+### 20260522T052724Z-finn-m5-frontend-gaps-routing.md
+# Decision Drop — Finn Frontend Routing: M5 Spec-034 Frontend Gaps
+Date: 2026-05-22T05:27:24Z
+Author: Finn (Frontend Agent)
+Branch: feat/034-m5-household-roles
+
+## Decision
+
+**status: DIRECT_PERMITTED**
+
+### Rationale
+
+This is bounded, well-defined frontend implementation work that proceeds directly without a new SpecKit cycle.
+
+**Why DIRECT_PERMITTED:**
+1. All requirements already exist in `docs/requirements/functional-spec-v2.md` and Maya's architectural review (`.squad/orchestration-log/20260521T2032Z-maya-arch-review.md`). No new spec cycle is needed — the gaps were identified against an existing spec, not against missing requirements.
+2. This is frontend-only scope. No backend API contracts are being changed by Finn; the frontend is being aligned to the contracts the spec already defines.
+3. The branch `feat/034-m5-household-roles` is an existing M5 implementation branch. This is a direct continuation of that work to address review findings, not a new feature.
+4. Maya's review provides exact file/line evidence for every gap. The implementation path is unambiguous.
+5. Alex (backend agent) is handling backend gaps on the same branch in parallel. Finn's work does not block or require coordination beyond agreed API contracts already in the spec.
+
+### Explicit Scope Confirmation
+
+**In scope (Finn owns):**
+- Add missing routes to `router.tsx`: `/welcome`, `/invite/accept`, `/invite/invalid`, `/invite/expired`, `/profile`, `/household/new`, `/household/settings`
+- Create corresponding page components: `Welcome`, `InviteAccept`, `InviteInvalid`, `Profile`, `HouseholdNew`, `HouseholdSettings`
+- Extend `types/entities.ts`: add `HouseholdMembership` type, update `CurrentUser` to include `memberships[]` and `active_household_id`
+- Extend `AuthContext.tsx`: add `memberships`, `activeHouseholdId`, `switchHousehold`; graceful fallback for single-household legacy response
+- Add `AdminRoute` component for role-based route protection
+- Fix `Login.tsx`: add required-field validation, preserve `invite`/`from` query params, navigate zero-membership users to `/welcome`
+- Fix `Register.tsx`: remove duplicate token storage (module-level call), align username validation to spec (3–30, alphanumeric + underscores only), preserve `invite`/`from` query params, navigate new users to `/welcome`
+- Add household API types to `api/auth.ts` (no new endpoints, just type alignment with spec response contract)
+- Run frontend quality checks: `tsc --noEmit`, `eslint`, `vitest run`
+
+**Out of scope (not Finn's):**
+- Backend security fixes (BYPASSRLS, cross-household reset) — Alex
+- Backend endpoint gaps (decline invite, revoke/resend, household rename/delete) — Alex
+- Guest read-only UI — deferred pending backend guest-token contract alignment (Alex)
+- Test coverage for backend — Quinn
+- Quinn gate artifact creation — Quinn
+
+### Files to Change
+- `frontend/src/types/entities.ts`
+- `frontend/src/contexts/AuthContext.tsx`
+- `frontend/src/components/ProtectedRoute.tsx` (minor refactor)
+- `frontend/src/components/AdminRoute.tsx` (new)
+- `frontend/src/router.tsx`
+- `frontend/src/pages/Login.tsx`
+- `frontend/src/pages/Register.tsx`
+- `frontend/src/pages/Welcome.tsx` (new)
+- `frontend/src/pages/InviteAccept.tsx` (new)
+- `frontend/src/pages/InviteInvalid.tsx` (new)
+- `frontend/src/pages/Profile.tsx` (new)
+- `frontend/src/pages/HouseholdNew.tsx` (new)
+- `frontend/src/pages/HouseholdSettings.tsx` (new)
+- `frontend/src/api/auth.ts` (type alignment)
+
+### 20260523T070936Z-alex-routing-spec-034-m5.md
+# Decision Drop — Alex Routing: spec-034 M5 HIGH Pending Items
+
+**Date:** 2026-05-23  
+**Agent:** Alex (Routing Agent)  
+**Branch:** `feat/034-m5-household-roles`
+
+## Decision
+**status: DIRECT_PERMITTED**
+
+## Rationale
+This request is a bounded implementation pass against already-specified spec-034 work on the current feature branch, not a net-new feature or planning effort. The branch already contains prior spec-034 implementation and routing history, and `.squad/agents/alex/pending-m5-work.md` enumerates the five remaining HIGH-priority backend items with concrete file targets, endpoint/schema expectations, and test requirements.
+
+Direct implementation is permitted because the requested work is explicitly limited to completing these five known remediation items on `feat/034-m5-household-roles`, one item at a time, with all four CI checks run after each item and a separate commit per item. Any scope expansion beyond those five listed items would require fresh routing.
+
+## Scope Confirmation
+Direct work is authorized only for these five items on the current branch, with per-item CI and per-item commits:
+1. Atomic refresh token rotation in auth/refresh token repo with concurrency test.
+2. Invitation model overhaul: status migration, 72h expiry, invited fields/role behavior, decline/revoke/resend endpoints, tests.
+3. Household rename and soft-delete with migration/filtering, tests.
+4. `X-Household-Id`-aware active household resolution, `/auth/me` memberships, `/auth/switch-household`, tests.
+5. Import wizard admin gate plus DB-backed import session migration and test.
+
+### tariq-034-architecture-review-routing-20260522T050356Z.md
+### 2026-05-22: Routing decision — spec-034 M5 architectural review
+**By:** Tariq (routing agent)
+**Status:** DIRECT_PERMITTED
+**Scope:** Independent, read-only architectural review of branch `feat/034-m5-household-roles` against `docs/requirements/functional-spec-v2.md` and `docs/requirements/engineering_architecture_v2.md`, producing a structured findings report only.
+**Rationale:** The request is a bounded assessment artifact, not implementation, replanning, or scope change. It does not ask for application code edits, spec changes, or new sequencing decisions; it only asks for conformance review of an existing implementation against already-authored requirements. Therefore no new SpecKit cycle is needed and direct review work is permitted within the explicit no-fixes/no-code-changes boundary.
+
+### tariq-034-qe-coverage-routing-20260522T0526Z.md
+# Decision Drop — Tariq Routing: spec-034 M5 QE Coverage Task
+**Date:** 2026-05-22T05:26Z
+**Author:** Tariq (routing agent)
+**Branch:** feat/034-m5-household-roles
+**Request:** Add backend pytest coverage and frontend Vitest coverage for spec-034 M5 household-role/auth/multi-household/RLS flows, with xfail(strict=True) only where production fixes are pending, and no dependency override of `require_admin` in new tests.
+
+---
+
+## Decision
+
+**status: DIRECT_PERMITTED**
+
+---
+
+## Rationale
+
+This is a bounded, additive QE coverage task on an existing feature branch where the implementation is complete. The following conditions confirm DIRECT_PERMITTED:
+
+1. **No application code changes.** The task is purely additive: new test files and/or new test cases in existing test modules. No routes, models, services, migrations, or frontend components are modified.
+
+2. **Test infrastructure already established.** The repository has mature test scaffolding in place:
+   - Backend: `conftest.py`, `FakeSheetsClient` doubles, `pytest-asyncio` in auto mode, existing `tests/test_households.py`, `tests/models/test_household.py`, `tests/integration/` structure.
+   - Frontend: Vitest + jsdom configured in `vite.config.ts`, `src/test/setup.ts`, `src/__tests__/` directory with existing test files.
+
+3. **This executes a mandated Quinn QE handoff.** Maya's architectural review (`.squad/decisions/inbox/20260521T2032Z-maya-arch-review.md`) explicitly mandated Quinn QE action items (CRITICAL×1, HIGH×2) on this branch. Writing test coverage to surface those gaps (via `xfail(strict=True)`) is executing the already-approved QE mandate — not new scope.
+
+4. **No SpecKit artifacts required.** SpecKit is warranted for product feature work, spec changes, or architecture decisions. Test coverage on an existing implementation uses established test conventions; it does not require a new specification, plan, tasks.md cycle, or architectural gate.
+
+5. **xfail(strict=True) constraint respected.** The operator explicitly constrains xfail use to flows where production fixes are still pending (surfacing known failures as red, not hiding them as skip). This is a standard pytest pattern consistent with the codebase's QE conventions.
+
+6. **No require_admin override constraint respected.** The operator explicitly prohibits overriding the `require_admin` dependency in new tests. This is consistent with testing the actual auth/role enforcement rather than bypassing it — and with Maya's finding that role enforcement has security gaps that must be surfaced, not papered over.
+
+---
+
+## Explicit Scope Confirmation
+
+The following scope is permitted under this decision:
+
+**Backend (pytest):**
+- New test file(s) under `tests/` or `tests/integration/` covering:
+  - Household role assignment and enforcement (admin vs. member paths)
+  - Auth flows: login, token refresh, password reset with household membership validation
+  - Multi-household scenarios: user in multiple households, household switching
+  - RLS enforcement: row-level isolation across household boundaries
+- `xfail(strict=True)` applied only to test cases where Maya's RED findings correspond to not-yet-fixed production code on this branch
+- No overriding `require_admin` via `app.dependency_overrides` in new tests
+
+**Frontend (Vitest):**
+- New test file(s) under `frontend/src/__tests__/` covering:
+  - Household role-aware UI flows (admin vs. member rendering/routing)
+  - Auth context and household context interactions
+  - Multi-household selection / switching components
+- `xfail`-equivalent patterns (`.todo` or conditional skips) only where frontend fixes remain pending
+
+**Out of scope:**
+- No application code changes (routes, models, services, frontend components, migrations)
+- No new npm or PyPI dependencies
+- No spec amendments or plan changes
+- No changes to existing passing tests
+
+---
+
+## Constraints on Implementation Agent
+
+- Must follow `SPREADSHEET_ID=dummy` + `FakeSheetsClient` pattern (no live sheets in tests)
+- Must pass all four local CI checks before any push: `ruff check`, `ruff format --check`, `mypy --strict`, `pytest`
+- Must not push without explicit operator affirmative
+- Quinn gate (`specs/034/quinn-gate.md` in `coffee_tracker` repo) should be verified if this work is intended to formally close the QE mandate; if the gate doesn't yet exist, the implementation agent should flag this to the operator rather than proceeding to push
+
