@@ -1,7 +1,8 @@
 """Household management endpoints — create, list, invite, accept, manage members.
 
-All endpoints require JWT authentication via the current_user or
-current_household_membership dependency.  Admin-only operations use require_admin.
+Most endpoints require JWT authentication via the current_user or
+current_household_membership dependency. Invitation accept/decline routes
+resolve household context from the invitation token instead of a path param.
 """
 
 from __future__ import annotations
@@ -11,6 +12,7 @@ import uuid
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,9 +22,24 @@ from app.models.household import HouseholdMember
 from app.models.user import User
 from app.repos.sql.household import HouseholdRepo
 from app.repos.sql.user import UserRepo
-from app.services.auth import hash_token
+from app.services.auth import decode_access_token, hash_token
 
 router = APIRouter(tags=["households"])
+_optional_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+
+
+async def invite_accepting_user(
+    token: str | None = Depends(_optional_oauth2_scheme),
+    db: AsyncSession = Depends(get_db),
+) -> User | None:
+    """Return the authenticated invitee when a Bearer token is present."""
+    if token is None:
+        return None
+    user_id = decode_access_token(token)
+    user = await UserRepo().get_by_id(db, user_id)
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
 
 
 # ---------------------------------------------------------------------------
@@ -238,15 +255,14 @@ async def create_invite(
 @router.post("/invitations/{token}/accept", response_model=AcceptInviteOut)
 async def accept_invite(
     token: str,
-    # JWT auth is required to identify the accepting user; household context comes
-    # from the invitation token lookup, not from a session membership dependency.
-    user: User = Depends(current_user),
+    user: User | None = Depends(invite_accepting_user),
     db: AsyncSession = Depends(get_db),
 ) -> AcceptInviteOut:
     """Accept a household invitation (AC-074).
 
-    Unauthenticated callers receive 401; household context is resolved from the
-    invitation token, not from the caller's active household session.
+    Household context is always resolved from the invitation token. When the
+    caller is unauthenticated, the invitation is validated and preview data is
+    returned without consuming the token.
     """
     invitation = await HouseholdRepo().get_invitation_by_token_hash(db, hash_token(token))
     if invitation is None:
@@ -259,13 +275,20 @@ async def accept_invite(
         _raise_for_non_pending_invitation_status(invitation.status)
 
     repo = HouseholdRepo()
-    existing = await repo.get_member(db, invitation.household_id, user.id)
-    if existing is not None:
-        raise HTTPException(status_code=409, detail="Already a member of this household")
-
     hh = await repo.get_by_id(db, invitation.household_id)
     if hh is None:
         raise HTTPException(status_code=410, detail="Household is no longer available")
+
+    if user is None:
+        return AcceptInviteOut(
+            household_id=invitation.household_id,
+            household_name=hh.name,
+            role=invitation.invited_role,
+        )
+
+    existing = await repo.get_member(db, invitation.household_id, user.id)
+    if existing is not None:
+        raise HTTPException(status_code=409, detail="Already a member of this household")
 
     await repo.add_member(
         db,
@@ -279,10 +302,9 @@ async def accept_invite(
     await repo.accept_invitation(db, invitation.id)
     await db.commit()
 
-    household_name = hh.name
     return AcceptInviteOut(
         household_id=invitation.household_id,
-        household_name=household_name,
+        household_name=hh.name,
         role=invitation.invited_role,
     )
 

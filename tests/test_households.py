@@ -325,13 +325,18 @@ async def test_invite_by_member_returns_403(db_override: AsyncMock) -> None:
 
 
 async def test_accept_invite_valid_token_creates_membership(db_override: AsyncMock) -> None:
-    """POST /households/accept-invite with valid token creates membership (AC-074)."""
+    """POST /households/invitations/{token}/accept creates membership for an authenticated invitee."""
     mock_db = db_override
+    user = _fake_user("invitee")
     hh_id = uuid.uuid4()
     raw_token = "validrawtoken12345"
     inv = _fake_invitation(hh_id, token_hash=hash_token(raw_token))
     hh = _fake_household(household_id=hh_id, name="Home")
 
+    from app.routers.api_households import invite_accepting_user
+
+    app.dependency_overrides[invite_accepting_user] = lambda: user
+
     with patch("app.routers.api_households.HouseholdRepo") as MockHHRepo:
         MockHHRepo.return_value.get_invitation_by_token_hash = AsyncMock(return_value=inv)
         MockHHRepo.return_value.get_member = AsyncMock(return_value=None)
@@ -342,20 +347,30 @@ async def test_accept_invite_valid_token_creates_membership(db_override: AsyncMo
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp = await client.post(f"/households/invitations/{raw_token}/accept")
+
+    app.dependency_overrides.pop(invite_accepting_user, None)
 
     assert resp.status_code == 200
     body = resp.json()
     assert body["role"] == "member"
     assert str(body["household_id"]) == str(hh_id)
+    MockHHRepo.return_value.add_member.assert_awaited_once()
+    assert MockHHRepo.return_value.add_member.await_args.kwargs["user_id"] == user.id
+    MockHHRepo.return_value.accept_invitation.assert_awaited_once_with(mock_db, inv.id)
 
 
 async def test_accept_invite_as_admin_creates_admin_member(db_override: AsyncMock) -> None:
     """Admin invitations create admin memberships on acceptance."""
     mock_db = db_override
+    user = _fake_user("admin-invitee")
     hh_id = uuid.uuid4()
     raw_token = "adminrawtoken12345"
     inv = _fake_invitation(hh_id, token_hash=hash_token(raw_token), invited_role="admin")
     hh = _fake_household(household_id=hh_id, name="Home")
+
+    from app.routers.api_households import invite_accepting_user
+
+    app.dependency_overrides[invite_accepting_user] = lambda: user
 
     with patch("app.routers.api_households.HouseholdRepo") as MockHHRepo:
         MockHHRepo.return_value.get_invitation_by_token_hash = AsyncMock(return_value=inv)
@@ -367,6 +382,8 @@ async def test_accept_invite_as_admin_creates_admin_member(db_override: AsyncMoc
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp = await client.post(f"/households/invitations/{raw_token}/accept")
+
+    app.dependency_overrides.pop(invite_accepting_user, None)
 
     assert resp.status_code == 200
     assert resp.json()["role"] == "admin"
@@ -436,13 +453,23 @@ async def test_accept_invite_duplicate_membership_returns_409(db_override: Async
     raw_token = "dupetoken123456789"
     inv = _fake_invitation(hh_id, token_hash=hash_token(raw_token))
     existing_member = _fake_member(user_id, hh_id)
+    user = _fake_user(user_id=user_id)
+
+    from app.routers.api_households import invite_accepting_user
+
+    app.dependency_overrides[invite_accepting_user] = lambda: user
 
     with patch("app.routers.api_households.HouseholdRepo") as MockHHRepo:
         MockHHRepo.return_value.get_invitation_by_token_hash = AsyncMock(return_value=inv)
+        MockHHRepo.return_value.get_by_id = AsyncMock(
+            return_value=_fake_household(household_id=hh_id)
+        )
         MockHHRepo.return_value.get_member = AsyncMock(return_value=existing_member)
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp = await client.post(f"/households/invitations/{raw_token}/accept")
+
+    app.dependency_overrides.pop(invite_accepting_user, None)
 
     assert resp.status_code == 409
 
@@ -456,6 +483,37 @@ async def test_accept_invite_not_found_returns_404(db_override: AsyncMock) -> No
             resp = await client.post("/households/invitations/nosuchtoken12345/accept")
 
     assert resp.status_code == 404
+
+
+async def test_accept_invite_without_auth_returns_preview_only(db_override: AsyncMock) -> None:
+    """Unauthenticated callers can validate the token without consuming it."""
+    mock_db = db_override
+    hh_id = uuid.uuid4()
+    raw_token = "previewtoken12345"
+    inv = _fake_invitation(hh_id, token_hash=hash_token(raw_token))
+    hh = _fake_household(household_id=hh_id, name="Preview Home")
+
+    with patch("app.routers.api_households.HouseholdRepo") as MockHHRepo:
+        MockHHRepo.return_value.get_invitation_by_token_hash = AsyncMock(return_value=inv)
+        MockHHRepo.return_value.get_by_id = AsyncMock(return_value=hh)
+        MockHHRepo.return_value.get_member = AsyncMock()
+        MockHHRepo.return_value.add_member = AsyncMock()
+        MockHHRepo.return_value.accept_invitation = AsyncMock()
+        mock_db.commit = AsyncMock()
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post(f"/households/invitations/{raw_token}/accept")
+
+    assert resp.status_code == 200
+    assert resp.json() == {
+        "household_id": str(hh_id),
+        "household_name": "Preview Home",
+        "role": "member",
+    }
+    MockHHRepo.return_value.get_member.assert_not_called()
+    MockHHRepo.return_value.add_member.assert_not_called()
+    MockHHRepo.return_value.accept_invitation.assert_not_called()
+    assert mock_db.commit.await_count == 0
 
 
 async def test_admin_can_rename_household(db_override: AsyncMock) -> None:
