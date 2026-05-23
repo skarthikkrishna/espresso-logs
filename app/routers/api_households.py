@@ -6,9 +6,7 @@ current_household_membership dependency.  Admin-only operations use require_admi
 
 from __future__ import annotations
 
-import base64
 import datetime
-import secrets
 import uuid
 from typing import Literal
 
@@ -216,7 +214,7 @@ async def create_invite(
     """Generate a one-time invitation token for a household (AC-073)."""
     if membership.household_id != household_id:
         raise HTTPException(status_code=403, detail="Not an admin of this household")
-    raw_token = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode()
+    raw_token = str(uuid.uuid4())
     invitation = await HouseholdRepo().create_invitation(
         db,
         household_id=household_id,

@@ -254,6 +254,7 @@ async def test_invite_by_admin_returns_201_with_token(db_override: AsyncMock) ->
     assert resp.status_code == 201
     body = resp.json()
     assert "token" in body
+    assert uuid.UUID(body["token"]).version == 4
     assert "invitation_id" in body
     assert body["invited_email"] == "invitee@example.com"
     assert body["invited_role"] == "member"
