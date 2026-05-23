@@ -122,22 +122,42 @@ async def current_user(
 CurrentUser = Annotated[User, Depends(current_user)]
 
 
+async def _resolve_membership_for_request(
+    request: Request,
+    user: User,
+    db: AsyncSession,
+) -> HouseholdMember:
+    """Resolve the active household membership from header override or join order."""
+    repo = HouseholdRepo()
+    requested_household_id = request.headers.get("X-Household-Id")
+    if requested_household_id:
+        try:
+            household_id = uuid.UUID(requested_household_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail="Invalid X-Household-Id header") from exc
+        membership = await repo.get_member(db, household_id, user.id)
+        household = await repo.get_by_id(db, household_id)
+        if membership is None or household is None:
+            raise HTTPException(status_code=403, detail="Not a member of this household")
+        return membership
+
+    memberships = await repo.get_memberships_for_user(db, user.id)
+    if not memberships:
+        raise HTTPException(status_code=403, detail="Not a member of any household")
+    return memberships[0]
+
+
 async def current_household_membership(
+    request: Request,
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
 ) -> HouseholdMember:
-    """Resolve the caller's household membership and set the RLS session variable.
-
-    Raises HTTPException(403) if the user has no household membership.
-    """
+    """Resolve the caller's household membership and set the RLS session variable."""
     if _E2E_AUTH_BYPASS:
         return _make_e2e_member()
     if db is None:
         raise HTTPException(status_code=403, detail="Database unavailable")
-    memberships = await HouseholdRepo().get_memberships_for_user(db, user.id)
-    if not memberships:
-        raise HTTPException(status_code=403, detail="Not a member of any household")
-    membership = memberships[0]
+    membership = await _resolve_membership_for_request(request, user, db)
     await db.execute(
         sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
         {"hid": str(membership.household_id)},
@@ -203,10 +223,7 @@ async def resolve_guest_or_member(
     user = await UserRepo().get_by_id(db, user_id)
     if user is None:
         raise HTTPException(status_code=401, detail="User not found")
-    memberships = await HouseholdRepo().get_memberships_for_user(db, user.id)
-    if not memberships:
-        raise HTTPException(status_code=403, detail="Not a member of any household")
-    membership = memberships[0]
+    membership = await _resolve_membership_for_request(request, user, db)
     await db.execute(
         sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
         {"hid": str(membership.household_id)},

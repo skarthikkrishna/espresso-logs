@@ -452,35 +452,27 @@ async def test_brew_log_scoped_to_active_household(
     integration_client: AsyncClient,
     pg_engine: AsyncEngine,
 ) -> None:
-    """Brew log reads use the caller's active (first) household membership.
-
-    When a user has exactly one household, requests return only that household's
-    data.  A second user in a different household cannot see the first user's
-    brew log entries even when both call the same endpoint.
-    """
+    """Brew log reads honor X-Household-Id when a user belongs to multiple households."""
     from app.rate_limit import limiter as _limiter
 
     _limiter._storage.reset()
 
     client = integration_client
 
-    ua = _uname()
-    r = await client.post("/auth/register", json={"username": ua, "password": "ActiveA12345!"})
+    username = _uname()
+    r = await client.post(
+        "/auth/register", json={"username": username, "password": "ActiveA12345!"}
+    )
     assert r.status_code == 201, r.text
-    token_a: str = r.json()["access_token"]
+    token: str = r.json()["access_token"]
 
-    _limiter._storage.reset()
-
-    ub = _uname()
-    r = await client.post("/auth/register", json={"username": ub, "password": "ActiveB12345!"})
-    assert r.status_code == 201, r.text
-    token_b: str = r.json()["access_token"]
-
-    r = await client.get("/auth/me", headers={"Authorization": f"Bearer {token_a}"})
+    r = await client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert r.status_code == 200
-    hh_a_id: str = r.json()["household_id"]
-
-    shot_id = f"ACTIVE-{uuid.uuid4().hex[:8]}"
+    user_id: str = r.json()["id"]
+    primary_household_id: str = r.json()["household_id"]
+    secondary_household_id = str(uuid.uuid4())
+    primary_shot_id = f"ACTIVE-A-{uuid.uuid4().hex[:8]}"
+    secondary_shot_id = f"ACTIVE-B-{uuid.uuid4().hex[:8]}"
 
     async with pg_engine.connect() as conn:
         await conn.execute(sa.text("ALTER TABLE brew_log FORCE ROW LEVEL SECURITY"))
@@ -489,27 +481,52 @@ async def test_brew_log_scoped_to_active_household(
     try:
         async with pg_engine.begin() as conn:
             await conn.execute(
+                sa.text(
+                    "INSERT INTO households (id, name, created_by) VALUES (:hid, :name, :user_id)"
+                ),
+                {"hid": secondary_household_id, "name": "Lab", "user_id": user_id},
+            )
+            await conn.execute(
+                sa.text(
+                    "INSERT INTO household_members (household_id, user_id, role, invited_by) "
+                    "VALUES (:hid, :user_id, 'member', NULL)"
+                ),
+                {"hid": secondary_household_id, "user_id": user_id},
+            )
+            await conn.execute(
                 sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
-                {"hid": hh_a_id},
+                {"hid": primary_household_id},
             )
             await conn.execute(
                 sa.text("INSERT INTO brew_log (sheets_id, household_id) VALUES (:sid, :hid)"),
-                {"sid": shot_id, "hid": hh_a_id},
+                {"sid": primary_shot_id, "hid": primary_household_id},
+            )
+            await conn.execute(
+                sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+                {"hid": secondary_household_id},
+            )
+            await conn.execute(
+                sa.text("INSERT INTO brew_log (sheets_id, household_id) VALUES (:sid, :hid)"),
+                {"sid": secondary_shot_id, "hid": secondary_household_id},
             )
 
-        # User A (active household = A) can see their entry
-        r = await client.get("/api/brew-log", headers={"Authorization": f"Bearer {token_a}"})
+        r = await client.get("/api/brew-log", headers={"Authorization": f"Bearer {token}"})
         assert r.status_code == 200, r.text
-        shot_ids_a = [item["shot_id"] for item in r.json()["items"]]
-        assert shot_id in shot_ids_a, f"User A's active household should contain {shot_id!r}"
+        shot_ids_default = [item["shot_id"] for item in r.json()["items"]]
+        assert primary_shot_id in shot_ids_default
+        assert secondary_shot_id not in shot_ids_default
 
-        # User B (active household = B) cannot see user A's entry
-        r = await client.get("/api/brew-log", headers={"Authorization": f"Bearer {token_b}"})
-        assert r.status_code == 200, r.text
-        shot_ids_b = [item["shot_id"] for item in r.json()["items"]]
-        assert shot_id not in shot_ids_b, (
-            f"Active household scoping violated: user B sees {shot_id!r}"
+        r = await client.get(
+            "/api/brew-log",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "X-Household-Id": secondary_household_id,
+            },
         )
+        assert r.status_code == 200, r.text
+        shot_ids_secondary = [item["shot_id"] for item in r.json()["items"]]
+        assert secondary_shot_id in shot_ids_secondary
+        assert primary_shot_id not in shot_ids_secondary
 
     finally:
         async with pg_engine.connect() as conn:
@@ -517,11 +534,6 @@ async def test_brew_log_scoped_to_active_household(
             await conn.commit()
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Alex fix pending: X-Household-ID header not implemented — "
-    "current_household_membership always uses memberships[0]; no header-based switching exists",
-)
 async def test_wrong_household_id_header_rejected(
     integration_client: AsyncClient,
     pg_engine: AsyncEngine,

@@ -11,7 +11,7 @@ import re
 import uuid
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.deps import current_user, require_admin
@@ -100,6 +100,13 @@ class RegisterOut(TokenOut):
     user: UserOut
 
 
+class MembershipSchema(BaseModel):
+    household_id: uuid.UUID
+    household_name: str
+    role: str
+    joined_at: datetime.datetime
+
+
 class MeOut(BaseModel):
     id: uuid.UUID
     username: str | None
@@ -108,6 +115,17 @@ class MeOut(BaseModel):
     picture_url: str | None
     household_id: uuid.UUID | None = None
     role: str | None = None
+    memberships: list[MembershipSchema] = Field(default_factory=list)
+
+
+class SwitchHouseholdRequest(BaseModel):
+    household_id: uuid.UUID
+
+
+class SwitchHouseholdOut(BaseModel):
+    household_id: uuid.UUID
+    role: str
+    household_name: str
 
 
 # ---------------------------------------------------------------------------
@@ -273,15 +291,28 @@ async def get_me(
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
 ) -> MeOut:
-    """Return the authenticated user's profile and household info (AC-050 to AC-051)."""
+    """Return the authenticated user's profile and household memberships."""
     household_id: uuid.UUID | None = None
     role: str | None = None
+    memberships_out: list[MembershipSchema] = []
     if db is not None:
         memberships = await HouseholdRepo().get_memberships_for_user(db, user.id)
         if memberships:
-            m = memberships[0]
-            household_id = m.household_id
-            role = m.role
+            first = memberships[0]
+            household_id = first.household_id
+            role = first.role
+        for membership in memberships:
+            household = await HouseholdRepo().get_by_id(db, membership.household_id)
+            if household is None:
+                continue
+            memberships_out.append(
+                MembershipSchema(
+                    household_id=membership.household_id,
+                    household_name=household.name,
+                    role=membership.role,
+                    joined_at=membership.joined_at,
+                )
+            )
     return MeOut(
         id=user.id,
         username=user.username,
@@ -290,6 +321,25 @@ async def get_me(
         picture_url=user.picture_url,
         household_id=household_id,
         role=role,
+        memberships=memberships_out,
+    )
+
+
+@router.post("/switch-household", response_model=SwitchHouseholdOut)
+async def switch_household(
+    body: SwitchHouseholdRequest,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+) -> SwitchHouseholdOut:
+    """Validate that the caller belongs to the requested household."""
+    membership = await HouseholdRepo().get_member(db, body.household_id, user.id)
+    household = await HouseholdRepo().get_by_id(db, body.household_id)
+    if membership is None or household is None:
+        raise HTTPException(status_code=403, detail="Not a member of this household")
+    return SwitchHouseholdOut(
+        household_id=body.household_id,
+        role=membership.role,
+        household_name=household.name,
     )
 
 

@@ -628,14 +628,21 @@ async def test_logout_without_jwt_still_clears_cookie_returns_200(
 async def test_get_me_valid_jwt_returns_user_with_household_info(
     db_override: AsyncMock,
 ) -> None:
-    """The autouse fixture provides a fake user for current_user; we just need the DB mock."""
+    """The /auth/me payload includes all memberships plus the default household fields."""
     household_id = uuid.UUID("00000000-0000-0000-0000-000000000002")
+    second_household_id = uuid.UUID("00000000-0000-0000-0000-000000000003")
     user_id = uuid.UUID("00000000-0000-0000-0000-000000000001")
     fake_membership = _fake_member(user_id, household_id)
+    second_membership = _fake_member(user_id, second_household_id, role="admin")
+    first_household = type("HouseholdStub", (), {"id": household_id, "name": "Home"})()
+    second_household = type("HouseholdStub", (), {"id": second_household_id, "name": "Lab"})()
 
     with patch("app.routers.api_auth.HouseholdRepo") as MockHouseholdRepo:
         MockHouseholdRepo.return_value.get_memberships_for_user = AsyncMock(
-            return_value=[fake_membership]
+            return_value=[fake_membership, second_membership]
+        )
+        MockHouseholdRepo.return_value.get_by_id = AsyncMock(
+            side_effect=[first_household, second_household]
         )
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -647,11 +654,11 @@ async def test_get_me_valid_jwt_returns_user_with_household_info(
 
     assert resp.status_code == 200
     body = resp.json()
-    assert "id" in body
-    assert "username" in body
-    # household_id may be None if the current_user fixture user doesn't match,
-    # but the endpoint must return 200 with the expected fields
-    assert "household_id" in body
+    assert body["household_id"] == str(household_id)
+    assert body["role"] == "admin"
+    assert len(body["memberships"]) == 2
+    assert body["memberships"][0]["household_name"] == "Home"
+    assert body["memberships"][1]["household_name"] == "Lab"
 
 
 async def test_get_me_no_jwt_returns_401(mock_db: AsyncMock) -> None:
@@ -672,6 +679,47 @@ async def test_get_me_no_jwt_returns_401(mock_db: AsyncMock) -> None:
             app.dependency_overrides[current_user] = saved_cu
 
     assert resp.status_code == 401
+
+
+async def test_switch_household_returns_membership_info(db_override: AsyncMock) -> None:
+    """/auth/switch-household returns the selected household metadata."""
+    household_id = uuid.UUID("00000000-0000-0000-0000-000000000010")
+    membership = _fake_member(uuid.UUID("00000000-0000-0000-0000-000000000001"), household_id)
+    household = type("HouseholdStub", (), {"id": household_id, "name": "Lab"})()
+
+    with patch("app.routers.api_auth.HouseholdRepo") as MockHouseholdRepo:
+        MockHouseholdRepo.return_value.get_member = AsyncMock(return_value=membership)
+        MockHouseholdRepo.return_value.get_by_id = AsyncMock(return_value=household)
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post(
+                "/auth/switch-household", json={"household_id": str(household_id)}
+            )
+
+    assert resp.status_code == 200
+    assert resp.json() == {
+        "household_id": str(household_id),
+        "role": membership.role,
+        "household_name": "Lab",
+    }
+
+
+async def test_switch_household_rejects_non_member(db_override: AsyncMock) -> None:
+    """/auth/switch-household rejects households the caller does not belong to."""
+    household_id = uuid.UUID("00000000-0000-0000-0000-000000000010")
+
+    with patch("app.routers.api_auth.HouseholdRepo") as MockHouseholdRepo:
+        MockHouseholdRepo.return_value.get_member = AsyncMock(return_value=None)
+        MockHouseholdRepo.return_value.get_by_id = AsyncMock(
+            return_value=MagicMock(id=household_id)
+        )
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post(
+                "/auth/switch-household", json={"household_id": str(household_id)}
+            )
+
+    assert resp.status_code == 403
 
 
 # ---------------------------------------------------------------------------
