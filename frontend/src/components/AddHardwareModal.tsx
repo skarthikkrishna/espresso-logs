@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createHardware } from '../api/hardware'
-import type { HardwareItem } from '../types/entities'
+import type { HardwareDetail, HardwareItem } from '../types/entities'
 
 interface AddHardwareModalProps {
   initialCategory?: HardwareItem['category']
@@ -25,8 +25,17 @@ export default function AddHardwareModal({ initialCategory, onClose, onSaved }: 
         name,
         product_url: productUrl.trim() || undefined,
       }),
-    onSuccess: (item) => {
-      queryClient.invalidateQueries({ queryKey: ['hardware'] })
+    onSuccess: async (item) => {
+      queryClient.setQueryData<HardwareItem[]>(['hardware'], (existing = []) =>
+        existing.some((hardware) => hardware.hardware_id === item.hardware_id)
+          ? existing.map((hardware) => hardware.hardware_id === item.hardware_id ? item : hardware)
+          : [...existing, item]
+      )
+      queryClient.setQueryData<HardwareDetail>(['hardware', item.hardware_id], {
+        item,
+        maintenance: [],
+      })
+      await queryClient.invalidateQueries({ queryKey: ['hardware'], refetchType: 'inactive' })
       onSaved(item.hardware_id)
     },
     onError: () => {
