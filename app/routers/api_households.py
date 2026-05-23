@@ -121,6 +121,18 @@ class AcceptInviteRequest(BaseModel):
     token: str
 
 
+class RenameHouseholdRequest(BaseModel):
+    name: str
+
+    @field_validator("name")
+    @classmethod
+    def _validate_name(cls, value: str) -> str:
+        value = value.strip()
+        if not (1 <= len(value) <= 50):
+            raise ValueError("Household name must be 1–50 characters")
+        return value
+
+
 class UpdateRoleRequest(BaseModel):
     role: str
 
@@ -324,6 +336,40 @@ async def resend_invitation(
         invited_role=invitation.invited_role,
         status=invitation.status,
     )
+
+
+@router.patch("/{household_id}", response_model=HouseholdOut)
+async def rename_household(
+    household_id: uuid.UUID,
+    body: RenameHouseholdRequest,
+    membership: HouseholdMember = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> HouseholdOut:
+    """Rename a household."""
+    if membership.household_id != household_id:
+        raise HTTPException(status_code=403, detail="Not an admin of this household")
+    household = await HouseholdRepo().rename(db, household_id, body.name)
+    await db.commit()
+    return HouseholdOut(
+        id=household.id,
+        name=household.name,
+        created_at=household.created_at,
+        role=membership.role,
+    )
+
+
+@router.delete("/{household_id}", status_code=204)
+async def delete_household(
+    household_id: uuid.UUID,
+    membership: HouseholdMember = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    """Soft-delete a household when it no longer has multiple active members."""
+    if membership.household_id != household_id:
+        raise HTTPException(status_code=403, detail="Not an admin of this household")
+    await HouseholdRepo().soft_delete(db, household_id)
+    await db.commit()
+    return Response(status_code=204)
 
 
 @router.delete("/{household_id}/members/{user_id}", status_code=204)

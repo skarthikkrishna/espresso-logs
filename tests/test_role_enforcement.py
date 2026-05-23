@@ -122,10 +122,6 @@ def real_auth_client(mock_db: AsyncMock):  # type: ignore[no-untyped-def]
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Alex fix pending: PATCH /households/{id} rename route not yet implemented",
-)
 async def test_member_cannot_rename_household(real_auth_client: AsyncMock) -> None:
     """Member (role='member') cannot rename a household → 403.
 
@@ -159,10 +155,6 @@ async def test_member_cannot_rename_household(real_auth_client: AsyncMock) -> No
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Alex fix pending: DELETE /households/{id} route not yet implemented",
-)
 async def test_member_cannot_delete_household(real_auth_client: AsyncMock) -> None:
     """Member (role='member') cannot delete a household → 403."""
     _ = real_auth_client  # fixture activates dependency overrides
@@ -220,13 +212,9 @@ async def test_member_cannot_revoke_invite(real_auth_client: AsyncMock) -> None:
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Alex fix pending: PATCH /households/{id} rename route not yet implemented",
-)
 async def test_admin_can_rename_household(real_auth_client: AsyncMock) -> None:
-    """Admin can rename their household → 200 (happy path, route pending)."""
-    _ = real_auth_client  # fixture activates dependency overrides
+    """Admin can rename their household → 200."""
+    mock_db = real_auth_client
     user_id = uuid.uuid4()
     household_id = uuid.uuid4()
     admin_member = _fake_member_obj(user_id, household_id, role="admin")
@@ -246,7 +234,7 @@ async def test_admin_can_rename_household(real_auth_client: AsyncMock) -> None:
     ):
         MockUserRepo.return_value.get_by_id = AsyncMock(return_value=user)
         MockHHRepo.return_value.get_memberships_for_user = AsyncMock(return_value=[admin_member])
-        MockHHRepoRouter.return_value.rename_household = AsyncMock(return_value=renamed_hh)
+        MockHHRepoRouter.return_value.rename = AsyncMock(return_value=renamed_hh)
         mock_db.commit = AsyncMock()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:

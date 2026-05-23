@@ -46,6 +46,10 @@ class Household(Base):
         nullable=False,
         server_default=sa.text("FALSE"),
     )
+    deleted_at: Mapped[datetime.datetime | None] = mapped_column(
+        sa.TIMESTAMP(timezone=True),
+        nullable=True,
+    )
 
 
 class HouseholdMember(Base):

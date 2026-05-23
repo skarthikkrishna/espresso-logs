@@ -167,6 +167,23 @@ async def test_get_households_me_returns_membership_list(db_override: AsyncMock)
     assert body[0]["name"] == "Home"
 
 
+async def test_get_households_me_skips_soft_deleted_households(db_override: AsyncMock) -> None:
+    """Deleted households are not returned from GET /households/me."""
+    user_id = uuid.UUID("00000000-0000-0000-0000-000000000001")
+    hh_id = uuid.uuid4()
+    membership = _fake_member(user_id, hh_id)
+
+    with patch("app.routers.api_households.HouseholdRepo") as MockHHRepo:
+        MockHHRepo.return_value.get_memberships_for_user = AsyncMock(return_value=[membership])
+        MockHHRepo.return_value.get_by_id = AsyncMock(return_value=None)
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.get("/households/me")
+
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
 async def test_get_household_detail_returns_members_and_guest_accessible_field(
     db_override: AsyncMock,
 ) -> None:
@@ -416,6 +433,84 @@ async def test_accept_invite_not_found_returns_404(db_override: AsyncMock) -> No
             )
 
     assert resp.status_code == 404
+
+
+async def test_admin_can_rename_household(db_override: AsyncMock) -> None:
+    """Admins can rename their household."""
+    mock_db = db_override
+    hh_id = uuid.uuid4()
+    admin_member = _fake_member(uuid.uuid4(), hh_id, role="admin")
+    renamed = _fake_household(household_id=hh_id, name="Renamed")
+
+    from app.deps import require_admin
+
+    app.dependency_overrides[require_admin] = lambda: admin_member
+
+    with patch("app.routers.api_households.HouseholdRepo") as MockHHRepo:
+        MockHHRepo.return_value.rename = AsyncMock(return_value=renamed)
+        mock_db.commit = AsyncMock()
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.patch(f"/households/{hh_id}", json={"name": "  Renamed  "})
+
+    app.dependency_overrides.pop(require_admin, None)
+
+    assert resp.status_code == 200
+    assert resp.json()["name"] == "Renamed"
+    MockHHRepo.return_value.rename.assert_awaited_once_with(mock_db, hh_id, "Renamed")
+
+
+async def test_admin_cannot_delete_household_with_multiple_members(db_override: AsyncMock) -> None:
+    """Soft-delete is blocked while two or more active members remain."""
+    from fastapi import HTTPException
+
+    hh_id = uuid.uuid4()
+    admin_member = _fake_member(uuid.uuid4(), hh_id, role="admin")
+
+    from app.deps import require_admin
+
+    app.dependency_overrides[require_admin] = lambda: admin_member
+
+    with patch("app.routers.api_households.HouseholdRepo") as MockHHRepo:
+        MockHHRepo.return_value.soft_delete = AsyncMock(
+            side_effect=HTTPException(
+                status_code=409,
+                detail="Cannot delete a household with active members. Remove all members first.",
+            )
+        )
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.delete(f"/households/{hh_id}")
+
+    app.dependency_overrides.pop(require_admin, None)
+
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == (
+        "Cannot delete a household with active members. Remove all members first."
+    )
+
+
+async def test_admin_can_delete_household_when_single_member(db_override: AsyncMock) -> None:
+    """Soft-delete succeeds when only one active member remains."""
+    mock_db = db_override
+    hh_id = uuid.uuid4()
+    admin_member = _fake_member(uuid.uuid4(), hh_id, role="admin")
+
+    from app.deps import require_admin
+
+    app.dependency_overrides[require_admin] = lambda: admin_member
+
+    with patch("app.routers.api_households.HouseholdRepo") as MockHHRepo:
+        MockHHRepo.return_value.soft_delete = AsyncMock()
+        mock_db.commit = AsyncMock()
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.delete(f"/households/{hh_id}")
+
+    app.dependency_overrides.pop(require_admin, None)
+
+    assert resp.status_code == 204
+    MockHHRepo.return_value.soft_delete.assert_awaited_once_with(mock_db, hh_id)
 
 
 async def test_remove_member_admin_returns_204(db_override: AsyncMock) -> None:

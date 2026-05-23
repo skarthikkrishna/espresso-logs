@@ -43,8 +43,30 @@ class HouseholdRepo:
         return household
 
     async def get_by_id(self, db: AsyncSession, household_id: uuid.UUID) -> Household | None:
-        result = await db.execute(sa.select(Household).where(Household.id == household_id))
+        result = await db.execute(
+            sa.select(Household).where(
+                Household.id == household_id,
+                Household.deleted_at.is_(None),
+            )
+        )
         return result.scalar_one_or_none()
+
+    async def rename(self, db: AsyncSession, household_id: uuid.UUID, name: str) -> Household:
+        """Rename a non-deleted household and return the updated row."""
+        result = await db.execute(
+            sa.update(Household)
+            .where(
+                Household.id == household_id,
+                Household.deleted_at.is_(None),
+            )
+            .values(name=name)
+            .returning(Household)
+        )
+        household = result.scalar_one_or_none()
+        if household is None:
+            raise HTTPException(status_code=404, detail="Household not found")
+        await db.flush()
+        return household
 
     # ── Members ───────────────────────────────────────────────────────────────
 
@@ -63,7 +85,13 @@ class HouseholdRepo:
         self, db: AsyncSession, user_id: uuid.UUID
     ) -> list[HouseholdMember]:
         result = await db.execute(
-            sa.select(HouseholdMember).where(HouseholdMember.user_id == user_id)
+            sa.select(HouseholdMember)
+            .join(Household, Household.id == HouseholdMember.household_id)
+            .where(
+                HouseholdMember.user_id == user_id,
+                Household.deleted_at.is_(None),
+            )
+            .order_by(HouseholdMember.joined_at.asc())
         )
         return list(result.scalars().all())
 
@@ -149,6 +177,33 @@ class HouseholdRepo:
             sa.select(HouseholdMember).where(HouseholdMember.household_id == household_id)
         )
         return list(result.scalars().all())
+
+    async def count_members(self, db: AsyncSession, household_id: uuid.UUID) -> int:
+        """Return the number of active household members."""
+        result = await db.execute(
+            sa.select(sa.func.count()).where(HouseholdMember.household_id == household_id)
+        )
+        return int(result.scalar_one())
+
+    async def soft_delete(self, db: AsyncSession, household_id: uuid.UUID) -> None:
+        """Soft-delete a household when it has at most one active member."""
+        if await self.count_members(db, household_id) >= 2:
+            raise HTTPException(
+                status_code=409,
+                detail="Cannot delete a household with active members. Remove all members first.",
+            )
+        result = await db.execute(
+            sa.update(Household)
+            .where(
+                Household.id == household_id,
+                Household.deleted_at.is_(None),
+            )
+            .values(deleted_at=sa.text("NOW()"))
+            .returning(Household.id)
+        )
+        if result.fetchone() is None:
+            raise HTTPException(status_code=404, detail="Household not found")
+        await db.flush()
 
     # ── Invitations ───────────────────────────────────────────────────────────
 
