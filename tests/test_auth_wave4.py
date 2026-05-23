@@ -486,7 +486,10 @@ async def test_refresh_valid_cookie_returns_new_access_token_and_rotates_cookie(
 
 
 async def test_refresh_revoked_token_returns_401(auth_client: AsyncMock) -> None:
+    """Replaying a revoked token returns 401 and revokes all active sessions for the user."""
     mock_db = auth_client
+    user_id = uuid.uuid4()
+    revoked_rt = _fake_refresh_token(user_id, revoked=True)
 
     from app.services.auth import generate_refresh_token
 
@@ -494,6 +497,8 @@ async def test_refresh_revoked_token_returns_401(auth_client: AsyncMock) -> None
 
     with patch("app.routers.api_auth.RefreshTokenRepo") as MockRtRepo:
         MockRtRepo.return_value.rotate = AsyncMock(return_value=None)
+        MockRtRepo.return_value.get_by_hash = AsyncMock(return_value=revoked_rt)
+        MockRtRepo.return_value.revoke_all_for_user = AsyncMock()
         MockRtRepo.return_value.create = AsyncMock()
         mock_db.commit = AsyncMock()
 
@@ -504,10 +509,13 @@ async def test_refresh_revoked_token_returns_401(auth_client: AsyncMock) -> None
             )
 
     assert resp.status_code == 401
+    MockRtRepo.return_value.revoke_all_for_user.assert_awaited_once_with(mock_db, user_id)
+    assert mock_db.commit.await_count == 1
+    MockRtRepo.return_value.create.assert_not_called()
 
 
 async def test_refresh_token_replay_returns_401(auth_client: AsyncMock) -> None:
-    """Reusing a rotated or otherwise invalid refresh token returns 401."""
+    """Unknown refresh tokens return 401 without revoking unrelated sessions."""
     mock_db = auth_client
 
     from app.services.auth import generate_refresh_token
@@ -516,6 +524,8 @@ async def test_refresh_token_replay_returns_401(auth_client: AsyncMock) -> None:
 
     with patch("app.routers.api_auth.RefreshTokenRepo") as MockRtRepo:
         MockRtRepo.return_value.rotate = AsyncMock(return_value=None)
+        MockRtRepo.return_value.get_by_hash = AsyncMock(return_value=None)
+        MockRtRepo.return_value.revoke_all_for_user = AsyncMock()
         MockRtRepo.return_value.create = AsyncMock()
         mock_db.commit = AsyncMock()
 
@@ -526,6 +536,7 @@ async def test_refresh_token_replay_returns_401(auth_client: AsyncMock) -> None:
             )
 
     assert resp.status_code == 401
+    MockRtRepo.return_value.revoke_all_for_user.assert_not_called()
 
 
 async def test_refresh_body_fallback_when_no_cookie(auth_client: AsyncMock) -> None:
@@ -566,6 +577,7 @@ async def test_concurrent_refresh_only_one_wins(auth_client: AsyncMock) -> None:
 
     with patch("app.routers.api_auth.RefreshTokenRepo") as MockRtRepo:
         MockRtRepo.return_value.rotate = AsyncMock(side_effect=[stored_rt, None])
+        MockRtRepo.return_value.get_by_hash = AsyncMock(return_value=None)
         MockRtRepo.return_value.create = AsyncMock()
         mock_db.commit = AsyncMock()
 
@@ -949,8 +961,15 @@ async def test_refresh_expired_token_rejected(auth_client: AsyncMock) -> None:
 
     raw_rt, _ = generate_refresh_token()
 
+    expired_rt = _fake_refresh_token(
+        uuid.uuid4(),
+        expires_at=datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=1),
+    )
+
     with patch("app.routers.api_auth.RefreshTokenRepo") as MockRtRepo:
         MockRtRepo.return_value.rotate = AsyncMock(return_value=None)
+        MockRtRepo.return_value.get_by_hash = AsyncMock(return_value=expired_rt)
+        MockRtRepo.return_value.revoke_all_for_user = AsyncMock()
         mock_db.commit = AsyncMock()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -958,6 +977,8 @@ async def test_refresh_expired_token_rejected(auth_client: AsyncMock) -> None:
 
     assert resp.status_code == 401
     assert "invalid refresh token" == resp.json().get("detail", "").lower()
+    MockRtRepo.return_value.revoke_all_for_user.assert_not_called()
+    assert mock_db.commit.await_count == 0
 
 
 # ---------------------------------------------------------------------------

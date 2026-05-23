@@ -374,6 +374,31 @@ async def test_accept_invite_as_admin_creates_admin_member(db_override: AsyncMoc
     assert MockHHRepo.return_value.add_member.await_args.kwargs["role"] == "admin"
 
 
+async def test_accept_invite_to_deleted_household_returns_410(db_override: AsyncMock) -> None:
+    """Deleted households cannot accept invitations."""
+    mock_db = db_override
+    hh_id = uuid.uuid4()
+    raw_token = "deletedhouseholdtoken123"
+    inv = _fake_invitation(hh_id, token_hash=hash_token(raw_token))
+
+    with patch("app.routers.api_households.HouseholdRepo") as MockHHRepo:
+        MockHHRepo.return_value.get_invitation_by_token_hash = AsyncMock(return_value=inv)
+        MockHHRepo.return_value.get_member = AsyncMock(return_value=None)
+        MockHHRepo.return_value.get_by_id = AsyncMock(return_value=None)
+        MockHHRepo.return_value.add_member = AsyncMock()
+        MockHHRepo.return_value.accept_invitation = AsyncMock()
+        mock_db.commit = AsyncMock()
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post("/households/accept-invite", json={"token": raw_token})
+
+    assert resp.status_code == 410
+    assert resp.json()["detail"] == "Household is no longer available"
+    MockHHRepo.return_value.add_member.assert_not_called()
+    MockHHRepo.return_value.accept_invitation.assert_not_called()
+    assert mock_db.commit.await_count == 0
+
+
 async def test_accept_invite_expired_token_returns_410(db_override: AsyncMock) -> None:
     """Expired invitation returns 410 (AC-074)."""
     hh_id = uuid.uuid4()

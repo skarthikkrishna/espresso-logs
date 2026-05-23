@@ -202,6 +202,7 @@ async def start_import_wizard(
         _IMPORT_SESSION_COOKIE,
         str(import_session.id),
         httponly=True,
+        secure=True,
         samesite="lax",
         path="/import",
         max_age=7200,

@@ -73,4 +73,6 @@ async def test_import_session_cookie_uses_two_hour_max_age(db_override: AsyncMoc
     app.dependency_overrides.pop(require_admin, None)
 
     assert resp.status_code == 200
-    assert "Max-Age=7200" in resp.headers.get("set-cookie", "")
+    set_cookie = resp.headers.get("set-cookie", "")
+    assert "Max-Age=7200" in set_cookie
+    assert "Secure" in set_cookie

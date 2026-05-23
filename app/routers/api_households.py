@@ -254,22 +254,26 @@ async def accept_invite(
     if invitation.status != "pending":
         raise HTTPException(status_code=410, detail="Invitation is no longer pending")
 
-    existing = await HouseholdRepo().get_member(db, invitation.household_id, user.id)
+    repo = HouseholdRepo()
+    existing = await repo.get_member(db, invitation.household_id, user.id)
     if existing is not None:
         raise HTTPException(status_code=409, detail="Already a member of this household")
 
-    await HouseholdRepo().add_member(
+    hh = await repo.get_by_id(db, invitation.household_id)
+    if hh is None:
+        raise HTTPException(status_code=410, detail="Household is no longer available")
+
+    await repo.add_member(
         db,
         household_id=invitation.household_id,
         user_id=user.id,
         role=invitation.invited_role,
         invited_by=invitation.invited_by_user_id,
     )
-    await HouseholdRepo().accept_invitation(db, invitation.id)
+    await repo.accept_invitation(db, invitation.id)
     await db.commit()
 
-    hh = await HouseholdRepo().get_by_id(db, invitation.household_id)
-    household_name = hh.name if hh else str(invitation.household_id)
+    household_name = hh.name
     return AcceptInviteOut(
         household_id=invitation.household_id,
         household_name=household_name,

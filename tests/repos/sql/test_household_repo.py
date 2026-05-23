@@ -207,6 +207,34 @@ async def test_decline_and_resend_invitation_update_status(db_session: AsyncSess
 
 
 @pytest.mark.anyio
+async def test_resend_invitation_rejects_accepted_tokens(db_session: AsyncSession) -> None:
+    from fastapi import HTTPException
+
+    user_id = await _make_user(db_session, "accepted_admin")
+    repo = HouseholdRepo()
+    household = await repo.create_household(db_session, name="AcceptedHH", created_by=user_id)
+    await db_session.commit()
+
+    invitation = await repo.create_invitation(
+        db_session,
+        household_id=household.id,
+        invited_by_user_id=user_id,
+        invited_email=None,
+        invited_role="member",
+        token_hash="accepted-token-hash",
+    )
+    await db_session.commit()
+
+    await repo.accept_invitation(db_session, invitation.id)
+    await db_session.commit()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await repo.resend_invitation(db_session, invitation.id)
+
+    assert exc_info.value.status_code == 409
+
+
+@pytest.mark.anyio
 async def test_seed_default_household_assigns_orphan_rows(
     db_session: AsyncSession,
 ) -> None:

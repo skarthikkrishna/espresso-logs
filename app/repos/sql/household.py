@@ -296,7 +296,13 @@ class HouseholdRepo:
     async def resend_invitation(
         self, db: AsyncSession, invitation_id: uuid.UUID
     ) -> PendingInvitation:
-        """Reset an invitation to pending with a fresh 72-hour expiry."""
+        """Reset a non-accepted invitation to pending with a fresh 72-hour expiry."""
+        invitation = await self.get_invitation_by_id(db, invitation_id)
+        if invitation is None:
+            raise HTTPException(status_code=404, detail="Invitation not found")
+        if invitation.status == "accepted":
+            raise HTTPException(status_code=409, detail="Accepted invitations cannot be resent")
+
         expires = datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(hours=72)
         result = await db.execute(
             sa.update(PendingInvitation)
@@ -304,11 +310,9 @@ class HouseholdRepo:
             .values(expires_at=expires, status="pending")
             .returning(PendingInvitation)
         )
-        invitation = result.scalar_one_or_none()
-        if invitation is None:
-            raise HTTPException(status_code=404, detail="Invitation not found")
+        resent_invitation = result.scalar_one()
         await db.flush()
-        return invitation
+        return resent_invitation
 
     # ── Guest tokens ──────────────────────────────────────────────────────────
 

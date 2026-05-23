@@ -249,9 +249,14 @@ async def refresh_token(
     if not raw:
         raise HTTPException(status_code=401, detail="Refresh token missing")
 
+    repo = RefreshTokenRepo()
     token_hash = hash_token(raw)
-    stored = await RefreshTokenRepo().rotate(db, token_hash)
+    stored = await repo.rotate(db, token_hash)
     if stored is None:
+        existing = await repo.get_by_hash(db, token_hash)
+        if existing is not None and existing.revoked:
+            await repo.revoke_all_for_user(db, existing.user_id)
+            await db.commit()
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 
     now = datetime.datetime.now(datetime.timezone.utc)
