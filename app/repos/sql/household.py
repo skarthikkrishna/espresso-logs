@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import uuid
+from dataclasses import dataclass
 
 import sqlalchemy as sa
 from fastapi import HTTPException
@@ -16,6 +17,14 @@ from app.models.household import (
     HouseholdRole,
     PendingInvitation,
 )
+
+
+@dataclass(frozen=True, slots=True)
+class HouseholdMembershipWithName:
+    """Membership plus household name for user-scoped household listings."""
+
+    membership: HouseholdMember
+    household_name: str
 
 
 class HouseholdRepo:
@@ -94,6 +103,23 @@ class HouseholdRepo:
             .order_by(HouseholdMember.joined_at.asc())
         )
         return list(result.scalars().all())
+
+    async def get_memberships_with_households_for_user(
+        self, db: AsyncSession, user_id: uuid.UUID
+    ) -> list[HouseholdMembershipWithName]:
+        result = await db.execute(
+            sa.select(HouseholdMember, Household.name)
+            .join(Household, Household.id == HouseholdMember.household_id)
+            .where(
+                HouseholdMember.user_id == user_id,
+                Household.deleted_at.is_(None),
+            )
+            .order_by(HouseholdMember.joined_at.asc())
+        )
+        return [
+            HouseholdMembershipWithName(membership=membership, household_name=household_name)
+            for membership, household_name in result.all()
+        ]
 
     async def add_member(
         self,

@@ -19,7 +19,7 @@ from app.models.base import get_db
 from app.models.household import HouseholdMember
 from app.models.user import User
 from app.rate_limit import limiter
-from app.repos.sql.household import HouseholdRepo
+from app.repos.sql.household import HouseholdMembershipWithName, HouseholdRepo
 from app.repos.sql.refresh_tokens import RefreshTokenRepo
 from app.repos.sql.user import UserRepo
 from app.services.auth import (
@@ -301,19 +301,19 @@ async def get_me(
     role: str | None = None
     memberships_out: list[MembershipSchema] = []
     if db is not None:
-        memberships = await HouseholdRepo().get_memberships_for_user(db, user.id)
+        memberships: list[
+            HouseholdMembershipWithName
+        ] = await HouseholdRepo().get_memberships_with_households_for_user(db, user.id)
         if memberships:
-            first = memberships[0]
+            first = memberships[0].membership
             household_id = first.household_id
             role = first.role
-        for membership in memberships:
-            household = await HouseholdRepo().get_by_id(db, membership.household_id)
-            if household is None:
-                continue
+        for membership_with_household in memberships:
+            membership = membership_with_household.membership
             memberships_out.append(
                 MembershipSchema(
                     household_id=membership.household_id,
-                    household_name=household.name,
+                    household_name=membership_with_household.household_name,
                     role=membership.role,
                     joined_at=membership.joined_at,
                 )

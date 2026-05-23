@@ -19,6 +19,7 @@ from httpx import ASGITransport, AsyncClient
 from app.main import app
 from app.models.base import get_db
 from app.rate_limit import limiter
+from app.repos.sql.household import HouseholdMembershipWithName
 from app.services.auth import create_access_token, hash_password
 
 
@@ -650,12 +651,20 @@ async def test_get_me_valid_jwt_returns_user_with_household_info(
     second_household = type("HouseholdStub", (), {"id": second_household_id, "name": "Lab"})()
 
     with patch("app.routers.api_auth.HouseholdRepo") as MockHouseholdRepo:
-        MockHouseholdRepo.return_value.get_memberships_for_user = AsyncMock(
-            return_value=[fake_membership, second_membership]
+        repo = MockHouseholdRepo.return_value
+        repo.get_memberships_with_households_for_user = AsyncMock(
+            return_value=[
+                HouseholdMembershipWithName(
+                    membership=fake_membership,
+                    household_name=first_household.name,
+                ),
+                HouseholdMembershipWithName(
+                    membership=second_membership,
+                    household_name=second_household.name,
+                ),
+            ]
         )
-        MockHouseholdRepo.return_value.get_by_id = AsyncMock(
-            side_effect=[first_household, second_household]
-        )
+        repo.get_by_id = AsyncMock()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             token = create_access_token(user_id)
@@ -671,6 +680,8 @@ async def test_get_me_valid_jwt_returns_user_with_household_info(
     assert len(body["memberships"]) == 2
     assert body["memberships"][0]["household_name"] == "Home"
     assert body["memberships"][1]["household_name"] == "Lab"
+    repo.get_memberships_with_households_for_user.assert_awaited_once_with(db_override, user_id)
+    repo.get_by_id.assert_not_awaited()
 
 
 async def test_get_me_no_jwt_returns_401(mock_db: AsyncMock) -> None:
