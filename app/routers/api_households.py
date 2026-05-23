@@ -115,10 +115,6 @@ class CreateInvitationRequest(BaseModel):
     invited_role: Literal["admin", "member"] = "member"
 
 
-class AcceptInviteRequest(BaseModel):
-    token: str
-
-
 class RenameHouseholdRequest(BaseModel):
     name: str
 
@@ -211,20 +207,17 @@ async def get_household(
     )
 
 
-@router.post("/{household_id}/invite", response_model=InviteOut, status_code=201)
+@router.post("/invitations", response_model=InviteOut, status_code=201)
 async def create_invite(
-    household_id: uuid.UUID,
     body: CreateInvitationRequest,
     membership: HouseholdMember = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ) -> InviteOut:
-    """Generate a one-time invitation token for a household (AC-073)."""
-    if membership.household_id != household_id:
-        raise HTTPException(status_code=403, detail="Not an admin of this household")
+    """Generate a one-time invitation token for the caller's active household (AC-073)."""
     raw_token = str(uuid.uuid4())
     invitation = await HouseholdRepo().create_invitation(
         db,
-        household_id=household_id,
+        household_id=membership.household_id,
         invited_by_user_id=membership.user_id,
         invited_email=body.invited_email,
         invited_role=body.invited_role,
@@ -242,14 +235,20 @@ async def create_invite(
     )
 
 
-@router.post("/accept-invite", response_model=AcceptInviteOut)
+@router.post("/invitations/{token}/accept", response_model=AcceptInviteOut)
 async def accept_invite(
-    body: AcceptInviteRequest,
+    token: str,
+    # JWT auth is required to identify the accepting user; household context comes
+    # from the invitation token lookup, not from a session membership dependency.
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
 ) -> AcceptInviteOut:
-    """Accept a household invitation (AC-074)."""
-    invitation = await HouseholdRepo().get_invitation_by_token_hash(db, hash_token(body.token))
+    """Accept a household invitation (AC-074).
+
+    Unauthenticated callers receive 401; household context is resolved from the
+    invitation token, not from the caller's active household session.
+    """
+    invitation = await HouseholdRepo().get_invitation_by_token_hash(db, hash_token(token))
     if invitation is None:
         raise HTTPException(status_code=404, detail="Invitation not found")
 
@@ -288,15 +287,14 @@ async def accept_invite(
     )
 
 
-@router.post("/{household_id}/invitations/{token}/decline", status_code=204)
+@router.post("/invitations/{token}/decline", status_code=204)
 async def decline_invitation(
-    household_id: uuid.UUID,
     token: str,
     db: AsyncSession = Depends(get_db),
 ) -> Response:
     """Decline a pending invitation without requiring authentication."""
     invitation = await HouseholdRepo().get_invitation_by_token_hash(db, hash_token(token))
-    if invitation is None or invitation.household_id != household_id:
+    if invitation is None:
         raise HTTPException(status_code=404, detail="Invitation not found")
     if invitation.expires_at < datetime.datetime.now(datetime.timezone.utc):
         raise HTTPException(status_code=410, detail="Invitation expired")
@@ -307,36 +305,30 @@ async def decline_invitation(
     return Response(status_code=204)
 
 
-@router.delete("/{household_id}/invitations/{invitation_id}", status_code=204)
+@router.delete("/invitations/{invitation_id}", status_code=204)
 async def revoke_invitation(
-    household_id: uuid.UUID,
     invitation_id: uuid.UUID,
     membership: HouseholdMember = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ) -> Response:
-    """Revoke an invitation for the household."""
-    if membership.household_id != household_id:
-        raise HTTPException(status_code=403, detail="Not an admin of this household")
+    """Revoke an invitation for the caller's active household."""
     invitation = await HouseholdRepo().get_invitation_by_id(db, invitation_id)
-    if invitation is None or invitation.household_id != household_id:
+    if invitation is None or invitation.household_id != membership.household_id:
         raise HTTPException(status_code=404, detail="Invitation not found")
     await HouseholdRepo().revoke_invitation(db, invitation_id)
     await db.commit()
     return Response(status_code=204)
 
 
-@router.post("/{household_id}/invitations/{invitation_id}/resend", response_model=InvitationOut)
+@router.post("/invitations/{invitation_id}/resend", response_model=InvitationOut)
 async def resend_invitation(
-    household_id: uuid.UUID,
     invitation_id: uuid.UUID,
     membership: HouseholdMember = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ) -> InvitationOut:
     """Reset an invitation to pending with a fresh 72-hour expiry."""
-    if membership.household_id != household_id:
-        raise HTTPException(status_code=403, detail="Not an admin of this household")
     invitation = await HouseholdRepo().get_invitation_by_id(db, invitation_id)
-    if invitation is None or invitation.household_id != household_id:
+    if invitation is None or invitation.household_id != membership.household_id:
         raise HTTPException(status_code=404, detail="Invitation not found")
     invitation = await HouseholdRepo().resend_invitation(db, invitation_id)
     await db.commit()
@@ -369,6 +361,8 @@ async def rename_household(
     )
 
 
+# TODO(tech-debt): Spec requires hard-delete with cascade (functional-spec-v2.md:543-547).
+# Current implementation is soft-delete pending operator review decision.
 @router.delete("/{household_id}", status_code=204)
 async def delete_household(
     household_id: uuid.UUID,
@@ -383,37 +377,31 @@ async def delete_household(
     return Response(status_code=204)
 
 
-@router.delete("/{household_id}/members/{user_id}", status_code=204)
+@router.delete("/members/{user_id}", status_code=204)
 async def remove_member(
-    household_id: uuid.UUID,
     user_id: uuid.UUID,
     membership: HouseholdMember = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ) -> None:
-    """Remove a member from the household (AC-075)."""
-    if membership.household_id != household_id:
-        raise HTTPException(status_code=403, detail="Not an admin of this household")
+    """Remove a member from the caller's active household (AC-075)."""
     if membership.user_id == user_id:
         raise HTTPException(status_code=403, detail="Cannot remove yourself")
-    await HouseholdRepo().remove_member(db, household_id=household_id, user_id=user_id)
+    await HouseholdRepo().remove_member(db, household_id=membership.household_id, user_id=user_id)
     await db.commit()
 
 
-@router.patch("/{household_id}/members/{user_id}", response_model=UpdatedMemberOut)
+@router.patch("/members/{user_id}", response_model=UpdatedMemberOut)
 async def update_member_role(
-    household_id: uuid.UUID,
     user_id: uuid.UUID,
     body: UpdateRoleRequest,
     membership: HouseholdMember = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ) -> UpdatedMemberOut:
-    """Update a member's role (AC-076)."""
-    if membership.household_id != household_id:
-        raise HTTPException(status_code=403, detail="Not an admin of this household")
+    """Update a member's role in the caller's active household (AC-076)."""
     if body.role not in ("admin", "member"):
         raise HTTPException(status_code=422, detail="role must be 'admin' or 'member'")
     updated = await HouseholdRepo().update_member_role(
-        db, household_id=household_id, user_id=user_id, new_role=body.role
+        db, household_id=membership.household_id, user_id=user_id, new_role=body.role
     )
     await db.commit()
     return UpdatedMemberOut(user_id=updated.user_id, role=updated.role, joined_at=updated.joined_at)

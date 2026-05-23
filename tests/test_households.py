@@ -245,7 +245,7 @@ async def test_invite_by_admin_returns_201_with_token(db_override: AsyncMock) ->
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp = await client.post(
-                f"/households/{hh_id}/invite",
+                "/households/invitations",
                 json={"invited_email": "invitee@example.com", "invited_role": "member"},
             )
 
@@ -289,7 +289,7 @@ async def test_invite_expires_after_72_hours(db_override: AsyncMock) -> None:
         mock_db.refresh = AsyncMock()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            resp = await client.post(f"/households/{hh_id}/invite", json={})
+            resp = await client.post("/households/invitations", json={})
 
     app.dependency_overrides.pop(require_admin, None)
 
@@ -313,10 +313,9 @@ async def test_invite_by_member_returns_403(db_override: AsyncMock) -> None:
 
     app.dependency_overrides[require_admin] = _non_admin
 
-    hh_id = uuid.uuid4()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.post(
-            f"/households/{hh_id}/invite",
+            "/households/invitations",
             json={"invited_email": "invitee@example.com", "invited_role": "member"},
         )
 
@@ -342,7 +341,7 @@ async def test_accept_invite_valid_token_creates_membership(db_override: AsyncMo
         mock_db.commit = AsyncMock()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            resp = await client.post("/households/accept-invite", json={"token": raw_token})
+            resp = await client.post(f"/households/invitations/{raw_token}/accept")
 
     assert resp.status_code == 200
     body = resp.json()
@@ -367,7 +366,7 @@ async def test_accept_invite_as_admin_creates_admin_member(db_override: AsyncMoc
         mock_db.commit = AsyncMock()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            resp = await client.post("/households/accept-invite", json={"token": raw_token})
+            resp = await client.post(f"/households/invitations/{raw_token}/accept")
 
     assert resp.status_code == 200
     assert resp.json()["role"] == "admin"
@@ -391,7 +390,7 @@ async def test_accept_invite_to_deleted_household_returns_410(db_override: Async
         mock_db.commit = AsyncMock()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            resp = await client.post("/households/accept-invite", json={"token": raw_token})
+            resp = await client.post(f"/households/invitations/{raw_token}/accept")
 
     assert resp.status_code == 410
     assert resp.json()["detail"] == "Household is no longer available"
@@ -410,7 +409,7 @@ async def test_accept_invite_expired_token_returns_410(db_override: AsyncMock) -
         MockHHRepo.return_value.get_invitation_by_token_hash = AsyncMock(return_value=inv)
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            resp = await client.post("/households/accept-invite", json={"token": raw_token})
+            resp = await client.post(f"/households/invitations/{raw_token}/accept")
 
     assert resp.status_code == 410
 
@@ -425,7 +424,7 @@ async def test_accept_invite_already_accepted_returns_409(db_override: AsyncMock
         MockHHRepo.return_value.get_invitation_by_token_hash = AsyncMock(return_value=inv)
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            resp = await client.post("/households/accept-invite", json={"token": raw_token})
+            resp = await client.post(f"/households/invitations/{raw_token}/accept")
 
     assert resp.status_code == 409
 
@@ -443,7 +442,7 @@ async def test_accept_invite_duplicate_membership_returns_409(db_override: Async
         MockHHRepo.return_value.get_member = AsyncMock(return_value=existing_member)
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            resp = await client.post("/households/accept-invite", json={"token": raw_token})
+            resp = await client.post(f"/households/invitations/{raw_token}/accept")
 
     assert resp.status_code == 409
 
@@ -454,9 +453,7 @@ async def test_accept_invite_not_found_returns_404(db_override: AsyncMock) -> No
         MockHHRepo.return_value.get_invitation_by_token_hash = AsyncMock(return_value=None)
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            resp = await client.post(
-                "/households/accept-invite", json={"token": "nosuchtoken12345"}
-            )
+            resp = await client.post("/households/invitations/nosuchtoken12345/accept")
 
     assert resp.status_code == 404
 
@@ -582,7 +579,7 @@ async def test_remove_member_admin_returns_204(db_override: AsyncMock) -> None:
         mock_db.commit = AsyncMock()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            resp = await client.delete(f"/households/{hh_id}/members/{target_id}")
+            resp = await client.delete(f"/households/members/{target_id}")
 
     app.dependency_overrides.pop(require_admin, None)
 
@@ -608,7 +605,7 @@ async def test_remove_last_admin_returns_409(db_override: AsyncMock) -> None:
         )
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            resp = await client.delete(f"/households/{hh_id}/members/{target_id}")
+            resp = await client.delete(f"/households/members/{target_id}")
 
     app.dependency_overrides.pop(require_admin, None)
 
@@ -627,7 +624,7 @@ async def test_remove_self_returns_403(db_override: AsyncMock) -> None:
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # admin_id == user_id → "Cannot remove yourself"
-        resp = await client.delete(f"/households/{hh_id}/members/{admin_id}")
+        resp = await client.delete(f"/households/members/{admin_id}")
 
     app.dependency_overrides.pop(require_admin, None)
 
@@ -654,7 +651,7 @@ async def test_patch_member_role_demote_last_admin_returns_409(db_override: Asyn
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp = await client.patch(
-                f"/households/{hh_id}/members/{target_id}",
+                f"/households/members/{target_id}",
                 json={"role": "member"},
             )
 
@@ -815,7 +812,7 @@ async def test_accept_revoked_invitation_rejected(db_override: AsyncMock) -> Non
         MockHHRepo.return_value.get_invitation_by_token_hash = AsyncMock(return_value=inv)
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            resp = await client.post("/households/accept-invite", json={"token": raw_token})
+            resp = await client.post(f"/households/invitations/{raw_token}/accept")
 
     assert resp.status_code == 410, (
         f"Expected 410 for revoked invitation, got {resp.status_code}: {resp.text}"
@@ -836,7 +833,7 @@ async def test_decline_invitation(db_override: AsyncMock) -> None:
         mock_db.commit = AsyncMock()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            resp = await client.post(f"/households/{hh_id}/invitations/{raw_token}/decline")
+            resp = await client.post(f"/households/invitations/{raw_token}/decline")
 
     assert resp.status_code == 204, (
         f"Expected 204 from decline endpoint, got {resp.status_code}: {resp.text}"
@@ -855,7 +852,7 @@ async def test_decline_invitation_accepted_token_returns_409(db_override: AsyncM
         MockHHRepo.return_value.get_invitation_by_token_hash = AsyncMock(return_value=inv)
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            resp = await client.post(f"/households/{hh_id}/invitations/{raw_token}/decline")
+            resp = await client.post(f"/households/invitations/{raw_token}/decline")
 
     assert resp.status_code == 409
 
@@ -870,7 +867,7 @@ async def test_decline_invitation_revoked_token_returns_410(db_override: AsyncMo
         MockHHRepo.return_value.get_invitation_by_token_hash = AsyncMock(return_value=inv)
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            resp = await client.post(f"/households/{hh_id}/invitations/{raw_token}/decline")
+            resp = await client.post(f"/households/invitations/{raw_token}/decline")
 
     assert resp.status_code == 410
 
@@ -894,7 +891,7 @@ async def test_admin_can_revoke_invitation(db_override: AsyncMock) -> None:
         mock_db.commit = AsyncMock()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            resp = await client.delete(f"/households/{hh_id}/invitations/{invitation_id}")
+            resp = await client.delete(f"/households/invitations/{invitation_id}")
 
     app.dependency_overrides.pop(require_admin, None)
 
@@ -922,7 +919,7 @@ async def test_admin_can_resend_invitation(db_override: AsyncMock) -> None:
         mock_db.commit = AsyncMock()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            resp = await client.post(f"/households/{hh_id}/invitations/{invitation_id}/resend")
+            resp = await client.post(f"/households/invitations/{invitation_id}/resend")
 
     app.dependency_overrides.pop(require_admin, None)
 

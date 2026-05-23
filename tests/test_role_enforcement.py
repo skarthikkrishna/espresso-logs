@@ -203,7 +203,7 @@ async def test_member_cannot_revoke_invite(real_auth_client: AsyncMock) -> None:
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp = await client.delete(
-                f"/households/{household_id}/invitations/{invite_id}",
+                f"/households/invitations/{invite_id}",
                 headers={"Authorization": f"Bearer {token}"},
             )
 
