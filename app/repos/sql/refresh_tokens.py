@@ -39,6 +39,21 @@ class RefreshTokenRepo:
         )
         return result.scalar_one_or_none()
 
+    async def rotate(self, db: AsyncSession, token_hash: str) -> RefreshToken | None:
+        """Atomically revoke a still-valid refresh token and return the revoked row."""
+        result = await db.execute(
+            sa.update(RefreshToken)
+            .where(
+                RefreshToken.token_hash == token_hash,
+                RefreshToken.revoked.is_(False),
+                RefreshToken.expires_at > sa.func.now(),
+            )
+            .values(revoked=True)
+            .returning(RefreshToken)
+        )
+        await db.flush()
+        return result.scalar_one_or_none()
+
     async def revoke(self, db: AsyncSession, token_id: uuid.UUID) -> None:
         """Mark a single token as revoked."""
         await db.execute(

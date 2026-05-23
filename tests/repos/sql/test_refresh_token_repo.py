@@ -58,6 +58,34 @@ async def test_create_and_get_refresh_token(db_session: AsyncSession) -> None:
 
 
 @pytest.mark.anyio
+async def test_rotate_revokes_single_valid_token_atomically(db_session: AsyncSession) -> None:
+    user_id = await _make_user(db_session)
+    repo = RefreshTokenRepo()
+
+    token = await repo.create(
+        db_session,
+        user_id=user_id,
+        token_hash="rotate_me",
+        expires_at=_future(),
+    )
+    await db_session.commit()
+
+    rotated = await repo.rotate(db_session, "rotate_me")
+    await db_session.commit()
+
+    assert rotated is not None
+    assert rotated.id == token.id
+    assert rotated.revoked is True
+
+    fetched = await repo.get_by_hash(db_session, "rotate_me")
+    assert fetched is not None
+    assert fetched.revoked is True
+
+    second_attempt = await repo.rotate(db_session, "rotate_me")
+    assert second_attempt is None
+
+
+@pytest.mark.anyio
 async def test_revoke_single_token(db_session: AsyncSession) -> None:
     user_id = await _make_user(db_session)
     repo = RefreshTokenRepo()

@@ -232,25 +232,11 @@ async def refresh_token(
         raise HTTPException(status_code=401, detail="Refresh token missing")
 
     token_hash = hash_token(raw)
-    stored = await RefreshTokenRepo().get_by_hash(db, token_hash)
+    stored = await RefreshTokenRepo().rotate(db, token_hash)
     if stored is None:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 
-    # Replay detection (AC-032)
-    if stored.revoked:
-        await RefreshTokenRepo().revoke_all_for_user(db, stored.user_id)
-        await db.commit()
-        clear_refresh_cookie(response)
-        raise HTTPException(
-            status_code=401, detail="Refresh token reuse detected. All sessions invalidated."
-        )
-
     now = datetime.datetime.now(datetime.timezone.utc)
-    if stored.expires_at < now:
-        raise HTTPException(status_code=401, detail="Refresh token expired")
-
-    # Rotate token
-    await RefreshTokenRepo().revoke(db, stored.id)
     new_raw, new_hash = generate_refresh_token()
     new_expires = now + datetime.timedelta(days=30)
     await RefreshTokenRepo().create(

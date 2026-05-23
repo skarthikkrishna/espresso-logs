@@ -7,6 +7,7 @@ cleared selectively via the ``no_auth_deps`` fixture where real JWT logic is nee
 
 from __future__ import annotations
 
+import asyncio
 import datetime
 import uuid
 from typing import Any
@@ -468,8 +469,7 @@ async def test_refresh_valid_cookie_returns_new_access_token_and_rotates_cookie(
     raw_rt, _ = generate_refresh_token()
 
     with patch("app.routers.api_auth.RefreshTokenRepo") as MockRtRepo:
-        MockRtRepo.return_value.get_by_hash = AsyncMock(return_value=stored_rt)
-        MockRtRepo.return_value.revoke = AsyncMock()
+        MockRtRepo.return_value.rotate = AsyncMock(return_value=stored_rt)
         MockRtRepo.return_value.create = AsyncMock()
         mock_db.commit = AsyncMock()
 
@@ -487,16 +487,14 @@ async def test_refresh_valid_cookie_returns_new_access_token_and_rotates_cookie(
 
 async def test_refresh_revoked_token_returns_401(auth_client: AsyncMock) -> None:
     mock_db = auth_client
-    user_id = uuid.uuid4()
-    stored_rt = _fake_refresh_token(user_id, revoked=True)
 
     from app.services.auth import generate_refresh_token
 
     raw_rt, _ = generate_refresh_token()
 
     with patch("app.routers.api_auth.RefreshTokenRepo") as MockRtRepo:
-        MockRtRepo.return_value.get_by_hash = AsyncMock(return_value=stored_rt)
-        MockRtRepo.return_value.revoke_all_for_user = AsyncMock()
+        MockRtRepo.return_value.rotate = AsyncMock(return_value=None)
+        MockRtRepo.return_value.create = AsyncMock()
         mock_db.commit = AsyncMock()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -508,22 +506,17 @@ async def test_refresh_revoked_token_returns_401(auth_client: AsyncMock) -> None
     assert resp.status_code == 401
 
 
-async def test_refresh_token_replay_returns_401_and_revokes_all_sessions(
-    auth_client: AsyncMock,
-) -> None:
-    """AC-032: using an already-revoked token triggers nuclear revocation of all sessions."""
+async def test_refresh_token_replay_returns_401(auth_client: AsyncMock) -> None:
+    """Reusing a rotated or otherwise invalid refresh token returns 401."""
     mock_db = auth_client
-    user_id = uuid.uuid4()
-    stored_rt = _fake_refresh_token(user_id, revoked=True)
-    revoke_all_mock = AsyncMock()
 
     from app.services.auth import generate_refresh_token
 
     raw_rt, _ = generate_refresh_token()
 
     with patch("app.routers.api_auth.RefreshTokenRepo") as MockRtRepo:
-        MockRtRepo.return_value.get_by_hash = AsyncMock(return_value=stored_rt)
-        MockRtRepo.return_value.revoke_all_for_user = revoke_all_mock
+        MockRtRepo.return_value.rotate = AsyncMock(return_value=None)
+        MockRtRepo.return_value.create = AsyncMock()
         mock_db.commit = AsyncMock()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -533,7 +526,6 @@ async def test_refresh_token_replay_returns_401_and_revokes_all_sessions(
             )
 
     assert resp.status_code == 401
-    revoke_all_mock.assert_called_once_with(mock_db, user_id)
 
 
 async def test_refresh_body_fallback_when_no_cookie(auth_client: AsyncMock) -> None:
@@ -547,8 +539,7 @@ async def test_refresh_body_fallback_when_no_cookie(auth_client: AsyncMock) -> N
     raw_rt, _ = generate_refresh_token()
 
     with patch("app.routers.api_auth.RefreshTokenRepo") as MockRtRepo:
-        MockRtRepo.return_value.get_by_hash = AsyncMock(return_value=stored_rt)
-        MockRtRepo.return_value.revoke = AsyncMock()
+        MockRtRepo.return_value.rotate = AsyncMock(return_value=stored_rt)
         MockRtRepo.return_value.create = AsyncMock()
         mock_db.commit = AsyncMock()
 
@@ -561,6 +552,33 @@ async def test_refresh_body_fallback_when_no_cookie(auth_client: AsyncMock) -> N
 
     assert resp.status_code == 200
     assert "access_token" in resp.json()
+
+
+async def test_concurrent_refresh_only_one_wins(auth_client: AsyncMock) -> None:
+    """Two concurrent refreshes against the same token should produce exactly one success."""
+    mock_db = auth_client
+    user_id = uuid.uuid4()
+    stored_rt = _fake_refresh_token(user_id)
+
+    from app.services.auth import generate_refresh_token
+
+    raw_rt, _ = generate_refresh_token()
+
+    with patch("app.routers.api_auth.RefreshTokenRepo") as MockRtRepo:
+        MockRtRepo.return_value.rotate = AsyncMock(side_effect=[stored_rt, None])
+        MockRtRepo.return_value.create = AsyncMock()
+        mock_db.commit = AsyncMock()
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            responses = await asyncio.gather(
+                client.post("/auth/refresh", cookies={"rt": raw_rt}),
+                client.post("/auth/refresh", cookies={"rt": raw_rt}),
+            )
+
+    status_codes = sorted(response.status_code for response in responses)
+    assert status_codes == [200, 401]
+    assert MockRtRepo.return_value.create.await_count == 1
+    assert mock_db.commit.await_count == 1
 
 
 # ---------------------------------------------------------------------------
@@ -876,28 +894,22 @@ async def test_allowlist_emails_does_not_block_registration(auth_client: AsyncMo
 
 
 async def test_refresh_expired_token_rejected(auth_client: AsyncMock) -> None:
-    """Non-revoked but expired refresh token returns 401 (AC-034)."""
+    """Expired refresh tokens rejected by the atomic rotation query return 401."""
     mock_db = auth_client
-    user_id = uuid.uuid4()
-    expired_rt = _fake_refresh_token(
-        user_id,
-        revoked=False,
-        expires_at=datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1),
-    )
 
     from app.services.auth import generate_refresh_token
 
     raw_rt, _ = generate_refresh_token()
 
     with patch("app.routers.api_auth.RefreshTokenRepo") as MockRtRepo:
-        MockRtRepo.return_value.get_by_hash = AsyncMock(return_value=expired_rt)
+        MockRtRepo.return_value.rotate = AsyncMock(return_value=None)
         mock_db.commit = AsyncMock()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp = await client.post("/auth/refresh", cookies={"rt": raw_rt})
 
     assert resp.status_code == 401
-    assert "expired" in resp.json().get("detail", "").lower()
+    assert "invalid refresh token" == resp.json().get("detail", "").lower()
 
 
 # ---------------------------------------------------------------------------
