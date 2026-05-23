@@ -246,6 +246,13 @@ class HouseholdRepo:
     ) -> PendingInvitation:
         """Create a pending invitation expiring 72 hours from now."""
         now = datetime.datetime.now(tz=datetime.timezone.utc)
+        member_count = await self.count_members(db, household_id)
+        if member_count >= 10:
+            raise HTTPException(
+                status_code=409,
+                detail="Household has reached the maximum of 10 members.",
+            )
+
         if invited_email is not None:
             normalized_email = invited_email.lower()
             duplicate_invitation = await db.execute(

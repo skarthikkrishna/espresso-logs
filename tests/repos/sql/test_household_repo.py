@@ -217,6 +217,42 @@ async def test_create_invitation_rejects_existing_member_email(db_session: Async
 
 
 @pytest.mark.anyio
+async def test_create_invitation_rejects_when_household_has_ten_members(
+    db_session: AsyncSession,
+) -> None:
+    from fastapi import HTTPException
+
+    admin_id = await _make_user(db_session, "member_cap_admin")
+    repo = HouseholdRepo()
+    household = await repo.create_household(db_session, name="MemberCapHH", created_by=admin_id)
+
+    for index in range(9):
+        user_id = await _make_user(db_session, f"member_cap_{index}")
+        await repo.add_member(
+            db_session,
+            household_id=household.id,
+            user_id=user_id,
+            role="member",
+            invited_by=admin_id,
+        )
+
+    await db_session.commit()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await repo.create_invitation(
+            db_session,
+            household_id=household.id,
+            invited_by_user_id=admin_id,
+            invited_email="invitee@example.com",
+            invited_role="member",
+            token_hash="member-cap-token",
+        )
+
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.detail == "Household has reached the maximum of 10 members."
+
+
+@pytest.mark.anyio
 async def test_revoke_previous_guest_tokens(db_session: AsyncSession) -> None:
     user_id = await _make_user(db_session, "gt_admin")
     repo = HouseholdRepo()
