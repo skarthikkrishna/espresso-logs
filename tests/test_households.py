@@ -415,8 +415,8 @@ async def test_accept_invite_expired_token_returns_410(db_override: AsyncMock) -
     assert resp.status_code == 410
 
 
-async def test_accept_invite_already_accepted_returns_410(db_override: AsyncMock) -> None:
-    """Already-accepted invitation returns 410 (AC-074)."""
+async def test_accept_invite_already_accepted_returns_409(db_override: AsyncMock) -> None:
+    """Already-accepted invitation returns 409 per token single-use rules."""
     hh_id = uuid.uuid4()
     raw_token = "acceptedtoken12345"
     inv = _fake_invitation(hh_id, token_hash=hash_token(raw_token), accepted=True)
@@ -427,7 +427,7 @@ async def test_accept_invite_already_accepted_returns_410(db_override: AsyncMock
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp = await client.post("/households/accept-invite", json={"token": raw_token})
 
-    assert resp.status_code == 410
+    assert resp.status_code == 409
 
 
 async def test_accept_invite_duplicate_membership_returns_409(db_override: AsyncMock) -> None:
@@ -843,6 +843,36 @@ async def test_decline_invitation(db_override: AsyncMock) -> None:
     )
     MockHHRepo.return_value.decline_invitation.assert_awaited_once_with(mock_db, inv.id)
     MockHHRepo.return_value.add_member.assert_not_called()
+
+
+async def test_decline_invitation_accepted_token_returns_409(db_override: AsyncMock) -> None:
+    """Declining an already accepted invitation returns 409."""
+    hh_id = uuid.uuid4()
+    raw_token = "accepteddeclinetoken"
+    inv = _fake_invitation(hh_id, token_hash=hash_token(raw_token), accepted=True)
+
+    with patch("app.routers.api_households.HouseholdRepo") as MockHHRepo:
+        MockHHRepo.return_value.get_invitation_by_token_hash = AsyncMock(return_value=inv)
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post(f"/households/{hh_id}/invitations/{raw_token}/decline")
+
+    assert resp.status_code == 409
+
+
+async def test_decline_invitation_revoked_token_returns_410(db_override: AsyncMock) -> None:
+    """Declining a revoked invitation returns 410."""
+    hh_id = uuid.uuid4()
+    raw_token = "revokeddeclinetoken"
+    inv = _fake_invitation(hh_id, token_hash=hash_token(raw_token), revoked=True)
+
+    with patch("app.routers.api_households.HouseholdRepo") as MockHHRepo:
+        MockHHRepo.return_value.get_invitation_by_token_hash = AsyncMock(return_value=inv)
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post(f"/households/{hh_id}/invitations/{raw_token}/decline")
+
+    assert resp.status_code == 410
 
 
 async def test_admin_can_revoke_invitation(db_override: AsyncMock) -> None:

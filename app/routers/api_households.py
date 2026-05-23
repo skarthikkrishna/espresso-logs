@@ -135,6 +135,13 @@ class UpdateRoleRequest(BaseModel):
     role: str
 
 
+def _raise_for_non_pending_invitation_status(status: str) -> None:
+    if status == "accepted":
+        raise HTTPException(status_code=409, detail="Invitation has already been accepted")
+    if status in {"revoked", "declined"}:
+        raise HTTPException(status_code=410, detail="Invitation is no longer pending")
+
+
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
@@ -250,7 +257,7 @@ async def accept_invite(
     if invitation.expires_at < now:
         raise HTTPException(status_code=410, detail="Invitation expired")
     if invitation.status != "pending":
-        raise HTTPException(status_code=410, detail="Invitation is no longer pending")
+        _raise_for_non_pending_invitation_status(invitation.status)
 
     repo = HouseholdRepo()
     existing = await repo.get_member(db, invitation.household_id, user.id)
@@ -292,7 +299,7 @@ async def decline_invitation(
     if invitation.expires_at < datetime.datetime.now(datetime.timezone.utc):
         raise HTTPException(status_code=410, detail="Invitation expired")
     if invitation.status != "pending":
-        raise HTTPException(status_code=410, detail="Invitation is no longer pending")
+        _raise_for_non_pending_invitation_status(invitation.status)
     await HouseholdRepo().decline_invitation(db, invitation.id)
     await db.commit()
     return Response(status_code=204)
