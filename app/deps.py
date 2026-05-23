@@ -5,7 +5,7 @@ import logging
 import os
 import threading
 import uuid
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any, TypeVar
 
 if TYPE_CHECKING:
     from app.services.inference import LLMClient
@@ -261,17 +261,41 @@ def get_sheets_client() -> RealSheetsClient | _FakeSheetsClient:
 
 
 # ---------------------------------------------------------------------------
-# Dual-write wrapper classes (Sheets-first, Postgres-second)
+# Dual-write wrapper classes (Sheets archive fallback, Postgres system of record)
 # ---------------------------------------------------------------------------
+
+_RepoT = TypeVar("_RepoT")
+
+
+def _require_sql_repo(sql: _RepoT | None, *, entity_type: str, operation: str) -> _RepoT:
+    """Return the SQL repo or raise when the M5 write/read path is misconfigured."""
+    if sql is not None:
+        return sql
+    msg = (
+        f"SQL repo unavailable for {entity_type}.{operation}; "
+        "Sheets is archive-only in M5 and cannot accept writes or serve current reads."
+    )
+    _dw_log.error(
+        "SQL repo unavailable",
+        extra={
+            "component": "dual_write",
+            "entity_type": entity_type,
+            "operation": operation,
+            "use_postgres": settings.use_postgres,
+        },
+    )
+    raise RuntimeError(msg)
+
+
+def _sql_repo_for_read(sql: _RepoT | None, *, entity_type: str, operation: str) -> _RepoT | None:
+    """Return the SQL repo for active Postgres mode, else ``None`` for Sheets fallback."""
+    if not settings.use_postgres:
+        return None
+    return _require_sql_repo(sql, entity_type=entity_type, operation=operation)
 
 
 class _DualWriteCatalogRepo:
-    """Dual-write wrapper: writes to Sheets first, then Postgres.
-
-    Reads route to Postgres when USE_POSTGRES=true; fall back to Sheets otherwise.
-    When ``sql`` is ``None`` (i.e. ``USE_POSTGRES=False``), all write operations
-    go to Sheets only — no Postgres connection is opened.
-    """
+    """Catalog wrapper for M5: Postgres is authoritative, Sheets is archive fallback."""
 
     def __init__(self, sheets: CatalogRepo, sql: SqlCatalogRepo | None) -> None:
         self._sheets = sheets
@@ -279,27 +303,31 @@ class _DualWriteCatalogRepo:
         _dw_log.debug("DualWrite Sheets write path disabled (M5)")
 
     async def list(self) -> builtins.list[dict[str, Any]]:
-        if settings.use_postgres and self._sql is not None:
-            return await self._sql.list()
+        sql = _sql_repo_for_read(self._sql, entity_type="catalog", operation="list")
+        if sql is not None:
+            return await sql.list()
         return self._sheets.list()
 
     async def get(self, catalog_id: str) -> dict[str, Any] | None:
-        if settings.use_postgres and self._sql is not None:
-            return await self._sql.get(catalog_id)
+        sql = _sql_repo_for_read(self._sql, entity_type="catalog", operation="get")
+        if sql is not None:
+            return await sql.get(catalog_id)
         return self._sheets.get(catalog_id)
 
     async def _fetch_all(self) -> builtins.list[dict[str, Any]]:
-        if settings.use_postgres and self._sql is not None:
-            return await self._sql._fetch_all()
+        sql = _sql_repo_for_read(self._sql, entity_type="catalog", operation="_fetch_all")
+        if sql is not None:
+            return await sql._fetch_all()
         return self._sheets._fetch_all()
 
     async def upsert(self, row: dict[str, Any]) -> None:
-        if self._sql is None:
+        if not settings.use_postgres:
             return
+        sql = _require_sql_repo(self._sql, entity_type="catalog", operation="upsert")
         try:
-            await self._sql.upsert(row)
+            await sql.upsert(row)
         except Exception as exc:
-            await self._sql._db.rollback()
+            await sql._db.rollback()
             _dw_log.warning(
                 "Postgres write failed",
                 extra={
@@ -309,15 +337,17 @@ class _DualWriteCatalogRepo:
                     "error": str(exc),
                 },
             )
+            raise
 
     async def add_many(self, rows: builtins.list[dict[str, Any]]) -> None:
-        if self._sql is None:
+        if not settings.use_postgres:
             return
+        sql = _require_sql_repo(self._sql, entity_type="catalog", operation="add_many")
         for row in rows:
             try:
-                await self._sql.upsert(row)
+                await sql.upsert(row)
             except Exception as exc:
-                await self._sql._db.rollback()
+                await sql._db.rollback()
                 _dw_log.warning(
                     "Postgres write failed (add_many)",
                     extra={
@@ -327,6 +357,7 @@ class _DualWriteCatalogRepo:
                         "error": str(exc),
                     },
                 )
+                raise
 
     def delete_rows(self, start_row: int, end_row: int) -> None:
         _dw_log.debug("DualWrite Sheets write path disabled (M5)")
@@ -336,12 +367,7 @@ class _DualWriteCatalogRepo:
 
 
 class _DualWriteBrewLogRepo:
-    """Dual-write wrapper for BrewLog: Sheets-first, Postgres-second.
-
-    Reads route to Postgres when USE_POSTGRES=true; fall back to Sheets otherwise.
-    When ``sql`` is ``None`` (i.e. ``USE_POSTGRES=False``), all write operations
-    go to Sheets only.
-    """
+    """Brew-log wrapper for M5: Postgres is authoritative, Sheets is archive fallback."""
 
     def __init__(self, sheets: BrewLogRepo, sql: SqlBrewLogRepo | None) -> None:
         self._sheets = sheets
@@ -349,21 +375,24 @@ class _DualWriteBrewLogRepo:
         _dw_log.debug("DualWrite Sheets write path disabled (M5)")
 
     async def list(self) -> builtins.list[dict[str, Any]]:
-        if settings.use_postgres and self._sql is not None:
-            return await self._sql.list()
+        sql = _sql_repo_for_read(self._sql, entity_type="brew_log", operation="list")
+        if sql is not None:
+            return await sql.list()
         return self._sheets.list()
 
     async def list_recent(self, n: int = 20) -> builtins.list[dict[str, Any]]:
-        if settings.use_postgres and self._sql is not None:
-            return await self._sql.list_recent(n)
+        sql = _sql_repo_for_read(self._sql, entity_type="brew_log", operation="list_recent")
+        if sql is not None:
+            return await sql.list_recent(n)
         return self._sheets.list_recent(n)
 
     async def list_paginated(
         self, page: int, per_page: int
     ) -> tuple[builtins.list[dict[str, Any]], int]:
         """Paginated list — delegates to SQL when USE_POSTGRES=true, else in-memory pagination."""
-        if settings.use_postgres and self._sql is not None:
-            return await self._sql.list_paginated(page, per_page)
+        sql = _sql_repo_for_read(self._sql, entity_type="brew_log", operation="list_paginated")
+        if sql is not None:
+            return await sql.list_paginated(page, per_page)
         all_rows = sorted(
             self._sheets.list(),
             key=lambda r: (r.get("Date", ""), r.get("Shot_ID", "")),
@@ -374,27 +403,31 @@ class _DualWriteBrewLogRepo:
         return all_rows[offset : offset + per_page], total_count
 
     async def list_for_bag(self, bag_id: str) -> builtins.list[dict[str, Any]]:
-        if settings.use_postgres and self._sql is not None:
-            return await self._sql.list_for_bag(bag_id)
+        sql = _sql_repo_for_read(self._sql, entity_type="brew_log", operation="list_for_bag")
+        if sql is not None:
+            return await sql.list_for_bag(bag_id)
         return self._sheets.list_for_bag(bag_id)
 
     async def list_existing_ids(self) -> builtins.list[str]:
-        if settings.use_postgres and self._sql is not None:
-            return await self._sql.list_existing_ids()
+        sql = _sql_repo_for_read(self._sql, entity_type="brew_log", operation="list_existing_ids")
+        if sql is not None:
+            return await sql.list_existing_ids()
         return self._sheets.list_existing_ids()
 
     async def get(self, shot_id: str) -> dict[str, Any] | None:
-        if settings.use_postgres and self._sql is not None:
-            return await self._sql.get(shot_id)
+        sql = _sql_repo_for_read(self._sql, entity_type="brew_log", operation="get")
+        if sql is not None:
+            return await sql.get(shot_id)
         return self._sheets.get(shot_id)
 
     async def add(self, row: dict[str, Any]) -> None:
-        if self._sql is None:
+        if not settings.use_postgres:
             return
+        sql = _require_sql_repo(self._sql, entity_type="brew_log", operation="add")
         try:
-            await self._sql.add(row)
+            await sql.add(row)
         except Exception as exc:
-            await self._sql._db.rollback()
+            await sql._db.rollback()
             _dw_log.warning(
                 "Postgres write failed",
                 extra={
@@ -407,13 +440,14 @@ class _DualWriteBrewLogRepo:
             raise
 
     async def add_many(self, rows: builtins.list[dict[str, Any]]) -> None:
-        if self._sql is None:
+        if not settings.use_postgres:
             return
+        sql = _require_sql_repo(self._sql, entity_type="brew_log", operation="add_many")
         for row in rows:
             try:
-                await self._sql.add(row)
+                await sql.add(row)
             except Exception as exc:
-                await self._sql._db.rollback()
+                await sql._db.rollback()
                 _dw_log.warning(
                     "Postgres write failed (add_many)",
                     extra={
@@ -426,38 +460,37 @@ class _DualWriteBrewLogRepo:
                 raise
 
     async def update_feedback(self, shot_id: str, ai_feedback: str) -> None:
-        if self._sql is not None and settings.use_postgres:
-            try:
-                await self._sql.update_feedback(shot_id, ai_feedback)
-            except Exception as exc:
-                await self._sql._db.rollback()
-                _dw_log.warning(
-                    "Postgres write failed",
-                    extra={
-                        "component": "dual_write",
-                        "entity_type": "brew_log",
-                        "operation": "update_feedback",
-                        "error": str(exc),
-                    },
-                )
+        if not settings.use_postgres:
+            return
+        sql = _require_sql_repo(self._sql, entity_type="brew_log", operation="update_feedback")
+        try:
+            await sql.update_feedback(shot_id, ai_feedback)
+        except Exception as exc:
+            await sql._db.rollback()
+            _dw_log.warning(
+                "Postgres write failed",
+                extra={
+                    "component": "dual_write",
+                    "entity_type": "brew_log",
+                    "operation": "update_feedback",
+                    "error": str(exc),
+                },
+            )
+            raise
 
     def delete_rows(self, start_row: int, end_row: int) -> None:
         _dw_log.debug("DualWrite Sheets write path disabled (M5)")
 
     async def delete_by_shot_id(self, shot_id: str) -> bool:
         """Delete a brew log entry by Shot_ID. Returns True if deleted."""
-        if settings.use_postgres and self._sql is not None:
-            return await self._sql.delete_by_shot_id(shot_id)
-        return False
+        if not settings.use_postgres:
+            return False
+        sql = _require_sql_repo(self._sql, entity_type="brew_log", operation="delete_by_shot_id")
+        return await sql.delete_by_shot_id(shot_id)
 
 
 class _DualWriteInventoryRepo:
-    """Dual-write wrapper for InventoryBag: Sheets-first, Postgres-second.
-
-    Reads route to Postgres when USE_POSTGRES=true; fall back to Sheets otherwise.
-    When ``sql`` is ``None`` (i.e. ``USE_POSTGRES=False``), all write operations
-    go to Sheets only.
-    """
+    """Inventory wrapper for M5: Postgres is authoritative, Sheets is archive fallback."""
 
     def __init__(self, sheets: InventoryRepo, sql: SqlInventoryRepo | None) -> None:
         self._sheets = sheets
@@ -465,27 +498,31 @@ class _DualWriteInventoryRepo:
         _dw_log.debug("DualWrite Sheets write path disabled (M5)")
 
     async def list(self, status: str | None = "Active") -> builtins.list[dict[str, Any]]:
-        if settings.use_postgres and self._sql is not None:
-            return await self._sql.list(status=status)
+        sql = _sql_repo_for_read(self._sql, entity_type="inventory", operation="list")
+        if sql is not None:
+            return await sql.list(status=status)
         return self._sheets.list(status=status)
 
     async def list_all(self) -> builtins.list[dict[str, Any]]:
-        if settings.use_postgres and self._sql is not None:
-            return await self._sql.list_all()
+        sql = _sql_repo_for_read(self._sql, entity_type="inventory", operation="list_all")
+        if sql is not None:
+            return await sql.list_all()
         return self._sheets.list_all()
 
     async def get(self, bag_id: str) -> dict[str, Any] | None:
-        if settings.use_postgres and self._sql is not None:
-            return await self._sql.get(bag_id)
+        sql = _sql_repo_for_read(self._sql, entity_type="inventory", operation="get")
+        if sql is not None:
+            return await sql.get(bag_id)
         return self._sheets.get(bag_id)
 
     async def upsert(self, row: dict[str, Any]) -> None:
-        if self._sql is None:
+        if not settings.use_postgres:
             return
+        sql = _require_sql_repo(self._sql, entity_type="inventory", operation="upsert")
         try:
-            await self._sql.upsert(row)
+            await sql.upsert(row)
         except Exception as exc:
-            await self._sql._db.rollback()
+            await sql._db.rollback()
             _dw_log.warning(
                 "Postgres write failed",
                 extra={
@@ -495,15 +532,17 @@ class _DualWriteInventoryRepo:
                     "error": str(exc),
                 },
             )
+            raise
 
     async def add_many(self, rows: builtins.list[dict[str, Any]]) -> None:
-        if self._sql is None:
+        if not settings.use_postgres:
             return
+        sql = _require_sql_repo(self._sql, entity_type="inventory", operation="add_many")
         for row in rows:
             try:
-                await self._sql.upsert(row)
+                await sql.upsert(row)
             except Exception as exc:
-                await self._sql._db.rollback()
+                await sql._db.rollback()
                 _dw_log.warning(
                     "Postgres write failed (add_many)",
                     extra={
@@ -513,6 +552,7 @@ class _DualWriteInventoryRepo:
                         "error": str(exc),
                     },
                 )
+                raise
 
     def delete_rows(self, start_row: int, end_row: int) -> None:
         _dw_log.debug("DualWrite Sheets write path disabled (M5)")
@@ -522,12 +562,9 @@ class _DualWriteInventoryRepo:
 
 
 class _DualWriteHardwareRepo:
-    """Dual-write wrapper for Hardware: Sheets-first, Postgres-second.
+    """Hardware wrapper for M5: Postgres is authoritative, Sheets is archive fallback.
 
-    Reads route to Postgres when USE_POSTGRES=true; fall back to Sheets otherwise.
-    ``next_id()`` always delegates to Sheets unconditionally.
-    When ``sql`` is ``None`` (i.e. ``USE_POSTGRES=False``), all write operations
-    go to Sheets only.
+    ``next_id()`` still delegates to Sheets because the SQL repo does not own ID generation.
     """
 
     def __init__(self, sheets: HardwareRepo, sql: SqlHardwareRepo | None) -> None:
@@ -536,25 +573,28 @@ class _DualWriteHardwareRepo:
         _dw_log.debug("DualWrite Sheets write path disabled (M5)")
 
     async def list(self, category: str | None = None) -> builtins.list[dict[str, Any]]:
-        if settings.use_postgres and self._sql is not None:
-            return await self._sql.list(category=category)
+        sql = _sql_repo_for_read(self._sql, entity_type="hardware", operation="list")
+        if sql is not None:
+            return await sql.list(category=category)
         return self._sheets.list(category=category)
 
     async def get(self, hardware_id: str) -> dict[str, Any] | None:
-        if settings.use_postgres and self._sql is not None:
-            return await self._sql.get(hardware_id)
+        sql = _sql_repo_for_read(self._sql, entity_type="hardware", operation="get")
+        if sql is not None:
+            return await sql.get(hardware_id)
         return self._sheets.get(hardware_id)
 
     def next_id(self, category: str) -> str:
         return self._sheets.next_id(category)
 
     async def upsert(self, row: dict[str, Any]) -> None:
-        if self._sql is None:
+        if not settings.use_postgres:
             return
+        sql = _require_sql_repo(self._sql, entity_type="hardware", operation="upsert")
         try:
-            await self._sql.upsert(row)
+            await sql.upsert(row)
         except Exception as exc:
-            await self._sql._db.rollback()
+            await sql._db.rollback()
             _dw_log.warning(
                 "Postgres write failed",
                 extra={
@@ -564,15 +604,17 @@ class _DualWriteHardwareRepo:
                     "error": str(exc),
                 },
             )
+            raise
 
     async def add_many(self, rows: builtins.list[dict[str, Any]]) -> None:
-        if self._sql is None:
+        if not settings.use_postgres:
             return
+        sql = _require_sql_repo(self._sql, entity_type="hardware", operation="add_many")
         for row in rows:
             try:
-                await self._sql.upsert(row)
+                await sql.upsert(row)
             except Exception as exc:
-                await self._sql._db.rollback()
+                await sql._db.rollback()
                 _dw_log.warning(
                     "Postgres write failed (add_many)",
                     extra={
@@ -582,18 +624,14 @@ class _DualWriteHardwareRepo:
                         "error": str(exc),
                     },
                 )
+                raise
 
     def delete_rows(self, start_row: int, end_row: int) -> None:
         _dw_log.debug("DualWrite Sheets write path disabled (M5)")
 
 
 class _DualWriteMaintenanceRepo:
-    """Dual-write wrapper for MaintenanceLog: Sheets-first, Postgres-second.
-
-    Reads route to Postgres when USE_POSTGRES=true; fall back to Sheets otherwise.
-    When ``sql`` is ``None`` (i.e. ``USE_POSTGRES=False``), all write operations
-    go to Sheets only.
-    """
+    """Maintenance wrapper for M5: Postgres is authoritative, Sheets is archive fallback."""
 
     def __init__(self, sheets: MaintenanceRepo, sql: SqlMaintenanceRepo | None) -> None:
         self._sheets = sheets
@@ -601,22 +639,25 @@ class _DualWriteMaintenanceRepo:
         _dw_log.debug("DualWrite Sheets write path disabled (M5)")
 
     async def list(self, hardware_id: str | None = None) -> builtins.list[dict[str, Any]]:
-        if settings.use_postgres and self._sql is not None:
-            return await self._sql.list(hardware_id=hardware_id)
+        sql = _sql_repo_for_read(self._sql, entity_type="maintenance", operation="list")
+        if sql is not None:
+            return await sql.list(hardware_id=hardware_id)
         return self._sheets.list(hardware_id=hardware_id)
 
     async def get(self, maintenance_id: str) -> dict[str, Any] | None:
-        if settings.use_postgres and self._sql is not None:
-            return await self._sql.get(maintenance_id)
+        sql = _sql_repo_for_read(self._sql, entity_type="maintenance", operation="get")
+        if sql is not None:
+            return await sql.get(maintenance_id)
         return self._sheets.get(maintenance_id)
 
     async def add(self, row: dict[str, Any]) -> None:
-        if self._sql is None:
+        if not settings.use_postgres:
             return
+        sql = _require_sql_repo(self._sql, entity_type="maintenance", operation="add")
         try:
-            await self._sql.add(row)
+            await sql.add(row)
         except Exception as exc:
-            await self._sql._db.rollback()
+            await sql._db.rollback()
             _dw_log.warning(
                 "Postgres write failed",
                 extra={
@@ -626,15 +667,17 @@ class _DualWriteMaintenanceRepo:
                     "error": str(exc),
                 },
             )
+            raise
 
     async def add_many(self, rows: builtins.list[dict[str, Any]]) -> None:
-        if self._sql is None:
+        if not settings.use_postgres:
             return
+        sql = _require_sql_repo(self._sql, entity_type="maintenance", operation="add_many")
         for row in rows:
             try:
-                await self._sql.add(row)
+                await sql.add(row)
             except Exception as exc:
-                await self._sql._db.rollback()
+                await sql._db.rollback()
                 _dw_log.warning(
                     "Postgres write failed (add_many)",
                     extra={
@@ -644,6 +687,7 @@ class _DualWriteMaintenanceRepo:
                         "error": str(exc),
                     },
                 )
+                raise
 
     def delete_rows(self, start_row: int, end_row: int) -> None:
         _dw_log.debug("DualWrite Sheets write path disabled (M5)")

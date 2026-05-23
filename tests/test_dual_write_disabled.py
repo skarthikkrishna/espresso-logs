@@ -7,8 +7,9 @@ disabled in Milestone 5.
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 
 # Import the private dual-write classes directly for unit testing.
 # These are intentionally private but must be tested as they gate the
@@ -20,6 +21,14 @@ from app.deps import (  # type: ignore[attr-defined]
     _DualWriteInventoryRepo,
     _DualWriteMaintenanceRepo,
 )
+
+pytestmark = pytest.mark.usefixtures("_patch_use_postgres_true")
+
+
+@pytest.fixture(autouse=True)
+def _patch_use_postgres_true() -> object:
+    with patch("app.deps.settings.use_postgres", True):
+        yield
 
 
 # ---------------------------------------------------------------------------
