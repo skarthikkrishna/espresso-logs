@@ -10,6 +10,7 @@ import datetime
 import uuid
 
 import pytest
+import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repos.sql.household import HouseholdRepo
@@ -174,6 +175,45 @@ async def test_create_invitation_rejects_duplicate_pending_email(
 
     assert exc_info.value.status_code == 409
     assert exc_info.value.detail == "An invitation to this address is already pending."
+
+
+@pytest.mark.anyio
+async def test_create_invitation_rejects_existing_member_email(db_session: AsyncSession) -> None:
+    from fastapi import HTTPException
+
+    admin_id = await _make_user(db_session, "member_invite_admin")
+    existing_member_id = await _make_user(db_session, "member_invite_target")
+    repo = HouseholdRepo()
+    household = await repo.create_household(
+        db_session, name="ExistingMemberHH", created_by=admin_id
+    )
+    await repo.add_member(
+        db_session,
+        household_id=household.id,
+        user_id=existing_member_id,
+        role="member",
+        invited_by=admin_id,
+    )
+    await db_session.commit()
+
+    await db_session.execute(
+        sa.text("UPDATE users SET email = :email WHERE id = :user_id"),
+        {"email": "member@example.com", "user_id": existing_member_id},
+    )
+    await db_session.commit()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await repo.create_invitation(
+            db_session,
+            household_id=household.id,
+            invited_by_user_id=admin_id,
+            invited_email="MEMBER@example.com",
+            invited_role="member",
+            token_hash="existing-member-token",
+        )
+
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.detail == "User is already a member of this household."
 
 
 @pytest.mark.anyio

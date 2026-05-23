@@ -17,6 +17,7 @@ from app.models.household import (
     HouseholdRole,
     PendingInvitation,
 )
+from app.models.user import User
 
 
 @dataclass(frozen=True, slots=True)
@@ -246,10 +247,11 @@ class HouseholdRepo:
         """Create a pending invitation expiring 72 hours from now."""
         now = datetime.datetime.now(tz=datetime.timezone.utc)
         if invited_email is not None:
+            normalized_email = invited_email.lower()
             duplicate_invitation = await db.execute(
                 sa.select(PendingInvitation.id).where(
                     PendingInvitation.household_id == household_id,
-                    sa.func.lower(PendingInvitation.invited_email) == invited_email.lower(),
+                    sa.func.lower(PendingInvitation.invited_email) == normalized_email,
                     PendingInvitation.status == "pending",
                     PendingInvitation.expires_at > now,
                 )
@@ -258,6 +260,20 @@ class HouseholdRepo:
                 raise HTTPException(
                     status_code=409,
                     detail="An invitation to this address is already pending.",
+                )
+
+            existing_member = await db.execute(
+                sa.select(HouseholdMember.id)
+                .join(User, User.id == HouseholdMember.user_id)
+                .where(
+                    HouseholdMember.household_id == household_id,
+                    sa.func.lower(User.email) == normalized_email,
+                )
+            )
+            if existing_member.scalar_one_or_none() is not None:
+                raise HTTPException(
+                    status_code=409,
+                    detail="User is already a member of this household.",
                 )
 
         expires = now + datetime.timedelta(hours=72)
