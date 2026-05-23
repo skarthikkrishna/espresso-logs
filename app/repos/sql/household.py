@@ -244,7 +244,23 @@ class HouseholdRepo:
         invited_role: HouseholdRole,
     ) -> PendingInvitation:
         """Create a pending invitation expiring 72 hours from now."""
-        expires = datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(hours=72)
+        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        if invited_email is not None:
+            duplicate_invitation = await db.execute(
+                sa.select(PendingInvitation.id).where(
+                    PendingInvitation.household_id == household_id,
+                    sa.func.lower(PendingInvitation.invited_email) == invited_email.lower(),
+                    PendingInvitation.status == "pending",
+                    PendingInvitation.expires_at > now,
+                )
+            )
+            if duplicate_invitation.scalar_one_or_none() is not None:
+                raise HTTPException(
+                    status_code=409,
+                    detail="An invitation to this address is already pending.",
+                )
+
+        expires = now + datetime.timedelta(hours=72)
         invitation = PendingInvitation(
             household_id=household_id,
             invited_by_user_id=invited_by_user_id,

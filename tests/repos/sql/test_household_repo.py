@@ -142,6 +142,41 @@ async def test_create_invitation_uses_72_hour_expiry_and_role(db_session: AsyncS
 
 
 @pytest.mark.anyio
+async def test_create_invitation_rejects_duplicate_pending_email(
+    db_session: AsyncSession,
+) -> None:
+    from fastapi import HTTPException
+
+    user_id = await _make_user(db_session, "dup_invite_admin")
+    repo = HouseholdRepo()
+    household = await repo.create_household(db_session, name="DupInviteHH", created_by=user_id)
+    await db_session.commit()
+
+    await repo.create_invitation(
+        db_session,
+        household_id=household.id,
+        invited_by_user_id=user_id,
+        invited_email="invitee@example.com",
+        invited_role="member",
+        token_hash="duplicate-pending-token-1",
+    )
+    await db_session.commit()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await repo.create_invitation(
+            db_session,
+            household_id=household.id,
+            invited_by_user_id=user_id,
+            invited_email="INVITEE@example.com",
+            invited_role="member",
+            token_hash="duplicate-pending-token-2",
+        )
+
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.detail == "An invitation to this address is already pending."
+
+
+@pytest.mark.anyio
 async def test_revoke_previous_guest_tokens(db_session: AsyncSession) -> None:
     user_id = await _make_user(db_session, "gt_admin")
     repo = HouseholdRepo()
