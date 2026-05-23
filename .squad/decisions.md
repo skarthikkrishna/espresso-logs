@@ -853,3 +853,92 @@ The following scope is permitted under this decision:
 - Must not push without explicit operator affirmative
 - Quinn gate (`specs/034/quinn-gate.md` in `coffee_tracker` repo) should be verified if this work is intended to formally close the QE mandate; if the gate doesn't yet exist, the implementation agent should flag this to the operator rather than proceeding to push
 
+## 2026-05-23
+
+### Spec-034 welcome onboarding flow amendment — DIRECT_PERMITTED
+
+**Author:** Priya (routing)  
+**Branch:** feat/034-m5-household-roles  
+**Status:** Committed (`docs(spec): welcome onboarding flow amendment to spec-034 (#034)`)
+
+Documentation-only extraction of the `/welcome` first-sign-in onboarding flow from `docs/requirements/functional-spec-v2.md` into `docs/requirements/spec-034-amendment-welcome-flow.md`. Quinn gate explicitly waived by routing because the work is confined to a single requirements document and introduces no code, test, or configuration changes.
+
+**Scope confirmed:**
+- create `docs/requirements/spec-034-amendment-welcome-flow.md`
+- source the content only from `docs/requirements/functional-spec-v2.md`
+- do not modify application code
+- local commit only; no push
+
+**Outcome:** Amendment committed in `6637d3c`; routing decision preserved from inbox drop `20260523-0953-priya-routing-spec034-welcome-flow-amendment.md`.
+
+---
+
+### E2E test harness JWT auth repair — DIRECT_PERMITTED
+
+**Author:** Tariq (routing)  
+**Branch:** feat/034-m5-household-roles  
+**Status:** Routed
+
+Bounded test-infrastructure repair for the JWT/refresh-token auth migration. Permitted scope is limited to `tests/e2e/` updates covering auth fixture alignment, default `E2E_BASE_URL`, SPA shell expectation fixes, pytest-asyncio/Playwright runner conflicts, and least-invasive mitigation for `/auth/refresh` rate-limit failures.
+
+**Constraints preserved:** no production code changes, no push, and verification must run against a live server plus the non-e2e backend suite.
+
+---
+
+### CI validation request — DIRECT_PERMITTED
+
+**Author:** Tariq (routing)  
+**Branch:** feat/034-m5-household-roles  
+**Status:** Routed
+
+Operational validation work was classified as direct-permitted: inspect the existing test configuration, run the repository's backend and frontend validation commands, run Playwright if feasible in the current environment, and return a structured pass/fail report. No source edits, refactors, or CI redesign are permitted inside this routing decision.
+
+---
+
+### Playwright triage request — DIRECT_PERMITTED
+
+**Author:** Tariq (routing)  
+**Branch:** feat/034-m5-household-roles  
+**Status:** Routed
+
+Read-only triage of failing Playwright coverage is authorised: start the existing local services if needed, run the repository's existing Playwright-related tests, and classify failures as environment/setup issues versus actual regressions. Findings-only scope; code and workflow files remain untouched.
+
+---
+
+### Spec-034 backend gap remediation — DIRECT_PERMITTED
+
+**Author:** Alex (routing)  
+**Branch:** feat/034-m5-household-roles  
+**Status:** Routed
+
+Backend reconciliation against explicit v2 spec requirements is authorised for a tightly bounded scope in `app/routers/api_households.py`, `app/repos/sql/household.py`, `app/models/household.py`, related helpers, optional tactical Alembic migration work, and targeted tests. In-scope items are household name max length, duplicate/existing-member invite rejection, household cap enforcement, invite rate limiting, UUID v4 invite tokens, token status-code audit, and membership timestamp alignment.
+
+**Explicit exclusions:** do not touch active-household context in `app/deps.py`, first-sign-in onboarding semantics in `app/routers/api_auth.py`, household delete semantics, invitation route shapes, or push to remote.
+
+---
+
+### Dual-write `sql=None` regression in `app/deps.py` — DIRECT_PERMITTED
+
+**Author:** Alex (routing)  
+**Branch:** feat/034-m5-household-roles  
+**Status:** Routed
+
+A bounded backend bug fix is authorised to restore write fallback semantics in the dual-write repository wrappers when SQL is unavailable. Reads already fall back to Sheets; writes must stop silently no-oping for catalog, brew log, inventory, hardware, and maintenance repos.
+
+**Scope confirmed:** `app/deps.py`, tightly coupled backend tests for dual-write fallback and the catalog create/detail regression path, and removal of incorrect tests that codify the broken no-op behavior. No frontend, schema, migration, auth, or e2e changes.
+
+---
+
+## 2026-05-24
+
+### Session-resolved household & invitation routes — DIRECT_PERMITTED
+
+**Author:** Alex (routing)  
+**Branch:** feat/034-m5-household-roles  
+**Status:** Routed
+
+Session-resolved URL refactor is authorised for `app/routers/api_households.py` and the matching route tests in `tests/test_households.py` and `tests/test_role_enforcement.py`. The refactor removes redundant `{household_id}` path parameters from active-household routes in favour of the already-established `current_household_membership` dependency and shifts the affected handlers to `/me/...` endpoints.
+
+**Leave unchanged:** create/list/accept-invite routes that still require explicit IDs or token-only handling. Add a tech-debt TODO above `DELETE /me`; do not widen scope beyond the router and those tests.
+
+---
