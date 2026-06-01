@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -16,6 +16,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from app import setup_guard
 from app.auth import router as auth_router
 from app.config import settings
 from app.deps import _E2E_AUTH_BYPASS, get_sheets_client
@@ -194,6 +195,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
         if _is_cloud_sql_url(settings.database_url):
             await init_async_engine(settings.database_url)
             logger.info("Cloud SQL Connector initialized (async, bound to uvicorn event loop)")
+        async with get_session_factory()() as db:
+            await setup_guard.check_and_set_setup_required(db)
+    else:
+        setup_guard.clear_setup_required()
     await run_startup_backfill()
     yield
     if settings.use_postgres:
@@ -232,6 +237,26 @@ if settings.app_env != "production":
 # slowapi rate limiter (AC-016, AC-025, AC-034)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
+
+
+@app.middleware("http")
+async def setup_guard_middleware(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]],
+) -> Response:
+    if setup_guard.SETUP_REQUIRED:
+        path = request.url.path
+        whitelisted = (
+            request.method == "POST" and path == "/auth/register",
+            path.startswith("/static/"),
+            path in {"/", "/welcome", "/health"},
+        )
+        if not any(whitelisted):
+            return JSONResponse(
+                status_code=503,
+                content={"detail": "Initial setup required", "setup_required": True},
+            )
+    return await call_next(request)
 
 
 @app.exception_handler(403)

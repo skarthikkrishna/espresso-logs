@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.deps import current_user, require_admin
 from app.models.base import get_db
+from app.setup_guard import clear_setup_required
 from app.models.household import HouseholdMember
 from app.models.user import User
 from app.rate_limit import limiter
@@ -129,18 +130,6 @@ class SwitchHouseholdOut(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Helper
-# ---------------------------------------------------------------------------
-
-
-async def seed_default_household_if_needed(db: AsyncSession, user: User) -> None:
-    """Create a 'Home' household for *user* if they have no memberships (AC-090)."""
-    memberships = await HouseholdRepo().get_memberships_for_user(db, user.id)
-    if not memberships:
-        await HouseholdRepo().seed_default_household(db, user.id)
-
-
-# ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
 
@@ -170,12 +159,12 @@ async def register(
         display_name=display_name,
         picture_url=None,
     )
-    await seed_default_household_if_needed(db, user)
 
     raw_rt, rt_hash = generate_refresh_token()
     expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
     await RefreshTokenRepo().create(db, user_id=user.id, token_hash=rt_hash, expires_at=expires_at)
     await db.commit()
+    clear_setup_required()
 
     access_token = create_access_token(user.id)
     set_refresh_cookie(response, raw_rt)
@@ -223,7 +212,6 @@ async def login(
 
     # Successful authentication
     await UserRepo().reset_login_state(db, user.id)
-    await seed_default_household_if_needed(db, user)
 
     raw_rt, rt_hash = generate_refresh_token()
     expires_at = now + datetime.timedelta(days=30)

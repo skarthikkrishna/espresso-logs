@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.base import get_db
 from app.models.household import OAuthState
 from app.models.user import User
-from app.repos.sql.household import HouseholdRepo
+from app.repos.sql.household import HouseholdRepo  # noqa: F401 - preserved for test patch targets
 from app.repos.sql.refresh_tokens import RefreshTokenRepo
 from app.repos.sql.user import UserRepo
 from app.services.auth import (
@@ -155,11 +155,6 @@ async def google_callback(
             )
             await db.flush()
             await db.refresh(user)
-
-        # Seed default household if first login (AC-090)
-        memberships = await HouseholdRepo().get_memberships_for_user(db, user.id)
-        if not memberships:
-            await HouseholdRepo().seed_default_household(db, user.id)
 
         raw_rt, rt_hash = generate_refresh_token()
         expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
