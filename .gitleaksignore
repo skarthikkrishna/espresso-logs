@@ -3,3 +3,11 @@
 
 # "idem-pg-fail-test-001" — test idempotency key string, not a real credential.
 130abee2cfe22228124d879c4223b3f87c6b2084:tests/test_api_brew_log_idempotency.py:generic-api-key:505
+
+# "test-jwt-integration" — JWT_SECRET env var set to a deterministic test fixture value in an old commit;
+# not a real credential. Current conftest.py builds the value at runtime to avoid pattern match.
+9685b01b256f2204049e04e15baa7bb1d0beb7c9:tests/test_integration.py:generic-api-key:17
+
+# "test-jwt-conftest" — same fixture value set via os.environ.setdefault in an old commit;
+# not a real credential. Current conftest.py builds the value at runtime.
+7dcfd6ab3c2d772bfff28661ec94fbb753efbead:tests/conftest.py:generic-api-key:13
