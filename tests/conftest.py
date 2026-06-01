@@ -10,8 +10,9 @@ import pytest
 # Unit tests never hit a real sheet; integration tests supply the real value via env.
 os.environ.setdefault("SPREADSHEET_ID", "fake-spreadsheet-id-for-tests")
 
-# JWT_SECRET is required by M5 auth service — provide a 32-char test value.
-os.environ.setdefault("JWT_SECRET", "abcdefghijklmnopqrstuvwxyz123456")
+# JWT_SECRET is required by M5 auth service — provide a deterministic 32-char test value.
+_TEST_JWT_SECRET = "test-jwt-fixture-" + ("0" * 15)
+os.environ.setdefault("JWT_SECRET", _TEST_JWT_SECRET)
 
 # Override the session secret so tests can sign cookies with the known test secret,
 # regardless of any .env file present in the repo root.

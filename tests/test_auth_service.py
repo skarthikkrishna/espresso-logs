@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+import os
 import uuid
 
 import pytest
@@ -46,7 +47,7 @@ class TestCreateAndDecodeAccessToken:
         # Decode without verification to inspect claims
         payload = _jwt.decode(
             token,
-            "abcdefghijklmnopqrstuvwxyz123456",
+            os.environ["JWT_SECRET"],
             algorithms=["HS256"],
         )
         assert payload["sub"] == str(user_id)
@@ -72,7 +73,7 @@ class TestCreateAndDecodeAccessToken:
         }
         expired_token = _jwt.encode(
             payload,
-            "abcdefghijklmnopqrstuvwxyz123456",
+            os.environ["JWT_SECRET"],
             algorithm="HS256",
         )
         with pytest.raises(HTTPException) as exc_info:

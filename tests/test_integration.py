@@ -14,7 +14,7 @@ Run command::
 
     TEST_DATABASE_URL=postgresql+asyncpg://espresso:espresso@localhost:5432/espresso_logs \\
       USE_POSTGRES=true SPREADSHEET_ID=dummy \\
-      JWT_SECRET=abcdefghijklmnopqrstuvwxyz123456 \\
+      JWT_SECRET=$(python -c "print('test-jwt-fixture-' + '0' * 15)") \\
       uv run pytest tests/test_integration.py -v
 """
 

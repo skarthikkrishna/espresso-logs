@@ -5,11 +5,15 @@ from __future__ import annotations
 import datetime
 import uuid
 from dataclasses import dataclass
+from typing import Any
 
 import sqlalchemy as sa
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.brew_log import BrewLog
+from app.models.catalog import CatalogBean
+from app.models.hardware import Hardware
 from app.models.household import (
     GuestToken,
     Household,
@@ -17,7 +21,17 @@ from app.models.household import (
     HouseholdRole,
     PendingInvitation,
 )
+from app.models.inventory import InventoryBag
+from app.models.maintenance import MaintenanceLog
 from app.models.user import User
+
+_ALLOWED_TENANT_TABLES: dict[str, type[Any]] = {
+    BrewLog.__tablename__: BrewLog,
+    CatalogBean.__tablename__: CatalogBean,
+    InventoryBag.__tablename__: InventoryBag,
+    Hardware.__tablename__: Hardware,
+    MaintenanceLog.__tablename__: MaintenanceLog,
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -490,12 +504,14 @@ class HouseholdRepo:
             "hardware",
             "maintenance_log",
         ]
-        for table in tenant_tables:
+        for table_name in tenant_tables:
+            tenant_model = _ALLOWED_TENANT_TABLES.get(table_name)
+            if tenant_model is None:
+                raise ValueError(f"Unknown tenant table: {table_name}")
             await db.execute(
-                sa.text(
-                    f"UPDATE {table} SET household_id = :hid WHERE household_id IS NULL"  # noqa: S608
-                ),
-                {"hid": str(household.id)},
+                sa.update(tenant_model)
+                .where(tenant_model.household_id.is_(None))
+                .values(household_id=household.id)
             )
 
         await db.flush()
