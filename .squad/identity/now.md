@@ -1,34 +1,22 @@
 ---
-updated_at: 2026-05-31T00:00:00Z
-focus_area: spec-034 M5 — closeout in progress; backend hardening is largely complete, with NFR-D8 startup guard and welcome-flow follow-through remaining
+updated_at: 2026-06-01T04:36:36Z
+focus_area: spec-034 M5 — QA closeout identified one critical SPA onboarding defect; backend fallback, setup guard, and invite flows validated
 active_issues:
   - spec: 034
     repo: espresso-logs
-    status: m5-closeout-nfr-d8-and-welcome-flow-remaining
+    status: qa-closeout-spa-welcome-defect-open
     branch: feat/034-m5-household-roles
     detail: |
-      Spec-034 (M5 household roles) remains active on feat/034-m5-household-roles.
-      Completed this continuation session:
-        - Items 1–5 from pending-m5-work.md:
-          atomic refresh rotation, invitation overhaul, household rename/soft-delete,
-          X-Household-Id routing, and import wizard
-        - Quinn QA hardening pass
-        - /auth/me N+1 fix
-        - 8 spec gap fixes: name max 64, duplicate invite check, member-limit cap,
-          rate limit, UUIDv4 tokens, status codes, timestamps
-        - C4 session-resolved invitation + member routes
-        - DualWrite silent no-op bug fix
-        - E2E test harness updated for JWT auth
-        - React Query hardware cache invalidation fix
-        - Welcome-flow amendment committed:
-          docs/requirements/spec-034-amendment-welcome-flow.md
-        - NFR-D8 clarified to Option 2: startup guard
-      In progress now:
-        - Alex: NFR-D8 implementation in app/setup_guard.py plus startup guard and 503 middleware
-        - Priya: amendment updates for NC-1, NC-2, and NFR-D8
-      Next after clarification:
-        - Finn: /welcome frontend page
-        - Session close: Scribe + Ralph
+      QA validation on feat/034-m5-household-roles confirmed mixed closeout status for spec-034 M5.
+      Validated in this session:
+        - Existing-user backend fallback / household-switch behavior behaved as expected
+        - NFR-D8 setup-guard behavior validated
+        - Invitation flow behavior validated
+      Major failure found:
+        - New-user SPA welcome flow fails because Router/AuthProvider composition prevents the
+          onboarding path from behaving correctly in the app shell
+      Additional follow-up:
+        - Route-shape observations were recorded during QA and should be reviewed before final closeout
   - decision: C1
     repo: espresso-logs
     status: awaiting-operator
@@ -43,18 +31,17 @@ active_issues:
 
 ## Current Team Focus
 
-Spec-034 M5 is in closeout on `feat/034-m5-household-roles`. Most backend and QA hardening work
-for household roles is complete, including the M5 pending-work items, spec-gap fixes, session-
-resolved invitation/member routes, JWT E2E harness updates, and the welcome-flow amendment.
+Spec-034 M5 is now in QA closeout on `feat/034-m5-household-roles`. Backend fallback/switch behavior,
+setup-guard handling, and invitation-flow behavior all validated successfully, but the new-user
+onboarding path still has a critical SPA failure tied to `Router` / `AuthProvider` composition.
 
-The active implementation stream is NFR-D8 Option 2 (startup guard + 503 middleware). In parallel,
-Priya is updating the amendment doc to resolve NC-1, NC-2, and NFR-D8 so Finn can pick up the
-`/welcome` frontend page once the spec text is settled.
+Route-shape observations from the QA pass also remain open for review so the branch can be closed out
+with the onboarding behavior and navigation contract aligned.
 
 ## Open Work State
 
-1. Alex to implement NFR-D8 startup guard (`app/setup_guard.py`, startup validation, 503 middleware).
-2. Priya to finalize the amendment updates covering NC-1, NC-2, and NFR-D8.
-3. Finn to implement `/welcome` after the amendment is clarified.
+1. Fix the new-user `/welcome` SPA failure caused by Router/AuthProvider composition in the frontend shell.
+2. Review the QA route-shape observations and decide whether any follow-up adjustments are required before closeout.
+3. Preserve the validated backend behaviors (existing-user fallback/switch, setup guard, invitation flow) while addressing the frontend defect.
 4. Operator decision still pending on C1: server-side `active_household_id` vs `X-Household-Id`.
-5. After the above, close the session with Scribe + Ralph.
+5. After the above, complete final session close with Scribe + Ralph.

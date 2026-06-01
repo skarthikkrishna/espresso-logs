@@ -1,7 +1,7 @@
 # Team Decisions Log
 
 **Project:** espresso-logs  
-**Last Updated:** 2026-05-23T15:56:30Z
+**Last Updated:** 2026-06-01T04:36:41Z
 
 ---
 
@@ -177,5 +177,40 @@ Read-only top-down audit of spec-034 (M5 Household Roles): cross-reference spec 
 **Explicitly prohibited:** Modifying source files, committing code, opening PRs, invoking SpecKit phases.
 
 **Key findings surfaced:** Household lifecycle completeness, invitation status/expiry flows, multi-household active context (X-Household-Id), auth token rotation correctness, import wizard access control. Full analysis in session log `20260523T155630Z-spec034-feature-analysis.md`.
+
+---
+
+### Hardware mutation cache invalidation — DIRECT_PERMITTED
+
+**Author:** Finn (routing)  
+**Branch:** feat/034-m5-household-roles  
+**Status:** Committed (`fix(hardware): invalidate React Query cache after add/edit mutations (#034)`)
+
+Bounded frontend bug fix authorised to make the hardware list and detail panel refresh reactively after add/edit mutations without a full page reload.
+
+**Scope confirmed:**
+- `frontend/src/components/EditHardwareModal.tsx` — explicitly invalidate the detail query key for the edited hardware item
+- `frontend/src/components/AddHardwareModal.tsx` — preserve list invalidation behavior and align post-save refresh semantics
+- `frontend/src/pages/HardwarePage.tsx` — update edit-save handling only if required to refresh the selected detail panel
+- `frontend/src/components/EditHardwareModal.test.tsx` — cover the invalidation contract
+
+**Constraint:** No backend, schema, auth, or unrelated frontend changes.
+
+---
+
+### Spec-034 QA validation scenarios A–E — DIRECT_PERMITTED
+
+**Author:** Tariq (routing)  
+**Branch:** feat/034-m5-household-roles  
+**Status:** Committed (`chore(routing): Tariq decision drop — QA validation scenarios A-E [DIRECT_PERMITTED]`)
+
+Independent QA validation of scenarios A–E is authorised as a bounded, read-only verification pass over the current branch state.
+
+**Scope confirmed:**
+- start the existing FastAPI and/or React services locally if needed
+- exercise live API and browser scenarios A–E
+- inspect source code as evidence and report PASS / PARTIAL / FAIL findings
+
+**Explicit exclusions:** no changes to `app/`, `frontend/src/`, `tests/`, `docs/`, or `specs/`; no push.
 
 ---
