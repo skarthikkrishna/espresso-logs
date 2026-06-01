@@ -63,9 +63,27 @@ export const login = (
     .post<LoginResponse>('/auth/login', { username, password })
     .then((r) => r.data)
 
-/** POST /auth/refresh — no body; relies on rt HttpOnly cookie. */
-export const refresh = (): Promise<LoginResponse> =>
-  apiClient.post<LoginResponse>('/auth/refresh').then((r) => r.data)
+/** POST /auth/refresh — no body; relies on rt HttpOnly cookie.
+ *
+ * Module-level deduplication: concurrent callers share a single in-flight
+ * request so the server never sees two rotations of the same rt cookie.
+ * Without this guard, AuthContext.attemptRefresh() and Login.oauthEffect
+ * both fire on mount during the OAuth callback, triggering
+ * revoke_all_for_user() on the second (now-revoked) token → login loop.
+ */
+let _refreshPromise: Promise<LoginResponse> | null = null
+
+export const refresh = (): Promise<LoginResponse> => {
+  if (!_refreshPromise) {
+    _refreshPromise = apiClient
+      .post<LoginResponse>('/auth/refresh')
+      .then((r) => r.data)
+      .finally(() => {
+        _refreshPromise = null
+      })
+  }
+  return _refreshPromise
+}
 
 export const logout = (): Promise<void> =>
   apiClient.post('/auth/logout').then(() => undefined)
