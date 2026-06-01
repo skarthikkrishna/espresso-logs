@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.repos.sql.user import UserRepo
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio(loop_scope="function")
 async def test_create_user_with_username(db_session: AsyncSession) -> None:
     repo = UserRepo()
     user = await repo.create(
@@ -32,7 +32,7 @@ async def test_create_user_with_username(db_session: AsyncSession) -> None:
     assert fetched.display_name == "Test User"
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio(loop_scope="function")
 async def test_get_by_username_case_insensitive(db_session: AsyncSession) -> None:
     repo = UserRepo()
     await repo.create(
@@ -51,7 +51,7 @@ async def test_get_by_username_case_insensitive(db_session: AsyncSession) -> Non
     assert found.username == "Alice"
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio(loop_scope="function")
 async def test_increment_login_attempts_sets_locked_until_at_10(
     db_session: AsyncSession,
 ) -> None:
@@ -77,7 +77,7 @@ async def test_increment_login_attempts_sets_locked_until_at_10(
     assert refreshed.locked_until is not None
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio(loop_scope="function")
 async def test_reset_login_state_clears_attempts_and_lock(
     db_session: AsyncSession,
 ) -> None:

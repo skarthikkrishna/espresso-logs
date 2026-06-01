@@ -35,7 +35,7 @@ def _future() -> datetime.datetime:
     return datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(hours=1)
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio(loop_scope="function")
 async def test_create_and_get_refresh_token(db_session: AsyncSession) -> None:
     user_id = await _make_user(db_session)
     repo = RefreshTokenRepo()
@@ -57,7 +57,7 @@ async def test_create_and_get_refresh_token(db_session: AsyncSession) -> None:
     assert missing is None
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio(loop_scope="function")
 async def test_rotate_revokes_single_valid_token_atomically(db_session: AsyncSession) -> None:
     user_id = await _make_user(db_session)
     repo = RefreshTokenRepo()
@@ -85,7 +85,7 @@ async def test_rotate_revokes_single_valid_token_atomically(db_session: AsyncSes
     assert second_attempt is None
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio(loop_scope="function")
 async def test_revoke_single_token(db_session: AsyncSession) -> None:
     user_id = await _make_user(db_session)
     repo = RefreshTokenRepo()
@@ -106,7 +106,7 @@ async def test_revoke_single_token(db_session: AsyncSession) -> None:
     assert fetched.revoked is True
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio(loop_scope="function")
 async def test_revoke_all_for_user_nukes_all_active_tokens(
     db_session: AsyncSession,
 ) -> None:

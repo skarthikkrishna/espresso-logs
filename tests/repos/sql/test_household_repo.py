@@ -32,7 +32,7 @@ async def _make_user(db: AsyncSession, username: str) -> uuid.UUID:
     return user.id
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio(loop_scope="function")
 async def test_create_household_creates_admin_member(db_session: AsyncSession) -> None:
     user_id = await _make_user(db_session, "hh_admin")
     repo = HouseholdRepo()
@@ -44,7 +44,7 @@ async def test_create_household_creates_admin_member(db_session: AsyncSession) -
     assert member.role == "admin"
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio(loop_scope="function")
 async def test_count_admins(db_session: AsyncSession) -> None:
     user_id = await _make_user(db_session, "cnt_admin")
     repo = HouseholdRepo()
@@ -55,7 +55,7 @@ async def test_count_admins(db_session: AsyncSession) -> None:
     assert count == 1
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio(loop_scope="function")
 async def test_update_member_role_prevents_demoting_sole_admin(
     db_session: AsyncSession,
 ) -> None:
@@ -73,7 +73,7 @@ async def test_update_member_role_prevents_demoting_sole_admin(
     assert exc_info.value.status_code == 409
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio(loop_scope="function")
 async def test_remove_member_prevents_removing_sole_admin(
     db_session: AsyncSession,
 ) -> None:
@@ -89,7 +89,7 @@ async def test_remove_member_prevents_removing_sole_admin(
     assert exc_info.value.status_code == 409
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio(loop_scope="function")
 async def test_accept_invitation_sets_accepted_at(db_session: AsyncSession) -> None:
     user_id = await _make_user(db_session, "inv_admin")
     repo = HouseholdRepo()
@@ -115,7 +115,7 @@ async def test_accept_invitation_sets_accepted_at(db_session: AsyncSession) -> N
     assert fetched.status == "accepted"
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio(loop_scope="function")
 async def test_create_invitation_uses_72_hour_expiry_and_role(db_session: AsyncSession) -> None:
     user_id = await _make_user(db_session, "invite_admin")
     repo = HouseholdRepo()
@@ -142,7 +142,7 @@ async def test_create_invitation_uses_72_hour_expiry_and_role(db_session: AsyncS
     assert lower <= invitation.expires_at <= upper
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio(loop_scope="function")
 async def test_create_invitation_rejects_duplicate_pending_email(
     db_session: AsyncSession,
 ) -> None:
@@ -177,7 +177,7 @@ async def test_create_invitation_rejects_duplicate_pending_email(
     assert exc_info.value.detail == "An invitation to this address is already pending."
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio(loop_scope="function")
 async def test_create_invitation_rejects_existing_member_email(db_session: AsyncSession) -> None:
     from fastapi import HTTPException
 
@@ -216,7 +216,7 @@ async def test_create_invitation_rejects_existing_member_email(db_session: Async
     assert exc_info.value.detail == "User is already a member of this household."
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio(loop_scope="function")
 async def test_create_invitation_rejects_when_household_has_ten_members(
     db_session: AsyncSession,
 ) -> None:
@@ -252,7 +252,7 @@ async def test_create_invitation_rejects_when_household_has_ten_members(
     assert exc_info.value.detail == "Household has reached the maximum of 10 members."
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio(loop_scope="function")
 async def test_create_invitation_enforces_per_admin_24_hour_rate_limit(
     db_session: AsyncSession,
 ) -> None:
@@ -288,7 +288,7 @@ async def test_create_invitation_enforces_per_admin_24_hour_rate_limit(
     assert exc_info.value.detail == "Invitation rate limit exceeded for this household."
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio(loop_scope="function")
 async def test_add_member_persists_invitation_timestamps(db_session: AsyncSession) -> None:
     admin_id = await _make_user(db_session, "timestamp_admin")
     member_id = await _make_user(db_session, "timestamp_member")
@@ -314,7 +314,7 @@ async def test_add_member_persists_invitation_timestamps(db_session: AsyncSessio
     assert member.accepted_at == accepted_at
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio(loop_scope="function")
 async def test_revoke_previous_guest_tokens(db_session: AsyncSession) -> None:
     user_id = await _make_user(db_session, "gt_admin")
     repo = HouseholdRepo()
@@ -344,7 +344,7 @@ async def test_revoke_previous_guest_tokens(db_session: AsyncSession) -> None:
     assert result2 is None
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio(loop_scope="function")
 async def test_decline_and_resend_invitation_update_status(db_session: AsyncSession) -> None:
     user_id = await _make_user(db_session, "decline_admin")
     repo = HouseholdRepo()
@@ -379,7 +379,7 @@ async def test_decline_and_resend_invitation_update_status(db_session: AsyncSess
     assert revoked.revoked_at is not None
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio(loop_scope="function")
 async def test_resend_invitation_rejects_accepted_tokens(db_session: AsyncSession) -> None:
     from fastapi import HTTPException
 
@@ -407,7 +407,7 @@ async def test_resend_invitation_rejects_accepted_tokens(db_session: AsyncSessio
     assert exc_info.value.status_code == 409
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio(loop_scope="function")
 async def test_seed_default_household_assigns_orphan_rows(
     db_session: AsyncSession,
 ) -> None:
