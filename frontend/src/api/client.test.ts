@@ -5,6 +5,7 @@
 import axios, { AxiosError } from 'axios'
 import type { InternalAxiosRequestConfig, AxiosResponse } from 'axios'
 import { describe, it, expect, vi, beforeAll, beforeEach, afterAll, afterEach } from 'vitest'
+import { waitFor } from '@testing-library/react'
 import {
   ACTIVE_HOUSEHOLD_STORAGE_KEY,
   apiClient,
@@ -222,6 +223,48 @@ describe('apiClient', () => {
 
       expect(getAccessToken()).toBeNull()
       expect(locationMock.href).toBe('/login')
+    })
+
+    it('deduplicates concurrent refresh attempts across 401 responses', async () => {
+      apiClient.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
+        if (config.headers?.Authorization === 'Bearer shared-token') {
+          return makeOkResponse({ result: config.url }, config)
+        }
+
+        throw makeError(config, 401, { detail: 'Unauthorized' }, 'Unauthorized')
+      }
+
+      let resolveRefresh!: (value: AxiosResponse<{
+        access_token: string
+        token_type: string
+      }>) => void
+      const refreshRequest = new Promise<AxiosResponse<{ access_token: string; token_type: string }>>((resolve) => {
+        resolveRefresh = resolve
+      })
+
+      const refreshSpy = vi.spyOn(axios, 'post').mockImplementation(
+        () => refreshRequest as Promise<AxiosResponse<{ access_token: string; token_type: string }>>,
+      )
+
+      const requestOne = apiClient.get('/api/protected-1')
+      const requestTwo = apiClient.get('/api/protected-2')
+
+      await waitFor(() => expect(refreshSpy).toHaveBeenCalledTimes(1))
+
+      resolveRefresh({
+        data: { access_token: 'shared-token', token_type: 'bearer' },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: { headers: {} } as InternalAxiosRequestConfig,
+      })
+
+      const [responseOne, responseTwo] = await Promise.all([requestOne, requestTwo])
+
+      expect(refreshSpy).toHaveBeenCalledTimes(1)
+      expect(getAccessToken()).toBe('shared-token')
+      expect(responseOne.data).toEqual({ result: '/api/protected-1' })
+      expect(responseTwo.data).toEqual({ result: '/api/protected-2' })
     })
 
     it('does not attempt refresh for /auth/login 401 (skip path)', async () => {

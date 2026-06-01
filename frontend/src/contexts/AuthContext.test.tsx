@@ -13,9 +13,12 @@ const mockRefresh = vi.hoisted(() => vi.fn())
 const mockGetMe = vi.hoisted(() => vi.fn())
 const mockLogout = vi.hoisted(() => vi.fn())
 const mockSwitchHousehold = vi.hoisted(() => vi.fn())
+const mockListHardware = vi.hoisted(() => vi.fn())
 const mockSetModuleToken = vi.hoisted(() => vi.fn())
 const mockGetStoredActiveHouseholdId = vi.hoisted(() => vi.fn())
 const mockSetStoredActiveHouseholdId = vi.hoisted(() => vi.fn())
+const mockQueryClientClear = vi.hoisted(() => vi.fn())
+const mockQueryClientPrefetchQuery = vi.hoisted(() => vi.fn())
 
 vi.mock('../api/auth', () => ({
   refresh: mockRefresh,
@@ -28,6 +31,17 @@ vi.mock('../api/client', () => ({
   getStoredActiveHouseholdId: mockGetStoredActiveHouseholdId,
   setAccessToken: mockSetModuleToken,
   setStoredActiveHouseholdId: mockSetStoredActiveHouseholdId,
+}))
+
+vi.mock('../api/hardware', () => ({
+  listHardware: mockListHardware,
+}))
+
+vi.mock('../queryClient', () => ({
+  queryClient: {
+    clear: mockQueryClientClear,
+    prefetchQuery: mockQueryClientPrefetchQuery,
+  },
 }))
 
 const mockUser = {
@@ -122,6 +136,8 @@ function renderWithProvider(children: React.ReactNode, initialEntries = ['/']) {
 beforeEach(() => {
   vi.clearAllMocks()
   mockGetStoredActiveHouseholdId.mockReturnValue(null)
+  mockListHardware.mockResolvedValue([])
+  mockQueryClientPrefetchQuery.mockResolvedValue(undefined)
 })
 
 describe('AuthContext', () => {
@@ -145,6 +161,7 @@ describe('AuthContext', () => {
 
       expect(mockSetModuleToken).toHaveBeenCalledWith('tok-abc')
       expect(mockSetStoredActiveHouseholdId).toHaveBeenCalledWith('hh-1')
+      await waitFor(() => expect(mockQueryClientPrefetchQuery).toHaveBeenCalledTimes(1))
     })
 
     it('renders children once bootstrap completes', async () => {
@@ -168,6 +185,8 @@ describe('AuthContext', () => {
       expect(screen.getByTestId('token')).toHaveTextContent('null')
       expect(screen.getByTestId('username')).toHaveTextContent('null')
       expect(mockSetModuleToken).toHaveBeenCalledWith(null)
+      expect(mockQueryClientClear).toHaveBeenCalledTimes(1)
+      expect(mockQueryClientPrefetchQuery).not.toHaveBeenCalled()
     })
 
     it('clears state when getMe fails after a successful refresh', async () => {
@@ -181,6 +200,7 @@ describe('AuthContext', () => {
       )
 
       expect(mockSetModuleToken).toHaveBeenCalledWith(null)
+      expect(mockQueryClientClear).toHaveBeenCalledTimes(1)
     })
 
     it('loads the active household from /auth/me instead of the localStorage cache', async () => {

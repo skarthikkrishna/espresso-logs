@@ -3,7 +3,8 @@
  * redirect handling, and silent 401 refresh.
  *
  * AC-102: On 401, attempt one silent token refresh before hard-redirecting
- *         to /login. The _retry flag prevents infinite loops.
+ *         to /login. A shared refresh promise deduplicates concurrent retries
+ *         while the _retry flag still prevents infinite loops per request.
  * AC-103: Access token stored only in module memory — never
  *         localStorage/sessionStorage.
  */
@@ -102,6 +103,21 @@ interface RefreshResponse {
   token_type: string
 }
 
+let refreshPromise: Promise<string> | null = null
+
+async function refreshAccessToken(): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = axios
+      .post<RefreshResponse>('/auth/refresh', null, { withCredentials: true })
+      .then((response) => response.data.access_token)
+      .finally(() => {
+        refreshPromise = null
+      })
+  }
+
+  return refreshPromise
+}
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: unknown) => {
@@ -123,13 +139,9 @@ apiClient.interceptors.response.use(
     if (shouldRetry && originalRequest) {
       originalRequest._retry = true
       try {
-        const { data } = await axios.post<RefreshResponse>(
-          '/auth/refresh',
-          null,
-          { withCredentials: true },
-        )
-        setAccessToken(data.access_token)
-        originalRequest.headers['Authorization'] = `Bearer ${data.access_token}`
+        const refreshedToken = await refreshAccessToken()
+        setAccessToken(refreshedToken)
+        originalRequest.headers['Authorization'] = `Bearer ${refreshedToken}`
 
         return apiClient(originalRequest)
       } catch {

@@ -15,6 +15,7 @@ import React, {
   useMemo,
   useState,
 } from 'react'
+import { listHardware } from '../api/hardware'
 import type { CurrentUser, Membership } from '../types/entities'
 import {
   getStoredActiveHouseholdId,
@@ -27,6 +28,7 @@ import {
   refresh as refreshApi,
   switchHousehold as switchHouseholdApi,
 } from '../api/auth'
+import { queryClient } from '../queryClient'
 
 interface AuthState {
   accessToken: string | null
@@ -189,6 +191,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       } catch {
         if (!cancelled) {
+          queryClient.clear()
           setAccessTokenState(null)
           setModuleToken(null)
           syncUserState(null)
@@ -206,6 +209,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       cancelled = true
     }
   }, [syncUserState])
+
+  useEffect(() => {
+    if (isLoading || !isAuthenticated) return
+
+    void queryClient.prefetchQuery({
+      queryKey: ['hardware'],
+      queryFn: listHardware,
+    })
+  }, [isAuthenticated, isLoading])
 
   const setAccessToken = useCallback((token: string | null) => {
     setAccessTokenState(token)
