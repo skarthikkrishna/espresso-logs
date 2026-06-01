@@ -9,7 +9,7 @@
  */
 
 import { apiClient } from './client'
-import type { CurrentUser } from '../types/entities'
+import type { CurrentUser, Membership } from '../types/entities'
 
 // ---------------------------------------------------------------------------
 // Response types (matching API contract — spec §5.1)
@@ -30,6 +30,12 @@ export interface RegisterResponse {
 export interface LoginResponse {
   access_token: string
   token_type: string
+}
+
+export interface SwitchHouseholdResponse {
+  household_id: string
+  household_name: string
+  role: Membership['role']
 }
 
 // ---------------------------------------------------------------------------
@@ -68,5 +74,7 @@ export const getMe = (): Promise<CurrentUser> =>
   apiClient.get<CurrentUser>('/auth/me').then((r) => r.data)
 
 /** POST /auth/switch-household — sets active household context server-side. */
-export const switchHousehold = (householdId: string): Promise<void> =>
-  apiClient.post('/auth/switch-household', { household_id: householdId }).then(() => undefined)
+export const switchHousehold = (householdId: string): Promise<SwitchHouseholdResponse> =>
+  apiClient
+    .post<SwitchHouseholdResponse>('/auth/switch-household', { household_id: householdId })
+    .then((r) => r.data)

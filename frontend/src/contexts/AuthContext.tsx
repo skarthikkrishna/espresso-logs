@@ -1,8 +1,10 @@
 /**
- * AuthContext — M5 auth state, memberships, and active-household coordination.
+ * AuthContext — M5 auth state, memberships, and server-backed active-household
+ * coordination.
  *
- * Access tokens stay in React/module memory only. Household context is stored
- * separately so the API client can inject X-Household-Id on every request.
+ * Access tokens stay in React/module memory only. The active household is
+ * loaded from /auth/me and persisted server-side via /auth/switch-household,
+ * while localStorage only caches the last known household for display.
  */
 
 import React, {
@@ -70,15 +72,12 @@ function deriveMemberships(user: CurrentUser | null): Membership[] {
   return []
 }
 
-function resolveActiveHouseholdId(
+function resolveServerActiveHouseholdId(
   user: CurrentUser,
   memberships: Membership[],
-  preferredHouseholdId?: string | null,
 ): string | null {
   const candidates = [
-    preferredHouseholdId,
     user.active_household_id,
-    getStoredActiveHouseholdId(),
     user.household_id,
     memberships[0]?.household_id ?? null,
   ]
@@ -93,16 +92,9 @@ function resolveActiveHouseholdId(
   return null
 }
 
-function normalizeUser(
-  incomingUser: CurrentUser,
-  preferredHouseholdId?: string | null,
-): CurrentUser {
+function normalizeUser(incomingUser: CurrentUser): CurrentUser {
   const memberships = deriveMemberships(incomingUser)
-  const activeHouseholdId = resolveActiveHouseholdId(
-    incomingUser,
-    memberships,
-    preferredHouseholdId,
-  )
+  const activeHouseholdId = resolveServerActiveHouseholdId(incomingUser, memberships)
   const activeMembership = memberships.find(
     (membership) => membership.household_id === activeHouseholdId,
   )
@@ -111,9 +103,38 @@ function normalizeUser(
     ...incomingUser,
     memberships,
     active_household_id: activeHouseholdId,
-    household_id: incomingUser.household_id ?? activeHouseholdId,
-    role: incomingUser.role ?? activeMembership?.role ?? null,
+    household_id: activeMembership?.household_id ?? incomingUser.household_id ?? activeHouseholdId,
+    role: activeMembership?.role ?? incomingUser.role ?? null,
   }
+}
+
+function upsertMembership(
+  memberships: Membership[],
+  nextMembership: Pick<Membership, 'household_id' | 'household_name' | 'role'>,
+): Membership[] {
+  const existingMembership = memberships.find(
+    (membership) => membership.household_id === nextMembership.household_id,
+  )
+
+  if (!existingMembership) {
+    return [
+      ...memberships,
+      {
+        ...nextMembership,
+        joined_at: '',
+      },
+    ]
+  }
+
+  return memberships.map((membership) =>
+    membership.household_id === nextMembership.household_id
+      ? {
+          ...membership,
+          household_name: nextMembership.household_name,
+          role: nextMembership.role,
+        }
+      : membership,
+  )
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
@@ -127,27 +148,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const isAuthenticated = accessToken !== null
 
-  const syncUserState = useCallback(
-    (incomingUser: CurrentUser | null, preferredHouseholdId?: string | null) => {
-      if (!incomingUser) {
-        setUserState(null)
-        setMemberships([])
-        setActiveHouseholdId(null)
-        setStoredActiveHouseholdId(null)
-        return
-      }
+  const syncUserState = useCallback((incomingUser: CurrentUser | null) => {
+    if (!incomingUser) {
+      setUserState(null)
+      setMemberships([])
+      setActiveHouseholdId(null)
+      setStoredActiveHouseholdId(null)
+      return
+    }
 
-      const normalizedUser = normalizeUser(incomingUser, preferredHouseholdId)
-      const nextMemberships = normalizedUser.memberships ?? []
-      const nextActiveHouseholdId = normalizedUser.active_household_id ?? null
+    const normalizedUser = normalizeUser(incomingUser)
+    const nextMemberships = normalizedUser.memberships ?? []
+    const nextActiveHouseholdId = normalizedUser.active_household_id ?? null
 
-      setUserState(normalizedUser)
-      setMemberships(nextMemberships)
-      setActiveHouseholdId(nextActiveHouseholdId)
-      setStoredActiveHouseholdId(nextActiveHouseholdId)
-    },
-    [],
-  )
+    setUserState(normalizedUser)
+    setMemberships(nextMemberships)
+    setActiveHouseholdId(nextActiveHouseholdId)
+    setStoredActiveHouseholdId(nextActiveHouseholdId)
+  }, [])
 
   const activeMembership: Membership | null = useMemo(() => {
     if (!activeHouseholdId) return null
@@ -203,11 +221,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const switchHousehold = useCallback(
     async (householdId: string) => {
-      await switchHouseholdApi(householdId)
-      const userData = await getMeApi()
-      syncUserState(userData, householdId)
+      const nextSelection = await switchHouseholdApi(householdId)
+      const nextMemberships = upsertMembership(memberships, nextSelection)
+
+      setMemberships(nextMemberships)
+      setActiveHouseholdId(nextSelection.household_id)
+      setStoredActiveHouseholdId(nextSelection.household_id)
+      setUserState((currentUser) => {
+        if (!currentUser) return currentUser
+
+        return normalizeUser({
+          ...currentUser,
+          memberships: nextMemberships,
+          active_household_id: nextSelection.household_id,
+          household_id: nextSelection.household_id,
+          role: nextSelection.role,
+        })
+      })
     },
-    [syncUserState],
+    [memberships],
   )
 
   const logout = useCallback(() => {

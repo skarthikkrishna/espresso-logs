@@ -1,13 +1,5 @@
 /**
- * apiClient interceptor tests — AC-102, AC-103
- *
- * Covers:
- *   - Request interceptor: injects Bearer Authorization header when token is set
- *   - 401 retry: silent token refresh → retry original request → success
- *   - 401 refresh failure: clears module token, redirects window to /login
- *   - SKIP_REFRESH_PATHS: auth endpoints (login, register, refresh, logout)
- *     receive 401 without triggering the silent refresh loop
- *   - _retry flag prevents infinite retry loops
+ * apiClient interceptor tests — AC-102, AC-103, and setup-required redirects.
  */
 
 import axios, { AxiosError } from 'axios'
@@ -20,21 +12,22 @@ import {
   setAccessToken,
 } from './client'
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Build a minimal AxiosError with status and config set — simulates adapter rejection. */
-function make401Error(config: InternalAxiosRequestConfig): AxiosError {
-  const response: AxiosResponse = {
-    data: { detail: 'Unauthorized' },
-    status: 401,
-    statusText: 'Unauthorized',
+function makeError<TData>(
+  config: InternalAxiosRequestConfig,
+  status: number,
+  data: TData,
+  statusText = 'Request failed',
+): AxiosError<TData> {
+  const response: AxiosResponse<TData> = {
+    data,
+    status,
+    statusText,
     headers: {},
     config,
   }
+
   return new AxiosError(
-    'Request failed with status code 401',
+    `Request failed with status code ${status}`,
     'ERR_BAD_REQUEST',
     config,
     null,
@@ -42,14 +35,9 @@ function make401Error(config: InternalAxiosRequestConfig): AxiosError {
   )
 }
 
-/** Minimal successful adapter response. */
 function makeOkResponse<T>(data: T, config: InternalAxiosRequestConfig): AxiosResponse<T> {
   return { data, status: 200, statusText: 'OK', headers: {}, config }
 }
-
-// ---------------------------------------------------------------------------
-// Save / restore adapter and window.location between tests
-// ---------------------------------------------------------------------------
 
 let originalAdapter: typeof apiClient.defaults.adapter
 let originalLocation: Location
@@ -107,13 +95,9 @@ afterAll(() => {
   })
 })
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
 describe('apiClient', () => {
   describe('request interceptor — Bearer token injection', () => {
-    it('injects X-Household-Id header when active household is stored', async () => {
+    it('never injects X-Household-Id even when an active household is cached', async () => {
       window.localStorage.setItem(ACTIVE_HOUSEHOLD_STORAGE_KEY, 'hh-123')
 
       let capturedConfig: InternalAxiosRequestConfig | undefined
@@ -125,7 +109,7 @@ describe('apiClient', () => {
 
       await apiClient.get('/api/test')
 
-      expect(capturedConfig?.headers?.['X-Household-Id']).toBe('hh-123')
+      expect(capturedConfig?.headers?.['X-Household-Id']).toBeUndefined()
     })
 
     it('injects Authorization header when access token is set', async () => {
@@ -140,7 +124,7 @@ describe('apiClient', () => {
 
       await apiClient.get('/api/test')
 
-      expect(capturedConfig?.headers?.['Authorization']).toBe('Bearer my-access-token')
+      expect(capturedConfig?.headers?.Authorization).toBe('Bearer my-access-token')
     })
 
     it('does not inject Authorization header when token is null', async () => {
@@ -155,19 +139,36 @@ describe('apiClient', () => {
 
       await apiClient.get('/api/test')
 
-      expect(capturedConfig?.headers?.['Authorization']).toBeUndefined()
+      expect(capturedConfig?.headers?.Authorization).toBeUndefined()
     })
   })
 
-  describe('response interceptor — 401 silent refresh (AC-102)', () => {
+  describe('response interceptor — redirects and silent refresh', () => {
+    it('redirects to /welcome when the API returns setup_required=true', async () => {
+      apiClient.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
+        throw makeError(config, 503, {
+          detail: 'Initial setup required',
+          setup_required: true,
+        }, 'Service Unavailable')
+      }
+
+      await expect(apiClient.get('/api/protected')).rejects.toBeTruthy()
+
+      expect(window.location.pathname).toBe('/welcome')
+    })
+
     it('retries request after 401 using refresh token', async () => {
       let callCount = 0
+      let retryConfig: InternalAxiosRequestConfig | undefined
+      window.localStorage.setItem(ACTIVE_HOUSEHOLD_STORAGE_KEY, 'hh-123')
 
       apiClient.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
         callCount++
         if (callCount === 1) {
-          throw make401Error(config)
+          throw makeError(config, 401, { detail: 'Unauthorized' }, 'Unauthorized')
         }
+
+        retryConfig = config
         return makeOkResponse({ result: 'retried' }, config)
       }
 
@@ -185,18 +186,18 @@ describe('apiClient', () => {
       expect(getAccessToken()).toBe('refreshed-token')
       expect(callCount).toBe(2)
       expect(response.data).toEqual({ result: 'retried' })
+      expect(retryConfig?.headers?.Authorization).toBe('Bearer refreshed-token')
+      expect(retryConfig?.headers?.['X-Household-Id']).toBeUndefined()
     })
 
     it('clears module token and redirects to /login when refresh fails', async () => {
       setAccessToken('old-token')
 
-      // jsdom's window.location doesn't fully process href assignments as navigation.
-      // Replace with a plain writable mock so we can capture the assigned value.
       const locationMock = { href: 'http://localhost/' }
       Object.defineProperty(window, 'location', { configurable: true, writable: true, value: locationMock })
 
       apiClient.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
-        throw make401Error(config)
+        throw makeError(config, 401, { detail: 'Unauthorized' }, 'Unauthorized')
       }
 
       vi.spyOn(axios, 'post').mockRejectedValueOnce(new Error('refresh failed'))
@@ -212,7 +213,7 @@ describe('apiClient', () => {
 
       apiClient.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
         callCount++
-        throw make401Error(config)
+        throw makeError(config, 401, { detail: 'Unauthorized' }, 'Unauthorized')
       }
 
       const refreshSpy = vi.spyOn(axios, 'post')
@@ -225,7 +226,7 @@ describe('apiClient', () => {
 
     it('does not attempt refresh for /auth/register 401 (skip path)', async () => {
       apiClient.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
-        throw make401Error(config)
+        throw makeError(config, 401, { detail: 'Unauthorized' }, 'Unauthorized')
       }
 
       const refreshSpy = vi.spyOn(axios, 'post')
@@ -237,7 +238,7 @@ describe('apiClient', () => {
 
     it('does not attempt refresh for /auth/refresh 401 (skip path)', async () => {
       apiClient.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
-        throw make401Error(config)
+        throw makeError(config, 401, { detail: 'Unauthorized' }, 'Unauthorized')
       }
 
       const refreshSpy = vi.spyOn(axios, 'post')
@@ -250,13 +251,11 @@ describe('apiClient', () => {
     it('does not retry more than once (_retry flag prevents loop)', async () => {
       let callCount = 0
 
-      // Both original call and retry return 401
       apiClient.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
         callCount++
-        throw make401Error(config)
+        throw makeError(config, 401, { detail: 'Unauthorized' }, 'Unauthorized')
       }
 
-      // Refresh succeeds — but the retry itself also 401s
       vi.spyOn(axios, 'post').mockResolvedValueOnce({
         data: { access_token: 'tok', token_type: 'bearer' },
         status: 200,
@@ -267,9 +266,7 @@ describe('apiClient', () => {
 
       await expect(apiClient.get('/api/protected')).rejects.toBeTruthy()
 
-      // Original (1) + one retry (2) — no further attempts
       expect(callCount).toBe(2)
-      // Refresh only called once
       expect(axios.post).toHaveBeenCalledTimes(1)
     })
   })

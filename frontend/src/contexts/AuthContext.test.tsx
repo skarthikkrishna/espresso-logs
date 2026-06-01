@@ -1,25 +1,12 @@
 /**
- * AuthContext tests — AC-103 (no localStorage), AC-102 (unauthenticated path)
- *
- * Covers:
- *   - Successful auth bootstrap: refresh + getMe → authenticated state populated
- *   - Failed bootstrap: state cleared, isAuthenticated = false
- *   - logout: calls logoutApi, clears state and module token (not localStorage)
- *   - setAccessToken: updates React state and syncs module token
- *   - setUser: populates user state
- *
- * AC-103: Token is stored only in React/module state — never localStorage.
- *         Tests verify no setItem call with a token-related key.
+ * AuthContext tests — AC-103 (no localStorage token writes), bootstrap from
+ * /auth/me, and server-backed household switching.
  */
 
 import React from 'react'
 import { render, screen, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AuthProvider, useAuth } from './AuthContext'
-
-// ---------------------------------------------------------------------------
-// Hoisted mock references (must precede vi.mock factory calls)
-// ---------------------------------------------------------------------------
 
 const mockRefresh = vi.hoisted(() => vi.fn())
 const mockGetMe = vi.hoisted(() => vi.fn())
@@ -28,10 +15,6 @@ const mockSwitchHousehold = vi.hoisted(() => vi.fn())
 const mockSetModuleToken = vi.hoisted(() => vi.fn())
 const mockGetStoredActiveHouseholdId = vi.hoisted(() => vi.fn())
 const mockSetStoredActiveHouseholdId = vi.hoisted(() => vi.fn())
-
-// ---------------------------------------------------------------------------
-// Module mocks
-// ---------------------------------------------------------------------------
 
 vi.mock('../api/auth', () => ({
   refresh: mockRefresh,
@@ -45,10 +28,6 @@ vi.mock('../api/client', () => ({
   setAccessToken: mockSetModuleToken,
   setStoredActiveHouseholdId: mockSetStoredActiveHouseholdId,
 }))
-
-// ---------------------------------------------------------------------------
-// Test data
-// ---------------------------------------------------------------------------
 
 const mockUser = {
   id: 'user-1',
@@ -71,17 +50,26 @@ const mockUser = {
       role: 'member' as const,
       joined_at: '2024-02-01T00:00:00Z',
     },
+    {
+      household_id: 'hh-3',
+      household_name: 'Travel',
+      role: 'member' as const,
+      joined_at: '2024-03-01T00:00:00Z',
+    },
   ],
   active_household_id: 'hh-1',
 }
 
-// ---------------------------------------------------------------------------
-// Consumer components for assertions
-// ---------------------------------------------------------------------------
-
-/** Renders current auth state as testable text nodes */
 function AuthConsumer() {
-  const { isLoading, isAuthenticated, accessToken, user, memberships, activeHouseholdId } = useAuth()
+  const {
+    isLoading,
+    isAuthenticated,
+    accessToken,
+    user,
+    memberships,
+    activeHouseholdId,
+    activeMembership,
+  } = useAuth()
 
   if (isLoading) return <div data-testid="loading">loading</div>
 
@@ -92,11 +80,12 @@ function AuthConsumer() {
       <div data-testid="username">{user?.username ?? 'null'}</div>
       <div data-testid="memberships">{memberships.length}</div>
       <div data-testid="active-household">{activeHouseholdId ?? 'null'}</div>
+      <div data-testid="active-household-name">{activeMembership?.household_name ?? 'null'}</div>
+      <div data-testid="active-role">{activeMembership?.role ?? 'null'}</div>
     </div>
   )
 }
 
-/** Renders auth action buttons */
 function AuthActions() {
   const { setAccessToken, setUser, logout, switchHousehold } = useAuth()
   return (
@@ -113,18 +102,10 @@ function renderWithProvider(children: React.ReactNode) {
   return render(<AuthProvider>{children}</AuthProvider>)
 }
 
-// ---------------------------------------------------------------------------
-// Setup
-// ---------------------------------------------------------------------------
-
 beforeEach(() => {
   vi.clearAllMocks()
   mockGetStoredActiveHouseholdId.mockReturnValue(null)
 })
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe('AuthContext', () => {
   describe('bootstrap / hydration', () => {
@@ -134,17 +115,15 @@ describe('AuthContext', () => {
 
       renderWithProvider(<AuthConsumer />)
 
-      // Initial render should show the loading state
       expect(screen.getByTestId('loading')).toBeInTheDocument()
 
-      // After async bootstrap completes
       await waitFor(() =>
         expect(screen.getByTestId('authenticated')).toHaveTextContent('true'),
       )
 
       expect(screen.getByTestId('token')).toHaveTextContent('tok-abc')
       expect(screen.getByTestId('username')).toHaveTextContent('alice')
-      expect(screen.getByTestId('memberships')).toHaveTextContent('2')
+      expect(screen.getByTestId('memberships')).toHaveTextContent('3')
       expect(screen.getByTestId('active-household')).toHaveTextContent('hh-1')
 
       expect(mockSetModuleToken).toHaveBeenCalledWith('tok-abc')
@@ -171,8 +150,6 @@ describe('AuthContext', () => {
 
       expect(screen.getByTestId('token')).toHaveTextContent('null')
       expect(screen.getByTestId('username')).toHaveTextContent('null')
-
-      // Module token must be cleared — not localStorage (AC-103)
       expect(mockSetModuleToken).toHaveBeenCalledWith(null)
     })
 
@@ -189,16 +166,19 @@ describe('AuthContext', () => {
       expect(mockSetModuleToken).toHaveBeenCalledWith(null)
     })
 
-    it('prefers stored active household when it matches memberships', async () => {
+    it('loads the active household from /auth/me instead of the localStorage cache', async () => {
       mockGetStoredActiveHouseholdId.mockReturnValue('hh-2')
       mockRefresh.mockResolvedValueOnce({ access_token: 'tok-abc', token_type: 'bearer' })
-      mockGetMe.mockResolvedValueOnce({ ...mockUser, active_household_id: null })
+      mockGetMe.mockResolvedValueOnce(mockUser)
 
       renderWithProvider(<AuthConsumer />)
 
       await waitFor(() =>
-        expect(screen.getByTestId('active-household')).toHaveTextContent('hh-2'),
+        expect(screen.getByTestId('active-household')).toHaveTextContent('hh-1'),
       )
+
+      expect(screen.getByTestId('active-household')).not.toHaveTextContent('hh-2')
+      expect(mockSetStoredActiveHouseholdId).toHaveBeenCalledWith('hh-1')
     })
 
     it('does not write access token to localStorage (AC-103)', async () => {
@@ -213,7 +193,6 @@ describe('AuthContext', () => {
         expect(screen.getByTestId('authenticated')).toHaveTextContent('true'),
       )
 
-      // No localStorage writes with a token-related key
       const tokenWrite = lsSpy.mock.calls.find(([key]) =>
         /token|access/i.test(String(key)),
       )
@@ -248,8 +227,6 @@ describe('AuthContext', () => {
 
       expect(screen.getByTestId('token')).toHaveTextContent('null')
       expect(screen.getByTestId('username')).toHaveTextContent('null')
-
-      // Module token must be cleared on logout (AC-103 — not localStorage)
       expect(mockSetModuleToken).toHaveBeenCalledWith(null)
       expect(mockLogout).toHaveBeenCalled()
     })
@@ -278,9 +255,8 @@ describe('AuthContext', () => {
     })
   })
 
-  describe('setAccessToken / setUser', () => {
+  describe('setAccessToken / setUser / switchHousehold', () => {
     it('setAccessToken updates React state and syncs module token', async () => {
-      // Start unauthenticated
       mockRefresh.mockRejectedValueOnce(new Error('no cookie'))
 
       renderWithProvider(
@@ -303,7 +279,6 @@ describe('AuthContext', () => {
       )
 
       expect(screen.getByTestId('authenticated')).toHaveTextContent('true')
-      // Module token synced (AC-103 — not localStorage)
       expect(mockSetModuleToken).toHaveBeenLastCalledWith('manual-token')
     })
 
@@ -328,15 +303,45 @@ describe('AuthContext', () => {
       await waitFor(() =>
         expect(screen.getByTestId('username')).toHaveTextContent('alice'),
       )
-      expect(screen.getByTestId('memberships')).toHaveTextContent('2')
+      expect(screen.getByTestId('memberships')).toHaveTextContent('3')
     })
 
-    it('switchHousehold refreshes the active household state', async () => {
+    it('switchHousehold calls POST /auth/switch-household with the selected household', async () => {
       mockRefresh.mockResolvedValueOnce({ access_token: 'tok-abc', token_type: 'bearer' })
-      mockGetMe
-        .mockResolvedValueOnce(mockUser)
-        .mockResolvedValueOnce({ ...mockUser, active_household_id: 'hh-2' })
-      mockSwitchHousehold.mockResolvedValueOnce(undefined)
+      mockGetMe.mockResolvedValueOnce(mockUser)
+      mockSwitchHousehold.mockResolvedValueOnce({
+        household_id: 'hh-2',
+        household_name: 'Office',
+        role: 'member',
+      })
+
+      renderWithProvider(
+        <>
+          <AuthConsumer />
+          <AuthActions />
+        </>,
+      )
+
+      await waitFor(() =>
+        expect(screen.getByTestId('active-household')).toHaveTextContent('hh-1'),
+      )
+
+      act(() => {
+        screen.getByRole('button', { name: 'switch-household' }).click()
+      })
+
+      await waitFor(() => expect(mockSwitchHousehold).toHaveBeenCalledWith('hh-2'))
+      expect(mockGetMe).toHaveBeenCalledTimes(1)
+    })
+
+    it('switchHousehold updates the active household from the server response', async () => {
+      mockRefresh.mockResolvedValueOnce({ access_token: 'tok-abc', token_type: 'bearer' })
+      mockGetMe.mockResolvedValueOnce(mockUser)
+      mockSwitchHousehold.mockResolvedValueOnce({
+        household_id: 'hh-3',
+        household_name: 'Travel',
+        role: 'member',
+      })
 
       renderWithProvider(
         <>
@@ -354,10 +359,11 @@ describe('AuthContext', () => {
       })
 
       await waitFor(() =>
-        expect(screen.getByTestId('active-household')).toHaveTextContent('hh-2'),
+        expect(screen.getByTestId('active-household')).toHaveTextContent('hh-3'),
       )
-      expect(mockSwitchHousehold).toHaveBeenCalledWith('hh-2')
-      expect(mockSetStoredActiveHouseholdId).toHaveBeenLastCalledWith('hh-2')
+      expect(screen.getByTestId('active-household-name')).toHaveTextContent('Travel')
+      expect(screen.getByTestId('active-role')).toHaveTextContent('member')
+      expect(mockSetStoredActiveHouseholdId).toHaveBeenLastCalledWith('hh-3')
     })
   })
 })

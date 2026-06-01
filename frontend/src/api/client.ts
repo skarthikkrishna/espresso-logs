@@ -1,6 +1,6 @@
 /**
- * client.ts — shared Axios instance with Bearer token injection, active-household
- * header injection, and silent 401 refresh.
+ * client.ts — shared Axios instance with Bearer token injection, setup-required
+ * redirect handling, and silent 401 refresh.
  *
  * AC-102: On 401, attempt one silent token refresh before hard-redirecting
  *         to /login. The _retry flag prevents infinite loops.
@@ -41,6 +41,23 @@ export const setStoredActiveHouseholdId = (householdId: string | null): void => 
   window.localStorage.removeItem(ACTIVE_HOUSEHOLD_STORAGE_KEY)
 }
 
+function navigateTo(path: string): void {
+  if (typeof window === 'undefined') return
+  if (window.location.pathname === path) return
+
+  window.history.pushState({}, '', path)
+  window.dispatchEvent(new PopStateEvent('popstate'))
+}
+
+function isSetupRequiredPayload(data: unknown): data is { setup_required: true } {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'setup_required' in data &&
+    data.setup_required === true
+  )
+}
+
 // ---------------------------------------------------------------------------
 // Axios instance
 // ---------------------------------------------------------------------------
@@ -54,7 +71,7 @@ export const apiClient = axios.create({
 })
 
 // ---------------------------------------------------------------------------
-// Request interceptor — inject Bearer header + active household header
+// Request interceptor — inject Bearer header
 // ---------------------------------------------------------------------------
 
 apiClient.interceptors.request.use((config) => {
@@ -62,16 +79,11 @@ apiClient.interceptors.request.use((config) => {
     config.headers['Authorization'] = `Bearer ${_accessToken}`
   }
 
-  const activeHouseholdId = getStoredActiveHouseholdId()
-  if (activeHouseholdId) {
-    config.headers['X-Household-Id'] = activeHouseholdId
-  }
-
   return config
 })
 
 // ---------------------------------------------------------------------------
-// Response interceptor — silent 401 refresh (AC-102)
+// Response interceptor — setup-required redirect + silent 401 refresh
 // ---------------------------------------------------------------------------
 
 const SKIP_REFRESH_PATHS = [
@@ -95,6 +107,11 @@ apiClient.interceptors.response.use(
   async (error: unknown) => {
     if (!axios.isAxiosError(error)) return Promise.reject(error)
 
+    if (error.response?.status === 503 && isSetupRequiredPayload(error.response.data)) {
+      navigateTo('/welcome')
+      return Promise.reject(error)
+    }
+
     const originalRequest = error.config as RetryableConfig | undefined
 
     const shouldRetry =
@@ -113,11 +130,6 @@ apiClient.interceptors.response.use(
         )
         setAccessToken(data.access_token)
         originalRequest.headers['Authorization'] = `Bearer ${data.access_token}`
-
-        const activeHouseholdId = getStoredActiveHouseholdId()
-        if (activeHouseholdId) {
-          originalRequest.headers['X-Household-Id'] = activeHouseholdId
-        }
 
         return apiClient(originalRequest)
       } catch {
