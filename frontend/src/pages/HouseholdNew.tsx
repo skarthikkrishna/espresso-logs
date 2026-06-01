@@ -11,13 +11,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { apiClient, setStoredActiveHouseholdId } from '../api/client'
+import { apiClient } from '../api/client'
 import { getMe } from '../api/auth'
 import { useAuth } from '../contexts/AuthContext'
 
 function validateName(value: string): string | null {
   if (!value.trim()) return 'Household name is required'
-  if (value.trim().length > 50) return 'Name must be 50 characters or less'
+  if (value.trim().length > 64) return 'Name must be 64 characters or less'
   return null
 }
 
@@ -51,10 +51,9 @@ export default function HouseholdNew() {
     setIsSubmitting(true)
 
     try {
-    const { data } = await apiClient.post<CreateHouseholdResponse>('/households', {
+    await apiClient.post<CreateHouseholdResponse>('/households', {
       name: name.trim(),
     })
-    setStoredActiveHouseholdId(data.id)
     const userData = await getMe()
     setUser(userData)
     navigate('/', { replace: true })
@@ -98,7 +97,7 @@ export default function HouseholdNew() {
                 type="text"
                 autoComplete="off"
                 required
-                maxLength={50}
+                maxLength={64}
                 className={`input input-bordered w-full bg-[var(--input-bg)] ${nameError ? 'input-error' : ''}`}
                 aria-invalid={nameError ? 'true' : 'false'}
                 aria-describedby={nameError ? 'name-error' : undefined}
