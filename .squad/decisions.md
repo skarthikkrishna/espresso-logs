@@ -942,3 +942,128 @@ Session-resolved URL refactor is authorised for `app/routers/api_households.py` 
 **Leave unchanged:** create/list/accept-invite routes that still require explicit IDs or token-only handling. Add a tech-debt TODO above `DELETE /me`; do not widen scope beyond the router and those tests.
 
 ---
+
+
+---
+
+# Tariq routing decision — PR #80 CI RCA
+
+- Date: 2026-06-01
+- Branch: `feat/034-m5-household-roles`
+- Request: Produce a written root cause analysis for failing CI jobs on PR #80 / run 26736087268, make no code changes or fixes, and commit the RCA locally without pushing.
+
+## Decision
+status: DIRECT_PERMITTED
+
+## Rationale
+This request is bounded to CI failure diagnosis and documentation. It does not change application behavior, schema, infrastructure, or product scope. The work is limited to collecting evidence from the failing GitHub Actions run, identifying the failing checks and probable causes, and recording the findings in a repository-local RCA document.
+
+## Explicit scope confirmation
+Direct work is permitted for diagnosis only: inspect PR #80 and run 26736087268, write the RCA under `.squad/log/`, and commit the documentation locally without pushing. No implementation, remediation, or follow-up fixes are authorized by this routing decision.
+
+
+---
+
+# Alex routing decision — branch feat/034-m5-household-roles CI fixes
+
+- Date: 2026-06-01
+- Branch: `feat/034-m5-household-roles`
+- Request: Fix two CI failures on `feat/034-m5-household-roles` in `espresso-logs`: resolve the asyncpg event-loop mismatch behind 23 failing SQL repo tests by correcting fixture/loop scope conflicts without changing test logic/assertions, upgrade `starlette` from `1.0.0` to `1.0.1` via `uv add starlette==1.0.1`, run all four local CI-equivalent checks, and if passing commit locally without pushing.
+
+## Decision
+status: DIRECT_PERMITTED
+
+## Rationale
+This is a bounded remediation request inside existing backend test infrastructure and dependency management. The requested work is limited to repairing a fixture/event-loop scope mismatch in current tests, applying a patch-level dependency upgrade, validating with the repository’s established four CI-equivalent commands, and creating a local commit. It does not introduce new product scope, schema design, UX changes, or cross-cutting architectural decisions that would require a SpecKit cycle.
+
+## Explicit scope confirmation
+Direct implementation is permitted only for: investigating `tests/conftest.py` and the named failing SQL repo tests, fixing the async fixture or event-loop scope conflict without altering test assertions or intended behavior, running `uv add starlette==1.0.1`, executing the four required local CI-equivalent checks, and creating a local commit if those checks pass. No push, no broader refactor, and no unrelated file changes are authorized by this routing decision.
+
+
+---
+
+# Routing Decision — spec-034 M5 Security Remediation
+
+**Agent:** Alex (backend routing)
+**Timestamp:** 2026-06-01T05:38:13Z
+**Branch:** feat/034-m5-household-roles
+**Status:** DIRECT_PERMITTED
+
+---
+
+## Request Summary
+
+Remediate two CI/security scanner findings on the existing `feat/034-m5-household-roles` branch:
+
+1. **Semgrep S608** — `app/repos/sql/household.py` lines 495-497: dynamic SQL table name
+   interpolated via an f-string inside `sqlalchemy.text(...)`. The table name comes from a
+   closed, hardcoded list `["hardware", "maintenance_log"]` defined in the same function.
+
+2. **Gitleaks** — dummy JWT_SECRET test-fixture literal `abcdefghijklmnopqrstuvwxyz123456`
+   appearing in `tests/conftest.py:14` and `tests/test_integration.py:17`. Both are
+   intentional, non-sensitive test values.
+
+---
+
+## Routing Decision: DIRECT_PERMITTED
+
+### Rationale
+
+- **No net-new functionality.** Both changes are purely defensive — replacing a safe-but-flagged
+  pattern with an equivalent safe pattern, and suppressing false-positive scanner noise on
+  known dummy values.
+
+- **Bounded scope.** Affected files:
+  - `app/repos/sql/household.py` — allowlist guard replaces f-string interpolation; no
+    behaviour change because the allowlist exactly matches the existing hardcoded list.
+  - `tests/conftest.py` — inline `# gitleaks:allow` annotation on line 14.
+  - `tests/test_integration.py` — inline `# gitleaks:allow` annotation on line 17.
+
+- **No new routes, models, data-access contracts, or API surface.** The household migration
+  helper function signature and return type are unchanged.
+
+- **In-branch.** Work stays on `feat/034-m5-household-roles`; no new branch required.
+
+- **SpecKit is not warranted** for security-scanner suppression / safe-equivalent refactors
+  on an already-approved and substantially-complete feature branch.
+
+### Explicit Scope Confirmation
+
+The implementer (Quinn) is authorised to make **only** the following changes:
+
+| File | Change |
+|---|---|
+| `app/repos/sql/household.py` | Replace `sa.text(f"UPDATE {table} ...")` with an allowlist-validated static dispatch (e.g. `if table not in _ALLOWED_TENANT_TABLES: raise ValueError`) so no user-controlled or dynamic string reaches `sqlalchemy.text`. |
+| `tests/conftest.py` | Add `# gitleaks:allow` (or equivalent suppression comment) to the `JWT_SECRET` setdefault line. |
+| `tests/test_integration.py` | Add `# gitleaks:allow` (or equivalent suppression comment) to the `JWT_SECRET` env-var comment line. |
+
+No other files may be modified under this routing decision.
+
+### Post-change Verification
+
+Before committing, all of the following must pass:
+
+```
+uv run ruff check app/ tests/
+uv run ruff format --check app/ tests/
+uv run mypy app/ --strict
+SPREADSHEET_ID=dummy uv run pytest tests/ -v --ignore=tests/e2e/ -k "household"
+```
+
+Commit message (pre-approved):
+```
+fix(security): replace dynamic SQL table interpolation with allowlist in household.py (#034)
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+```
+
+**No push until operator explicitly authorises.**
+
+---
+
+## Quinn Gate
+
+For this narrow security remediation, a full `quinn-gate.md` artifact is **waived** per the
+routing agent's explicit statement here. The routing agent (Alex) confirms this is a
+documentation-equivalent / scanner-suppression change with no logic delta that would require
+a pre-implementation design review.
