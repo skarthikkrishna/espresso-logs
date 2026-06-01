@@ -1,5 +1,5 @@
 # Spec-034 Amendment — Welcome Onboarding Flow
-**Status:** draft
+**Status:** clarified
 **Date:** 2026-05-23
 **Author:** Priya
 **Supersedes:** auto-seed behaviour in `api_auth.py` (`seed_default_household_if_needed`)
@@ -121,9 +121,9 @@ requirements (lines 735–791) and §8 role/access matrix (lines 1122–1186).
 Given a user who has just registered or signed in for the first time (by any auth
 method) and has zero `HouseholdMembership` rows,
 when the auth endpoint issues a JWT,
-then the API response must include `redirect: "/welcome"` (or equivalent redirect
-signal), and the frontend must navigate the user to `/welcome`, not to the
-dashboard.
+then the frontend must call `GET /auth/me`, detect `memberships == []`, and
+navigate the user to `/welcome`, not to the dashboard. No backend redirect field
+is required.
 
 **AC-WF-A02** *(≡ AC-ONB-04, line 644)*
 Given a user who already has at least one `HouseholdMembership` row,
@@ -304,20 +304,15 @@ The helper `seed_default_household_if_needed` (api_auth.py lines 136–140) and
 its call sites (lines 173 and 226) must be removed.
 
 After removal:
-- `POST /auth/register` (no invite token): creates `User`, issues JWT, and the
-  response body must include a field (or HTTP redirect header) signalling the
-  client to navigate to `/welcome`.
-- `POST /auth/login` (no invite token, zero memberships): issues JWT; same
-  `/welcome` signal.
+- `POST /auth/register` (no invite token): creates `User` and issues a JWT.
+- `POST /auth/login` (no invite token, zero memberships): issues a JWT.
+- After login/register, the frontend calls `GET /auth/me`. If
+  `memberships == []`, the frontend navigates to `/welcome`.
+- No backend redirect field or HTTP redirect header is needed for this flow.
 
-[NEEDS_CLARIFICATION]: The spec does not specify whether the "redirect to /welcome"
-signal is communicated via a field in the JSON response body (e.g.,
-`"onboarding_required": true`), an HTTP 302 redirect from the backend, or purely
-frontend logic based on the memberships array returned by `GET /auth/me`. The
-current `MeOut` schema already includes `memberships: list[MembershipSchema]`
-(lines 116–118 of api_auth.py); the frontend could infer zero-membership state
-from an empty list and navigate accordingly. The spec is silent on which mechanism
-is canonical.
+The redirect signal is communicated entirely via the frontend: after
+login/register, the frontend calls `GET /auth/me`. If `memberships == []`, the
+frontend navigates to `/welcome`. No backend redirect field is needed.
 
 #### CHANGE: POST /auth/register — with invite token
 
@@ -335,9 +330,11 @@ On success (201 Created):
 {
   "access_token": "<jwt>",
   "token_type": "bearer",
-  "user": { "id": ..., "username": ..., "display_name": ..., "email": null, "picture_url": null },
-  "redirect": "/dashboard"   // [NEEDS_CLARIFICATION] — field name/mechanism TBD
+  "user": { "id": ..., "username": ..., "display_name": ..., "email": null, "picture_url": null }
 }
+
+After registration, the frontend calls `GET /auth/me`. If `memberships == []`,
+the frontend navigates to `/welcome`. No backend redirect field is needed.
 ```
 
 Error codes:
@@ -367,12 +364,9 @@ households router spec; it only requires that:
 
 The existing `MeOut.memberships` list (api_auth.py lines 116–118) already conveys
 membership state. The frontend must treat `memberships == []` as the signal to
-redirect to `/welcome`. No schema change is strictly required.
-
-[NEEDS_CLARIFICATION]: The spec does not state whether `GET /auth/me` should return
-a dedicated boolean field such as `"onboarding_required": true` in addition to
-(or instead of) the empty memberships list, to make the frontend branch condition
-more explicit.
+redirect to `/welcome`. No `onboarding_required` boolean field is added to
+`MeOut`. The empty `memberships` list is the sole signal. This avoids redundant
+state that could desync.
 
 #### CHANGE: deps.py — active-household resolution fallback
 
@@ -449,19 +443,30 @@ are assumed to exist as part of the M5 milestone database schema.
 The only data-layer change is **behavioural**:
 - Remove the call to `HouseholdRepo().seed_default_household()` that is currently
   invoked at registration and login time.
-- The `seed_default_household` method in `HouseholdRepo` may remain in the
-  repository for use by NFR-D8's first-startup bootstrap path (§6.2, line 1000–1003),
-  but it must not be called unconditionally on every registration or login.
+- `seed_default_household` must **not** be called on registration or login.
+- `seed_default_household` may be removed entirely, since the `/welcome` flow now
+  handles first-household creation interactively.
 
-[NEEDS_CLARIFICATION]: NFR-D8 (§6.2, line 1000–1003) states: "On first startup of
-a fresh deployment with no `User` rows, the application must present an onboarding
-prompt to the first authenticated user, guiding them to create the first household."
-The spec does not specify how "first startup with no User rows" is detected (startup
-hook, middleware check, or via the `/welcome` flow itself for the first user). It
-is unclear whether this is distinct from the standard zero-membership `/welcome`
-flow or requires a separate mechanism. If the `/welcome` flow already handles every
-zero-membership user (including the very first user on a fresh deployment), NFR-D8
-may be fully satisfied by this amendment with no additional implementation.
+**NFR-D8 — RESOLVED: Startup guard (Option 2)**
+
+On first startup with no `User` rows in the database, the application must:
+
+1. Detect the empty-users state at startup via `SELECT COUNT(*) FROM users` executed
+   in the application startup lifecycle (`app/main.py` lifespan handler).
+2. Set an in-memory module-level flag (`SETUP_REQUIRED: bool`) to `True` when count is 0.
+3. Register a middleware that, while `SETUP_REQUIRED` is `True`, intercepts all
+   incoming requests and returns HTTP 503 with JSON body:
+   `{"detail": "Initial setup required", "setup_required": true}`
+   — EXCEPT for the following whitelisted paths (which must remain accessible):
+     - `POST /auth/register` — so the first user can register
+     - `GET /static/*` — so the SPA assets load
+     - `GET /` and `GET /welcome` — so the SPA shell and welcome page are reachable
+     - `GET /health` — if a health check endpoint exists
+4. After any successful `POST /auth/register`, clear `SETUP_REQUIRED` to `False`.
+5. The frontend must handle a 503 response with `setup_required: true` by redirecting
+   the user to `/welcome`.
+
+Rationale: Self-hosted deployments must be usable without manual database seeding.
 
 ---
 
@@ -504,19 +509,13 @@ The following items are **explicitly not included** in this amendment:
 
 ---
 
-## Unresolved `[NEEDS_CLARIFICATION]` items (summary)
+## Resolved clarification items (summary)
 
 1. **Redirect signal mechanism** (API Contract §, "CHANGE: POST /auth/register"):
-   The spec does not define whether "redirect to `/welcome`" is communicated via a
-   JSON response field, an HTTP redirect from the backend, or purely frontend logic
-   inferred from an empty `memberships` list in `GET /auth/me`.
+   The frontend calls `GET /auth/me` after login/register and infers onboarding
+   state from `memberships == []`. No backend redirect field is needed.
 
 2. **`onboarding_required` field** (API Contract §, "CHANGE: GET /auth/me"):
-   The spec does not state whether `MeOut` should expose a dedicated boolean flag
-   for the onboarding state, or whether the empty `memberships` list is the sole
-   signal.
+   No `onboarding_required` boolean is added to `MeOut`; the empty
+   `memberships` list is the sole onboarding signal.
 
-3. **NFR-D8 first-startup mechanism** (Data Changes §):
-   The spec does not clarify whether the zero-membership `/welcome` flow fully
-   satisfies NFR-D8 or whether a separate "no User rows" startup detection
-   mechanism is required.
