@@ -5,6 +5,7 @@
 
 import React from 'react'
 import { render, screen, waitFor, act } from '@testing-library/react'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AuthProvider, useAuth } from './AuthContext'
 
@@ -60,6 +61,18 @@ const mockUser = {
   active_household_id: 'hh-1',
 }
 
+const mockZeroMembershipUser = {
+  id: 'user-2',
+  username: 'bob',
+  display_name: 'Bob',
+  email: 'bob@example.com',
+  picture_url: null,
+  household_id: null,
+  role: null,
+  memberships: [],
+  active_household_id: null,
+}
+
 function AuthConsumer() {
   const {
     isLoading,
@@ -98,8 +111,17 @@ function AuthActions() {
   )
 }
 
-function renderWithProvider(children: React.ReactNode) {
-  return render(<AuthProvider>{children}</AuthProvider>)
+function LocationConsumer() {
+  const location = useLocation()
+  return <div data-testid="location-path">{location.pathname}</div>
+}
+
+function renderWithProvider(children: React.ReactNode, initialEntries = ['/']) {
+  return render(
+    <MemoryRouter initialEntries={initialEntries}>
+      <AuthProvider>{children}</AuthProvider>
+    </MemoryRouter>,
+  )
 }
 
 beforeEach(() => {
@@ -197,6 +219,40 @@ describe('AuthContext', () => {
         /token|access/i.test(String(key)),
       )
       expect(tokenWrite).toBeUndefined()
+    })
+
+    it('redirects authenticated zero-membership users to /welcome', async () => {
+      mockRefresh.mockResolvedValueOnce({ access_token: 'tok-zero', token_type: 'bearer' })
+      mockGetMe.mockResolvedValueOnce(mockZeroMembershipUser)
+
+      renderWithProvider(
+        <>
+          <AuthConsumer />
+          <LocationConsumer />
+        </>,
+      )
+
+      await waitFor(() => expect(screen.getByTestId('location-path')).toHaveTextContent('/welcome'))
+      expect(screen.getByTestId('memberships')).toHaveTextContent('0')
+      expect(mockSetStoredActiveHouseholdId).toHaveBeenCalledWith(null)
+    })
+
+    it('does not redirect zero-membership users away from invite routes', async () => {
+      mockRefresh.mockResolvedValueOnce({ access_token: 'tok-zero', token_type: 'bearer' })
+      mockGetMe.mockResolvedValueOnce(mockZeroMembershipUser)
+
+      renderWithProvider(
+        <>
+          <AuthConsumer />
+          <LocationConsumer />
+        </>,
+        ['/invite/accept'],
+      )
+
+      await waitFor(() =>
+        expect(screen.getByTestId('authenticated')).toHaveTextContent('true'),
+      )
+      expect(screen.getByTestId('location-path')).toHaveTextContent('/invite/accept')
     })
   })
 

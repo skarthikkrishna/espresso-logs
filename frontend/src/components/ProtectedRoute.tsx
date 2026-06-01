@@ -2,7 +2,7 @@
  * ProtectedRoute — auth + optional role guard for React Router v6 nested routes.
  */
 
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 interface ProtectedRouteProps {
@@ -10,7 +10,8 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ requiredRole }: ProtectedRouteProps) {
-  const { isLoading, isAuthenticated, activeMembership } = useAuth()
+  const { isLoading, isAuthenticated, activeMembership, memberships } = useAuth()
+  const location = useLocation()
 
   if (isLoading) {
     return (
@@ -22,6 +23,15 @@ export default function ProtectedRoute({ requiredRole }: ProtectedRouteProps) {
 
   if (!isAuthenticated) {
     return <Navigate replace to="/login" />
+  }
+
+  // Zero-membership guard — redirect to /welcome to complete onboarding.
+  // Exempt: /household/new and /invite/*.
+  const exemptPaths = ['/household/new', '/invite/']
+  const isExempt = exemptPaths.some((path) => location.pathname.startsWith(path))
+
+  if (!isLoading && isAuthenticated && memberships.length === 0 && !isExempt) {
+    return <Navigate replace to="/welcome" />
   }
 
   if (requiredRole === 'admin' && activeMembership?.role !== 'admin') {

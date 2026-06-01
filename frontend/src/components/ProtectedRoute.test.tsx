@@ -54,7 +54,7 @@ beforeEach(() => {
 
 describe('ProtectedRoute', () => {
   it('shows loading spinner while auth is bootstrapping', () => {
-    mockUseAuth.mockReturnValue({ isLoading: true, isAuthenticated: false, activeMembership: null })
+    mockUseAuth.mockReturnValue({ isLoading: true, isAuthenticated: false, activeMembership: null, memberships: [] })
 
     renderProtected()
 
@@ -64,7 +64,7 @@ describe('ProtectedRoute', () => {
   })
 
   it('redirects unauthenticated users to /login', () => {
-    mockUseAuth.mockReturnValue({ isLoading: false, isAuthenticated: false, activeMembership: null })
+    mockUseAuth.mockReturnValue({ isLoading: false, isAuthenticated: false, activeMembership: null, memberships: [] })
 
     renderProtected()
 
@@ -77,6 +77,7 @@ describe('ProtectedRoute', () => {
       isLoading: false,
       isAuthenticated: true,
       activeMembership: { role: 'member' },
+      memberships: [{ household_id: 'hh-1', household_name: 'Home', role: 'member', joined_at: '' }],
     })
 
     renderProtected()
@@ -90,6 +91,7 @@ describe('ProtectedRoute', () => {
       isLoading: false,
       isAuthenticated: true,
       activeMembership: { role: 'member' },
+      memberships: [{ household_id: 'hh-1', household_name: 'Home', role: 'member', joined_at: '' }],
     })
 
     renderProtected()
@@ -102,6 +104,7 @@ describe('ProtectedRoute', () => {
       isLoading: false,
       isAuthenticated: true,
       activeMembership: { role: 'member' },
+      memberships: [{ household_id: 'hh-1', household_name: 'Home', role: 'member', joined_at: '' }],
     })
 
     renderProtected('/', 'admin')
@@ -114,6 +117,7 @@ describe('ProtectedRoute', () => {
       isLoading: false,
       isAuthenticated: true,
       activeMembership: { role: 'admin' },
+      memberships: [{ household_id: 'hh-1', household_name: 'Home', role: 'admin', joined_at: '' }],
     })
 
     renderProtected('/', 'admin')
@@ -126,6 +130,7 @@ describe('ProtectedRoute', () => {
       isLoading: false,
       isAuthenticated: true,
       activeMembership: { role: 'member' },
+      memberships: [{ household_id: 'hh-1', household_name: 'Home', role: 'member', joined_at: '' }],
     })
 
     renderProtected('/', 'member')

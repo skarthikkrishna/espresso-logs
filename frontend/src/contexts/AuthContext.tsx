@@ -15,6 +15,7 @@ import React, {
   useMemo,
   useState,
 } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import type { CurrentUser, Membership } from '../types/entities'
 import {
   getStoredActiveHouseholdId,
@@ -138,6 +139,8 @@ function upsertMembership(
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
+  const navigate = useNavigate()
+  const location = useLocation()
   const [accessToken, setAccessTokenState] = useState<string | null>(null)
   const [user, setUserState] = useState<CurrentUser | null>(null)
   const [memberships, setMemberships] = useState<Membership[]>([])
@@ -206,6 +209,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       cancelled = true
     }
   }, [syncUserState])
+
+  useEffect(() => {
+    const exemptPaths = ['/welcome', '/login', '/register', '/invite/', '/household/new']
+    const isExempt = exemptPaths.some((path) => location.pathname.startsWith(path))
+
+    if (isAuthenticated && !isLoading && memberships.length === 0 && !isExempt) {
+      navigate('/welcome', { replace: true })
+    }
+  }, [memberships, isAuthenticated, isLoading, location.pathname, navigate])
 
   const setAccessToken = useCallback((token: string | null) => {
     setAccessTokenState(token)
