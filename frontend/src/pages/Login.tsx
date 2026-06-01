@@ -56,7 +56,7 @@ function GoogleIcon() {
 // ---------------------------------------------------------------------------
 
 export default function Login() {
-  const { setAccessToken: ctxSetToken, setUser, isAuthenticated, memberships } = useAuth()
+  const { setAccessToken: ctxSetToken, setUser, isAuthenticated, isLoading, memberships } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
@@ -97,8 +97,9 @@ export default function Login() {
     return hasMembership ? '/' : '/welcome'
   }
 
-  // Redirect immediately if already authenticated
+  // Redirect immediately if already authenticated (not during oauth — oauthEffect handles that)
   useEffect(() => {
+    if (isOAuthProcessing) return  // Let oauthEffect handle navigation
     if (isAuthenticated) {
       // Determine destination based on memberships from context
       if (inviteToken) {
@@ -110,25 +111,51 @@ export default function Login() {
         navigate(hasMembership ? '/' : '/welcome', { replace: true })
       }
     }
-  }, [isAuthenticated, navigate, inviteToken, returnTo, memberships])
+  }, [isAuthenticated, isOAuthProcessing, navigate, inviteToken, returnTo, memberships])
 
   // Detect ?oauth_success=1 on mount and complete the OAuth flow
   useEffect(() => {
     if (!isOAuthProcessing) return
+    if (isLoading) return  // Wait for AuthContext to finish its own refresh attempt
 
-    void (async () => {
-      try {
-        const { access_token } = await refresh()
-        ctxSetToken(access_token)
-        const userData = await getMe()
-        setUser(userData)
-        navigate(getPostAuthDestination(userData), { replace: true })
-      } catch {
-        setIsOAuthProcessing(false)
-        setFormError('Google sign-in failed. Please try again.')
-      }
-    })()
-  }, [isOAuthProcessing])
+    let cancelled = false
+
+    // AuthContext already authenticated us (its refresh won the race) — just fetch user data
+    if (isAuthenticated) {
+      void (async () => {
+        try {
+          const userData = await getMe()
+          if (cancelled) return
+          setUser(userData)
+          navigate(getPostAuthDestination(userData), { replace: true })
+        } catch {
+          if (cancelled) return
+          setIsOAuthProcessing(false)
+          setFormError('Google sign-in failed. Please try again.')
+        }
+      })()
+    } else {
+      // AuthContext couldn't refresh — try once ourselves (shared _refreshPromise in auth.ts
+      // ensures this is a no-op if AuthContext is still in flight with the same cookie)
+      void (async () => {
+        try {
+          const { access_token } = await refresh()
+          if (cancelled) return
+          ctxSetToken(access_token)
+          const userData = await getMe()
+          if (cancelled) return
+          setUser(userData)
+          navigate(getPostAuthDestination(userData), { replace: true })
+        } catch {
+          if (cancelled) return
+          setIsOAuthProcessing(false)
+          setFormError('Google sign-in failed. Please try again.')
+        }
+      })()
+    }
+
+    return () => { cancelled = true }
+  }, [isOAuthProcessing, isLoading, isAuthenticated])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
