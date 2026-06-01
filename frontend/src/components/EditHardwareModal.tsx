@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { updateHardware } from '../api/hardware'
-import type { HardwareItem } from '../types/entities'
+import type { HardwareDetail, HardwareItem } from '../types/entities'
 
 interface EditHardwareModalProps {
   hardware: HardwareItem
@@ -17,8 +17,20 @@ export default function EditHardwareModal({ hardware, onClose, onSaved }: EditHa
   const { mutate, isPending } = useMutation({
     mutationFn: () =>
       updateHardware(hardware.hardware_id, { name, category: hardware.category }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['hardware'] })
+    onSuccess: async (updatedHardware) => {
+      queryClient.setQueryData<HardwareItem[]>(['hardware'], (existing = []) =>
+        existing.map((item) => item.hardware_id === updatedHardware.hardware_id ? updatedHardware : item)
+      )
+      queryClient.setQueryData<HardwareDetail>(
+        ['hardware', hardware.hardware_id],
+        (existing) => existing
+          ? { ...existing, item: updatedHardware }
+          : { item: updatedHardware, maintenance: [] }
+      )
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['hardware'], refetchType: 'inactive' }),
+        queryClient.invalidateQueries({ queryKey: ['hardware', hardware.hardware_id], refetchType: 'inactive' }),
+      ])
       onSaved()
       onClose()
     },

@@ -6,7 +6,7 @@ import builtins
 import datetime
 from typing import Any
 
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.brew_log import BrewLog
@@ -132,6 +132,15 @@ class SqlBrewLogRepo:
         result = await self._db.execute(select(BrewLog).where(BrewLog.sheets_id == shot_id))
         row = result.scalar_one_or_none()
         return self._to_dict(row) if row else None
+
+    async def delete_by_shot_id(self, shot_id: str) -> bool:
+        """Delete a brew log entry by Sheets Shot_ID. Returns True if a row was deleted."""
+        check = await self._db.execute(select(BrewLog.id).where(BrewLog.sheets_id == shot_id))
+        if check.scalar_one_or_none() is None:
+            return False
+        await self._db.execute(delete(BrewLog).where(BrewLog.sheets_id == shot_id))
+        await self._db.commit()
+        return True
 
     def _to_dict(self, row: BrewLog) -> dict[str, Any]:
         return {

@@ -5,9 +5,10 @@ import EditHardwareModal from './EditHardwareModal'
 import * as hardwareApi from '../api/hardware'
 import type { HardwareItem } from '../types/entities'
 
-function wrapper({ children }: { children: React.ReactNode }) {
+function renderModal(ui: React.ReactElement) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+  const result = render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>)
+  return { ...result, qc }
 }
 
 const mockHardware: HardwareItem = {
@@ -28,28 +29,28 @@ beforeEach(() => {
 
 describe('EditHardwareModal', () => {
   it('Name field is pre-populated with hardware.name on mount', () => {
-    render(<EditHardwareModal {...defaultProps} />, { wrapper })
+    renderModal(<EditHardwareModal {...defaultProps} />)
     const nameInput = screen.getByDisplayValue('Rocket Mozzafiato')
     expect(nameInput).toBeInTheDocument()
   })
 
   it('Save button is disabled when Name field is cleared', () => {
-    render(<EditHardwareModal {...defaultProps} />, { wrapper })
+    renderModal(<EditHardwareModal {...defaultProps} />)
     const nameInput = screen.getByDisplayValue('Rocket Mozzafiato')
     fireEvent.change(nameInput, { target: { value: '' } })
     const saveBtn = screen.getByRole('button', { name: /save changes/i })
     expect(saveBtn).toBeDisabled()
   })
 
-  it('calls updateHardware with hardware_id, corrected name, and category on save', async () => {
+  it('calls updateHardware with hardware_id, corrected name, and invalidates list/detail queries on save', async () => {
     const mockUpdated: HardwareItem = {
       hardware_id: 'M01',
       category: 'Machine',
       name: 'Breville Barista Express',
     }
     vi.spyOn(hardwareApi, 'updateHardware').mockResolvedValueOnce(mockUpdated)
-
-    render(<EditHardwareModal {...defaultProps} />, { wrapper })
+    const { qc } = renderModal(<EditHardwareModal {...defaultProps} />)
+    const invalidateQueriesSpy = vi.spyOn(qc, 'invalidateQueries').mockResolvedValue(undefined)
 
     const nameInput = screen.getByDisplayValue('Rocket Mozzafiato')
     fireEvent.change(nameInput, { target: { value: 'Breville Barista Express' } })
@@ -60,7 +61,10 @@ describe('EditHardwareModal', () => {
         name: 'Breville Barista Express',
         category: 'Machine',
       })
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['hardware'], refetchType: 'inactive' })
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['hardware', 'M01'], refetchType: 'inactive' })
     })
+
     expect(defaultProps.onSaved).toHaveBeenCalled()
     expect(defaultProps.onClose).toHaveBeenCalled()
   })
@@ -68,9 +72,8 @@ describe('EditHardwareModal', () => {
   it('shows error message on API failure without closing modal', async () => {
     vi.spyOn(hardwareApi, 'updateHardware').mockRejectedValueOnce(new Error('Network error'))
 
-    render(<EditHardwareModal {...defaultProps} />, { wrapper })
+    renderModal(<EditHardwareModal {...defaultProps} />)
 
-    // Name is pre-populated so Save is enabled
     fireEvent.click(screen.getByRole('button', { name: /save changes/i }))
 
     await waitFor(() => {

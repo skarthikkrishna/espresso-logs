@@ -3,7 +3,7 @@ import logging
 import urllib.request  # noqa: F401  # needed: tests patch app.config.urllib.request.urlopen
 from typing import Any, Optional
 
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings
 
 logger = logging.getLogger(__name__)
@@ -61,6 +61,12 @@ class Settings(BaseSettings):
     # to avoid http:// vs https:// mismatch when Starlette builds URLs behind a proxy.
     oauth_redirect_uri: Optional[str] = None
 
+    # M5 — JWT auth
+    # JWT_SECRET must be at least 32 characters (256-bit key for HS256).
+    # Source from APP_SECRETS blob in production — never set as a standalone Cloud Run env var.
+    jwt_secret: str = ""
+    access_token_expire_seconds: int = 900
+
     # Phase 7 — AI inference
     # Anthropic is primary; Gemini is fallback. Both keys present = automatic failover.
     # To remove Gemini entirely, leave LLM_API_KEY unset.
@@ -85,6 +91,26 @@ class Settings(BaseSettings):
     app_secrets: Optional[str] = None
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+
+    @field_validator("jwt_secret")
+    @classmethod
+    def _validate_jwt_secret(cls, v: str) -> str:
+        """Enforce minimum 32-character JWT secret (256-bit key for HS256)."""
+        if v and len(v) < 32:
+            raise ValueError("JWT_SECRET must be at least 32 characters")
+        return v
+
+    @field_validator("allowlist_emails", mode="after")
+    @classmethod
+    def _warn_allowlist_emails_deprecated(cls, v: Optional[str]) -> Optional[str]:
+        """Emit a deprecation warning when ALLOWLIST_EMAILS is set (M5+)."""
+        if v:
+            logging.getLogger("app.config").warning(
+                "ALLOWLIST_EMAILS is set but deprecated in M5 — "
+                "the env var is no longer consulted for auth. "
+                "Remove it from your environment."
+            )
+        return v
 
     @model_validator(mode="before")
     @classmethod
@@ -113,6 +139,11 @@ class Settings(BaseSettings):
             if existing is None or existing == "":
                 data[field_name] = value
         return data
+
+    @property
+    def is_production(self) -> bool:
+        """True when APP_ENV=production. Used for security-sensitive defaults (e.g. Secure cookies)."""
+        return self.app_env == "production"
 
     @property
     def assets_bucket(self) -> str:

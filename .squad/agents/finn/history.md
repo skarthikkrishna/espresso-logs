@@ -60,3 +60,40 @@ See `.squad/orchestration-log/` for agent-level summaries.
 - **Base classes:** `badge badge-sm text-xs px-2 py-0.5` (consistent padding/size enforced in one place)
 - **Null-safe:** returns `null` if `label` is falsy — no conditional wrapping needed at call sites
 - **Rule:** All future categorical label chips (roast type, machine category, etc.) should use `<Chip />` with the appropriate variant. Do not add inline badge spans to page files.
+
+### 2026-05-21: AuthContext.tsx scaffold — US-1.8 Wave 1
+
+- **File created:** `frontend/src/contexts/AuthContext.tsx`
+- **Pattern:** `AuthProvider` + `useAuth()` hook exported from same file; `eslint-disable-next-line react-refresh/only-export-components` required on the hook export to satisfy ESLint zero-warnings policy — standard for context modules.
+- **CurrentUser type:** Imported from `../types/entities` (already existed with `{ email, name?, picture? }`). US-3.12 will update the shape to the full M5 model `{ id, username, display_name, email, picture_url, household_id, role }`.
+- **Token security (AC-103):** Access token stored only in `useState` — never `localStorage`/`sessionStorage`. Cookie credentials passed via `credentials: 'include'` on fetch calls.
+- **Network calls:** Wave 1 uses `fetch` directly (no `auth.ts` dependency). Wave 3 (US-3.10) wires the full auth API client.
+- **Endpoints used:** `POST /auth/refresh`, `GET /auth/me`, `POST /auth/logout`
+- **Cleanup guard:** `cancelled` flag in `useEffect` prevents state updates on unmounted component during async refresh.
+- **All checks:** lint ✅ 0 warnings, build ✅ zero TypeScript errors.
+
+### 2026-05-21: Wave 3 Frontend — US-3.7–3.12
+
+- **ProtectedRoute.tsx (US-3.9):** Standard `useAuth()` guard — isLoading → spinner, !isAuthenticated → `<Navigate replace to="/login" />`, else `<Outlet />`.
+- **auth.ts (US-3.10):** Added `register()`, `login()`, `refresh()`, `logout()`, `getMe()` all typed with `RegisterResponse`/`LoginResponse`. Replaced old `/api/me` and `/api/logout` paths with `/auth/me` and `/auth/logout` (N-004 compliance).
+- **client.ts (US-3.11):** Module-level `_accessToken` with `getAccessToken`/`setAccessToken` exports. Request interceptor injects Bearer header. Response interceptor: 401 → silent refresh → retry once with `_retry` flag. `SKIP_REFRESH_PATHS` list (`/auth/login`, `/auth/register`, `/auth/refresh`, `/auth/logout`) prevents the interceptor from looping on auth endpoints that return 401 for credential errors rather than token expiry. Raw `axios.post` used in the interceptor (not `apiClient`) to avoid circular dependency with `auth.ts`.
+- **Login.tsx (US-3.7):** `?oauth_success=1` initialised from `useState(() => ...)` to avoid synchronous setState-in-effect lint error. Effect guards with `if (!isOAuthProcessing) return`. Error states: 401 → invalid creds, 429 → rate limit, network → connection error. Google OAuth `<a href="/auth/google">` with `aria-label`. Focus management: `usernameRef.current?.focus()` on error.
+- **Register.tsx (US-3.8):** Blur+submit validation, `FieldError` helper component, `input-error` + `aria-invalid` + `aria-describedby` pattern. 409 error targets username field. All four fields with correct `autocomplete` attributes.
+- **entities.ts / router.tsx / App.tsx / main.tsx (US-3.12):** `CurrentUser` updated to M5 shape. Router restructured: public `/login`+`/register` at top level, all app routes wrapped in `<ProtectedRoute>` child group. `App.tsx` wraps `RouterProvider` in `AuthProvider`; `main.tsx` renders `<App />` instead of `RouterProvider` directly.
+- **AuthContext.tsx:** Replaced direct `fetch` calls with `refreshApi`/`getMeApi`/`logoutApi` from `auth.ts`. `setAccessToken` callback now calls `setModuleToken` (from client.ts) in addition to React state setter, keeping the Axios interceptor in sync.
+- **All checks:** lint ✅ 0 warnings, build ✅ zero TypeScript errors.
+
+### 2026-05-21: Wave 4 US-4.6 — Login/Register Vitest tests + accessibility polish
+
+- **Login.test.tsx (7 tests):** Form render, OAuth spinner (reads `window.location.search` directly via `useState` initializer — mock with `window.history.pushState`, not `useSearchParams`), 401/429 error states, submit-disabled during in-flight, register link href check, forgot-password static text.
+- **Register.test.tsx (6 tests):** Form render (all 4 fields), blur validation (username too short, password too short, mismatch), 409 server error, submit-disabled during in-flight.
+- **Login.tsx a11y fixes:** Added `id="login-form-error"` to error div; added `aria-invalid` + `aria-describedby` to username and password inputs referencing the error id.
+- **Register.tsx a11y fix:** Added `aria-live="polite"` to `FieldError` component (supplements existing `role="alert"` for less assertive screen-reader announcements on blur validation).
+- **Mock pattern used:** `vi.hoisted()` for `useNavigate` mock reference (needed across tests); `vi.mock` + `vi.mocked(fn).mockRejectedValue()` for API stubs; `makeAxiosError(status)` helper creates `{ isAxiosError: true, response: { status } }` objects that pass `axios.isAxiosError()` check.
+- **Key learning:** Login.tsx initialises `isOAuthProcessing` from `window.location.search` in `useState(() => ...)` — this is read at component mount, not via `useSearchParams`. To test the OAuth spinner, use `window.history.pushState({}, '', '/?oauth_success=1')` BEFORE `render()`.
+- **All checks:** `npm run test` ✅ 161/161 (18 files), `npm run lint` ✅ 0 warnings, `npm run build` ✅.
+
+## Session 20260521 — M5 Implementation Complete
+- Completed 5 waves of M5 spec-034 implementation
+- All quality gates passed
+- 484 tests passing

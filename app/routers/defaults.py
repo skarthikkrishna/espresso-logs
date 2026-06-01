@@ -11,14 +11,14 @@ from app.deps import (
     _DualWriteBrewLogRepo,
     _DualWriteCatalogRepo,
     _DualWriteInventoryRepo,
+    current_household_membership,
     get_brew_log_repo,
     get_catalog_repo,
     get_inventory_repo,
-    require_user,
 )
 from app.services import defaults as defaults_service
 
-router = APIRouter(dependencies=[require_user])
+router = APIRouter(dependencies=[Depends(current_household_membership)])
 
 
 @router.get("/api/defaults")

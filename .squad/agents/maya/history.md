@@ -36,3 +36,32 @@
 **Key pattern:** When a concrete method exists on every subclass but is missing from the ABC, mypy `--strict` surfaces it as `attr-defined` when called through the base type. Always declare such methods on the ABC, not just the concrete subclasses.
 
 **Verification:** `mypy app/ --strict` → 0 errors; `ruff format --check` → 0 violations; 372 tests passed, 4 skipped.
+
+---
+
+## 2026-05-21: M5 Spec-034 Planning & Architecture
+
+**Scope:** Plan + Architecture Gate  
+**Status:** COMPLETE  
+**Commits:** 2 (plan → compliance)
+
+### Work Summary
+
+- **Planning Phase:** Generated 5-wave implementation plan with security hardening for OAuth2 PKCE flow
+- **Architecture Decisions:**
+  - PKCE flow with stateless session tokens
+  - SameSite=Strict cookies for CSRF protection
+  - Token hash schema delta: add token_hash, expiry, created_at columns
+  - Session migration strategy for backward compatibility
+- **Compliance Review:** Security gates, backward compatibility, test strategy alignment
+
+### Key Outputs
+
+- `specs/034/plan.md` — committed (5 waves)
+- `specs/034/compliance.md` — committed
+- `.squad/decisions.md` — merged PKCE session replacement decision
+- `.squad/decisions.md` — merged token hash schema decision
+
+### Handoff
+
+Architecture approved for Aria design gate. Plan ready for task sequencing by Tariq.

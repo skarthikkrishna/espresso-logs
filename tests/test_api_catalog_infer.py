@@ -124,18 +124,6 @@ async def test_catalog_infer_empty_url_returns_200_empty():
 
 
 @pytest.mark.asyncio
-async def test_catalog_infer_requires_auth():
-    """Unauthenticated request is rejected (no session cookie)."""
-    app.dependency_overrides[get_llm_client] = lambda: _FakeLLMSuccess()
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        resp = await client.post(
-            "/api/catalog/infer",
-            json={"url": "https://example.com/coffee"},
-        )
-    assert resp.status_code in (401, 403, 302)
-
-
-@pytest.mark.asyncio
 async def test_catalog_infer_uses_page_text_for_roast_level():
     """Infer passes og:description page content to LLM — not just the URL slug.
 

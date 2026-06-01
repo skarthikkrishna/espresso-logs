@@ -37,6 +37,11 @@ class User(Base):
     email: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     display_name: Mapped[str] = mapped_column(sa.Text, nullable=False)
     picture_url: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    active_household_id: Mapped[uuid.UUID | None] = mapped_column(
+        sa.UUID(as_uuid=True),
+        sa.ForeignKey("households.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     created_at: Mapped[datetime.datetime] = mapped_column(
         sa.TIMESTAMP(timezone=True),
         nullable=False,

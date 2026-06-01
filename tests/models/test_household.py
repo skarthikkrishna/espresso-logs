@@ -5,7 +5,13 @@ Unit tests — no database connection required.
 
 from __future__ import annotations
 
-from app.models.household import GuestToken, Household, HouseholdMember, PendingInvitation
+from app.models.household import (
+    GuestToken,
+    Household,
+    HouseholdMember,
+    ImportSession,
+    PendingInvitation,
+)
 
 
 def test_household_table_name() -> None:
@@ -22,6 +28,10 @@ def test_pending_invitation_table_name() -> None:
 
 def test_guest_token_table_name() -> None:
     assert GuestToken.__tablename__ == "guest_tokens"
+
+
+def test_import_session_table_name() -> None:
+    assert ImportSession.__tablename__ == "import_sessions"
 
 
 def test_household_member_role_check_constraint() -> None:
@@ -52,8 +62,27 @@ def test_guest_token_has_household_id_index() -> None:
     assert "ix_guest_tokens_household_id" in index_names
 
 
-def test_guest_token_token_is_unique() -> None:
-    # UNIQUE constraint on token creates an implicit Postgres index;
-    # the explicit ix_guest_tokens_token was redundant and has been removed.
-    col = GuestToken.__table__.columns["token"]
+def test_guest_token_token_hash_is_unique() -> None:
+    # M5: UUID token replaced with token_hash TEXT (SHA-256 hex digest).
+    # UNIQUE constraint on token_hash ensures no duplicate hashes are stored.
+    col = GuestToken.__table__.columns["token_hash"]
     assert col.unique
+
+
+def test_pending_invitation_role_and_status_constraints() -> None:
+    import sqlalchemy as sa
+
+    constraint_names = {c.name for c in PendingInvitation.__table__.constraints}
+    assert "pending_invitations_invited_role_check" in constraint_names
+    assert "pending_invitations_status_check" in constraint_names
+
+    checks = [
+        c for c in PendingInvitation.__table__.constraints if isinstance(c, sa.CheckConstraint)
+    ]
+    sql_text = " ".join(str(check.sqltext) for check in checks)
+    assert "admin" in sql_text
+    assert "member" in sql_text
+    assert "pending" in sql_text
+    assert "accepted" in sql_text
+    assert "declined" in sql_text
+    assert "revoked" in sql_text

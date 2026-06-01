@@ -18,14 +18,15 @@ from pydantic import BaseModel
 
 from app.config import settings
 from app.deps import (
-    CurrentUser,
     _DualWriteHardwareRepo,
     _DualWriteMaintenanceRepo,
+    current_household_membership,
     get_hardware_repo,
     get_llm_client,
     get_maintenance_repo,
 )
 from app.models.api import HardwareDetailOut, HardwareItemOut, MaintenanceEventOut
+from app.models.household import HouseholdMember
 from app.services.image_sourcer import fetch_image_bytes, fetch_page_context, source_bean_image
 from app.services.image_store import upload_image
 from app.services.inference import LLMClient
@@ -67,14 +68,14 @@ def _maint_to_out(row: dict[str, Any], hardware_name: str) -> MaintenanceEventOu
 # NOTE: action-types is registered BEFORE {hardware_id} to avoid path conflict
 @router.get("/hardware/action-types")
 async def api_hardware_action_types(
-    user: CurrentUser,
+    _: HouseholdMember = Depends(current_household_membership),
 ) -> dict[str, Any]:
     return {"action_types": _ACTION_TYPES_BY_CATEGORY}
 
 
 @router.get("/hardware", response_model=List[HardwareItemOut])
 async def api_hardware_list(
-    user: CurrentUser,
+    _: HouseholdMember = Depends(current_household_membership),
     hardware_repo: _DualWriteHardwareRepo = Depends(get_hardware_repo),
 ) -> list[HardwareItemOut]:
     return [_hw_to_out(row) for row in await hardware_repo.list()]
@@ -83,7 +84,7 @@ async def api_hardware_list(
 @router.get("/hardware/{hardware_id}", response_model=HardwareDetailOut)
 async def api_hardware_detail(
     hardware_id: str,
-    user: CurrentUser,
+    _: HouseholdMember = Depends(current_household_membership),
     hardware_repo: _DualWriteHardwareRepo = Depends(get_hardware_repo),
     maintenance_repo: _DualWriteMaintenanceRepo = Depends(get_maintenance_repo),
 ) -> HardwareDetailOut:
@@ -110,7 +111,7 @@ class _HardwareCreateBody(BaseModel):
 @router.post("/hardware", response_model=HardwareItemOut, status_code=201)
 async def api_hardware_create(
     body: _HardwareCreateBody,
-    user: CurrentUser,
+    _: HouseholdMember = Depends(current_household_membership),
     hardware_repo: _DualWriteHardwareRepo = Depends(get_hardware_repo),
     llm_client: LLMClient = Depends(get_llm_client),
 ) -> HardwareItemOut:
@@ -170,7 +171,7 @@ class _HardwareUpdateBody(BaseModel):
 async def api_hardware_update(
     hardware_id: str,
     body: _HardwareUpdateBody,
-    user: CurrentUser,
+    _: HouseholdMember = Depends(current_household_membership),
     hardware_repo: _DualWriteHardwareRepo = Depends(get_hardware_repo),
 ) -> HardwareItemOut:
     item = await hardware_repo.get(hardware_id)

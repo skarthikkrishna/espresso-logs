@@ -1,7 +1,7 @@
 # Team Decisions Log
 
 **Project:** espresso-logs  
-**Last Updated:** 2026-05-15T14:52:37-07:00
+**Last Updated:** 2026-06-01T04:36:41Z
 
 ---
 
@@ -94,5 +94,123 @@ Bounded operational data remediation for spec-031 classified as `DIRECT_PERMITTE
 **Constraints:** Delete row 80 before row 78; script must be dry-run capable (`--dry-run`); idempotent; auth via same env-var pattern as `diagnose_brew_log_duplicates.py`.
 
 **Outcome:** 2 duplicate rows deleted, 2 AI feedbacks backfilled, 0 errors. Scripts dropped (one-time operational use, not committed).
+
+---
+
+## 2026-05-22
+
+### Ralph session-close after spec-034 M5 items 1–5 — DIRECT_PERMITTED
+
+**Author:** Tariq (routing)  
+**Branch:** feat/034-m5-household-roles  
+**Status:** Committed
+
+Ralph session-close governance operation after spec-034 M5 items 1–5 were completed locally. CI green; no push performed per operator instruction.
+
+**Scope permitted:** Strictly limited to updating `.squad/identity/now.md` with current team focus and open work state, plus any local commit(s) required. No application code, tests, migrations, or frontend assets touched. Quinn gate explicitly waived for documentation/governance-only changes per protocol §STEP 3.
+
+**Completed items (local, not pushed):**
+1. Atomic refresh token rotation (race condition fix)
+2. Invitation model: 72h expiry, invited_email, invited_role, decline/revoke/resend endpoints
+3. Household rename (`PATCH /households/{id}`) and soft-delete (`DELETE /households/{id}`)
+4. Active-household resolution via `X-Household-Id` header in `deps.py`
+5. Import wizard: admin-gate + DB-backed session state
+
+**Remaining open work:** Spec-034 HIGH items beyond items 1–5; spec-033 brew_log_reconcile dry-run.
+
+---
+
+## 2026-05-23
+
+### GET /auth/me membership N+1 fix — DIRECT_PERMITTED
+
+**Author:** Alex (routing)  
+**Branch:** feat/034-m5-household-roles  
+**Status:** Committed (`fix(auth): eliminate N+1 on /auth/me memberships (#034)`)
+
+Quinn-flagged N+1 lookup on `GET /auth/me` fixed by replacing per-membership household lookups with a single consolidated membership query.
+
+**Scope permitted:**
+- `app/routers/api_auth.py`
+- `app/repos/sql/household.py` and tightly coupled files under `app/repos/sql/`
+- Tests covering `/auth/me` membership loading behaviour
+
+**Constraint:** Must not expand scope to unrelated auth, household, migration, or frontend work.
+
+---
+
+### Quinn QA review of spec-034 M5 backend commits — DIRECT_PERMITTED
+
+**Author:** Alex (routing)  
+**Branch:** feat/034-m5-household-roles  
+**Status:** Committed
+
+Post-implementation QA pass by Quinn on 5 spec-034 M5 backend commits. Classified as DIRECT_PERMITTED because this is QA/quality-gate work on already-committed code, not a new feature introduction.
+
+**Commits in scope:**
+| SHA | Subject |
+|-----|---------|
+| `58e786c` | fix(import-wizard): admin-gate + DB-backed session state (#034) |
+| `091d9e3` | feat(auth): X-Household-Id header routing + /auth/me memberships (#034) |
+| `07d3c78` | feat(households): rename and soft-delete endpoints (#034) |
+| `ccaddda` | feat(households): invitation model overhaul — status, 72h expiry, role, decline/revoke/resend (#034) |
+| `6ab408d` | fix(auth): atomic refresh token rotation (#034) |
+
+**Scope permitted:** Type annotations, docstrings, missing tests, `xfail`/`skip` marker removal across `app/routers/`, `app/services/`, `app/deps.py`, `tests/`. Quinn gate artifact not required (QA close-out, not implementation start).
+
+**Pre-push checklist required:** All four CI-equivalent checks + explicit operator push authorisation.
+
+---
+
+### Spec-034 M5 feature analysis (top-down audit) — DIRECT_PERMITTED
+
+**Author:** Priya (routing)  
+**Branch:** feat/034-m5-household-roles  
+**Status:** Complete (analysis session, no code changes)
+
+Read-only top-down audit of spec-034 (M5 Household Roles): cross-reference spec artifacts in `coffee_tracker/specs/034-m5-household-roles/` against current implementation on `feat/034-m5-household-roles`. Classified as DIRECT_PERMITTED (research task; no SpecKit trigger; no Quinn gate).
+
+**Scope permitted (read-only):**
+- `coffee_tracker/specs/034-m5-household-roles/` — spec.md, plan.md, tasks.md, compliance.md, aria-gate.md, quinn-gate.md
+- `app/`, `tests/`, `frontend/src/` on feature branch — implementation tracing only
+
+**Explicitly prohibited:** Modifying source files, committing code, opening PRs, invoking SpecKit phases.
+
+**Key findings surfaced:** Household lifecycle completeness, invitation status/expiry flows, multi-household active context (X-Household-Id), auth token rotation correctness, import wizard access control. Full analysis in session log `20260523T155630Z-spec034-feature-analysis.md`.
+
+---
+
+### Hardware mutation cache invalidation — DIRECT_PERMITTED
+
+**Author:** Finn (routing)  
+**Branch:** feat/034-m5-household-roles  
+**Status:** Committed (`fix(hardware): invalidate React Query cache after add/edit mutations (#034)`)
+
+Bounded frontend bug fix authorised to make the hardware list and detail panel refresh reactively after add/edit mutations without a full page reload.
+
+**Scope confirmed:**
+- `frontend/src/components/EditHardwareModal.tsx` — explicitly invalidate the detail query key for the edited hardware item
+- `frontend/src/components/AddHardwareModal.tsx` — preserve list invalidation behavior and align post-save refresh semantics
+- `frontend/src/pages/HardwarePage.tsx` — update edit-save handling only if required to refresh the selected detail panel
+- `frontend/src/components/EditHardwareModal.test.tsx` — cover the invalidation contract
+
+**Constraint:** No backend, schema, auth, or unrelated frontend changes.
+
+---
+
+### Spec-034 QA validation scenarios A–E — DIRECT_PERMITTED
+
+**Author:** Tariq (routing)  
+**Branch:** feat/034-m5-household-roles  
+**Status:** Committed (`chore(routing): Tariq decision drop — QA validation scenarios A-E [DIRECT_PERMITTED]`)
+
+Independent QA validation of scenarios A–E is authorised as a bounded, read-only verification pass over the current branch state.
+
+**Scope confirmed:**
+- start the existing FastAPI and/or React services locally if needed
+- exercise live API and browser scenarios A–E
+- inspect source code as evidence and report PASS / PARTIAL / FAIL findings
+
+**Explicit exclusions:** no changes to `app/`, `frontend/src/`, `tests/`, `docs/`, or `specs/`; no push.
 
 ---

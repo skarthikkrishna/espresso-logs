@@ -265,9 +265,8 @@ async def test_get_ai_feedback_happy_path():
 
     assert result == "Try a finer grind."
     assert llm.call_count == 1
-    updated_shot = await brew_repo.get("SHOT-001")
-    assert updated_shot is not None
-    assert updated_shot["AI_Feedback"] == "Try a finer grind."
+    # M5 write-disable: update_feedback is a no-op when sql=None (Sheets writes disabled).
+    # Verify the return value only — persistence is tested via SQL repo unit tests.
 
 
 # ---------------------------------------------------------------------------
@@ -292,11 +291,8 @@ async def test_get_ai_feedback_noop_client():
     )
 
     assert result == "AI feedback unavailable \u2014 no API key configured."
-    # Noop path does NOT raise LLMError and returns a non-empty string,
-    # so update_feedback must still be called.
-    updated_shot = await brew_repo.get("SHOT-001")
-    assert updated_shot is not None
-    assert updated_shot["AI_Feedback"] == "AI feedback unavailable \u2014 no API key configured."
+    # M5 write-disable: update_feedback is a no-op when sql=None (Sheets writes disabled).
+    # Verify the return value only.
 
 
 # ---------------------------------------------------------------------------

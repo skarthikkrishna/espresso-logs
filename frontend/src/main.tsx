@@ -3,8 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { QueryClient } from '@tanstack/react-query'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister'
-import { RouterProvider } from 'react-router-dom'
-import { router } from './router'
+import App from './App'
 import { listHardware } from './api/hardware'
 import './index.css'
 
@@ -32,7 +31,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       client={queryClient}
       persistOptions={{ persister }}
     >
-      <RouterProvider router={router} />
+      <App />
     </PersistQueryClientProvider>
   </React.StrictMode>,
 )

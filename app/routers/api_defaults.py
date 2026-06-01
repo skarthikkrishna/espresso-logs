@@ -5,15 +5,16 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Query
 
 from app.deps import (
-    CurrentUser,
     _DualWriteBrewLogRepo,
     _DualWriteCatalogRepo,
     _DualWriteInventoryRepo,
+    current_household_membership,
     get_brew_log_repo,
     get_catalog_repo,
     get_inventory_repo,
 )
 from app.models.api import DefaultsOut
+from app.models.household import HouseholdMember
 from app.services import defaults as defaults_service
 
 router = APIRouter(prefix="/api", tags=["defaults"])
@@ -22,7 +23,7 @@ router = APIRouter(prefix="/api", tags=["defaults"])
 @router.get("/defaults/{bag_id}", response_model=DefaultsOut)
 async def api_get_defaults(
     bag_id: str,
-    user: CurrentUser,
+    _: HouseholdMember = Depends(current_household_membership),
     basket_id: str | None = Query(default=None),
     brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
     inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),

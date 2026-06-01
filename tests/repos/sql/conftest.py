@@ -14,6 +14,7 @@ import os
 import subprocess
 
 import pytest
+import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 _DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -52,7 +53,7 @@ def anyio_backend() -> str:
     return "asyncio"
 
 
-@pytest.fixture
+@pytest_asyncio.fixture(loop_scope="function")
 async def engine():  # type: ignore[misc]
     """Function-scoped engine — one engine per test."""
     _engine = create_async_engine(_DATABASE_URL, echo=False)  # type: ignore[arg-type]
@@ -60,7 +61,7 @@ async def engine():  # type: ignore[misc]
     await _engine.dispose()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture(loop_scope="function")
 async def db_session(engine) -> AsyncSession:  # type: ignore[misc]
     """Function-scoped AsyncSession with SAVEPOINT isolation.
 

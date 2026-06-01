@@ -122,12 +122,9 @@ async def test_create_with_product_url_sources_and_uploads_image():
     data = resp.json()
     assert data["image_path"] == gcs_path
 
-    # Verify the second upsert (Local_Image_Path update) landed in the sheet
+    # M5 write-disable: Sheets store is not updated; verify via API response only
     hardware_id = data["hardware_id"]
-    row = fake.get_all_records("Hardware")
-    hw_row = next((r for r in row if r["Hardware_ID"] == hardware_id), None)
-    assert hw_row is not None
-    assert hw_row["Local_Image_Path"] == gcs_path
+    assert hardware_id is not None  # hardware_id assigned by next_id() from Sheets
 
 
 async def test_create_with_product_url_image_sourcing_fails_gracefully():
@@ -164,12 +161,9 @@ async def test_create_with_product_url_image_sourcing_fails_gracefully():
     data = resp.json()
     assert data["image_path"] is None
 
-    # Initial upsert must have run before pipeline — Local_Image_Path is "" not None
+    # M5 write-disable: Sheets store is not updated; verify API response only
     hardware_id = data["hardware_id"]
-    rows = fake.get_all_records("Hardware")
-    hw_row = next((r for r in rows if r["Hardware_ID"] == hardware_id), None)
-    assert hw_row is not None
-    assert hw_row["Local_Image_Path"] == ""
+    assert hardware_id is not None  # hardware_id assigned by next_id() from Sheets
 
 
 async def test_create_with_product_url_fetch_image_fails_gracefully():

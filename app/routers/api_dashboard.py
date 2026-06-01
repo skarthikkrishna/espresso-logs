@@ -8,22 +8,23 @@ from typing import Any, List
 from fastapi import APIRouter, Depends
 
 from app.deps import (
-    CurrentUser,
     _DualWriteBrewLogRepo,
     _DualWriteCatalogRepo,
     _DualWriteInventoryRepo,
+    current_household_membership,
     get_brew_log_repo,
     get_catalog_repo,
     get_inventory_repo,
 )
 from app.models.api import DashboardBagOut
+from app.models.household import HouseholdMember
 
 router = APIRouter(prefix="/api", tags=["dashboard"])
 
 
 @router.get("/dashboard", response_model=List[DashboardBagOut])
 async def api_dashboard(
-    user: CurrentUser,
+    _: HouseholdMember = Depends(current_household_membership),
     inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
     brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
     catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),

@@ -1,33 +1,28 @@
 ---
-updated_at: 2026-05-18T06:30:07Z
-focus_area: Session closure — maintain PR #76 merge readiness and track next production follow-up
-active_issues:
-  - pr: 76
-    repo: espresso-logs
-    status: open
-    branch: fix/031-brew-log-duplication-missing-ai
-  - task: post-deploy verification
-    repo: espresso-logs
-    status: pending
-    detail: confirm single brew-log write and AI feedback rendering in production after PR #76 deploy
-  - task: health endpoint follow-up
-    repo: espresso-logs
-    status: queued
-    detail: add GET /health route per Tariq RCA 20260517T062925Z
----
+updated_at: 2026-06-01T00:00:00Z
+focus_area: PR #80 open with CI green; awaiting @copilot review
+active_issues: []
 
 # What We're Focused On
 
 ## Current Team Focus
 
-Close out Spec 031 safely: keep **PR #76** moving to merge (CI green + Copilot review), then validate production behavior immediately post-deploy.
+PR #80 for spec-034 M5 on `feat/034-m5-household-roles` is open, CI is green, and the branch is awaiting `@copilot` review.
+
+## What Was Completed This Session
+
+- Fixed all 5 CI failures:
+  - asyncpg event loop issue
+  - starlette CVE remediation
+  - SQL injection fix
+  - gitleaks history scrub
+  - gitleaks fingerprints follow-up
+- Rebased `feat/034-m5-household-roles` cleanly onto remote `main`
 
 ## Open Work State
 
-1. **PR #76** (`fix/031-brew-log-duplication-missing-ai`) remains open; waiting for final CI/review completion and merge.
-2. **Post-deploy verification** is pending: verify brew log submission writes exactly one entry and AI feedback appears in production.
-3. **Queued follow-up:** implement `GET /health` endpoint to support Cloud Run health probing and reduce deploy risk.
+PR #80 comment fixes remain and should be handled by the next agent session.
 
-## Blockers
+## Next Milestone
 
-None currently recorded for session closure.
+Address `@copilot` review comments, then merge.

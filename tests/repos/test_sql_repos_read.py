@@ -3,13 +3,15 @@
 Covers:
   1. use_postgres=True + sql not None → SQL repo read method called
   2. use_postgres=False              → Sheets repo read method called (regression guard)
-  3. use_postgres=True + sql=None    → graceful fallback to Sheets read
+  3. use_postgres=True + sql=None    → RuntimeError (fail loud; Sheets is archive-only)
 """
 
 from __future__ import annotations
 
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from app.deps import (
     _DualWriteBrewLogRepo,
@@ -79,16 +81,16 @@ class TestDualWriteCatalogRepoReads:
         sql.list.assert_not_called()
         assert result == [_CATALOG_ROW]
 
-    async def test_list_falls_back_to_sheets_when_sql_none(self) -> None:
+    async def test_list_raises_when_sql_none(self) -> None:
         sheets = _make_sheets_catalog()
         wrapper = _DualWriteCatalogRepo(sheets=sheets, sql=None)
 
         with patch("app.deps.settings") as mock_settings:
             mock_settings.use_postgres = True
-            result = await wrapper.list()
+            with pytest.raises(RuntimeError, match="SQL repo unavailable"):
+                await wrapper.list()
 
-        sheets.list.assert_called_once()
-        assert result == [_CATALOG_ROW]
+        sheets.list.assert_not_called()
 
     async def test_get_uses_sql_when_use_postgres_true(self) -> None:
         sheets = _make_sheets_catalog()
@@ -103,15 +105,16 @@ class TestDualWriteCatalogRepoReads:
         sheets.get.assert_not_called()
         assert result == _CATALOG_ROW
 
-    async def test_get_falls_back_to_sheets_when_sql_none(self) -> None:
+    async def test_get_raises_when_sql_none(self) -> None:
         sheets = _make_sheets_catalog()
         wrapper = _DualWriteCatalogRepo(sheets=sheets, sql=None)
 
         with patch("app.deps.settings") as mock_settings:
             mock_settings.use_postgres = True
-            await wrapper.get("CAT001")
+            with pytest.raises(RuntimeError, match="SQL repo unavailable"):
+                await wrapper.get("CAT001")
 
-        sheets.get.assert_called_once_with("CAT001")
+        sheets.get.assert_not_called()
 
     async def test_fetch_all_uses_sql_when_use_postgres_true(self) -> None:
         sheets = _make_sheets_catalog()
@@ -174,15 +177,16 @@ class TestDualWriteBrewLogRepoReads:
         sheets.list_recent.assert_called_once_with(5)
         sql.list_recent.assert_not_called()
 
-    async def test_list_recent_falls_back_when_sql_none(self) -> None:
+    async def test_list_recent_raises_when_sql_none(self) -> None:
         sheets = self._make_sheets()
         wrapper = _DualWriteBrewLogRepo(sheets=sheets, sql=None)
 
         with patch("app.deps.settings") as mock_settings:
             mock_settings.use_postgres = True
-            await wrapper.list_recent(5)
+            with pytest.raises(RuntimeError, match="SQL repo unavailable"):
+                await wrapper.list_recent(5)
 
-        sheets.list_recent.assert_called_once()
+        sheets.list_recent.assert_not_called()
 
     async def test_list_existing_ids_uses_sql(self) -> None:
         sheets = self._make_sheets()
@@ -265,15 +269,16 @@ class TestDualWriteInventoryRepoReads:
         sheets.list.assert_called_once()
         sql.list.assert_not_called()
 
-    async def test_list_falls_back_when_sql_none(self) -> None:
+    async def test_list_raises_when_sql_none(self) -> None:
         sheets = self._make_sheets()
         wrapper = _DualWriteInventoryRepo(sheets=sheets, sql=None)
 
         with patch("app.deps.settings") as mock_settings:
             mock_settings.use_postgres = True
-            await wrapper.list()
+            with pytest.raises(RuntimeError, match="SQL repo unavailable"):
+                await wrapper.list()
 
-        sheets.list.assert_called_once()
+        sheets.list.assert_not_called()
 
     async def test_list_all_uses_sql(self) -> None:
         sheets = self._make_sheets()
@@ -341,15 +346,16 @@ class TestDualWriteHardwareRepoReads:
         sheets.list.assert_called_once()
         sql.list.assert_not_called()
 
-    async def test_list_falls_back_when_sql_none(self) -> None:
+    async def test_list_raises_when_sql_none(self) -> None:
         sheets = self._make_sheets()
         wrapper = _DualWriteHardwareRepo(sheets=sheets, sql=None)
 
         with patch("app.deps.settings") as mock_settings:
             mock_settings.use_postgres = True
-            await wrapper.list()
+            with pytest.raises(RuntimeError, match="SQL repo unavailable"):
+                await wrapper.list()
 
-        sheets.list.assert_called_once()
+        sheets.list.assert_not_called()
 
     async def test_get_uses_sql(self) -> None:
         sheets = self._make_sheets()
@@ -363,15 +369,16 @@ class TestDualWriteHardwareRepoReads:
         sql.get.assert_awaited_once_with("HW001")
         assert result == _HW_ROW
 
-    async def test_get_falls_back_when_sql_none(self) -> None:
+    async def test_get_raises_when_sql_none(self) -> None:
         sheets = self._make_sheets()
         wrapper = _DualWriteHardwareRepo(sheets=sheets, sql=None)
 
         with patch("app.deps.settings") as mock_settings:
             mock_settings.use_postgres = True
-            await wrapper.get("HW001")
+            with pytest.raises(RuntimeError, match="SQL repo unavailable"):
+                await wrapper.get("HW001")
 
-        sheets.get.assert_called_once_with("HW001")
+        sheets.get.assert_not_called()
 
     async def test_hardware_next_id_still_uses_sheets_when_use_postgres_true(
         self, settings_use_postgres: Any
@@ -431,15 +438,16 @@ class TestDualWriteMaintenanceRepoReads:
         sheets.list.assert_called_once()
         sql.list.assert_not_called()
 
-    async def test_list_falls_back_when_sql_none(self) -> None:
+    async def test_list_raises_when_sql_none(self) -> None:
         sheets = self._make_sheets()
         wrapper = _DualWriteMaintenanceRepo(sheets=sheets, sql=None)
 
         with patch("app.deps.settings") as mock_settings:
             mock_settings.use_postgres = True
-            await wrapper.list()
+            with pytest.raises(RuntimeError, match="SQL repo unavailable"):
+                await wrapper.list()
 
-        sheets.list.assert_called_once()
+        sheets.list.assert_not_called()
 
     async def test_get_uses_sql(self) -> None:
         sheets = self._make_sheets()
@@ -453,12 +461,13 @@ class TestDualWriteMaintenanceRepoReads:
         sql.get.assert_awaited_once_with("MNT001")
         assert result == _MAINT_ROW
 
-    async def test_get_falls_back_when_sql_none(self) -> None:
+    async def test_get_raises_when_sql_none(self) -> None:
         sheets = self._make_sheets()
         wrapper = _DualWriteMaintenanceRepo(sheets=sheets, sql=None)
 
         with patch("app.deps.settings") as mock_settings:
             mock_settings.use_postgres = True
-            await wrapper.get("MNT001")
+            with pytest.raises(RuntimeError, match="SQL repo unavailable"):
+                await wrapper.get("MNT001")
 
-        sheets.get.assert_called_once_with("MNT001")
+        sheets.get.assert_not_called()
