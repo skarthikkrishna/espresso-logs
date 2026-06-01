@@ -33,8 +33,11 @@ function renderProtected(initialPath = '/', requiredRole?: 'admin' | 'member') {
       <Routes>
         <Route element={<ProtectedRoute requiredRole={requiredRole} />}>
           <Route path="/" element={<div data-testid="protected-content">secret</div>} />
+          <Route path="/household/new" element={<div data-testid="household-new-page">new household</div>} />
+          <Route path="/invite/accept" element={<div data-testid="invite-page">invite</div>} />
         </Route>
         <Route path="/login" element={<div data-testid="login-page">login</div>} />
+        <Route path="/welcome" element={<div data-testid="welcome-page">welcome</div>} />
       </Routes>
     </MemoryRouter>,
   )
@@ -97,6 +100,62 @@ describe('ProtectedRoute', () => {
     renderProtected()
 
     expect(screen.queryByLabelText('Loading')).not.toBeInTheDocument()
+  })
+
+  it('redirects zero-membership users to /welcome on protected routes', () => {
+    mockUseAuth.mockReturnValue({
+      isLoading: false,
+      isAuthenticated: true,
+      activeMembership: null,
+      memberships: [],
+    })
+
+    renderProtected()
+
+    expect(screen.getByTestId('welcome-page')).toBeInTheDocument()
+    expect(screen.queryByTestId('protected-content')).not.toBeInTheDocument()
+  })
+
+  it('allows zero-membership users through /household/new', () => {
+    mockUseAuth.mockReturnValue({
+      isLoading: false,
+      isAuthenticated: true,
+      activeMembership: null,
+      memberships: [],
+    })
+
+    renderProtected('/household/new')
+
+    expect(screen.getByTestId('household-new-page')).toBeInTheDocument()
+    expect(screen.queryByTestId('welcome-page')).not.toBeInTheDocument()
+  })
+
+  it('allows zero-membership users through invite routes', () => {
+    mockUseAuth.mockReturnValue({
+      isLoading: false,
+      isAuthenticated: true,
+      activeMembership: null,
+      memberships: [],
+    })
+
+    renderProtected('/invite/accept')
+
+    expect(screen.getByTestId('invite-page')).toBeInTheDocument()
+    expect(screen.queryByTestId('welcome-page')).not.toBeInTheDocument()
+  })
+
+  it('does not redirect zero-membership users while auth is still loading', () => {
+    mockUseAuth.mockReturnValue({
+      isLoading: true,
+      isAuthenticated: true,
+      activeMembership: null,
+      memberships: [],
+    })
+
+    renderProtected()
+
+    expect(screen.getByLabelText('Loading')).toBeInTheDocument()
+    expect(screen.queryByTestId('welcome-page')).not.toBeInTheDocument()
   })
 
   it('blocks member-role user from admin-only route', () => {

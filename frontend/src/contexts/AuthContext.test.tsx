@@ -5,7 +5,7 @@
 
 import React from 'react'
 import { render, screen, waitFor, act } from '@testing-library/react'
-import { MemoryRouter, useLocation } from 'react-router-dom'
+import { MemoryRouter } from 'react-router-dom'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AuthProvider, useAuth } from './AuthContext'
 
@@ -109,11 +109,6 @@ function AuthActions() {
       <button onClick={logout}>logout</button>
     </div>
   )
-}
-
-function LocationConsumer() {
-  const location = useLocation()
-  return <div data-testid="location-path">{location.pathname}</div>
 }
 
 function renderWithProvider(children: React.ReactNode, initialEntries = ['/']) {
@@ -221,38 +216,17 @@ describe('AuthContext', () => {
       expect(tokenWrite).toBeUndefined()
     })
 
-    it('redirects authenticated zero-membership users to /welcome', async () => {
+    it('hydrates zero-membership users without redirect side effects', async () => {
       mockRefresh.mockResolvedValueOnce({ access_token: 'tok-zero', token_type: 'bearer' })
       mockGetMe.mockResolvedValueOnce(mockZeroMembershipUser)
 
-      renderWithProvider(
-        <>
-          <AuthConsumer />
-          <LocationConsumer />
-        </>,
-      )
-
-      await waitFor(() => expect(screen.getByTestId('location-path')).toHaveTextContent('/welcome'))
-      expect(screen.getByTestId('memberships')).toHaveTextContent('0')
-      expect(mockSetStoredActiveHouseholdId).toHaveBeenCalledWith(null)
-    })
-
-    it('does not redirect zero-membership users away from invite routes', async () => {
-      mockRefresh.mockResolvedValueOnce({ access_token: 'tok-zero', token_type: 'bearer' })
-      mockGetMe.mockResolvedValueOnce(mockZeroMembershipUser)
-
-      renderWithProvider(
-        <>
-          <AuthConsumer />
-          <LocationConsumer />
-        </>,
-        ['/invite/accept'],
-      )
+      renderWithProvider(<AuthConsumer />)
 
       await waitFor(() =>
         expect(screen.getByTestId('authenticated')).toHaveTextContent('true'),
       )
-      expect(screen.getByTestId('location-path')).toHaveTextContent('/invite/accept')
+      expect(screen.getByTestId('memberships')).toHaveTextContent('0')
+      expect(mockSetStoredActiveHouseholdId).toHaveBeenCalledWith(null)
     })
   })
 
