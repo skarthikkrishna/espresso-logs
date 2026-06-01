@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import datetime
 import uuid
+from collections.abc import Generator
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -29,7 +30,7 @@ from app.services.auth import create_access_token, hash_password
 
 
 @pytest.fixture(autouse=True)
-def reset_rate_limiter() -> None:  # type: ignore[return]
+def reset_rate_limiter() -> Generator[None, None, None]:
     """Reset the in-memory slowapi limiter before each test to prevent cross-test pollution."""
     limiter._storage.reset()
     yield
@@ -866,24 +867,28 @@ async def test_google_oauth_does_not_merge_with_existing_username_account(
 
     app.dependency_overrides[_get_db] = _fake_db_dep
 
-    fake_token_data = {
-        "userinfo": {
-            "sub": "google-sub-alice",
-            "email": "alice@example.com",
-            "name": "Alice",
-            "picture": "",
-        }
+    mock_oauth_client = AsyncMock()
+    mock_oauth_client.fetch_token = AsyncMock()
+    mock_userinfo_response = MagicMock()
+    mock_userinfo_response.json.return_value = {
+        "sub": "google-sub-alice",
+        "email": "alice@example.com",
+        "name": "Alice",
+        "picture": "",
     }
+    mock_userinfo_response.raise_for_status = MagicMock()
+    mock_oauth_client.get = AsyncMock(return_value=mock_userinfo_response)
+
+    mock_client_class = MagicMock()
+    mock_client_class.return_value.__aenter__ = AsyncMock(return_value=mock_oauth_client)
+    mock_client_class.return_value.__aexit__ = AsyncMock(return_value=False)
 
     try:
         with (
             patch("app.auth.UserRepo") as MockUserRepo,
             patch("app.auth.HouseholdRepo") as MockHouseholdRepo,
             patch("app.auth.RefreshTokenRepo") as MockRtRepo,
-            patch(
-                "app.auth.oauth.google.authorize_access_token",
-                new=AsyncMock(return_value=fake_token_data),
-            ),
+            patch("app.auth.AsyncOAuth2Client", mock_client_class),
         ):
             # get_by_google_sub returns None → no existing google account for this sub
             MockUserRepo.return_value.get_by_google_sub = AsyncMock(return_value=None)

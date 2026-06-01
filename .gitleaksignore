@@ -11,3 +11,7 @@
 # "test-jwt-conftest" — same fixture value set via os.environ.setdefault in an old commit;
 # not a real credential. Current conftest.py builds the value at runtime.
 7dcfd6ab3c2d772bfff28661ec94fbb753efbead:tests/conftest.py:generic-api-key:13
+
+# "idem-pg-fail-test-001" re-detected in a later commit after test refactor;
+# still a test idempotency key string, not a real credential.
+fde3171a4961976fe8fe2be3187646b83f52a2ff:tests/test_api_brew_log_idempotency.py:generic-api-key:505
