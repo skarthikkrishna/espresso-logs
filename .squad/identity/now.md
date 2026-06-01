@@ -1,59 +1,60 @@
 ---
-updated_at: 2026-05-23T18:15:00Z
-focus_area: spec-034 M5 — invitation/member route refactor complete locally; frontend legacy endpoint alignment and welcome-flow implementation remain as follow-up before any push
+updated_at: 2026-05-31T00:00:00Z
+focus_area: spec-034 M5 — closeout in progress; backend hardening is largely complete, with NFR-D8 startup guard and welcome-flow follow-through remaining
 active_issues:
   - spec: 034
     repo: espresso-logs
-    status: backend-route-refactor-complete-local-no-push
+    status: m5-closeout-nfr-d8-and-welcome-flow-remaining
     branch: feat/034-m5-household-roles
     detail: |
-      Session-resolved invitation/member route refactor is complete and committed locally.
-      Key commits:
-        1fe8865 — refactor(households): session-resolved invitation + member routes (#034)
-          Removed household_id from invitation/member URL paths; accept-invite now uses
-          token as path param resolved at route level; decline remains unauthenticated.
-        5fb1c2f — fix(households): allow token-resolved invite accept preview (#034)
-          Invite-accept endpoint now works without an active household session membership;
-          identity resolved via current_user, household resolved via token lookup.
-      All four local CI checks passed (ruff check, ruff format --check, mypy --strict, pytest).
-      No push has been performed.
-      Known follow-up (operator-acknowledged):
-        - Frontend still references the legacy invite-accept endpoint
-          (POST /households/accept-invite); must be updated to
-          POST /households/invitations/{token}/accept before the branch is PR-ready.
-        - Welcome-flow / onboarding work stream (spec-034-amendment-welcome-flow.md,
-          committed at 6637d3c) remains untouched this session per operator constraint.
-          First-sign-in auth behaviour, zero-membership redirects, and invite-token
-          bypass rules are not yet implemented.
-      Before any push: all four local CI checks must pass in the current terminal
-      session and the operator must explicitly approve the push.
-  - task: brew_log_reconcile dry-run
+      Spec-034 (M5 household roles) remains active on feat/034-m5-household-roles.
+      Completed this continuation session:
+        - Items 1–5 from pending-m5-work.md:
+          atomic refresh rotation, invitation overhaul, household rename/soft-delete,
+          X-Household-Id routing, and import wizard
+        - Quinn QA hardening pass
+        - /auth/me N+1 fix
+        - 8 spec gap fixes: name max 64, duplicate invite check, member-limit cap,
+          rate limit, UUIDv4 tokens, status codes, timestamps
+        - C4 session-resolved invitation + member routes
+        - DualWrite silent no-op bug fix
+        - E2E test harness updated for JWT auth
+        - React Query hardware cache invalidation fix
+        - Welcome-flow amendment committed:
+          docs/requirements/spec-034-amendment-welcome-flow.md
+        - NFR-D8 clarified to Option 2: startup guard
+      In progress now:
+        - Alex: NFR-D8 implementation in app/setup_guard.py plus startup guard and 503 middleware
+        - Priya: amendment updates for NC-1, NC-2, and NFR-D8
+      Next after clarification:
+        - Finn: /welcome frontend page
+        - Session close: Scribe + Ralph
+  - decision: C1
     repo: espresso-logs
-    status: queued
-    detail: validate spec-033 Sheets→Postgres row parity before closing spec-033
+    status: awaiting-operator
+    branch: feat/034-m5-household-roles
+    detail: |
+      Operator decision pending on household context compatibility.
+      C1 asks whether to keep a server-side active_household_id model or rely on the
+      X-Household-Id header. Full compatibility analysis has already been provided.
+      No final implementation direction should assume the outcome until the operator decides.
 
 # What We're Focused On
 
 ## Current Team Focus
 
-Spec-034 M5 is active on `feat/034-m5-household-roles`. The backend invitation and member route
-refactor is complete locally (1fe8865, 5fb1c2f) and all local CI checks have passed. The branch
-is not yet pushed. Two follow-up streams remain before the branch is PR-ready:
+Spec-034 M5 is in closeout on `feat/034-m5-household-roles`. Most backend and QA hardening work
+for household roles is complete, including the M5 pending-work items, spec-gap fixes, session-
+resolved invitation/member routes, JWT E2E harness updates, and the welcome-flow amendment.
 
-1. **Frontend legacy endpoint** — React SPA still calls the old `POST /households/accept-invite`
-   path. It must be updated to `POST /households/invitations/{token}/accept`.
-2. **Welcome-flow / onboarding** — the spec-034 amendment document (`6637d3c`) defines the
-   required `/welcome` first-sign-in behaviour and invite-token bypass rules but the application
-   code has not been aligned to it. This work stream is explicitly deferred per operator constraint.
+The active implementation stream is NFR-D8 Option 2 (startup guard + 503 middleware). In parallel,
+Priya is updating the amendment doc to resolve NC-1, NC-2, and NFR-D8 so Finn can pick up the
+`/welcome` frontend page once the spec text is settled.
 
 ## Open Work State
 
-1. Route refactor committed locally: `1fe8865` (invitation/member URL cleanup) and `5fb1c2f`
-   (token-resolved accept preview). No push performed.
-2. Frontend must be updated to call `POST /households/invitations/{token}/accept` — legacy
-   `POST /households/accept-invite` is no longer valid.
-3. Welcome-flow onboarding work (auth-layer redirect rules, zero-membership handling, invite-token
-   bypass) is formally deferred; the amendment doc exists at `6637d3c` as the source of truth.
-4. `app/deps.py` contains an unrelated unstaged modification that must remain uncommitted and
-   untouched until the operator decides to handle it separately.
-5. Separate queued follow-up unchanged: `brew_log_reconcile` dry-run for spec-033 closeout.
+1. Alex to implement NFR-D8 startup guard (`app/setup_guard.py`, startup validation, 503 middleware).
+2. Priya to finalize the amendment updates covering NC-1, NC-2, and NFR-D8.
+3. Finn to implement `/welcome` after the amendment is clarified.
+4. Operator decision still pending on C1: server-side `active_household_id` vs `X-Household-Id`.
+5. After the above, close the session with Scribe + Ralph.
