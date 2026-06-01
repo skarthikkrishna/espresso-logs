@@ -183,7 +183,6 @@ class Settings(BaseSettings):
         """
         if self.app_env == "production":
             required: dict[str, str | None] = {
-                "SESSION_SECRET": self.session_secret,
                 "GOOGLE_OAUTH_CLIENT_ID": self.google_oauth_client_id,
                 "GOOGLE_OAUTH_CLIENT_SECRET": self.google_oauth_client_secret,
             }
@@ -196,8 +195,6 @@ class Settings(BaseSettings):
                 raise ValueError(
                     f"Missing required environment variables for production: {', '.join(missing)}"
                 )
-            if len(self.session_secret) < 32:
-                raise ValueError("SESSION_SECRET must be at least 32 characters in production.")
         elif self.session_secret and len(self.session_secret) < 32:
             raise ValueError("SESSION_SECRET must be at least 32 characters when set.")
         return self

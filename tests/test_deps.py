@@ -282,19 +282,26 @@ async def test_oauth_callback_reads_pkce_verifier_from_oauth_states_not_session(
     async def _fake_db() -> AsyncGenerator:
         yield mock_db
 
-    fake_token = {
-        "userinfo": {
-            "sub": "google-sub-abc",
-            "email": "test@example.com",
-            "name": "Test User",
-            "picture": "",
-        }
+    mock_oauth_client = AsyncMock()
+    mock_oauth_client.fetch_token = AsyncMock()
+    mock_userinfo_response = MagicMock()
+    mock_userinfo_response.json.return_value = {
+        "sub": "google-sub-abc",
+        "email": "test@example.com",
+        "name": "Test User",
+        "picture": "",
     }
+    mock_userinfo_response.raise_for_status = MagicMock()
+    mock_oauth_client.get = AsyncMock(return_value=mock_userinfo_response)
+
+    mock_client_class = MagicMock()
+    mock_client_class.return_value.__aenter__ = AsyncMock(return_value=mock_oauth_client)
+    mock_client_class.return_value.__aexit__ = AsyncMock(return_value=False)
 
     from app.services.auth import create_access_token  # noqa: F401 — unused but verifies importability
 
     with (
-        patch("app.auth.oauth.google.authorize_access_token", AsyncMock(return_value=fake_token)),
+        patch("app.auth.AsyncOAuth2Client", mock_client_class),
         patch("app.deps.UserRepo") as MockUserRepo,
     ):
         fake_user = _make_user(email="test@example.com")
@@ -325,6 +332,11 @@ async def test_oauth_callback_reads_pkce_verifier_from_oauth_states_not_session(
     assert any("oauth_state" in call.lower() for call in execute_calls), (
         f"Expected DB execute call for OAuthState lookup; calls were: {execute_calls}"
     )
+    mock_oauth_client.fetch_token.assert_awaited_once()
+    fetch_call = mock_oauth_client.fetch_token.await_args
+    assert fetch_call.args == ("https://oauth2.googleapis.com/token",)
+    assert fetch_call.kwargs["code"] == "authcode123"
+    assert fetch_call.kwargs["code_verifier"] == pkce_verifier_val
 
 
 async def test_oauth_callback_rejects_unknown_state() -> None:

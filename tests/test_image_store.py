@@ -251,3 +251,30 @@ class TestUploadImageDispatcher:
         result = await _store.upload_image(b"data", "image/jpeg", "test.jpg", "my-project-assets")
         mock_gcs.assert_called_once_with(b"data", "image/jpeg", "test.jpg", "my-project-assets")
         assert result.startswith("https://storage.googleapis.com/")
+
+
+class TestLocalUploadRealFunction:
+    """Exercises the real _local_upload code path (lines 55-62)."""
+
+    async def test_local_upload_writes_file_and_returns_url(self, tmp_path, monkeypatch) -> None:
+        """_local_upload writes bytes to an isolated tmp_path and returns a /static/uploads/ URL."""
+        from pathlib import Path
+
+        import app.services.image_store as _store
+
+        fake_module_path = tmp_path / "app" / "services" / "image_store.py"
+        monkeypatch.setattr(_store, "__file__", str(fake_module_path))
+
+        raw = b"test-image-bytes"
+        url = await _store._local_upload(raw, "image/jpeg", "test_local_upload_tmp.jpg")
+        assert url == "/static/uploads/test_local_upload_tmp.jpg"
+
+        expected = (
+            Path(_store.__file__).resolve().parent.parent
+            / "static"
+            / "uploads"
+            / "test_local_upload_tmp.jpg"
+        )
+        assert str(expected).startswith(str(tmp_path))
+        assert expected.exists()
+        assert expected.read_bytes() == raw
