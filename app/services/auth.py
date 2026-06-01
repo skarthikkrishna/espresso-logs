@@ -128,12 +128,20 @@ def hash_token(raw: str) -> str:
 
 
 def set_refresh_cookie(response: Response, raw_token: str) -> None:
-    """Set the ``rt`` HttpOnly refresh token cookie on *response*."""
+    """Set the ``rt`` HttpOnly refresh token cookie on *response*.
+
+    ``SameSite=Lax`` (not Strict) is required so the cookie is available
+    immediately after the OAuth redirect chain from a cross-site provider
+    (e.g. Google). Strict blocks the cookie on the first same-site request
+    following a cross-site top-level navigation in Safari ITP and some
+    Chromium configurations.  Lax still protects against cross-site POST
+    CSRF because the ``/auth/refresh`` endpoint is POST-only.
+    """
     response.set_cookie(
         key="rt",
         value=raw_token,
         httponly=True,
-        samesite="strict",
+        samesite="lax",
         secure=settings.is_production,
         path="/auth",
         max_age=2592000,  # 30 days
@@ -146,7 +154,7 @@ def clear_refresh_cookie(response: Response) -> None:
         key="rt",
         value="",
         httponly=True,
-        samesite="strict",
+        samesite="lax",
         secure=settings.is_production,
         path="/auth",
         max_age=0,

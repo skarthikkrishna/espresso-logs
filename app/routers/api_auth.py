@@ -1,7 +1,7 @@
 """M5 JSON auth endpoints — register, login, refresh, logout, me, admin reset-password.
 
 All rate-limited via slowapi.  JWT access tokens are short-lived (default 15 min);
-refresh tokens are HttpOnly SameSite=Strict cookies with a 30-day lifetime.
+refresh tokens are HttpOnly SameSite=Lax cookies with a 30-day lifetime.
 """
 
 from __future__ import annotations

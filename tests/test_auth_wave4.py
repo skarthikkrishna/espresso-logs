@@ -450,7 +450,7 @@ async def test_login_rt_cookie_has_correct_attributes(auth_client: AsyncMock) ->
     set_cookie = resp.headers.get("set-cookie", "").lower()
     assert "rt=" in set_cookie
     assert "httponly" in set_cookie
-    assert "samesite=strict" in set_cookie
+    assert "samesite=lax" in set_cookie
     assert "path=/auth" in set_cookie
     assert "max-age=2592000" in set_cookie
 
