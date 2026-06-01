@@ -141,16 +141,16 @@ async def test_current_household_membership_sets_rls_variable() -> None:
 
     hh_id = uuid.uuid4()
     fake_user = _make_user()
+    fake_user.active_household_id = None
     fake_membership = _make_membership(household_id=hh_id)
     mock_db = AsyncMock()
-    request = MagicMock(headers={})
 
     with (
         patch.object(deps_module, "_E2E_AUTH_BYPASS", False),
         patch("app.deps.HouseholdRepo") as MockHHRepo,
     ):
         MockHHRepo.return_value.get_memberships_for_user = AsyncMock(return_value=[fake_membership])
-        result = await current_household_membership(request=request, user=fake_user, db=mock_db)
+        result = await current_household_membership(user=fake_user, db=mock_db)
 
     assert result is fake_membership
     mock_db.execute.assert_awaited_once()
@@ -162,9 +162,12 @@ async def test_current_household_membership_sets_rls_variable() -> None:
 
 
 async def test_current_household_membership_no_membership_raises_403() -> None:
-    """User with no household → 403 HTTPException (US-4.3)."""
+    """User with no household memberships returns 403."""
     import app.deps as deps_module
     from fastapi import HTTPException
+
+    fake_user = _make_user()
+    fake_user.active_household_id = None
 
     with (
         patch.object(deps_module, "_E2E_AUTH_BYPASS", False),
@@ -172,56 +175,63 @@ async def test_current_household_membership_no_membership_raises_403() -> None:
     ):
         MockHHRepo.return_value.get_memberships_for_user = AsyncMock(return_value=[])
         with pytest.raises(HTTPException) as exc_info:
-            await current_household_membership(
-                request=MagicMock(headers={}),
-                user=_make_user(),
-                db=AsyncMock(),
-            )
+            await current_household_membership(user=fake_user, db=AsyncMock())
 
     assert exc_info.value.status_code == 403
+    assert exc_info.value.detail == "User has no household memberships"
 
 
-async def test_current_household_membership_honors_household_header() -> None:
-    """X-Household-Id selects a specific membership when the caller belongs to it."""
+async def test_current_household_membership_uses_active_household() -> None:
+    """Persisted active_household_id selects the matching membership."""
     import app.deps as deps_module
 
     hh_id = uuid.uuid4()
     fake_user = _make_user()
+    fake_user.active_household_id = hh_id
     fake_membership = _make_membership(user_id=fake_user.id, household_id=hh_id)
     mock_db = AsyncMock()
-    request = MagicMock(headers={"X-Household-Id": str(hh_id)})
-    fake_household = MagicMock(id=hh_id)
 
     with (
         patch.object(deps_module, "_E2E_AUTH_BYPASS", False),
         patch("app.deps.HouseholdRepo") as MockHHRepo,
+        patch("app.deps.UserRepo") as MockUserRepo,
     ):
         MockHHRepo.return_value.get_member = AsyncMock(return_value=fake_membership)
-        MockHHRepo.return_value.get_by_id = AsyncMock(return_value=fake_household)
-        result = await current_household_membership(request=request, user=fake_user, db=mock_db)
+        MockHHRepo.return_value.get_by_id = AsyncMock(return_value=MagicMock(id=hh_id))
+        MockUserRepo.return_value.clear_active_household = AsyncMock()
+        result = await current_household_membership(user=fake_user, db=mock_db)
 
     assert result is fake_membership
     MockHHRepo.return_value.get_member.assert_awaited_once_with(mock_db, hh_id, fake_user.id)
+    MockUserRepo.return_value.clear_active_household.assert_not_called()
 
 
-async def test_current_household_membership_rejects_unknown_household_header() -> None:
-    """X-Household-Id for a household the caller does not belong to returns 403."""
+async def test_current_household_membership_clears_invalid_active_household() -> None:
+    """Invalid persisted active household is cleared before falling back by join order."""
     import app.deps as deps_module
-    from fastapi import HTTPException
 
-    hh_id = uuid.uuid4()
-    request = MagicMock(headers={"X-Household-Id": str(hh_id)})
+    stale_household_id = uuid.uuid4()
+    fallback_membership = _make_membership(household_id=uuid.uuid4())
+    fake_user = _make_user()
+    fake_user.active_household_id = stale_household_id
+    mock_db = AsyncMock()
 
     with (
         patch.object(deps_module, "_E2E_AUTH_BYPASS", False),
         patch("app.deps.HouseholdRepo") as MockHHRepo,
+        patch("app.deps.UserRepo") as MockUserRepo,
     ):
         MockHHRepo.return_value.get_member = AsyncMock(return_value=None)
-        MockHHRepo.return_value.get_by_id = AsyncMock(return_value=MagicMock(id=hh_id))
-        with pytest.raises(HTTPException) as exc_info:
-            await current_household_membership(request=request, user=_make_user(), db=AsyncMock())
+        MockHHRepo.return_value.get_by_id = AsyncMock(return_value=MagicMock(id=stale_household_id))
+        MockHHRepo.return_value.get_memberships_for_user = AsyncMock(
+            return_value=[fallback_membership]
+        )
+        MockUserRepo.return_value.clear_active_household = AsyncMock()
+        result = await current_household_membership(user=fake_user, db=mock_db)
 
-    assert exc_info.value.status_code == 403
+    assert result is fallback_membership
+    MockUserRepo.return_value.clear_active_household.assert_awaited_once_with(mock_db, fake_user.id)
+    assert fake_user.active_household_id is None
 
 
 # ---------------------------------------------------------------------------

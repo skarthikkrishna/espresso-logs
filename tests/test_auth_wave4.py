@@ -55,6 +55,7 @@ def _fake_user(
     u.display_name = username.title()
     u.email = f"{username}@example.com"
     u.picture_url = None
+    u.active_household_id = None
     u.password_hash = hash_password(password)
     u.locked_until = locked_until
     u.login_attempts = login_attempts

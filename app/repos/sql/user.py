@@ -85,3 +85,18 @@ class UserRepo:
             sa.update(User).where(User.id == user_id).values(last_seen_at=sa.text("NOW()"))
         )
         await db.flush()
+
+    async def set_active_household(
+        self,
+        db: AsyncSession,
+        user_id: uuid.UUID,
+        household_id: uuid.UUID,
+    ) -> None:
+        await db.execute(
+            sa.update(User).where(User.id == user_id).values(active_household_id=household_id)
+        )
+        await db.commit()
+
+    async def clear_active_household(self, db: AsyncSession, user_id: uuid.UUID) -> None:
+        await db.execute(sa.update(User).where(User.id == user_id).values(active_household_id=None))
+        await db.commit()

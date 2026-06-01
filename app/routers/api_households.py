@@ -168,7 +168,8 @@ async def create_household(
 ) -> HouseholdOut:
     """Create a new household; caller becomes the admin (AC-070)."""
     household = await HouseholdRepo().create_household(db, name=body.name, created_by=user.id)
-    await db.commit()
+    await UserRepo().set_active_household(db, user.id, household.id)
+    user.active_household_id = household.id
     await db.refresh(household)
     return HouseholdOut(
         id=household.id, name=household.name, created_at=household.created_at, role="admin"
@@ -290,6 +291,7 @@ async def accept_invite(
     if existing is not None:
         raise HTTPException(status_code=409, detail="Already a member of this household")
 
+    existing_memberships = await repo.count_for_user(db, user.id)
     await repo.add_member(
         db,
         household_id=invitation.household_id,
@@ -300,7 +302,11 @@ async def accept_invite(
         accepted_at=now,
     )
     await repo.accept_invitation(db, invitation.id)
-    await db.commit()
+    if existing_memberships == 0:
+        await UserRepo().set_active_household(db, user.id, invitation.household_id)
+        user.active_household_id = invitation.household_id
+    else:
+        await db.commit()
 
     return AcceptInviteOut(
         household_id=invitation.household_id,

@@ -45,6 +45,7 @@ def _fake_user(username: str = "alice", user_id: uuid.UUID | None = None) -> Mag
     u.display_name = username.title()
     u.email = f"{username}@example.com"
     u.picture_url = None
+    u.active_household_id = None
     return u
 
 
@@ -337,12 +338,17 @@ async def test_accept_invite_valid_token_creates_membership(db_override: AsyncMo
 
     app.dependency_overrides[invite_accepting_user] = lambda: user
 
-    with patch("app.routers.api_households.HouseholdRepo") as MockHHRepo:
+    with (
+        patch("app.routers.api_households.HouseholdRepo") as MockHHRepo,
+        patch("app.routers.api_households.UserRepo") as MockUserRepo,
+    ):
         MockHHRepo.return_value.get_invitation_by_token_hash = AsyncMock(return_value=inv)
         MockHHRepo.return_value.get_member = AsyncMock(return_value=None)
+        MockHHRepo.return_value.count_for_user = AsyncMock(return_value=0)
         MockHHRepo.return_value.add_member = AsyncMock()
         MockHHRepo.return_value.accept_invitation = AsyncMock()
         MockHHRepo.return_value.get_by_id = AsyncMock(return_value=hh)
+        MockUserRepo.return_value.set_active_household = AsyncMock()
         mock_db.commit = AsyncMock()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -356,6 +362,8 @@ async def test_accept_invite_valid_token_creates_membership(db_override: AsyncMo
     assert str(body["household_id"]) == str(hh_id)
     MockHHRepo.return_value.add_member.assert_awaited_once()
     assert MockHHRepo.return_value.add_member.await_args.kwargs["user_id"] == user.id
+    MockHHRepo.return_value.count_for_user.assert_awaited_once_with(mock_db, user.id)
+    MockUserRepo.return_value.set_active_household.assert_awaited_once_with(mock_db, user.id, hh_id)
     MockHHRepo.return_value.accept_invitation.assert_awaited_once_with(mock_db, inv.id)
 
 
@@ -372,12 +380,17 @@ async def test_accept_invite_as_admin_creates_admin_member(db_override: AsyncMoc
 
     app.dependency_overrides[invite_accepting_user] = lambda: user
 
-    with patch("app.routers.api_households.HouseholdRepo") as MockHHRepo:
+    with (
+        patch("app.routers.api_households.HouseholdRepo") as MockHHRepo,
+        patch("app.routers.api_households.UserRepo") as MockUserRepo,
+    ):
         MockHHRepo.return_value.get_invitation_by_token_hash = AsyncMock(return_value=inv)
         MockHHRepo.return_value.get_member = AsyncMock(return_value=None)
+        MockHHRepo.return_value.count_for_user = AsyncMock(return_value=0)
         MockHHRepo.return_value.add_member = AsyncMock()
         MockHHRepo.return_value.accept_invitation = AsyncMock()
         MockHHRepo.return_value.get_by_id = AsyncMock(return_value=hh)
+        MockUserRepo.return_value.set_active_household = AsyncMock()
         mock_db.commit = AsyncMock()
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -389,6 +402,8 @@ async def test_accept_invite_as_admin_creates_admin_member(db_override: AsyncMoc
     assert resp.json()["role"] == "admin"
     MockHHRepo.return_value.add_member.assert_awaited_once()
     assert MockHHRepo.return_value.add_member.await_args.kwargs["role"] == "admin"
+    MockHHRepo.return_value.count_for_user.assert_awaited_once_with(mock_db, user.id)
+    MockUserRepo.return_value.set_active_household.assert_awaited_once_with(mock_db, user.id, hh_id)
 
 
 async def test_accept_invite_to_deleted_household_returns_410(db_override: AsyncMock) -> None:

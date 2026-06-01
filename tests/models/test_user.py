@@ -23,6 +23,7 @@ def test_user_columns() -> None:
         "email",
         "display_name",
         "picture_url",
+        "active_household_id",
         "created_at",
         "last_seen_at",
         "login_attempts",
@@ -50,3 +51,11 @@ def test_user_username_is_unique() -> None:
 def test_user_google_sub_is_unique() -> None:
     col = User.__table__.columns["google_sub"]
     assert col.unique
+
+
+def test_user_active_household_has_set_null_foreign_key() -> None:
+    col = User.__table__.columns["active_household_id"]
+    foreign_keys = list(col.foreign_keys)
+    assert len(foreign_keys) == 1
+    assert foreign_keys[0].column.table.name == "households"
+    assert foreign_keys[0].ondelete == "SET NULL"

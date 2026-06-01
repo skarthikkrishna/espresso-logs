@@ -115,6 +115,7 @@ class MeOut(BaseModel):
     email: str | None
     picture_url: str | None
     household_id: uuid.UUID | None = None
+    active_household_id: uuid.UUID | None = None
     role: str | None = None
     memberships: list[MembershipSchema] = Field(default_factory=list)
 
@@ -288,14 +289,11 @@ async def get_me(
     household_id: uuid.UUID | None = None
     role: str | None = None
     memberships_out: list[MembershipSchema] = []
+    active_membership: HouseholdMembershipWithName | None = None
     if db is not None:
         memberships: list[
             HouseholdMembershipWithName
         ] = await HouseholdRepo().get_memberships_with_households_for_user(db, user.id)
-        if memberships:
-            first = memberships[0].membership
-            household_id = first.household_id
-            role = first.role
         for membership_with_household in memberships:
             membership = membership_with_household.membership
             memberships_out.append(
@@ -306,6 +304,18 @@ async def get_me(
                     joined_at=membership.joined_at,
                 )
             )
+            if membership.household_id == user.active_household_id:
+                active_membership = membership_with_household
+
+        if active_membership is None and memberships:
+            active_membership = memberships[0]
+            if user.active_household_id is not None:
+                await UserRepo().clear_active_household(db, user.id)
+                user.active_household_id = None
+
+        if active_membership is not None:
+            household_id = active_membership.membership.household_id
+            role = active_membership.membership.role
     return MeOut(
         id=user.id,
         username=user.username,
@@ -313,6 +323,7 @@ async def get_me(
         email=user.email,
         picture_url=user.picture_url,
         household_id=household_id,
+        active_household_id=household_id,
         role=role,
         memberships=memberships_out,
     )
@@ -324,11 +335,13 @@ async def switch_household(
     user: User = Depends(current_user),
     db: AsyncSession = Depends(get_db),
 ) -> SwitchHouseholdOut:
-    """Validate that the caller belongs to the requested household."""
+    """Persist the caller's active household selection."""
     membership = await HouseholdRepo().get_member(db, body.household_id, user.id)
     household = await HouseholdRepo().get_by_id(db, body.household_id)
     if membership is None or household is None:
         raise HTTPException(status_code=403, detail="Not a member of this household")
+    await UserRepo().set_active_household(db, user.id, body.household_id)
+    user.active_household_id = body.household_id
     return SwitchHouseholdOut(
         household_id=body.household_id,
         role=membership.role,

@@ -91,6 +91,23 @@ class HouseholdRepo:
         )
         return result.scalar_one_or_none()
 
+    async def get_by_user_and_household(
+        self,
+        db: AsyncSession,
+        user_id: uuid.UUID,
+        household_id: uuid.UUID,
+    ) -> HouseholdMember | None:
+        result = await db.execute(
+            sa.select(HouseholdMember)
+            .join(Household, Household.id == HouseholdMember.household_id)
+            .where(
+                HouseholdMember.user_id == user_id,
+                HouseholdMember.household_id == household_id,
+                Household.deleted_at.is_(None),
+            )
+        )
+        return result.scalar_one_or_none()
+
     async def get_memberships_for_user(
         self, db: AsyncSession, user_id: uuid.UUID
     ) -> list[HouseholdMember]:
@@ -104,6 +121,21 @@ class HouseholdRepo:
             .order_by(HouseholdMember.joined_at.asc())
         )
         return list(result.scalars().all())
+
+    async def get_all_for_user(self, db: AsyncSession, user_id: uuid.UUID) -> list[HouseholdMember]:
+        return await self.get_memberships_for_user(db, user_id)
+
+    async def count_for_user(self, db: AsyncSession, user_id: uuid.UUID) -> int:
+        result = await db.execute(
+            sa.select(sa.func.count())
+            .select_from(HouseholdMember)
+            .join(Household, Household.id == HouseholdMember.household_id)
+            .where(
+                HouseholdMember.user_id == user_id,
+                Household.deleted_at.is_(None),
+            )
+        )
+        return int(result.scalar_one())
 
     async def get_memberships_with_households_for_user(
         self, db: AsyncSession, user_id: uuid.UUID
