@@ -51,12 +51,12 @@ export default function HouseholdNew() {
     setIsSubmitting(true)
 
     try {
-    await apiClient.post<CreateHouseholdResponse>('/households', {
-      name: name.trim(),
-    })
-    const userData = await getMe()
-    setUser(userData)
-    navigate('/', { replace: true })
+      await apiClient.post<CreateHouseholdResponse>('/households', {
+        name: name.trim(),
+      })
+      const userData = await getMe()
+      setUser(userData)
+      navigate('/', { replace: true })
     } catch (err) {
       if (axios.isAxiosError(err)) {
         if (err.response?.status === 409) {

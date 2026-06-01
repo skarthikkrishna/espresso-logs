@@ -141,6 +141,11 @@ class Settings(BaseSettings):
         return data
 
     @property
+    def is_production(self) -> bool:
+        """True when APP_ENV=production. Used for security-sensitive defaults (e.g. Secure cookies)."""
+        return self.app_env == "production"
+
+    @property
     def assets_bucket(self) -> str:
         return f"{self.gcp_project_id}-assets"
 

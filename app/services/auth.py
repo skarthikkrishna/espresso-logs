@@ -134,7 +134,7 @@ def set_refresh_cookie(response: Response, raw_token: str) -> None:
         value=raw_token,
         httponly=True,
         samesite="strict",
-        secure=True,
+        secure=settings.is_production,
         path="/auth",
         max_age=2592000,  # 30 days
     )
@@ -147,7 +147,7 @@ def clear_refresh_cookie(response: Response) -> None:
         value="",
         httponly=True,
         samesite="strict",
-        secure=True,
+        secure=settings.is_production,
         path="/auth",
         max_age=0,
     )
