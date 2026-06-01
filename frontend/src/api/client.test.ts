@@ -157,6 +157,22 @@ describe('apiClient', () => {
       expect(window.location.pathname).toBe('/welcome')
     })
 
+    it('handles setup_required 503 before any auth refresh logic', async () => {
+      apiClient.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
+        throw makeError(config, 503, {
+          detail: 'Initial setup required',
+          setup_required: true,
+        }, 'Service Unavailable')
+      }
+
+      const refreshSpy = vi.spyOn(axios, 'post')
+
+      await expect(apiClient.get('/api/protected')).rejects.toBeTruthy()
+
+      expect(window.location.pathname).toBe('/welcome')
+      expect(refreshSpy).not.toHaveBeenCalled()
+    })
+
     it('retries request after 401 using refresh token', async () => {
       let callCount = 0
       let retryConfig: InternalAxiosRequestConfig | undefined

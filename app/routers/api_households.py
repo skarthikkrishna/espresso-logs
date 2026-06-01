@@ -169,6 +169,7 @@ async def create_household(
     """Create a new household; caller becomes the admin (AC-070)."""
     household = await HouseholdRepo().create_household(db, name=body.name, created_by=user.id)
     await UserRepo().set_active_household(db, user.id, household.id)
+    await db.commit()
     user.active_household_id = household.id
     await db.refresh(household)
     return HouseholdOut(
@@ -305,8 +306,7 @@ async def accept_invite(
     if existing_memberships == 0:
         await UserRepo().set_active_household(db, user.id, invitation.household_id)
         user.active_household_id = invitation.household_id
-    else:
-        await db.commit()
+    await db.commit()
 
     return AcceptInviteOut(
         household_id=invitation.household_id,
@@ -401,6 +401,7 @@ async def delete_household(
     if membership.household_id != household_id:
         raise HTTPException(status_code=403, detail="Not an admin of this household")
     await HouseholdRepo().soft_delete(db, household_id)
+    await UserRepo().clear_active_household(db, membership.user_id)
     await db.commit()
     return Response(status_code=204)
 

@@ -126,23 +126,36 @@ async def test_active_household_persists_after_switch(db_override: AsyncMock) ->
 async def test_active_household_restored_after_new_session(db_override: AsyncMock) -> None:
     household_a = uuid.uuid4()
     household_b = uuid.uuid4()
-    user = _make_user(active_household_id=household_b)
+    user_id = uuid.uuid4()
+    persisted_state = {"active_household_id": household_a}
     membership_a = _make_membership(
-        user_id=user.id,
+        user_id=user_id,
         household_id=household_a,
         role="admin",
         joined_at=datetime.datetime(2024, 1, 1, tzinfo=UTC),
     )
     membership_b = _make_membership(
-        user_id=user.id,
+        user_id=user_id,
         household_id=household_b,
         role="member",
         joined_at=datetime.datetime(2024, 1, 2, tzinfo=UTC),
     )
+    household_b_record = type("Household", (), {"id": household_b, "name": "Household B"})()
 
-    app.dependency_overrides[auth_current_user] = lambda: user
+    def _current_user() -> User:
+        return _make_user(
+            user_id=user_id,
+            active_household_id=persisted_state["active_household_id"],
+        )
+
+    app.dependency_overrides[auth_current_user] = _current_user
     try:
-        with patch("app.routers.api_auth.HouseholdRepo") as MockHouseholdRepo:
+        with (
+            patch("app.routers.api_auth.HouseholdRepo") as MockHouseholdRepo,
+            patch("app.routers.api_auth.UserRepo") as MockUserRepo,
+        ):
+            MockHouseholdRepo.return_value.get_member = AsyncMock(return_value=membership_b)
+            MockHouseholdRepo.return_value.get_by_id = AsyncMock(return_value=household_b_record)
             MockHouseholdRepo.return_value.get_memberships_with_households_for_user = AsyncMock(
                 return_value=[
                     _MembershipWithName(membership_a, "Household A"),
@@ -150,14 +163,34 @@ async def test_active_household_restored_after_new_session(db_override: AsyncMoc
                 ]
             )
 
+            async def _set_active_household(
+                db: AsyncMock, user_id_arg: uuid.UUID, household_id_arg: uuid.UUID
+            ) -> None:
+                assert db is db_override
+                assert user_id_arg == user_id
+                persisted_state["active_household_id"] = household_id_arg
+
+            MockUserRepo.return_value.set_active_household = AsyncMock(
+                side_effect=_set_active_household
+            )
+
             async with AsyncClient(
                 transport=ASGITransport(app=app), base_url="http://test"
             ) as client:
-                response = await client.get("/auth/me")
+                switch_response = await client.post(
+                    "/auth/switch-household",
+                    json={"household_id": str(household_b)},
+                )
+
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as fresh_client:
+                response = await fresh_client.get("/auth/me")
 
     finally:
         app.dependency_overrides.pop(auth_current_user, None)
 
+    assert switch_response.status_code == 200, switch_response.text
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["household_id"] == str(household_b)
@@ -382,20 +415,19 @@ async def test_active_household_cleared_when_removed_from_household(db_override:
     MockUserRepo.return_value.clear_active_household.assert_awaited_once_with(db_override, user.id)
 
 
-async def test_active_household_cleared_when_household_deleted(db_override: AsyncMock) -> None:
+async def test_soft_deleted_active_household_triggers_fallback(db_override: AsyncMock) -> None:
     deleted_household = uuid.uuid4()
     fallback_household = uuid.uuid4()
     user = _make_user(active_household_id=deleted_household)
+    active_membership = _make_membership(user_id=user.id, household_id=deleted_household)
     fallback_membership = _make_membership(user_id=user.id, household_id=fallback_household)
 
     with (
         patch("app.deps.HouseholdRepo") as MockHouseholdRepo,
         patch("app.deps.UserRepo") as MockUserRepo,
     ):
-        MockHouseholdRepo.return_value.get_member = AsyncMock(return_value=None)
-        MockHouseholdRepo.return_value.get_by_id = AsyncMock(
-            return_value=type("Household", (), {"id": deleted_household})()
-        )
+        MockHouseholdRepo.return_value.get_member = AsyncMock(return_value=active_membership)
+        MockHouseholdRepo.return_value.get_by_id = AsyncMock(return_value=None)
         MockHouseholdRepo.return_value.get_memberships_for_user = AsyncMock(
             return_value=[fallback_membership]
         )
@@ -404,6 +436,32 @@ async def test_active_household_cleared_when_household_deleted(db_override: Asyn
         membership = await current_household_membership(user=user, db=db_override)
 
     assert membership.household_id == fallback_household
+    assert user.active_household_id is None
+    MockUserRepo.return_value.clear_active_household.assert_awaited_once_with(db_override, user.id)
+
+
+async def test_soft_deleted_last_active_household_clears_active_household(
+    db_override: AsyncMock,
+) -> None:
+    deleted_household = uuid.uuid4()
+    user = _make_user(active_household_id=deleted_household)
+    active_membership = _make_membership(user_id=user.id, household_id=deleted_household)
+
+    with (
+        patch("app.deps.HouseholdRepo") as MockHouseholdRepo,
+        patch("app.deps.UserRepo") as MockUserRepo,
+    ):
+        MockHouseholdRepo.return_value.get_member = AsyncMock(return_value=active_membership)
+        MockHouseholdRepo.return_value.get_by_id = AsyncMock(return_value=None)
+        MockHouseholdRepo.return_value.get_memberships_for_user = AsyncMock(return_value=[])
+        MockUserRepo.return_value.clear_active_household = AsyncMock()
+
+        with pytest.raises(HTTPException) as exc_info:
+            await current_household_membership(user=user, db=db_override)
+
+    assert exc_info.value.status_code == 403
+    assert exc_info.value.detail == "User has no household memberships"
+    assert user.active_household_id is None
     MockUserRepo.return_value.clear_active_household.assert_awaited_once_with(db_override, user.id)
 
 

@@ -311,6 +311,7 @@ async def get_me(
             active_membership = memberships[0]
             if user.active_household_id is not None:
                 await UserRepo().clear_active_household(db, user.id)
+                await db.commit()
                 user.active_household_id = None
 
         if active_membership is not None:
@@ -341,6 +342,7 @@ async def switch_household(
     if membership is None or household is None:
         raise HTTPException(status_code=403, detail="Not a member of this household")
     await UserRepo().set_active_household(db, user.id, body.household_id)
+    await db.commit()
     user.active_household_id = body.household_id
     return SwitchHouseholdOut(
         household_id=body.household_id,

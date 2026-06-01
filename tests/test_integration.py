@@ -448,11 +448,11 @@ async def test_seed_orphan_rows_on_first_login(
 # ---------------------------------------------------------------------------
 
 
-async def test_brew_log_scoped_to_active_household(
+async def test_brew_logs_scoped_to_active_household_not_all(
     integration_client: AsyncClient,
     pg_engine: AsyncEngine,
 ) -> None:
-    """Brew log reads honor X-Household-Id when a user belongs to multiple households."""
+    """Brew log reads honor the persisted active household, not all memberships."""
     from app.rate_limit import limiter as _limiter
 
     _limiter._storage.reset()
@@ -468,9 +468,16 @@ async def test_brew_log_scoped_to_active_household(
 
     r = await client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert r.status_code == 200
-    user_id: str = r.json()["id"]
     primary_household_id: str = r.json()["household_id"]
-    secondary_household_id = str(uuid.uuid4())
+    assert primary_household_id is not None
+
+    r = await client.post(
+        "/households",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": "Lab"},
+    )
+    assert r.status_code == 201, r.text
+    secondary_household_id: str = r.json()["id"]
     primary_shot_id = f"ACTIVE-A-{uuid.uuid4().hex[:8]}"
     secondary_shot_id = f"ACTIVE-B-{uuid.uuid4().hex[:8]}"
 
@@ -480,19 +487,6 @@ async def test_brew_log_scoped_to_active_household(
 
     try:
         async with pg_engine.begin() as conn:
-            await conn.execute(
-                sa.text(
-                    "INSERT INTO households (id, name, created_by) VALUES (:hid, :name, :user_id)"
-                ),
-                {"hid": secondary_household_id, "name": "Lab", "user_id": user_id},
-            )
-            await conn.execute(
-                sa.text(
-                    "INSERT INTO household_members (household_id, user_id, role, invited_by) "
-                    "VALUES (:hid, :user_id, 'member', NULL)"
-                ),
-                {"hid": secondary_household_id, "user_id": user_id},
-            )
             await conn.execute(
                 sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
                 {"hid": primary_household_id},
@@ -512,21 +506,9 @@ async def test_brew_log_scoped_to_active_household(
 
         r = await client.get("/api/brew-log", headers={"Authorization": f"Bearer {token}"})
         assert r.status_code == 200, r.text
-        shot_ids_default = [item["shot_id"] for item in r.json()["items"]]
-        assert primary_shot_id in shot_ids_default
-        assert secondary_shot_id not in shot_ids_default
-
-        r = await client.get(
-            "/api/brew-log",
-            headers={
-                "Authorization": f"Bearer {token}",
-                "X-Household-Id": secondary_household_id,
-            },
-        )
-        assert r.status_code == 200, r.text
-        shot_ids_secondary = [item["shot_id"] for item in r.json()["items"]]
-        assert secondary_shot_id in shot_ids_secondary
-        assert primary_shot_id not in shot_ids_secondary
+        shot_ids = [item["shot_id"] for item in r.json()["items"]]
+        assert secondary_shot_id in shot_ids
+        assert primary_shot_id not in shot_ids
 
     finally:
         async with pg_engine.connect() as conn:
@@ -534,36 +516,141 @@ async def test_brew_log_scoped_to_active_household(
             await conn.commit()
 
 
-async def test_wrong_household_id_header_rejected(
+async def test_active_household_survives_server_restart(
     integration_client: AsyncClient,
-    pg_engine: AsyncEngine,
 ) -> None:
-    """Sending a mismatched X-Household-ID header for a household the user does not belong to
-    must be rejected (403 or 404), not silently ignored.
-    """
+    """A fresh client reads the persisted active household from the database."""
     from app.rate_limit import limiter as _limiter
 
     _limiter._storage.reset()
 
     client = integration_client
 
-    ua = _uname()
-    r = await client.post("/auth/register", json={"username": ua, "password": "HdrTest12345!"})
+    username = _uname()
+    r = await client.post(
+        "/auth/register", json={"username": username, "password": "Restart12345!"}
+    )
     assert r.status_code == 201, r.text
-    token_a: str = r.json()["access_token"]
+    token: str = r.json()["access_token"]
 
-    wrong_hh_id = str(uuid.uuid4())
+    r = await client.post(
+        "/households",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": "Travel"},
+    )
+    assert r.status_code == 201, r.text
+    travel_household_id: str = r.json()["id"]
 
-    r = await client.get(
-        "/api/brew-log",
-        headers={
-            "Authorization": f"Bearer {token_a}",
-            "X-Household-ID": wrong_hh_id,
+    r = await client.post(
+        "/auth/switch-household",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"household_id": travel_household_id},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["household_name"] == "Travel"
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as fresh_client:
+        r = await fresh_client.get(
+            "/auth/me",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+    assert r.status_code == 200, r.text
+    assert r.json()["active_household_id"] == travel_household_id
+    assert r.json()["household_id"] == travel_household_id
+
+
+async def test_admin_actions_scoped_to_active_household(
+    integration_client: AsyncClient,
+    pg_engine: AsyncEngine,
+) -> None:
+    """Admin-only household actions use the caller's active household membership."""
+    from app.rate_limit import limiter as _limiter
+
+    _limiter._storage.reset()
+
+    client = integration_client
+
+    username = _uname()
+    r = await client.post("/auth/register", json={"username": username, "password": "Invite12345!"})
+    assert r.status_code == 201, r.text
+    token: str = r.json()["access_token"]
+
+    r = await client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 200
+    primary_household_id: str = r.json()["household_id"]
+    assert primary_household_id is not None
+
+    r = await client.post(
+        "/households",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": "Office"},
+    )
+    assert r.status_code == 201, r.text
+    active_household_id: str = r.json()["id"]
+
+    r = await client.post(
+        "/households/invitations",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "invited_email": f"invite-{uuid.uuid4().hex[:8]}@example.com",
+            "invited_role": "member",
         },
     )
-    assert r.status_code in (403, 404), (
-        f"Wrong household header must be rejected, got {r.status_code}"
+    assert r.status_code == 201, r.text
+    invitation_id: str = r.json()["invitation_id"]
+
+    async with pg_engine.begin() as conn:
+        result = await conn.execute(
+            sa.text("SELECT household_id FROM pending_invitations WHERE id = :invitation_id"),
+            {"invitation_id": invitation_id},
+        )
+        row = result.fetchone()
+
+    assert row is not None
+    assert str(row[0]) == active_household_id
+    assert str(row[0]) != primary_household_id
+
+
+async def test_active_household_set_to_null_when_last_household_deleted(
+    integration_client: AsyncClient,
+    pg_engine: AsyncEngine,
+) -> None:
+    """Soft-deleting the last household clears the persisted active household immediately."""
+    from app.rate_limit import limiter as _limiter
+
+    _limiter._storage.reset()
+
+    client = integration_client
+
+    username = _uname()
+    r = await client.post("/auth/register", json={"username": username, "password": "Delete12345!"})
+    assert r.status_code == 201, r.text
+    token: str = r.json()["access_token"]
+
+    r = await client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 200
+    household_id: str = r.json()["household_id"]
+    user_id: str = r.json()["id"]
+    assert household_id is not None
+
+    r = await client.delete(
+        f"/households/{household_id}",
+        headers={"Authorization": f"Bearer {token}"},
     )
+    assert r.status_code == 204, r.text
+
+    async with pg_engine.begin() as conn:
+        result = await conn.execute(
+            sa.text("SELECT active_household_id FROM users WHERE id = :user_id"),
+            {"user_id": user_id},
+        )
+        row = result.fetchone()
+
+    assert row is not None
+    assert row[0] is None
 
 
 # ---------------------------------------------------------------------------
