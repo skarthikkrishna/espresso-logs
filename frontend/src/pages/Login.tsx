@@ -118,35 +118,43 @@ export default function Login() {
     if (!isOAuthProcessing) return
     if (isLoading) return  // Wait for AuthContext to finish its own refresh attempt
 
+    let cancelled = false
+
     // AuthContext already authenticated us (its refresh won the race) — just fetch user data
     if (isAuthenticated) {
       void (async () => {
         try {
           const userData = await getMe()
+          if (cancelled) return
           setUser(userData)
           navigate(getPostAuthDestination(userData), { replace: true })
         } catch {
+          if (cancelled) return
           setIsOAuthProcessing(false)
           setFormError('Google sign-in failed. Please try again.')
         }
       })()
-      return
+    } else {
+      // AuthContext couldn't refresh — try once ourselves (shared _refreshPromise in auth.ts
+      // ensures this is a no-op if AuthContext is still in flight with the same cookie)
+      void (async () => {
+        try {
+          const { access_token } = await refresh()
+          if (cancelled) return
+          ctxSetToken(access_token)
+          const userData = await getMe()
+          if (cancelled) return
+          setUser(userData)
+          navigate(getPostAuthDestination(userData), { replace: true })
+        } catch {
+          if (cancelled) return
+          setIsOAuthProcessing(false)
+          setFormError('Google sign-in failed. Please try again.')
+        }
+      })()
     }
 
-    // AuthContext couldn't refresh — try once ourselves (shared _refreshPromise in auth.ts
-    // ensures this is a no-op if AuthContext is still in flight with the same cookie)
-    void (async () => {
-      try {
-        const { access_token } = await refresh()
-        ctxSetToken(access_token)
-        const userData = await getMe()
-        setUser(userData)
-        navigate(getPostAuthDestination(userData), { replace: true })
-      } catch {
-        setIsOAuthProcessing(false)
-        setFormError('Google sign-in failed. Please try again.')
-      }
-    })()
+    return () => { cancelled = true }
   }, [isOAuthProcessing, isLoading, isAuthenticated])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
