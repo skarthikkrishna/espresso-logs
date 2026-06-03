@@ -10,13 +10,6 @@
  *   2. POST /api/e2e/session    — obtain access token + rt cookie (no rate limit)
  *   3. Save storageState        — write playwright/.auth/user.json for reuse
  *
- * DEPENDENCY ON ALEX:
- *   Step 1 requires POST /api/e2e/seed-user in app/routers/api_e2e.py.
- *   Until Alex implements that endpoint, this setup will warn and write an
- *   empty storageState.  Tests that mock all auth routes (auth-refresh-*) will
- *   still pass.  Tests that require a real authenticated session (smoke.spec,
- *   d3/d4/d5/d6 catalog tests) will fail until the endpoint exists.
- *
  * Backend must be running with E2E_AUTH_BYPASS=1 and APP_ENV=local.
  */
 

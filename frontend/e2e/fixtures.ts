@@ -99,6 +99,7 @@ export const test = base.extend<object>({
     // fixture's rt httpOnly cookie with a new one.
     setTokenCache(access_token);
 
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- Playwright fixture `use`, not a React Hook
     await use(page);
   },
 });

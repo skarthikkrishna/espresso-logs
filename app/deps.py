@@ -43,10 +43,12 @@ from app.services.idempotency_store import IdempotencyStore
 
 _dw_log = logging.getLogger("app.deps.dual_write")
 
-# E2E_AUTH_BYPASS=1 makes current_user return a synthetic test user without
-# requiring a real OAuth session. Only permitted when APP_ENV is explicitly
-# "test" or "local" — any other environment (staging, preview, production) is
-# rejected at startup to prevent an unauthenticated bypass on live deployments.
+# E2E_AUTH_BYPASS=1 enables the /api/e2e/* helper endpoints for seeding the
+# test user and issuing real JWT sessions without rate limits. auth dependencies
+# (current_user, current_household_membership) always validate real tokens — no
+# auth short-circuit. Only permitted when APP_ENV is explicitly "test" or "local"
+# — any other environment (staging, preview, production) is rejected at startup
+# to prevent test-only routes being accessible on live deployments.
 _E2E_AUTH_BYPASS = os.environ.get("E2E_AUTH_BYPASS") == "1"
 
 _PERMITTED_E2E_ENVS: frozenset[str] = frozenset({"test", "local"})
@@ -62,55 +64,11 @@ if _E2E_AUTH_BYPASS:
 
 
 # ---------------------------------------------------------------------------
-# E2E synthetic user (consistent ID for test reproducibility)
+# E2E synthetic user IDs (consistent across seed-user and session endpoints)
 # ---------------------------------------------------------------------------
 
 _E2E_USER_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
 _E2E_HOUSEHOLD_ID = uuid.UUID("00000000-0000-0000-0000-000000000002")
-
-
-def _make_e2e_user() -> User:
-    u = User(
-        username="e2e-test-user",
-        display_name="E2E Test User",
-        email="e2e-test@localhost",
-    )
-    u.id = _E2E_USER_ID
-    return u
-
-
-def _make_e2e_member() -> HouseholdMember:
-    m = HouseholdMember(
-        household_id=_E2E_HOUSEHOLD_ID,
-        user_id=_E2E_USER_ID,
-        role="admin",
-    )
-    m.id = uuid.UUID("00000000-0000-0000-0000-000000000003")
-    return m
-
-
-async def _ensure_e2e_user_row(db: AsyncSession | None) -> None:
-    """Create the synthetic E2E user row without creating household membership."""
-    if db is None:
-        return
-    await db.execute(
-        sa.text(
-            """
-            INSERT INTO users (id, username, email, display_name)
-            VALUES (:uid, :username, :email, :display_name)
-            ON CONFLICT (id) DO UPDATE
-            SET username = EXCLUDED.username,
-                email = EXCLUDED.email,
-                display_name = EXCLUDED.display_name
-            """
-        ),
-        {
-            "uid": _E2E_USER_ID,
-            "username": "e2e-test-user",
-            "email": "e2e-test@localhost",
-            "display_name": "E2E Test User",
-        },
-    )
 
 
 async def _set_current_household_context(db: AsyncSession | None, household_id: uuid.UUID) -> None:
@@ -120,52 +78,6 @@ async def _set_current_household_context(db: AsyncSession | None, household_id: 
         sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
         {"hid": str(household_id)},
     )
-
-
-async def _ensure_e2e_tenant_rows(db: AsyncSession | None) -> None:
-    """Create the synthetic E2E user/household rows needed by strict FK + RLS writes."""
-    if db is None:
-        return
-    await _ensure_e2e_user_row(db)
-    await db.execute(
-        sa.text(
-            """
-            INSERT INTO households (id, name, created_by)
-            VALUES (:hid, :name, :uid)
-            ON CONFLICT (id) DO UPDATE
-            SET name = EXCLUDED.name,
-                created_by = EXCLUDED.created_by,
-                deleted_at = NULL
-            """
-        ),
-        {
-            "hid": _E2E_HOUSEHOLD_ID,
-            "name": "E2E Test Household",
-            "uid": _E2E_USER_ID,
-        },
-    )
-    await db.execute(
-        sa.text("UPDATE users SET active_household_id = :hid WHERE id = :uid"),
-        {"hid": _E2E_HOUSEHOLD_ID, "uid": _E2E_USER_ID},
-    )
-    await db.execute(
-        sa.text(
-            """
-            INSERT INTO household_members (household_id, user_id, role)
-            VALUES (:hid, :uid, 'admin')
-            ON CONFLICT (household_id, user_id) DO UPDATE
-            SET role = EXCLUDED.role
-            """
-        ),
-        {"hid": _E2E_HOUSEHOLD_ID, "uid": _E2E_USER_ID},
-    )
-
-
-async def _prepare_e2e_household_context(db: AsyncSession | None) -> HouseholdMember:
-    membership = _make_e2e_member()
-    await _ensure_e2e_tenant_rows(db)
-    await _set_current_household_context(db, membership.household_id)
-    return membership
 
 
 # ---------------------------------------------------------------------------

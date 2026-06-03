@@ -11,9 +11,6 @@ const BASE_URL = process.env.PW_BASE_URL || 'http://localhost:8000';
 
 export default defineConfig({
   testDir: './e2e',
-  // global-setup performs real login via POST /api/e2e/seed-user + POST /auth/login
-  // and writes playwright/.auth/user.json for the browser context.
-  // DEPENDENCY: requires Alex's POST /api/e2e/seed-user endpoint.
   globalSetup: './e2e/global-setup.ts',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
