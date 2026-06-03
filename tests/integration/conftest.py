@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import base64
 import json
+from collections.abc import AsyncGenerator
+from unittest.mock import patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -21,6 +23,10 @@ from tests.doubles import FakeSheetsClient
 
 _TEST_SECRET = "dev-insecure-secret-for-testing-only"
 _TEST_USER = {"email": "test@example.com", "name": "Test User", "picture": ""}
+
+
+async def _db_none() -> AsyncGenerator[None, None]:
+    yield None
 
 
 def _make_session_cookie(data: dict, secret: str = _TEST_SECRET) -> str:
@@ -127,18 +133,24 @@ def fake_client(fake_sheets_data):
 @pytest.fixture
 async def client(fake_client):
     """Async ASGI test client with FakeSheetsClient injected and auth bypass."""
+    from app.config import settings
     from app.deps import get_sheets_client
     from app.main import app
+    from app.models.base import get_db
 
     app.dependency_overrides[get_sheets_client] = lambda: fake_client
+    app.dependency_overrides[get_db] = _db_none
 
     cookie_value = _make_session_cookie({"user": _TEST_USER})
-    async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test",
-        follow_redirects=False,
-    ) as ac:
-        ac.cookies.set("session", cookie_value)
-        yield ac
-
-    app.dependency_overrides.pop(get_sheets_client, None)
+    try:
+        with patch.object(settings, "use_postgres", False):
+            async with AsyncClient(
+                transport=ASGITransport(app=app),
+                base_url="http://test",
+                follow_redirects=False,
+            ) as ac:
+                ac.cookies.set("session", cookie_value)
+                yield ac
+    finally:
+        app.dependency_overrides.pop(get_sheets_client, None)
+        app.dependency_overrides.pop(get_db, None)

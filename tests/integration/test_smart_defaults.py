@@ -23,9 +23,10 @@ async def test_defaults_level1(client):
     assert response.status_code == 200
     data = response.json()
     # Shot exists for this bag → level-1 defaults
-    assert "grinder_id" in data
-    assert "dose_in_g" in data
-    assert "grind_setting" in data
+    assert data["machine_id"] == "M01"
+    assert data["grinder_id"] == "G01"
+    assert data["dose_in_g"] == 18.0
+    assert data["grind_setting"] == 4.5
     # shot_eligibility must never appear
     assert "shot_eligibility" not in data
 

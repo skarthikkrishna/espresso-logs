@@ -7,6 +7,7 @@ refresh tokens are HttpOnly SameSite=Lax cookies with a 30-day lifetime.
 from __future__ import annotations
 
 import datetime
+import logging
 import re
 import uuid
 
@@ -14,7 +15,10 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.deps import current_user, require_admin
+from app.deps import (
+    current_user,
+    require_admin,
+)
 from app.models.base import get_db
 from app.setup_guard import clear_setup_required
 from app.models.household import HouseholdMember
@@ -35,8 +39,10 @@ from app.services.auth import (
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+logger = logging.getLogger(__name__)
 
 _USERNAME_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
+_REFRESH_REPLAY_GRACE_SECONDS = 5.0
 
 
 # ---------------------------------------------------------------------------
@@ -244,8 +250,24 @@ async def refresh_token(
     if stored is None:
         existing = await repo.get_by_hash(db, token_hash)
         if existing is not None and existing.revoked:
+            rotated_at = existing.rotated_at
+            if rotated_at is not None:
+                if rotated_at.tzinfo is None:
+                    rotated_at = rotated_at.replace(tzinfo=datetime.timezone.utc)
+                elapsed = (
+                    datetime.datetime.now(datetime.timezone.utc) - rotated_at
+                ).total_seconds()
+                if elapsed <= _REFRESH_REPLAY_GRACE_SECONDS:
+                    logger.warning(
+                        "Replay within grace window (%.2fs) for user %s — not revoking all",
+                        elapsed,
+                        existing.user_id,
+                    )
+                    raise HTTPException(status_code=401, detail="Invalid refresh token")
+
             await repo.revoke_all_for_user(db, existing.user_id)
             await db.commit()
+            logger.error("Replay detected for user %s — all sessions revoked", existing.user_id)
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 
     now = datetime.datetime.now(datetime.timezone.utc)

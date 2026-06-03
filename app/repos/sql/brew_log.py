@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import builtins
 import datetime
+import uuid
 from typing import Any
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.brew_log import BrewLog
@@ -39,15 +40,30 @@ def _parse_datetime(val: Any) -> datetime.datetime | None:
         return None
 
 
+def _parse_uuid(val: Any) -> uuid.UUID | None:
+    if val in (None, ""):
+        return None
+    if isinstance(val, uuid.UUID):
+        return val
+    return uuid.UUID(str(val))
+
+
 class SqlBrewLogRepo:
     """SQL mirror for BrewLog rows — write always, reads when use_postgres=True."""
 
     def __init__(self, db: AsyncSession) -> None:
         self._db = db
 
+    async def _current_household_id(self) -> uuid.UUID | None:
+        result = await self._db.execute(
+            text("SELECT current_setting('app.current_household_id', true)")
+        )
+        return _parse_uuid(result.scalar_one_or_none())
+
     async def add(self, row: dict[str, Any]) -> None:
-        """Append a brew log row. household_id intentionally NULL (M5)."""
+        """Append a brew log row, inheriting tenant context when omitted."""
         entry = BrewLog(
+            household_id=_parse_uuid(row.get("household_id") or row.get("Household_ID")),
             sheets_id=row.get("Shot_ID"),
             brewed_at=_parse_datetime(row.get("Date")),
             bag_id=row.get("Bag_ID"),
@@ -66,9 +82,12 @@ class SqlBrewLogRepo:
             brew_method=row.get("Brew_Method"),
             rating=_to_int(row.get("Rating")),
         )
+        if entry.household_id is None:
+            entry.household_id = await self._current_household_id()
         self._db.add(entry)
-        await self._db.commit()
+        await self._db.flush()
         await self._db.refresh(entry)
+        await self._db.commit()
 
     async def add_many(self, rows: list[dict[str, Any]]) -> None:
         """Bulk insert."""

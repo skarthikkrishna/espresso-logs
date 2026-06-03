@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.hardware import Hardware
 from app.models.maintenance import MaintenanceLog
+from app.repos.sql.tenant import row_household_id_or_context
 
 
 def _parse_datetime(val: Any) -> datetime.datetime | None:
@@ -52,11 +53,14 @@ class SqlMaintenanceRepo:
 
         if existing is not None:
             if existing.sheets_hardware_id is None:
+                existing.household_id = await row_household_id_or_context(self._db, row)
                 existing.sheets_hardware_id = row.get("Hardware_ID")
                 await self._db.commit()
             # else: sheets_hardware_id already set — no-op
         else:
+            household_id = await row_household_id_or_context(self._db, row)
             event = MaintenanceLog(
+                household_id=household_id,
                 sheets_id=sheets_id,
                 sheets_hardware_id=row.get("Hardware_ID"),
                 performed_at=_parse_datetime(row.get("Date")),
@@ -67,8 +71,10 @@ class SqlMaintenanceRepo:
             await self._db.commit()
 
     async def add(self, row: dict[str, Any]) -> None:
-        """Append a maintenance event. household_id intentionally NULL (M5)."""
+        """Append a maintenance event, inheriting tenant context when omitted."""
+        household_id = await row_household_id_or_context(self._db, row)
         event = MaintenanceLog(
+            household_id=household_id,
             sheets_id=row.get("Maintenance_ID"),
             sheets_hardware_id=row.get("Hardware_ID"),
             performed_at=_parse_datetime(row.get("Date")),

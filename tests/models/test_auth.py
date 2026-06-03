@@ -13,7 +13,15 @@ def test_refresh_token_table_name() -> None:
 
 
 def test_refresh_token_columns() -> None:
-    expected = {"id", "user_id", "token_hash", "expires_at", "revoked", "created_at"}
+    expected = {
+        "id",
+        "user_id",
+        "token_hash",
+        "expires_at",
+        "revoked",
+        "rotated_at",
+        "created_at",
+    }
     assert expected == set(RefreshToken.__table__.columns.keys())
 
 
@@ -37,3 +45,10 @@ def test_token_hash_has_no_redundant_index() -> None:
     # the explicit ix_refresh_tokens_token_hash was redundant and has been removed.
     index_names = {i.name for i in RefreshToken.__table__.indexes}
     assert "ix_refresh_tokens_token_hash" not in index_names
+
+
+def test_rotated_at_has_no_index() -> None:
+    index_columns = {
+        column.name for index in RefreshToken.__table__.indexes for column in index.columns
+    }
+    assert "rotated_at" not in index_columns

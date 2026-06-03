@@ -11,12 +11,13 @@ DATABASE_URL is read from the environment (set by CI job from T020).
 from __future__ import annotations
 
 import os
+import uuid
+from collections.abc import Generator
 
 import pytest
 import sqlalchemy as sa
 from alembic import command
 from alembic.config import Config
-from collections.abc import Generator
 from sqlalchemy import Engine, inspect
 
 
@@ -100,3 +101,81 @@ def test_migration_round_trip(alembic_cfg, sync_engine) -> None:
     command.downgrade(alembic_cfg, "base")
     remaining = get_table_names(sync_engine)
     assert remaining == set(), f"Expected empty database after downgrade, got: {remaining}"
+
+
+def test_0007_downgrade_clears_invited_by_user_reference(alembic_cfg, sync_engine) -> None:
+    """0007 downgrade handles invited_by values that reference users.id."""
+    command.downgrade(alembic_cfg, "base")
+
+    inviter_user_id = uuid.uuid4()
+    invited_user_id = uuid.uuid4()
+    household_id = uuid.uuid4()
+    inviter_member_id = uuid.uuid4()
+    invited_member_id = uuid.uuid4()
+
+    try:
+        command.upgrade(alembic_cfg, "0007")
+
+        with sync_engine.begin() as conn:
+            conn.execute(
+                sa.text(
+                    """
+                    INSERT INTO users (id, username, display_name)
+                    VALUES
+                      (:inviter_user_id, 'inviter', 'Inviter'),
+                      (:invited_user_id, 'invited', 'Invited')
+                    """
+                ),
+                {
+                    "inviter_user_id": inviter_user_id,
+                    "invited_user_id": invited_user_id,
+                },
+            )
+            conn.execute(
+                sa.text(
+                    """
+                    INSERT INTO households (id, name, created_by)
+                    VALUES (:household_id, 'Migration Household', :inviter_user_id)
+                    """
+                ),
+                {
+                    "household_id": household_id,
+                    "inviter_user_id": inviter_user_id,
+                },
+            )
+            conn.execute(
+                sa.text(
+                    """
+                    INSERT INTO household_members
+                      (id, household_id, user_id, role, invited_by)
+                    VALUES
+                      (:inviter_member_id, :household_id, :inviter_user_id, 'admin', NULL),
+                      (:invited_member_id, :household_id, :invited_user_id, 'member', :inviter_user_id)
+                    """
+                ),
+                {
+                    "inviter_member_id": inviter_member_id,
+                    "invited_member_id": invited_member_id,
+                    "household_id": household_id,
+                    "inviter_user_id": inviter_user_id,
+                    "invited_user_id": invited_user_id,
+                },
+            )
+
+        command.downgrade(alembic_cfg, "0006")
+
+        with sync_engine.connect() as conn:
+            invited_by = conn.execute(
+                sa.text(
+                    """
+                    SELECT invited_by
+                    FROM household_members
+                    WHERE id = :invited_member_id
+                    """
+                ),
+                {"invited_member_id": invited_member_id},
+            ).scalar_one()
+
+        assert invited_by is None
+    finally:
+        command.downgrade(alembic_cfg, "base")

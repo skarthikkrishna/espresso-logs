@@ -130,6 +130,21 @@ async def test_current_user_valid_jwt_unknown_user_raises_401() -> None:
     assert exc_info.value.status_code == 401
 
 
+async def test_current_user_e2e_bypass_no_longer_short_circuits_jwt() -> None:
+    """E2E_AUTH_BYPASS no longer short-circuits JWT validation in current_user."""
+    import app.deps as deps_module
+    from fastapi import HTTPException
+
+    mock_db = AsyncMock()
+
+    with patch.object(deps_module, "_E2E_AUTH_BYPASS", True):
+        with pytest.raises(HTTPException) as exc_info:
+            await current_user(token=None, db=mock_db)
+
+    assert exc_info.value.status_code == 401
+    mock_db.execute.assert_not_awaited()
+
+
 # ---------------------------------------------------------------------------
 # current_household_membership — RLS session variable (US-4.3)
 # ---------------------------------------------------------------------------
@@ -159,6 +174,32 @@ async def test_current_household_membership_sets_rls_variable() -> None:
     assert "app.current_household_id" in stmt_text
     params = call_args[0][1] if len(call_args[0]) > 1 else call_args[1].get("params", {})
     assert str(hh_id) in str(params)
+
+
+async def test_current_household_membership_e2e_bypass_uses_real_membership() -> None:
+    """E2E_AUTH_BYPASS no longer short-circuits membership resolution."""
+    import app.deps as deps_module
+
+    hh_id = uuid.uuid4()
+    fake_user = _make_user()
+    fake_user.active_household_id = None
+    fake_membership = _make_membership(household_id=hh_id)
+    mock_db = AsyncMock()
+
+    with (
+        patch.object(deps_module, "_E2E_AUTH_BYPASS", True),
+        patch("app.deps.HouseholdRepo") as MockHHRepo,
+    ):
+        MockHHRepo.return_value.get_memberships_for_user = AsyncMock(return_value=[fake_membership])
+        result = await current_household_membership(user=fake_user, db=mock_db)
+
+    assert result is fake_membership
+    mock_db.execute.assert_awaited_once()
+    stmt_text = str(mock_db.execute.call_args[0][0])
+    assert "app.current_household_id" in stmt_text
+    assert not any(
+        "INSERT INTO households" in str(call.args[0]) for call in mock_db.execute.await_args_list
+    )
 
 
 async def test_current_household_membership_no_membership_raises_403() -> None:

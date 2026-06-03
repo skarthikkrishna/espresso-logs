@@ -4,14 +4,46 @@ Cross-browser (Chromium + WebKit) end-to-end tests for spec-029 Safari UI polish
 
 ## Prerequisites
 
-The FastAPI backend **must be running** with `E2E_AUTH_BYPASS=1` before executing tests:
+The FastAPI backend **must be running** with `E2E_AUTH_BYPASS=1` and
+`APP_ENV=local` before executing tests. The bypass is rejected unless
+`APP_ENV` is `test` or `local`.
 
 ```bash
 # From the repo root
-E2E_AUTH_BYPASS=1 uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+E2E_AUTH_BYPASS=1 \
+APP_ENV=local \
+SPREADSHEET_ID=dummy \
+USE_POSTGRES=true \
+DATABASE_URL=postgresql+asyncpg://espresso:espresso@localhost:5432/espresso_logs \
+SESSION_SECRET=local-dev-session-secret-at-least-32-chars \
+JWT_SECRET=local-dev-jwt-secret-at-least-32-chars \
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-The backend bypass returns a synthetic test user so Google OAuth is not required locally.
+## Authentication
+
+Tests use **real login** via a globalSetup (see `e2e/global-setup.ts`).
+
+`playwright.config.ts` declares a `globalSetup` that:
+1. Calls `POST /api/e2e/seed-user` — creates the E2E test user (`user`/`password`) and
+   a household if they do not exist. **Requires Alex's backend endpoint.**
+2. Calls `POST /api/e2e/session` — creates a fresh authenticated session (issues a new
+   `rt` httpOnly cookie and access token) without touching the production `/auth/login`
+   rate limiter.
+3. Writes `playwright/.auth/user.json` — storageState reused by every browser context.
+
+`playwright/.auth/` is gitignored. It contains real session cookies.
+
+**If Alex's `/api/e2e/seed-user` endpoint is not yet available**, globalSetup writes an
+empty storageState and logs a warning. Tests that mock all auth routes
+(`auth-refresh-state-machine.spec.ts`, `auth-refresh-service-worker.spec.ts`) will
+still pass. Tests that require a real session (`smoke.spec.ts`, `d3`–`d6` catalog tests)
+will fail until the endpoint is implemented.
+
+Per-test fixtures (`fixtures.ts`) also call `POST /api/e2e/session` for a fresh session
+on every test — this replaces the previous per-test `POST /auth/login` and eliminates
+rate-limit failures when running many tests in sequence. Both global-setup and fixtures
+require `E2E_AUTH_BYPASS=1` and `APP_ENV=local` (or `test`).
 
 ## Running tests
 
@@ -40,6 +72,10 @@ to remove the seeded records.  This endpoint is only available when the backend
 is running with `E2E_AUTH_BYPASS=1`; teardown failures are logged as warnings
 and do not fail the test.
 
+API calls in `seed.ts` use the storageState cookies from globalSetup (no bypass
+header is sent). The real test user's household context is used for all data
+operations.
+
 ## Defects covered
 
 | File | Defect | What it checks |
@@ -54,4 +90,4 @@ and do not fail the test.
 | `d5-modals.spec.ts` | D5 — Glass modal surface | `.modal-box` has a non-empty, non-`none` `box-shadow` |
 | `d6-cards.spec.ts` | D6 — card-bevel consistency | All `card-bevel` elements share the same `box-shadow` |
 | `regression-029.spec.ts` | spec-029 regression guard | D2 `overflow:hidden`, D3 `-webkit-appearance:none`, D4 `text-decoration:none`, D5 `display:block` labels |
-| `smoke.spec.ts` | Config health | Playwright config sanity check |
+| `smoke.spec.ts` | Config health | Playwright config sanity check (requires real auth via globalSetup) |

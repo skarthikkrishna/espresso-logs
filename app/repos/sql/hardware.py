@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.hardware import Hardware
+from app.repos.sql.tenant import row_household_id_or_context
 
 
 class SqlHardwareRepo:
@@ -17,8 +18,9 @@ class SqlHardwareRepo:
         self._db = db
 
     async def upsert(self, row: dict[str, Any]) -> None:
-        """Insert or update a hardware row by sheets_id. household_id intentionally NULL (M5)."""
+        """Insert or update a hardware row by sheets_id, inheriting tenant context."""
         sheets_id = row.get("Hardware_ID")
+        household_id = await row_household_id_or_context(self._db, row)
         if sheets_id:
             result = await self._db.execute(select(Hardware).where(Hardware.sheets_id == sheets_id))
             existing = result.scalar_one_or_none()
@@ -26,12 +28,14 @@ class SqlHardwareRepo:
             existing = None
 
         if existing is not None:
+            existing.household_id = household_id
             existing.name = row.get("Name", "")
             existing.category = row.get("Category", "")
             existing.product_url = row.get("Product_URL")
             existing.local_image_path = row.get("Local_Image_Path")
         else:
             item = Hardware(
+                household_id=household_id,
                 sheets_id=sheets_id,
                 name=row.get("Name", ""),
                 category=row.get("Category", ""),

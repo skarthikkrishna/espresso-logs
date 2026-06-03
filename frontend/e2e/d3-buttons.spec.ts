@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { seedTestData, teardownSeedData } from './seed';
 import type { SeedResult } from './seed';
 
@@ -7,7 +7,7 @@ test.describe('D3-buttons — btn-bevel box-shadow consistency', () => {
 
   test.beforeEach(async ({ page }) => {
     seed = await seedTestData(page);
-    await page.goto(`catalog/${seed.catalogItemId}`);
+    await page.goto(`/catalog/${seed.catalogItemId}`);
     await page.waitForSelector('[data-testid="catalog-detail"]', { timeout: 10_000 });
   });
 

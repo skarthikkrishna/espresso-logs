@@ -19,7 +19,7 @@ from scripts._mapping import (
     from_sheets_dict_maintenance,
 )
 
-HH = "00000000-0000-0000-0000-000000000001"
+HH = "00000000-0000-0000-0000-00000000f202"
 
 
 # ---------------------------------------------------------------------------
@@ -220,13 +220,10 @@ def test_from_sheets_dict_missing_required_field_raises_value_error() -> None:
 async def test_bulk_upsert_idempotency(db_engine: Any) -> None:  # type: ignore[misc]
     from scripts._mapping import CATALOG_TABLE, bulk_upsert
 
-    # household_id=None: catalog.household_id is nullable (migration 0003).
-    # Using None avoids an FK dependency on a seeded households row — CI postgres
-    # starts empty and runs DDL only, so no household is guaranteed to exist.
     rows: list[dict[str, Any]] = [
         {
             "sheets_id": "IDEM-001",
-            "household_id": None,
+            "household_id": HH,
             "roaster": "Idempotency Roaster",
             "bean_name": "Idempotency Bean",
             "roast_level": "Medium",
@@ -246,7 +243,11 @@ async def test_bulk_upsert_idempotency(db_engine: Any) -> None:  # type: ignore[
     count2 = await bulk_upsert(db_engine, CATALOG_TABLE, rows)
     assert count2 == 1
 
-    async with db_engine.connect() as conn:
+    async with db_engine.begin() as conn:
+        await conn.execute(
+            sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+            {"hid": HH},
+        )
         result = await conn.execute(
             sa.select(sa.func.count()).where(CATALOG_TABLE.c.sheets_id == "IDEM-001")
         )

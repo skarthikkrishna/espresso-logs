@@ -52,9 +52,7 @@ def upgrade() -> None:
         "pending_invitations",
         sa.Column("revoked_at", sa.TIMESTAMP(timezone=True), nullable=True),
     )
-    op.create_index(
-        "ix_pending_invitations_token_hash", "pending_invitations", ["token_hash"]
-    )
+    op.create_index("ix_pending_invitations_token_hash", "pending_invitations", ["token_hash"])
 
     # ------------------------------------------------------------------
     # 2. Fix guest_tokens: UUID token → token_hash TEXT + expires_at
@@ -64,9 +62,7 @@ def upgrade() -> None:
         "guest_tokens",
         sa.Column("token_hash", sa.Text(), nullable=False, server_default=""),
     )
-    op.create_unique_constraint(
-        "uq_guest_tokens_token_hash", "guest_tokens", ["token_hash"]
-    )
+    op.create_unique_constraint("uq_guest_tokens_token_hash", "guest_tokens", ["token_hash"])
     op.alter_column("guest_tokens", "token_hash", server_default=None)
     op.add_column(
         "guest_tokens",
@@ -216,6 +212,18 @@ def downgrade() -> None:
         "household_members",
         type_="foreignkey",
     )
+    op.execute(
+        """
+        UPDATE household_members AS hm
+        SET invited_by = NULL
+        WHERE hm.invited_by IS NOT NULL
+          AND NOT EXISTS (
+            SELECT 1
+            FROM household_members AS inviter
+            WHERE inviter.id = hm.invited_by
+          )
+        """
+    )
     op.create_foreign_key(
         "household_members_invited_by_fkey",
         "household_members",
@@ -252,9 +260,7 @@ def downgrade() -> None:
     # 1. Restore pending_invitations: drop token_hash/revoked_at, re-add UUID token
     # ------------------------------------------------------------------
     op.drop_index("ix_pending_invitations_token_hash", table_name="pending_invitations")
-    op.drop_constraint(
-        "uq_pending_invitations_token_hash", "pending_invitations", type_="unique"
-    )
+    op.drop_constraint("uq_pending_invitations_token_hash", "pending_invitations", type_="unique")
     op.drop_column("pending_invitations", "token_hash")
     op.drop_column("pending_invitations", "revoked_at")
     op.add_column(

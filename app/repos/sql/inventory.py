@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.catalog import CatalogBean
 from app.models.inventory import InventoryBag
+from app.repos.sql.tenant import row_household_id_or_context
 
 
 def _to_date(val: Any) -> datetime.date | None:
@@ -27,8 +28,9 @@ class SqlInventoryRepo:
         self._db = db
 
     async def upsert(self, row: dict[str, Any]) -> None:
-        """Insert or update an inventory bag row by sheets_id. household_id intentionally NULL (M5)."""
+        """Insert or update an inventory bag row by sheets_id, inheriting tenant context."""
         sheets_id = row.get("Bag_ID")
+        household_id = await row_household_id_or_context(self._db, row)
         if sheets_id:
             result = await self._db.execute(
                 select(InventoryBag).where(InventoryBag.sheets_id == sheets_id)
@@ -38,6 +40,7 @@ class SqlInventoryRepo:
             existing = None
 
         if existing is not None:
+            existing.household_id = household_id
             existing.roast_date = _to_date(row.get("RoastDate"))
             existing.beans = row.get("Beans")
             existing.display_name = row.get("Display_Name") or row.get("Beans")
@@ -48,6 +51,7 @@ class SqlInventoryRepo:
             existing.sheets_catalog_id = row.get("Catalog_ID")
         else:
             bag = InventoryBag(
+                household_id=household_id,
                 sheets_id=sheets_id,
                 sheets_catalog_id=row.get("Catalog_ID"),
                 roast_date=_to_date(row.get("RoastDate")),

@@ -108,7 +108,12 @@ async def main(argv: list[str] | None = None) -> None:
 
     # Build catalog lookup (needed by Inventory mapper)
     catalog_id_to_pg_uuid: dict[str, str] = {}
-    async with engine.connect() as conn:
+    async with engine.begin() as conn:
+        if not args.dry_run:
+            await conn.execute(
+                sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+                {"hid": hh_str},
+            )
         rows_c = await conn.execute(
             sa.select(CATALOG_TABLE.c.sheets_id, CATALOG_TABLE.c.id).where(
                 CATALOG_TABLE.c.sheets_id.isnot(None)
@@ -169,7 +174,12 @@ async def main(argv: list[str] | None = None) -> None:
 
     # Build hardware lookup (needed by Maintenance mapper)
     hardware_id_to_pg_uuid: dict[str, str] = {}
-    async with engine.connect() as conn:
+    async with engine.begin() as conn:
+        if not args.dry_run:
+            await conn.execute(
+                sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+                {"hid": hh_str},
+            )
         rows_h = await conn.execute(
             sa.select(HARDWARE_TABLE.c.sheets_id, HARDWARE_TABLE.c.id).where(
                 HARDWARE_TABLE.c.sheets_id.isnot(None)

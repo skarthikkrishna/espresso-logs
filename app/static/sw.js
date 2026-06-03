@@ -31,59 +31,57 @@ self.addEventListener('fetch', event => {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
 
   const { pathname } = url;
+  const method = event.request.method.toUpperCase();
+  const isAuthOrOAuthPath =
+    pathname === '/auth' ||
+    pathname.startsWith('/auth/') ||
+    pathname === '/oauth' ||
+    pathname.startsWith('/oauth/') ||
+    (pathname === '/login' && url.searchParams.has('oauth_success'));
 
-  // Cache-first for static assets
-  if (pathname.startsWith('/static/')) {
+  if (isAuthOrOAuthPath || method !== 'GET') {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Cache-first for Vite-hashed assets only — they are content-addressed and
+  // immutable by URL, so serving from cache is always safe.
+  // Scoped to /static/spa/assets/ to avoid caching index.html or other
+  // non-hashed resources cache-first (which would cause stale SPA shell 404s
+  // after a rebuild rotates chunk filenames).
+  if (pathname.startsWith('/static/spa/assets/')) {
     event.respondWith(
       caches.open(CACHE_NAME).then(async cache => {
         const cached = await cache.match(event.request);
         if (cached) return cached;
         const res = await fetch(event.request);
-        cache.put(event.request, res.clone()).then(() => trimCache(cache));
+        if (res.ok) cache.put(event.request, res.clone()).then(() => trimCache(cache));
         return res;
       })
     );
     return;
   }
 
-  // Network-only for auth routes
-  if (pathname.startsWith('/auth/')) {
-    return fetch(event.request);
-  }
-
-  // Network-only for mutations
-  const method = event.request.method.toUpperCase();
-  if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
-    return fetch(event.request);
-  }
-
-  // Stale-while-revalidate for all other GET routes
+  // Network-first for all other GET routes (SPA navigations, API, non-hashed
+  // static files).  Serving stale SPA shells that reference deleted hashed
+  // chunks causes hard 404 failures after every rebuild; network-first ensures
+  // the current index.html is always used.  Cache is used only as an offline
+  // fallback when the network is unreachable.
   event.respondWith(
-    caches.open(CACHE_NAME).then(async cache => {
-      const cacheKey = new Request(new URL(pathname, self.location.origin).href);
-      const cached = await cache.match(cacheKey);
-
-      if (cached) {
-        event.waitUntil(
-          fetch(event.request).then(res => {
-            if (res.ok) {
-              cache.put(cacheKey, res.clone()).then(() => trimCache(cache));
-            }
-          }).catch(() => {})
-        );
-        return cached;
-      }
-
-      try {
-        const res = await fetch(event.request);
-        if (res.ok) {
+    fetch(event.request).then(res => {
+      if (res.ok) {
+        const cacheKey = new Request(new URL(pathname, self.location.origin).href);
+        caches.open(CACHE_NAME).then(cache => {
           cache.put(cacheKey, res.clone()).then(() => trimCache(cache));
-        }
-        return res;
-      } catch {
-        const offline = await cache.match('/static/offline.html');
-        return offline || new Response('Offline', { status: 200 });
+        });
       }
+      return res;
+    }).catch(async () => {
+      const cacheKey = new Request(new URL(pathname, self.location.origin).href);
+      const cached = await caches.open(CACHE_NAME).then(c => c.match(cacheKey));
+      if (cached) return cached;
+      const offline = await caches.match('/static/offline.html');
+      return offline || new Response('Offline', { status: 200 });
     })
   );
 });

@@ -22,6 +22,7 @@ import { MemoryRouter } from 'react-router-dom'
 const mockNavigate = vi.hoisted(() => vi.fn())
 const mockCtxSetToken = vi.hoisted(() => vi.fn())
 const mockSetUser = vi.hoisted(() => vi.fn())
+const mockUseAuth = vi.hoisted(() => vi.fn())
 
 // ---------------------------------------------------------------------------
 // Module mocks
@@ -43,18 +44,10 @@ vi.mock('../api/client', () => ({
 }))
 
 vi.mock('../contexts/AuthContext', () => ({
-  useAuth: () => ({
-    setAccessToken: mockCtxSetToken,
-    setUser: mockSetUser,
-    isAuthenticated: false,
-    isLoading: false,
-    user: null,
-    accessToken: null,
-    logout: vi.fn(),
-  }),
+  useAuth: mockUseAuth,
 }))
 
-import { login, refresh } from '../api/auth'
+import { getMe, login, refresh } from '../api/auth'
 import Login from './Login'
 
 // ---------------------------------------------------------------------------
@@ -78,6 +71,16 @@ function makeAxiosError(status: number) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockUseAuth.mockReturnValue({
+    setAccessToken: mockCtxSetToken,
+    setUser: mockSetUser,
+    isAuthenticated: false,
+    isLoading: false,
+    memberships: [],
+    user: null,
+    accessToken: null,
+    logout: vi.fn(),
+  })
   window.history.pushState({}, '', '/')
 })
 
@@ -106,6 +109,57 @@ describe('Login page', () => {
     // Login form inputs should not be rendered
     expect(screen.queryByLabelText(/^username$/i)).not.toBeInTheDocument()
     expect(screen.queryByLabelText(/^password$/i)).not.toBeInTheDocument()
+  })
+
+  it('waits for AuthContext during oauth_success and does not start a second refresh (spec-035 T-03)', () => {
+    mockUseAuth.mockReturnValue({
+      setAccessToken: mockCtxSetToken,
+      setUser: mockSetUser,
+      isAuthenticated: false,
+      isLoading: true,
+      memberships: [],
+      user: null,
+      accessToken: null,
+      logout: vi.fn(),
+    })
+    window.history.pushState({}, '', '/?oauth_success=1')
+
+    renderLogin()
+
+    expect(screen.getByLabelText(/signing in/i)).toBeInTheDocument()
+    expect(refresh).not.toHaveBeenCalled()
+    expect(mockNavigate).not.toHaveBeenCalled()
+  })
+
+  it('navigates an already-authenticated oauth_success user without calling refresh (spec-035 T-03)', async () => {
+    mockUseAuth.mockReturnValue({
+      setAccessToken: mockCtxSetToken,
+      setUser: mockSetUser,
+      isAuthenticated: true,
+      isLoading: false,
+      memberships: [{ household_id: 'hh-1', household_name: 'Home', role: 'admin', joined_at: '' }],
+      user: null,
+      accessToken: 'existing-token',
+      logout: vi.fn(),
+    })
+    vi.mocked(getMe).mockResolvedValueOnce({
+      id: 'user-1',
+      username: 'alice',
+      display_name: 'Alice',
+      email: 'alice@example.com',
+      picture_url: null,
+      household_id: 'hh-1',
+      active_household_id: 'hh-1',
+      role: 'admin',
+      memberships: [{ household_id: 'hh-1', household_name: 'Home', role: 'admin', joined_at: '' }],
+    })
+    window.history.pushState({}, '', '/?oauth_success=1')
+
+    renderLogin()
+
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true }))
+    expect(refresh).not.toHaveBeenCalled()
+    expect(mockSetUser).toHaveBeenCalledWith(expect.objectContaining({ username: 'alice' }))
   })
 
   it('shows error message on 401 response', async () => {

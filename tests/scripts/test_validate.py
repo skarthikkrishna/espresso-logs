@@ -13,6 +13,8 @@ import pytest
 
 from scripts._mapping import _CHECKSUM_EXCLUDE, row_checksum
 
+HH = "00000000-0000-0000-0000-00000000f202"
+
 
 # ---------------------------------------------------------------------------
 # TC-1: Checksum consistency — same input → same hash
@@ -118,9 +120,6 @@ async def test_validation_passed_output(db_engine: Any) -> None:  # type: ignore
     """Seed catalog rows then validate they match checksums."""
     from scripts._mapping import CATALOG_TABLE, bulk_upsert, from_sheets_dict_catalog
 
-    # household_id=None: catalog.household_id is nullable (migration 0003).
-    # CI postgres starts empty; no household row is seeded. Using None avoids
-    # the FK dependency while still validating checksum correctness.
     catalog_row: dict[str, Any] = {
         "Catalog_ID": "VAL-001",
         "Roaster": "Validation Roaster",
@@ -132,12 +131,16 @@ async def test_validation_passed_output(db_engine: Any) -> None:  # type: ignore
         "Process": "",
         "Notes": "",
     }
-    mapped = from_sheets_dict_catalog(catalog_row, household_id=None)
+    mapped = from_sheets_dict_catalog(catalog_row, household_id=HH)
     await bulk_upsert(db_engine, CATALOG_TABLE, [mapped])
 
     import sqlalchemy as sa
 
-    async with db_engine.connect() as conn:
+    async with db_engine.begin() as conn:
+        await conn.execute(
+            sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+            {"hid": HH},
+        )
         result = await conn.execute(
             sa.select(CATALOG_TABLE).where(CATALOG_TABLE.c.sheets_id == "VAL-001")
         )

@@ -9,14 +9,14 @@
  *   - Return-to redirect (?from=<path>) after successful login
  *
  * AC-100: /login renders per aria-gate.md layout spec.
- * AC-061: ?oauth_success=1 shows spinner, calls refresh, navigates to /.
+ * AC-061: ?oauth_success=1 shows spinner while AuthContext refreshes, then navigates.
  * AC-103: Access token stored in AuthContext state only.
  */
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
-import { login, refresh, getMe } from '../api/auth'
+import { login, getMe } from '../api/auth'
 import { useAuth } from '../contexts/AuthContext'
 
 // ---------------------------------------------------------------------------
@@ -56,7 +56,14 @@ function GoogleIcon() {
 // ---------------------------------------------------------------------------
 
 export default function Login() {
-  const { setAccessToken: ctxSetToken, setUser, isAuthenticated, isLoading, memberships } = useAuth()
+  const {
+    setAccessToken: ctxSetToken,
+    setUser,
+    isAuthenticated,
+    isLoading,
+    memberships,
+    user,
+  } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
@@ -81,7 +88,7 @@ export default function Login() {
   const passwordRef = useRef<HTMLInputElement>(null)
 
   // Determine where to navigate after successful auth
-  const getPostAuthDestination = (user: ReturnType<typeof getMe> extends Promise<infer U> ? U : never) => {
+  const getPostAuthDestination = useCallback((user: Awaited<ReturnType<typeof getMe>>) => {
     // If invite token present, go to accept flow
     if (inviteToken) {
       return `/invite/accept?token=${encodeURIComponent(inviteToken)}`
@@ -95,7 +102,7 @@ export default function Login() {
       (user.memberships && user.memberships.length > 0) ||
       Boolean(user.household_id)
     return hasMembership ? '/' : '/welcome'
-  }
+  }, [inviteToken, returnTo])
 
   // Redirect immediately if already authenticated (not during oauth — oauthEffect handles that)
   useEffect(() => {
@@ -120,13 +127,14 @@ export default function Login() {
 
     let cancelled = false
 
-    // AuthContext already authenticated us (its refresh won the race) — just fetch user data
     if (isAuthenticated) {
       void (async () => {
         try {
-          const userData = await getMe()
+          const userData = user ?? await getMe()
           if (cancelled) return
-          setUser(userData)
+          if (!user) {
+            setUser(userData)
+          }
           navigate(getPostAuthDestination(userData), { replace: true })
         } catch {
           if (cancelled) return
@@ -135,27 +143,24 @@ export default function Login() {
         }
       })()
     } else {
-      // AuthContext couldn't refresh — try once ourselves (shared _refreshPromise in auth.ts
-      // ensures this is a no-op if AuthContext is still in flight with the same cookie)
       void (async () => {
-        try {
-          const { access_token } = await refresh()
-          if (cancelled) return
-          ctxSetToken(access_token)
-          const userData = await getMe()
-          if (cancelled) return
-          setUser(userData)
-          navigate(getPostAuthDestination(userData), { replace: true })
-        } catch {
-          if (cancelled) return
-          setIsOAuthProcessing(false)
-          setFormError('Google sign-in failed. Please try again.')
-        }
+        await Promise.resolve()
+        if (cancelled) return
+        setIsOAuthProcessing(false)
+        setFormError('Google sign-in failed. Please try again.')
       })()
     }
 
     return () => { cancelled = true }
-  }, [isOAuthProcessing, isLoading, isAuthenticated])
+  }, [
+    getPostAuthDestination,
+    isAuthenticated,
+    isLoading,
+    isOAuthProcessing,
+    navigate,
+    setUser,
+    user,
+  ])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()

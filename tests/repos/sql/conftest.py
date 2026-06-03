@@ -12,12 +12,16 @@ from __future__ import annotations
 
 import os
 import subprocess
+import uuid
 
 import pytest
 import pytest_asyncio
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 _DATABASE_URL = os.environ.get("DATABASE_URL")
+SQL_TEST_USER_ID = uuid.UUID("00000000-0000-0000-0000-00000000f101")
+SQL_TEST_HOUSEHOLD_ID = uuid.UUID("00000000-0000-0000-0000-00000000f102")
 
 if not _DATABASE_URL:
     pytest.skip(
@@ -53,6 +57,11 @@ def anyio_backend() -> str:
     return "asyncio"
 
 
+@pytest.fixture
+def test_household_id() -> uuid.UUID:
+    return SQL_TEST_HOUSEHOLD_ID
+
+
 @pytest_asyncio.fixture(loop_scope="function")
 async def engine():  # type: ignore[misc]
     """Function-scoped engine — one engine per test."""
@@ -73,6 +82,39 @@ async def db_session(engine) -> AsyncSession:  # type: ignore[misc]
     """
     async with engine.connect() as conn:
         await conn.begin()
+        await conn.execute(
+            text(
+                """
+                INSERT INTO users (id, username, password_hash, display_name)
+                VALUES (:uid, :username, :password_hash, :display_name)
+                ON CONFLICT (id) DO NOTHING
+                """
+            ),
+            {
+                "uid": SQL_TEST_USER_ID,
+                "username": "__sql_repo_fixture_user__",
+                "password_hash": "fixture-only",
+                "display_name": "SQL Repo Fixture User",
+            },
+        )
+        await conn.execute(
+            text(
+                """
+                INSERT INTO households (id, name, created_by)
+                VALUES (:hid, :name, :uid)
+                ON CONFLICT (id) DO NOTHING
+                """
+            ),
+            {
+                "hid": SQL_TEST_HOUSEHOLD_ID,
+                "name": "SQL Repo Fixture Household",
+                "uid": SQL_TEST_USER_ID,
+            },
+        )
+        await conn.execute(
+            text("SELECT set_config('app.current_household_id', :hid, true)"),
+            {"hid": str(SQL_TEST_HOUSEHOLD_ID)},
+        )
         session = AsyncSession(
             bind=conn,
             expire_on_commit=False,

@@ -11,15 +11,27 @@ const BASE_URL = process.env.PW_BASE_URL || 'http://localhost:8000';
 
 export default defineConfig({
   testDir: './e2e',
-  fullyParallel: true,
+  // global-setup performs real login via POST /api/e2e/seed-user + POST /auth/login
+  // and writes playwright/.auth/user.json for the browser context.
+  // DEPENDENCY: requires Alex's POST /api/e2e/seed-user endpoint.
+  globalSetup: './e2e/global-setup.ts',
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // Keep browser projects serialized: seed/teardown share the same test user's
+  // household, so tests must not run concurrently or one teardown may reset
+  // state mid-test for another.
+  workers: 1,
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
     baseURL: BASE_URL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    // No global storageState: auth-dependent specs import `test` from
+    // ./fixtures, which performs a fresh POST /auth/login per test context.
+    // This prevents cookie-revocation failures when the server rotates the rt
+    // httpOnly cookie on every refresh.  Mock-auth specs (auth-refresh-*)
+    // import from @playwright/test and start with a clean, cookieless context.
   },
   projects: [
     {
@@ -31,6 +43,6 @@ export default defineConfig({
       use: { ...devices['Desktop Safari'] },
     },
   ],
-  // No webServer: the FastAPI backend must be running externally with E2E_AUTH_BYPASS=1.
+  // No webServer: the FastAPI backend must be running externally.
   // For CI, PW_BASE_URL should point to a pre-deployed staging environment.
 });

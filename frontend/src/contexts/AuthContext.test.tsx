@@ -7,7 +7,7 @@ import React from 'react'
 import { render, screen, waitFor, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { AuthProvider, useAuth } from './AuthContext'
+import { AUTH_STATES, AuthProvider, useAuth } from './AuthContext'
 
 const mockRefresh = vi.hoisted(() => vi.fn())
 const mockGetMe = vi.hoisted(() => vi.fn())
@@ -89,6 +89,7 @@ const mockZeroMembershipUser = {
 
 function AuthConsumer() {
   const {
+    authState,
     isLoading,
     isAuthenticated,
     accessToken,
@@ -98,10 +99,18 @@ function AuthConsumer() {
     activeMembership,
   } = useAuth()
 
-  if (isLoading) return <div data-testid="loading">loading</div>
+  if (isLoading) {
+    return (
+      <div>
+        <div data-testid="loading">loading</div>
+        <div data-testid="auth-state">{authState}</div>
+      </div>
+    )
+  }
 
   return (
     <div>
+      <div data-testid="auth-state">{authState}</div>
       <div data-testid="authenticated">{String(isAuthenticated)}</div>
       <div data-testid="token">{accessToken ?? 'null'}</div>
       <div data-testid="username">{user?.username ?? 'null'}</div>
@@ -111,6 +120,13 @@ function AuthConsumer() {
       <div data-testid="active-role">{activeMembership?.role ?? 'null'}</div>
     </div>
   )
+}
+
+function makeAxiosError(status?: number) {
+  return Object.assign(new Error(status ? `Request failed with status ${status}` : 'Network error'), {
+    isAxiosError: true,
+    response: status ? { status } : undefined,
+  })
 }
 
 function AuthActions() {
@@ -134,6 +150,7 @@ function renderWithProvider(children: React.ReactNode, initialEntries = ['/']) {
 }
 
 beforeEach(() => {
+  vi.useRealTimers()
   vi.clearAllMocks()
   mockGetStoredActiveHouseholdId.mockReturnValue(null)
   mockListHardware.mockResolvedValue([])
@@ -149,11 +166,13 @@ describe('AuthContext', () => {
       renderWithProvider(<AuthConsumer />)
 
       expect(screen.getByTestId('loading')).toBeInTheDocument()
+      expect(screen.getByTestId('auth-state')).toHaveTextContent(AUTH_STATES.LOADING)
 
       await waitFor(() =>
         expect(screen.getByTestId('authenticated')).toHaveTextContent('true'),
       )
 
+      expect(screen.getByTestId('auth-state')).toHaveTextContent(AUTH_STATES.AUTHENTICATED)
       expect(screen.getByTestId('token')).toHaveTextContent('tok-abc')
       expect(screen.getByTestId('username')).toHaveTextContent('alice')
       expect(screen.getByTestId('memberships')).toHaveTextContent('3')
@@ -183,6 +202,7 @@ describe('AuthContext', () => {
       )
 
       expect(screen.getByTestId('token')).toHaveTextContent('null')
+      expect(screen.getByTestId('auth-state')).toHaveTextContent(AUTH_STATES.UNAUTHENTICATED)
       expect(screen.getByTestId('username')).toHaveTextContent('null')
       expect(mockSetModuleToken).toHaveBeenCalledWith(null)
       expect(mockQueryClientClear).toHaveBeenCalledTimes(1)
@@ -247,6 +267,62 @@ describe('AuthContext', () => {
       )
       expect(screen.getByTestId('memberships')).toHaveTextContent('0')
       expect(mockSetStoredActiveHouseholdId).toHaveBeenCalledWith(null)
+    })
+
+    it('does not retry 401 refresh responses (spec-035 T-06)', async () => {
+      mockRefresh.mockRejectedValueOnce(makeAxiosError(401))
+
+      renderWithProvider(<AuthConsumer />)
+
+      await waitFor(() =>
+        expect(screen.getByTestId('auth-state')).toHaveTextContent(AUTH_STATES.UNAUTHENTICATED),
+      )
+
+      expect(mockRefresh).toHaveBeenCalledTimes(1)
+      expect(mockSetModuleToken).toHaveBeenCalledWith(null)
+      expect(mockQueryClientClear).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not retry 429 refresh responses (spec-035 retry matrix)', async () => {
+      mockRefresh.mockRejectedValueOnce(makeAxiosError(429))
+
+      renderWithProvider(<AuthConsumer />)
+
+      await waitFor(() =>
+        expect(screen.getByTestId('auth-state')).toHaveTextContent(AUTH_STATES.UNAUTHENTICATED),
+      )
+
+      expect(mockRefresh).toHaveBeenCalledTimes(1)
+    })
+
+    it('retries 5xx refresh failures twice then authenticates (spec-035 T-07)', async () => {
+      mockRefresh
+        .mockRejectedValueOnce(makeAxiosError(500))
+        .mockRejectedValueOnce(makeAxiosError(500))
+        .mockResolvedValueOnce({ access_token: 'retry-token', token_type: 'bearer' })
+      mockGetMe.mockResolvedValueOnce(mockUser)
+
+      renderWithProvider(<AuthConsumer />)
+
+      await waitFor(() => expect(mockRefresh).toHaveBeenCalledTimes(3), { timeout: 2000 })
+      await waitFor(() =>
+        expect(screen.getByTestId('auth-state')).toHaveTextContent(AUTH_STATES.AUTHENTICATED),
+      )
+      expect(screen.getByTestId('token')).toHaveTextContent('retry-token')
+    })
+
+    it('redirects to unauthenticated after three 5xx refresh failures (spec-035 T-08)', async () => {
+      mockRefresh
+        .mockRejectedValueOnce(makeAxiosError(500))
+        .mockRejectedValueOnce(makeAxiosError(500))
+        .mockRejectedValueOnce(makeAxiosError(500))
+
+      renderWithProvider(<AuthConsumer />)
+
+      await waitFor(() => expect(mockRefresh).toHaveBeenCalledTimes(3), { timeout: 2000 })
+      await waitFor(() =>
+        expect(screen.getByTestId('auth-state')).toHaveTextContent(AUTH_STATES.UNAUTHENTICATED),
+      )
     })
   })
 

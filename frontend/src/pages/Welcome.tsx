@@ -4,6 +4,7 @@
 
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
+import axios from 'axios'
 import { apiClient } from '../api/client'
 import { getMe } from '../api/auth'
 import { useAuth } from '../contexts/AuthContext'
@@ -40,8 +41,21 @@ export default function Welcome() {
       const userData = await getMe()
       setUser(userData)
       navigate('/', { replace: true })
-    } catch {
-      setSubmitError('Could not create household. Please try again.')
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 422) {
+          const detail = (err.response.data as { detail?: string }).detail
+          setSubmitError(detail ?? 'Could not create household. Please check your inputs.')
+        } else if (err.response?.status === 409) {
+          setSubmitError('A household with that name already exists. Please choose a different name.')
+        } else if (!err.response) {
+          setSubmitError('Unable to connect. Please check your connection and try again.')
+        } else {
+          setSubmitError('Could not create household. Please try again.')
+        }
+      } else {
+        setSubmitError('Could not create household. Please try again.')
+      }
     } finally {
       setIsSubmitting(false)
     }
