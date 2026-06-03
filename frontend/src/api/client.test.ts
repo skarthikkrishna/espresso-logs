@@ -10,6 +10,7 @@ import {
   ACTIVE_HOUSEHOLD_STORAGE_KEY,
   apiClient,
   getAccessToken,
+  refreshAccessToken,
   setAccessToken,
 } from './client'
 
@@ -79,6 +80,7 @@ beforeAll(() => {
 beforeEach(() => {
   setAccessToken(null)
   storageState.clear()
+  window.sessionStorage.clear()
   vi.clearAllMocks()
 })
 
@@ -265,6 +267,134 @@ describe('apiClient', () => {
       expect(getAccessToken()).toBe('shared-token')
       expect(responseOne.data).toEqual({ result: '/api/protected-1' })
       expect(responseTwo.data).toEqual({ result: '/api/protected-2' })
+    })
+
+    it('deduplicates direct refreshAccessToken calls from two concurrent callers (spec-035 T-01)', async () => {
+      let resolveRefresh!: (value: AxiosResponse<{
+        access_token: string
+        token_type: string
+      }>) => void
+      const refreshRequest = new Promise<AxiosResponse<{ access_token: string; token_type: string }>>((resolve) => {
+        resolveRefresh = resolve
+      })
+
+      const refreshSpy = vi.spyOn(axios, 'post').mockImplementation(
+        () => refreshRequest as Promise<AxiosResponse<{ access_token: string; token_type: string }>>,
+      )
+
+      const callers = [
+        refreshAccessToken(),
+        refreshAccessToken(),
+      ]
+
+      await waitFor(() => expect(refreshSpy).toHaveBeenCalledTimes(1))
+
+      resolveRefresh({
+        data: { access_token: 'shared-two-caller-token', token_type: 'bearer' },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: { headers: {} } as InternalAxiosRequestConfig,
+      })
+
+      await expect(Promise.all(callers)).resolves.toEqual([
+        'shared-two-caller-token',
+        'shared-two-caller-token',
+      ])
+      expect(refreshSpy).toHaveBeenCalledWith('/auth/refresh', null, { withCredentials: true })
+      expect(refreshSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('deduplicates direct refreshAccessToken calls from three concurrent callers (spec-035 T-02)', async () => {
+      let resolveRefresh!: (value: AxiosResponse<{
+        access_token: string
+        token_type: string
+      }>) => void
+      const refreshRequest = new Promise<AxiosResponse<{ access_token: string; token_type: string }>>((resolve) => {
+        resolveRefresh = resolve
+      })
+
+      const refreshSpy = vi.spyOn(axios, 'post').mockImplementation(
+        () => refreshRequest as Promise<AxiosResponse<{ access_token: string; token_type: string }>>,
+      )
+
+      const callers = [
+        refreshAccessToken(),
+        refreshAccessToken(),
+        refreshAccessToken(),
+      ]
+
+      await waitFor(() => expect(refreshSpy).toHaveBeenCalledTimes(1))
+
+      resolveRefresh({
+        data: { access_token: 'shared-direct-token', token_type: 'bearer' },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: { headers: {} } as InternalAxiosRequestConfig,
+      })
+
+      await expect(Promise.all(callers)).resolves.toEqual([
+        'shared-direct-token',
+        'shared-direct-token',
+        'shared-direct-token',
+      ])
+      expect(refreshSpy).toHaveBeenCalledWith('/auth/refresh', null, { withCredentials: true })
+      expect(refreshSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('clears the in-flight refresh guard after settlement so later refresh calls are independent', async () => {
+      const refreshSpy = vi.spyOn(axios, 'post')
+        .mockResolvedValueOnce({
+          data: { access_token: 'first-token', token_type: 'bearer' },
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: {},
+        })
+        .mockResolvedValueOnce({
+          data: { access_token: 'second-token', token_type: 'bearer' },
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: {},
+        })
+
+      await expect(refreshAccessToken()).resolves.toBe('first-token')
+      await expect(refreshAccessToken()).resolves.toBe('second-token')
+
+      expect(refreshSpy).toHaveBeenCalledTimes(2)
+    })
+
+    it('keeps refresh tokens out of browser-readable storage after refresh (spec-035 storage constraint)', async () => {
+      const localSetItemSpy = vi.spyOn(window.localStorage, 'setItem')
+      const sessionSetItemSpy = vi.spyOn(window.sessionStorage, 'setItem')
+
+      vi.spyOn(axios, 'post').mockResolvedValueOnce({
+        data: { access_token: 'memory-only-token', token_type: 'bearer' },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {},
+      })
+
+      await expect(refreshAccessToken()).resolves.toBe('memory-only-token')
+
+      const localStorageKeys = Array.from({ length: window.localStorage.length }, (_, index) =>
+        window.localStorage.key(index) ?? '',
+      )
+      const sessionStorageKeys = Array.from({ length: window.sessionStorage.length }, (_, index) =>
+        window.sessionStorage.key(index) ?? '',
+      )
+
+      expect(localSetItemSpy).not.toHaveBeenCalledWith(
+        expect.stringMatching(/refresh|rt/i),
+        expect.any(String),
+      )
+      expect(sessionSetItemSpy).not.toHaveBeenCalled()
+      expect(localStorageKeys.join(' ')).not.toMatch(/refresh|rt/i)
+      expect(sessionStorageKeys.join(' ')).not.toMatch(/refresh|rt/i)
+      expect(document.cookie).not.toContain('rt=')
     })
 
     it('does not attempt refresh for /auth/login 401 (skip path)', async () => {

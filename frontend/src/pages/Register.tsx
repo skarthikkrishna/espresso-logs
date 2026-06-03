@@ -162,6 +162,15 @@ export default function Register() {
             username: detail ?? 'Registration failed. Please check your inputs.',
           }))
           usernameRef.current?.focus()
+        } else if (err.response && err.response.status >= 500) {
+          // Server error: registration may have partially succeeded. Guide user
+          // to try signing in rather than retrying and hitting a 409.
+          setErrors((e) => ({
+            ...e,
+            username:
+              'Something went wrong on our end. Your account may have been created — try signing in.',
+          }))
+          usernameRef.current?.focus()
         } else if (!err.response) {
           setErrors((e) => ({
             ...e,

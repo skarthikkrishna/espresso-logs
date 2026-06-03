@@ -6,7 +6,7 @@
  * D4: text-decoration:none on links/buttons (no underline)
  * D5: Labels are display:block (label stacks above input)
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { seedTestData, teardownSeedData } from './seed';
 import type { SeedResult } from './seed';
 

@@ -9,7 +9,7 @@ from app.models.catalog import CatalogBean
 from app.repos.sql.catalog import SqlCatalogRepo
 
 
-async def test_upsert_creates_row(db_session: AsyncSession) -> None:
+async def test_upsert_creates_row(db_session: AsyncSession, test_household_id) -> None:
     """upsert() inserts a row with correct field mapping."""
     repo = SqlCatalogRepo(db=db_session)
     row = {
@@ -26,7 +26,7 @@ async def test_upsert_creates_row(db_session: AsyncSession) -> None:
     bean = result.scalar_one()
     assert bean.bean_name == "Test Bean"
     assert bean.roast_level == "Light"
-    assert bean.household_id is None  # M2: intentionally NULL — regression guard for M5
+    assert bean.household_id == test_household_id
     assert bean.notes == "CAT001"  # Catalog_ID stored as cross-reference
 
 

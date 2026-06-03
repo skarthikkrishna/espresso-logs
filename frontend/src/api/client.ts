@@ -105,7 +105,7 @@ interface RefreshResponse {
 
 let refreshPromise: Promise<string> | null = null
 
-async function refreshAccessToken(): Promise<string> {
+export async function refreshAccessToken(): Promise<string> {
   if (!refreshPromise) {
     refreshPromise = axios
       .post<RefreshResponse>('/auth/refresh', null, { withCredentials: true })

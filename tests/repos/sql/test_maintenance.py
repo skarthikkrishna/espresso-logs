@@ -10,7 +10,7 @@ from app.models.maintenance import MaintenanceLog
 from app.repos.sql.maintenance import SqlMaintenanceRepo
 
 
-async def test_add_creates_row(db_session: AsyncSession) -> None:
+async def test_add_creates_row(db_session: AsyncSession, test_household_id) -> None:
     """add() inserts a row with correct field mapping."""
     repo = SqlMaintenanceRepo(db=db_session)
     row = {"Action_Type": "Backflush", "Notes": "Weekly clean"}
@@ -22,7 +22,7 @@ async def test_add_creates_row(db_session: AsyncSession) -> None:
     event = result.scalar_one()
     assert event.action == "Backflush"
     assert event.notes == "Weekly clean"
-    assert event.household_id is None
+    assert event.household_id == test_household_id
     assert event.hardware_id is None
 
 
@@ -202,13 +202,24 @@ async def test_mr03_upsert_existing_non_null_hardware_id_is_noop(
 
 async def test_mr_join_01_list_with_hardware_id_returns_rows_matched_via_uuid_fk(
     db_session: AsyncSession,
+    test_household_id,
 ) -> None:
     """T-MR-JOIN-01: list(hardware_id=...) matches via Hardware.sheets_id when FK is populated."""
-    hw = Hardware(name="M", category="Machine", sheets_id="HW-JOIN-01")
+    hw = Hardware(
+        household_id=test_household_id,
+        name="M",
+        category="Machine",
+        sheets_id="HW-JOIN-01",
+    )
     db_session.add(hw)
     await db_session.flush()
 
-    log = MaintenanceLog(hardware_id=hw.id, sheets_hardware_id=None, action="Backflush")
+    log = MaintenanceLog(
+        household_id=test_household_id,
+        hardware_id=hw.id,
+        sheets_hardware_id=None,
+        action="Backflush",
+    )
     db_session.add(log)
     await db_session.flush()
 
@@ -221,9 +232,15 @@ async def test_mr_join_01_list_with_hardware_id_returns_rows_matched_via_uuid_fk
 
 async def test_mr_join_02_list_with_hardware_id_still_matches_sheets_hardware_id_column(
     db_session: AsyncSession,
+    test_household_id,
 ) -> None:
     """T-MR-JOIN-02: list(hardware_id=...) still matches legacy sheets_hardware_id column."""
-    log = MaintenanceLog(hardware_id=None, sheets_hardware_id="HW-LEGACY-01", action="Descale")
+    log = MaintenanceLog(
+        household_id=test_household_id,
+        hardware_id=None,
+        sheets_hardware_id="HW-LEGACY-01",
+        action="Descale",
+    )
     db_session.add(log)
     await db_session.flush()
 
@@ -235,9 +252,15 @@ async def test_mr_join_02_list_with_hardware_id_still_matches_sheets_hardware_id
 
 async def test_mr_join_03_list_with_hardware_id_returns_empty_when_no_match(
     db_session: AsyncSession,
+    test_household_id,
 ) -> None:
     """T-MR-JOIN-03: list(hardware_id=...) returns [] when no row matches."""
-    log = MaintenanceLog(hardware_id=None, sheets_hardware_id="HW-OTHER", action="Clean")
+    log = MaintenanceLog(
+        household_id=test_household_id,
+        hardware_id=None,
+        sheets_hardware_id="HW-OTHER",
+        action="Clean",
+    )
     db_session.add(log)
     await db_session.flush()
 
@@ -248,10 +271,11 @@ async def test_mr_join_03_list_with_hardware_id_returns_empty_when_no_match(
 
 async def test_mr_join_04_list_without_hardware_id_returns_all_rows(
     db_session: AsyncSession,
+    test_household_id,
 ) -> None:
     """T-MR-JOIN-04: list() with no filter returns all maintenance rows."""
-    db_session.add(MaintenanceLog(action="Clean"))
-    db_session.add(MaintenanceLog(action="Calibrate"))
+    db_session.add(MaintenanceLog(household_id=test_household_id, action="Clean"))
+    db_session.add(MaintenanceLog(household_id=test_household_id, action="Calibrate"))
     await db_session.flush()
 
     repo = SqlMaintenanceRepo(db=db_session)
@@ -261,13 +285,24 @@ async def test_mr_join_04_list_without_hardware_id_returns_all_rows(
 
 async def test_mr_join_05_list_returns_hardware_sheets_id_from_join_in_to_dict(
     db_session: AsyncSession,
+    test_household_id,
 ) -> None:
     """T-MR-JOIN-05: _to_dict populates Hardware_ID from JOIN result, not NULL column."""
-    hw = Hardware(name="M", category="Machine", sheets_id="HW-DICT-01")
+    hw = Hardware(
+        household_id=test_household_id,
+        name="M",
+        category="Machine",
+        sheets_id="HW-DICT-01",
+    )
     db_session.add(hw)
     await db_session.flush()
 
-    log = MaintenanceLog(hardware_id=hw.id, sheets_hardware_id=None, action="Clean")
+    log = MaintenanceLog(
+        household_id=test_household_id,
+        hardware_id=hw.id,
+        sheets_hardware_id=None,
+        action="Clean",
+    )
     db_session.add(log)
     await db_session.flush()
 

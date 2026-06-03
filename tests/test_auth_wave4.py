@@ -78,6 +78,7 @@ def _fake_refresh_token(
     *,
     revoked: bool = False,
     expires_at: datetime.datetime | None = None,
+    rotated_at: datetime.datetime | None = None,
 ) -> MagicMock:
     rt = MagicMock()
     rt.id = uuid.uuid4()
@@ -87,6 +88,7 @@ def _fake_refresh_token(
     rt.expires_at = expires_at or (
         datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)
     )
+    rt.rotated_at = rotated_at
     return rt
 
 
@@ -450,7 +452,7 @@ async def test_login_rt_cookie_has_correct_attributes(auth_client: AsyncMock) ->
     set_cookie = resp.headers.get("set-cookie", "").lower()
     assert "rt=" in set_cookie
     assert "httponly" in set_cookie
-    assert "samesite=strict" in set_cookie
+    assert "samesite=lax" in set_cookie
     assert "path=/auth" in set_cookie
     assert "max-age=2592000" in set_cookie
 
@@ -458,6 +460,30 @@ async def test_login_rt_cookie_has_correct_attributes(auth_client: AsyncMock) ->
 # ---------------------------------------------------------------------------
 # Refresh tests
 # ---------------------------------------------------------------------------
+
+
+async def test_refresh_missing_token_always_returns_401_no_bypass_path() -> None:
+    """Without a refresh token, /auth/refresh returns 401 unconditionally.
+
+    Replaces test_refresh_e2e_bypass_returns_access_token_without_cookie.
+    The _E2E_AUTH_BYPASS shortcut was removed from api_auth; there is no longer
+    a path that returns 200 without a real refresh token.
+    """
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post("/auth/refresh")
+
+    assert resp.status_code == 401
+    assert resp.json()["detail"] == "Refresh token missing"
+
+
+async def test_refresh_without_e2e_bypass_missing_token_returns_401() -> None:
+    with patch("app.routers.api_auth.RefreshTokenRepo") as MockRtRepo:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post("/auth/refresh")
+
+    assert resp.status_code == 401
+    assert resp.json()["detail"] == "Refresh token missing"
+    MockRtRepo.assert_not_called()
 
 
 async def test_refresh_valid_cookie_returns_new_access_token_and_rotates_cookie(
@@ -684,6 +710,34 @@ async def test_get_me_valid_jwt_returns_user_with_household_info(
     assert body["memberships"][1]["household_name"] == "Lab"
     repo.get_memberships_with_households_for_user.assert_awaited_once_with(db_override, user_id)
     repo.get_by_id.assert_not_awaited()
+
+
+async def test_get_me_zero_membership_user_returns_200_via_real_auth(
+    db_override: AsyncMock,
+) -> None:
+    """Authenticated user with no household memberships returns 200 with empty lists.
+
+    Replaces test_get_me_e2e_bypass_keeps_zero_membership_baseline.  The
+    _E2E_AUTH_BYPASS shortcut that authenticated without a real token is removed;
+    this test verifies the same zero-membership shape through the normal
+    current_user + HouseholdRepo path.
+    """
+    user_id = uuid.UUID("00000000-0000-0000-0000-000000000001")
+
+    with patch("app.routers.api_auth.HouseholdRepo") as MockHouseholdRepo:
+        repo = MockHouseholdRepo.return_value
+        repo.get_memberships_with_households_for_user = AsyncMock(return_value=[])
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.get("/auth/me")
+
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["id"] == str(user_id)
+    assert body["household_id"] is None
+    assert body["active_household_id"] is None
+    assert body["role"] is None
+    assert body["memberships"] == []
 
 
 async def test_get_me_no_jwt_returns_401(mock_db: AsyncMock) -> None:

@@ -52,6 +52,7 @@ async def test_create_and_get_refresh_token(db_session: AsyncSession) -> None:
     assert fetched is not None
     assert fetched.id == token.id
     assert fetched.revoked is False
+    assert fetched.rotated_at is None
 
     missing = await repo.get_by_hash(db_session, "nonexistent_hash")
     assert missing is None
@@ -76,10 +77,12 @@ async def test_rotate_revokes_single_valid_token_atomically(db_session: AsyncSes
     assert rotated is not None
     assert rotated.id == token.id
     assert rotated.revoked is True
+    assert rotated.rotated_at is not None
 
     fetched = await repo.get_by_hash(db_session, "rotate_me")
     assert fetched is not None
     assert fetched.revoked is True
+    assert fetched.rotated_at is not None
 
     second_attempt = await repo.rotate(db_session, "rotate_me")
     assert second_attempt is None

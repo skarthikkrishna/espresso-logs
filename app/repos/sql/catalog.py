@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.catalog import CatalogBean
+from app.repos.sql.tenant import row_household_id_or_context
 
 
 class SqlCatalogRepo:
@@ -18,8 +19,9 @@ class SqlCatalogRepo:
         self._db = db
 
     async def upsert(self, row: dict[str, Any]) -> None:
-        """Insert or update a catalog row by sheets_id. household_id intentionally NULL (M5)."""
+        """Insert or update a catalog row by sheets_id, inheriting tenant context."""
         sheets_id = row.get("Catalog_ID")
+        household_id = await row_household_id_or_context(self._db, row)
         if sheets_id:
             result = await self._db.execute(
                 select(CatalogBean).where(CatalogBean.sheets_id == sheets_id)
@@ -29,6 +31,7 @@ class SqlCatalogRepo:
             existing = None
 
         if existing is not None:
+            existing.household_id = household_id
             existing.roaster = row.get("Roaster", "")
             existing.bean_name = row.get("Bean_Name", "")
             existing.origin = row.get("Origin")
@@ -39,6 +42,7 @@ class SqlCatalogRepo:
             existing.local_image_path = row.get("Local_Image_Path")
         else:
             bean = CatalogBean(
+                household_id=household_id,
                 sheets_id=sheets_id,
                 roaster=row.get("Roaster", ""),
                 bean_name=row.get("Bean_Name", ""),

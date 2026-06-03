@@ -9,7 +9,7 @@ from app.models.hardware import Hardware
 from app.repos.sql.hardware import SqlHardwareRepo
 
 
-async def test_upsert_creates_row(db_session: AsyncSession) -> None:
+async def test_upsert_creates_row(db_session: AsyncSession, test_household_id) -> None:
     """upsert() inserts a row with correct field mapping."""
     repo = SqlHardwareRepo(db=db_session)
     row = {"Name": "Decent DE1", "Category": "Machine"}
@@ -19,7 +19,7 @@ async def test_upsert_creates_row(db_session: AsyncSession) -> None:
     item = result.scalar_one()
     assert item.name == "Decent DE1"
     assert item.category == "Machine"
-    assert item.household_id is None
+    assert item.household_id == test_household_id
 
 
 async def test_upsert_empty_name_falls_back_to_empty_string(db_session: AsyncSession) -> None:

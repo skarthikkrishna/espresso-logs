@@ -15,6 +15,7 @@ import React, {
   useMemo,
   useState,
 } from 'react'
+import axios from 'axios'
 import { listHardware } from '../api/hardware'
 import type { CurrentUser, Membership } from '../types/entities'
 import {
@@ -30,7 +31,17 @@ import {
 } from '../api/auth'
 import { queryClient } from '../queryClient'
 
-interface AuthState {
+// eslint-disable-next-line react-refresh/only-export-components
+export const AUTH_STATES = {
+  LOADING: 'LOADING',
+  AUTHENTICATED: 'AUTHENTICATED',
+  UNAUTHENTICATED: 'UNAUTHENTICATED',
+} as const
+
+export type AuthState = (typeof AUTH_STATES)[keyof typeof AUTH_STATES]
+
+interface AuthContextState {
+  authState: AuthState
   accessToken: string | null
   user: CurrentUser | null
   isLoading: boolean
@@ -40,7 +51,8 @@ interface AuthState {
   activeMembership: Membership | null
 }
 
-interface AuthContextValue extends AuthState {
+interface AuthContextValue extends AuthContextState {
+  attemptRefresh: () => Promise<void>
   setAccessToken: (token: string | null) => void
   setUser: (user: CurrentUser | null) => void
   logout: () => void
@@ -51,6 +63,24 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 interface AuthProviderProps {
   children: React.ReactNode
+}
+
+const MAX_REFRESH_ATTEMPTS = 3
+const REFRESH_RETRY_BACKOFF_MS = 500
+
+const delay = (ms: number): Promise<void> =>
+  new Promise((resolve) => {
+    window.setTimeout(resolve, ms)
+  })
+
+function isRetryableRefreshError(error: unknown): boolean {
+  if (!axios.isAxiosError(error)) return false
+  if (!error.response) return true
+
+  const status = error.response.status
+  if (status === 401 || status === 429) return false
+
+  return status >= 500 && status <= 599
 }
 
 function deriveMemberships(user: CurrentUser | null): Membership[] {
@@ -140,15 +170,16 @@ function upsertMembership(
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
+  const [authState, setAuthState] = useState<AuthState>(AUTH_STATES.LOADING)
   const [accessToken, setAccessTokenState] = useState<string | null>(null)
   const [user, setUserState] = useState<CurrentUser | null>(null)
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [activeHouseholdId, setActiveHouseholdId] = useState<string | null>(
     () => getStoredActiveHouseholdId(),
   )
-  const [isLoading, setIsLoading] = useState(true)
 
-  const isAuthenticated = accessToken !== null
+  const isLoading = authState === AUTH_STATES.LOADING
+  const isAuthenticated = authState === AUTH_STATES.AUTHENTICATED
 
   const syncUserState = useCallback((incomingUser: CurrentUser | null) => {
     if (!incomingUser) {
@@ -174,41 +205,70 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return memberships.find((membership) => membership.household_id === activeHouseholdId) ?? null
   }, [activeHouseholdId, memberships])
 
+  const clearAuthSession = useCallback(() => {
+    queryClient.clear()
+    setAccessTokenState(null)
+    setModuleToken(null)
+    syncUserState(null)
+    setAuthState(AUTH_STATES.UNAUTHENTICATED)
+  }, [syncUserState])
+
+  const runRefresh = useCallback(
+    async (isCancelled: () => boolean = () => false) => {
+      for (let attempt = 1; attempt <= MAX_REFRESH_ATTEMPTS; attempt++) {
+        try {
+          const { access_token } = await refreshApi()
+          if (isCancelled()) return
+
+          setAccessTokenState(access_token)
+          setModuleToken(access_token)
+
+          try {
+            const userData = await getMeApi()
+            if (isCancelled()) return
+
+            syncUserState(userData)
+            setAuthState(AUTH_STATES.AUTHENTICATED)
+          } catch {
+            if (!isCancelled()) {
+              clearAuthSession()
+            }
+          }
+
+          return
+        } catch (error) {
+          if (isCancelled()) return
+
+          if (!isRetryableRefreshError(error) || attempt === MAX_REFRESH_ATTEMPTS) {
+            clearAuthSession()
+            return
+          }
+
+          await delay(REFRESH_RETRY_BACKOFF_MS)
+          if (isCancelled()) return
+        }
+      }
+    },
+    [clearAuthSession, syncUserState],
+  )
+
+  const attemptRefresh = useCallback(async () => {
+    setAuthState((current) =>
+      current === AUTH_STATES.AUTHENTICATED ? current : AUTH_STATES.LOADING,
+    )
+    await runRefresh()
+  }, [runRefresh])
+
   useEffect(() => {
     let cancelled = false
 
-    async function attemptRefresh() {
-      try {
-        const { access_token } = await refreshApi()
-        if (cancelled) return
-
-        setAccessTokenState(access_token)
-        setModuleToken(access_token)
-
-        const userData = await getMeApi()
-        if (!cancelled) {
-          syncUserState(userData)
-        }
-      } catch {
-        if (!cancelled) {
-          queryClient.clear()
-          setAccessTokenState(null)
-          setModuleToken(null)
-          syncUserState(null)
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    void attemptRefresh()
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void runRefresh(() => cancelled)
 
     return () => {
       cancelled = true
     }
-  }, [syncUserState])
+  }, [runRefresh])
 
   useEffect(() => {
     if (isLoading || !isAuthenticated) return
@@ -219,10 +279,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
     })
   }, [isAuthenticated, isLoading])
 
-  const setAccessToken = useCallback((token: string | null) => {
-    setAccessTokenState(token)
-    setModuleToken(token)
-  }, [])
+  const setAccessToken = useCallback(
+    (token: string | null) => {
+      setAccessTokenState(token)
+      setModuleToken(token)
+      setAuthState(token ? AUTH_STATES.AUTHENTICATED : AUTH_STATES.UNAUTHENTICATED)
+
+      if (!token) {
+        syncUserState(null)
+      }
+    },
+    [syncUserState],
+  )
 
   const setUser = useCallback(
     (incomingUser: CurrentUser | null) => {
@@ -256,13 +324,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const logout = useCallback(() => {
     void logoutApi().finally(() => {
-      setAccessTokenState(null)
-      setModuleToken(null)
-      syncUserState(null)
+      clearAuthSession()
     })
-  }, [syncUserState])
+  }, [clearAuthSession])
 
   const value: AuthContextValue = {
+    authState,
     accessToken,
     user,
     isLoading,
@@ -270,6 +337,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     memberships,
     activeHouseholdId,
     activeMembership,
+    attemptRefresh,
     setAccessToken,
     setUser,
     logout,

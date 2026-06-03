@@ -9,11 +9,65 @@ export interface SeedResult {
   inventoryBagId?: string;
 }
 
+interface TeardownOptions {
+  resetHousehold?: boolean;
+}
+
 // When PW_BASE_URL is set (CI/staging), use its origin.
-// Locally, seed goes directly to FastAPI (port 8000) which runs with E2E_AUTH_BYPASS=1.
+// Locally, seed goes directly to FastAPI (port 8000).
 const BASE = process.env.PW_BASE_URL
   ? new URL(process.env.PW_BASE_URL).origin
   : 'http://localhost:8000';
+
+// Module-level token cache — refreshed per-test by the fixtures.ts auth fixture
+// via setTokenCache(), falling back to a real POST /auth/login when the cache
+// is absent or the token is near expiry. The access_token lifetime is 900 s;
+// we refresh 100 s early to avoid hitting a 401 mid-test.
+const _ACCESS_TOKEN_TTL_MS = 900_000;
+const _ACCESS_TOKEN_REFRESH_BUFFER_MS = 100_000;
+
+let _tokenPromise: Promise<string> | null = null;
+let _tokenIssuedAt = 0;
+
+/**
+ * Pre-populate the Bearer token cache with a token already obtained by the
+ * per-test fixture (POST /api/e2e/session). Calling this prevents
+ * getAccessToken() from issuing a separate POST /auth/login — which would
+ * overwrite the fixture's rt httpOnly cookie with a new one.
+ */
+export function setTokenCache(token: string): void {
+  _tokenPromise = Promise.resolve(token);
+  _tokenIssuedAt = Date.now();
+}
+
+async function getAccessToken(page: Page): Promise<string> {
+  // Reset the cache if the token is within the refresh buffer of expiry.
+  if (
+    _tokenPromise !== null &&
+    Date.now() - _tokenIssuedAt > _ACCESS_TOKEN_TTL_MS - _ACCESS_TOKEN_REFRESH_BUFFER_MS
+  ) {
+    _tokenPromise = null;
+    _tokenIssuedAt = 0;
+  }
+
+  if (!_tokenPromise) {
+    _tokenPromise = (async () => {
+      const res = await page.request.post(`${BASE}/auth/login`, {
+        data: { username: 'user', password: 'password' },
+      });
+      if (!res.ok()) {
+        _tokenPromise = null; // allow retry on next call
+        throw new Error(
+          `seed: POST /auth/login failed: ${res.status()} ${await res.text()}`,
+        );
+      }
+      const body = (await res.json()) as { access_token: string };
+      _tokenIssuedAt = Date.now();
+      return body.access_token;
+    })();
+  }
+  return _tokenPromise;
+}
 
 /**
  * Seeds a CatalogItem with one associated active inventory bag.
@@ -23,12 +77,19 @@ const BASE = process.env.PW_BASE_URL
  *   on the BrewLogAdd form.
  *
  * All names are prefixed with "PW_TEST_" for easy identification and manual cleanup.
+ *
+ * Protected API calls use an explicit Authorization: Bearer header obtained via
+ * a real login. page.request does not run AuthContext, so the in-memory access
+ * token would not be present without this header.
  */
 export async function seedTestData(page: Page): Promise<SeedResult> {
   const result: SeedResult = {};
+  const token = await getAccessToken(page);
+  const authHeaders = { Authorization: `Bearer ${token}` };
 
   // 1. Create a CatalogItem via POST /api/catalog
   const catalogRes = await page.request.post(`${BASE}/api/catalog`, {
+    headers: authHeaders,
     data: {
       roaster: 'PW_TEST_Roaster',
       bean_name: 'PW_TEST_Bean',
@@ -48,6 +109,7 @@ export async function seedTestData(page: Page): Promise<SeedResult> {
   const bagRes = await page.request.post(
     `${BASE}/api/catalog/${result.catalogItemId}/inventory`,
     {
+      headers: authHeaders,
       data: {
         roast_date: '2026-01-01',
         roast_level: 'Medium',
@@ -77,14 +139,27 @@ export async function seedTestData(page: Page): Promise<SeedResult> {
  */
 export async function teardownSeedData(
   page: Page,
-  seed: SeedResult,
+  seed: SeedResult | undefined,
+  options: TeardownOptions = {},
 ): Promise<void> {
-  if (!seed.catalogItemId && !seed.bagId) return;
+  const resetHousehold = options.resetHousehold ?? false;
+  if (!seed?.catalogItemId && !seed?.bagId && !resetHousehold) return;
+
+  let authHeaders: Record<string, string> = {};
+  try {
+    const token = await getAccessToken(page);
+    authHeaders = { Authorization: `Bearer ${token}` };
+  } catch {
+    // If token acquisition fails, proceed without auth header —
+    // the cleanup endpoint may still accept the request in E2E_AUTH_BYPASS mode.
+  }
 
   const res = await page.request.delete(`${BASE}/api/e2e/cleanup`, {
+    headers: authHeaders,
     data: {
-      catalog_id: seed.catalogItemId ?? null,
-      bag_id: seed.bagId ?? null,
+      catalog_id: seed?.catalogItemId ?? null,
+      bag_id: seed?.bagId ?? null,
+      reset_household: resetHousehold,
     },
   });
 
@@ -93,4 +168,8 @@ export async function teardownSeedData(
       `teardownSeedData: DELETE /api/e2e/cleanup failed: ${res.status()} ${await res.text()}`,
     );
   }
+}
+
+export async function resetE2EState(page: Page): Promise<void> {
+  await teardownSeedData(page, {}, { resetHousehold: true });
 }

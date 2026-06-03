@@ -43,10 +43,12 @@ from app.services.idempotency_store import IdempotencyStore
 
 _dw_log = logging.getLogger("app.deps.dual_write")
 
-# E2E_AUTH_BYPASS=1 makes _get_current_user return a synthetic test user without
-# requiring a real OAuth session.  Only permitted when APP_ENV is explicitly
-# "test" or "local" — any other environment (staging, preview, production) is
-# rejected at startup to prevent an unauthenticated bypass on live deployments.
+# E2E_AUTH_BYPASS=1 enables the /api/e2e/* helper endpoints for seeding the
+# test user and issuing real JWT sessions without rate limits. auth dependencies
+# (current_user, current_household_membership) always validate real tokens — no
+# auth short-circuit. Only permitted when APP_ENV is explicitly "test" or "local"
+# — any other environment (staging, preview, production) is rejected at startup
+# to prevent test-only routes being accessible on live deployments.
 _E2E_AUTH_BYPASS = os.environ.get("E2E_AUTH_BYPASS") == "1"
 
 _PERMITTED_E2E_ENVS: frozenset[str] = frozenset({"test", "local"})
@@ -62,31 +64,20 @@ if _E2E_AUTH_BYPASS:
 
 
 # ---------------------------------------------------------------------------
-# E2E synthetic user (consistent ID for test reproducibility)
+# E2E synthetic user IDs (consistent across seed-user and session endpoints)
 # ---------------------------------------------------------------------------
 
 _E2E_USER_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
 _E2E_HOUSEHOLD_ID = uuid.UUID("00000000-0000-0000-0000-000000000002")
 
 
-def _make_e2e_user() -> User:
-    u = User(
-        username="e2e-test-user",
-        display_name="E2E Test User",
-        email="e2e-test@localhost",
+async def _set_current_household_context(db: AsyncSession | None, household_id: uuid.UUID) -> None:
+    if db is None:
+        return
+    await db.execute(
+        sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+        {"hid": str(household_id)},
     )
-    u.id = _E2E_USER_ID
-    return u
-
-
-def _make_e2e_member() -> HouseholdMember:
-    m = HouseholdMember(
-        household_id=_E2E_HOUSEHOLD_ID,
-        user_id=_E2E_USER_ID,
-        role="admin",
-    )
-    m.id = uuid.UUID("00000000-0000-0000-0000-000000000003")
-    return m
 
 
 # ---------------------------------------------------------------------------
@@ -102,12 +93,9 @@ async def current_user(
 ) -> User:
     """Validate Bearer JWT and return the authenticated User ORM object.
 
-    When E2E_AUTH_BYPASS=1, returns a synthetic user without DB lookup.
     Raises HTTPException(401) if the token is absent, invalid, or the user
     is not found.
     """
-    if _E2E_AUTH_BYPASS:
-        return _make_e2e_user()
     if token is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
     user_id = decode_access_token(token)
@@ -153,15 +141,10 @@ async def current_household_membership(
     db: AsyncSession = Depends(get_db),
 ) -> HouseholdMember:
     """Resolve the caller's household membership and set the RLS session variable."""
-    if _E2E_AUTH_BYPASS:
-        return _make_e2e_member()
     if db is None:
         raise HTTPException(status_code=403, detail="Database unavailable")
     membership = await _resolve_membership_for_user(user, db)
-    await db.execute(
-        sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
-        {"hid": str(membership.household_id)},
-    )
+    await _set_current_household_context(db, membership.household_id)
     return membership
 
 
@@ -199,22 +182,15 @@ async def resolve_guest_or_member(
     """
     guest_raw = request.query_params.get("guest")
     if guest_raw is not None:
-        if _E2E_AUTH_BYPASS:
-            return _make_e2e_member()
         if db is None:
             raise HTTPException(status_code=401, detail="Database unavailable")
         gt = await HouseholdRepo().get_guest_token_by_hash(db, hash_token(guest_raw))
         if gt is None:
             raise HTTPException(status_code=401, detail="Invalid or expired guest token")
-        await db.execute(
-            sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
-            {"hid": str(gt.household_id)},
-        )
+        await _set_current_household_context(db, gt.household_id)
         return gt
 
     # No guest param — require JWT + household membership
-    if _E2E_AUTH_BYPASS:
-        return _make_e2e_member()
     if token is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
     user_id = decode_access_token(token)
@@ -224,10 +200,7 @@ async def resolve_guest_or_member(
     if user is None:
         raise HTTPException(status_code=401, detail="User not found")
     membership = await _resolve_membership_for_user(user, db)
-    await db.execute(
-        sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
-        {"hid": str(membership.household_id)},
-    )
+    await _set_current_household_context(db, membership.household_id)
     return membership
 
 

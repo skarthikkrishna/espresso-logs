@@ -2,14 +2,37 @@
 
 from __future__ import annotations
 
+import uuid
+
+import sqlalchemy as sa
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.brew_log import BrewLog
 from app.repos.sql.brew_log import SqlBrewLogRepo
+from app.repos.sql.household import HouseholdRepo
+from app.repos.sql.user import UserRepo
 
 
-async def test_add_creates_row(db_session: AsyncSession) -> None:
+async def _make_household(db_session: AsyncSession, username: str) -> uuid.UUID:
+    user = await UserRepo().create(
+        db_session,
+        username=username,
+        password_hash="pw",
+        google_sub=None,
+        email=None,
+        display_name=username,
+        picture_url=None,
+    )
+    household = await HouseholdRepo().create_household(
+        db_session,
+        name=f"{username}-household",
+        created_by=user.id,
+    )
+    return household.id
+
+
+async def test_add_creates_row(db_session: AsyncSession, test_household_id) -> None:
     """add() inserts a row with correct field mapping."""
     repo = SqlBrewLogRepo(db=db_session)
     row = {
@@ -26,8 +49,26 @@ async def test_add_creates_row(db_session: AsyncSession) -> None:
     assert entry.yield_g == 36.0
     assert entry.time_sec == 28
     assert entry.notes == "Tasty"
-    assert entry.household_id is None
+    assert entry.household_id == test_household_id
     assert entry.catalog_id is None
+
+
+async def test_add_uses_current_household_setting_when_household_omitted(
+    db_session: AsyncSession,
+) -> None:
+    """add() fills household_id from the active RLS tenant setting."""
+    household_id = await _make_household(db_session, "brew_log_rls")
+    await db_session.execute(
+        sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+        {"hid": str(household_id)},
+    )
+
+    repo = SqlBrewLogRepo(db=db_session)
+    await repo.add({"Shot_ID": "SH-RLS-001", "User_Notes": "tenant scoped"})
+
+    result = await db_session.execute(select(BrewLog).where(BrewLog.sheets_id == "SH-RLS-001"))
+    entry = result.scalar_one()
+    assert entry.household_id == household_id
 
 
 async def test_add_handles_empty_numerics(db_session: AsyncSession) -> None:

@@ -3,14 +3,19 @@
 from __future__ import annotations
 
 import os
+import uuid
 from typing import Any
 
 import pytest
+import sqlalchemy as sa
 
 # SPREADSHEET_ID must be present for subprocess-based env-var tests that
 # strip it from the environment explicitly. Do NOT set DATABASE_URL here —
 # it would bypass the skip guard in tests/models/test_migrations.py.
 os.environ.setdefault("SPREADSHEET_ID", "test-spreadsheet-id")
+
+SCRIPT_TEST_USER_ID = uuid.UUID("00000000-0000-0000-0000-00000000f201")
+SCRIPT_TEST_HOUSEHOLD_ID = uuid.UUID("00000000-0000-0000-0000-00000000f202")
 
 MOCK_CATALOG_ROWS: list[dict[str, Any]] = [
     {
@@ -110,5 +115,42 @@ async def db_engine():  # type: ignore[misc]
     )
     if result.returncode != 0:
         pytest.fail(f"alembic upgrade head failed:\n{result.stderr}")
+    async with engine.begin() as conn:
+        await conn.execute(
+            sa.text(
+                """
+                INSERT INTO users (id, username, password_hash, display_name)
+                VALUES (:uid, :username, :password_hash, :display_name)
+                ON CONFLICT (id) DO UPDATE
+                SET display_name = EXCLUDED.display_name
+                """
+            ),
+            {
+                "uid": SCRIPT_TEST_USER_ID,
+                "username": "__script_fixture_user__",
+                "password_hash": "fixture-only",
+                "display_name": "Script Fixture User",
+            },
+        )
+        await conn.execute(
+            sa.text(
+                """
+                INSERT INTO households (id, name, created_by)
+                VALUES (:hid, :name, :uid)
+                ON CONFLICT (id) DO UPDATE
+                SET name = EXCLUDED.name,
+                    created_by = EXCLUDED.created_by
+                """
+            ),
+            {
+                "hid": SCRIPT_TEST_HOUSEHOLD_ID,
+                "name": "Script Fixture Household",
+                "uid": SCRIPT_TEST_USER_ID,
+            },
+        )
+        await conn.execute(
+            sa.text("UPDATE users SET active_household_id = :hid WHERE id = :uid"),
+            {"hid": SCRIPT_TEST_HOUSEHOLD_ID, "uid": SCRIPT_TEST_USER_ID},
+        )
     yield engine
     await engine.dispose()

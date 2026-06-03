@@ -10,10 +10,12 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ requiredRole }: ProtectedRouteProps) {
-  const { isLoading, isAuthenticated, activeMembership, memberships } = useAuth()
+  const { authState, isLoading, isAuthenticated, activeMembership, memberships } = useAuth()
   const location = useLocation()
+  const isRouteLoading = authState === 'LOADING' || isLoading
+  const isRouteAuthenticated = authState === 'AUTHENTICATED' || isAuthenticated
 
-  if (isLoading) {
+  if (isRouteLoading) {
     return (
       <div className="min-h-screen bg-base-100 flex items-center justify-center">
         <span className="loading loading-spinner loading-lg text-primary" aria-label="Loading" />
@@ -21,7 +23,7 @@ export default function ProtectedRoute({ requiredRole }: ProtectedRouteProps) {
     )
   }
 
-  if (!isAuthenticated) {
+  if (!isRouteAuthenticated) {
     return <Navigate replace to="/login" />
   }
 
@@ -30,7 +32,7 @@ export default function ProtectedRoute({ requiredRole }: ProtectedRouteProps) {
   const exemptPaths = ['/household/new', '/invite/']
   const isExempt = exemptPaths.some((path) => location.pathname.startsWith(path))
 
-  if (!isLoading && isAuthenticated && memberships.length === 0 && !isExempt) {
+  if (!isRouteLoading && isRouteAuthenticated && memberships.length === 0 && !isExempt) {
     return <Navigate replace to="/welcome" />
   }
 

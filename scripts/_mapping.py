@@ -462,6 +462,13 @@ def row_checksum(row: dict[str, Any]) -> str:
 # ---------------------------------------------------------------------------
 
 
+def _single_household_id(rows: list[dict[str, Any]]) -> str | None:
+    household_ids = {str(row["household_id"]) for row in rows if row.get("household_id")}
+    if len(household_ids) > 1:
+        raise ValueError("bulk_upsert requires rows for exactly one household under RLS")
+    return next(iter(household_ids), None)
+
+
 async def bulk_upsert(
     engine: AsyncEngine,
     table: sa.Table,
@@ -470,7 +477,13 @@ async def bulk_upsert(
     """Upsert rows into table, conflicting on sheets_id. Returns count of rows processed."""
     if not rows:
         return 0
+    household_id = _single_household_id(rows)
     async with engine.begin() as conn:
+        if household_id is not None:
+            await conn.execute(
+                sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+                {"hid": household_id},
+            )
         stmt = pg_insert(table).values(rows)
         set_cols = {col: stmt.excluded[col] for col in rows[0] if col not in ("id", "created_at")}
         upsert_stmt = stmt.on_conflict_do_update(

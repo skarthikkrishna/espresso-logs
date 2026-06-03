@@ -48,7 +48,7 @@ class RefreshTokenRepo:
                 RefreshToken.revoked.is_(False),
                 RefreshToken.expires_at > sa.func.now(),
             )
-            .values(revoked=True)
+            .values(revoked=True, rotated_at=sa.func.now())
             .returning(RefreshToken)
         )
         await db.flush()
