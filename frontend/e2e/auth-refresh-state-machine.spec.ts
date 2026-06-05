@@ -1,5 +1,9 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 
+const BASE = process.env.PW_BASE_URL
+  ? new URL(process.env.PW_BASE_URL).origin
+  : 'http://localhost:8000';
+
 const authUser = {
   id: 'user-1',
   username: 'alice',
@@ -37,6 +41,18 @@ async function mockAppData(page: Page): Promise<void> {
 }
 
 test.describe('spec-035 auth refresh state machine', () => {
+  // Reset /auth/refresh rate-limit counters before this spec batch runs.
+  // Defense-in-depth: even though all refresh calls are route-mocked, any
+  // leaked real requests from service-worker timing races will not 429 later
+  // specs.
+  test.beforeAll(async ({ request }) => {
+    try {
+      await request.post(`${BASE}/api/e2e/reset-limiter`);
+    } catch {
+      // Soft guard: backend may not be started with E2E_AUTH_BYPASS=1.
+    }
+  });
+
   test('T-03: OAuth callback sends at most one refresh POST and clears the callback URL', async ({ page }) => {
     await mockAppData(page);
     let refreshCount = 0;

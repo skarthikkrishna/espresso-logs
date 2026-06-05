@@ -48,6 +48,22 @@ function parseRtCookie(setCookieHeader: string | null): string | null {
 
 export const test = base.extend<object>({
   page: async ({ page }, use) => {
+    // Reset /auth/refresh rate-limit counters before each test so that the
+    // ~1 real refresh call triggered by every page.goto() does not accumulate
+    // across the suite and exhaust the 20/min bucket before later specs run.
+    // Soft-guarded: a non-204 is logged as a warning but does not abort the test.
+    try {
+      const rlRes = await page.request.post(`${BASE}/api/e2e/reset-limiter`);
+      if (rlRes.status() !== 204) {
+        console.warn(
+          `[auth-fixture] POST /api/e2e/reset-limiter returned ${rlRes.status()} — ` +
+            `rate-limit counters NOT reset; /auth/refresh may 429 later in the suite.`,
+        );
+      }
+    } catch {
+      // Backend not yet started or endpoint absent — continue without reset.
+    }
+
     // Obtain a fresh session for every test context via the E2E bypass
     // endpoint. The server issues a new rt httpOnly cookie and returns an
     // access_token.
