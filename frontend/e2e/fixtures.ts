@@ -78,6 +78,10 @@ export const test = base.extend<object>({
     const isSecure = baseUrl.protocol === 'https:';
     const domain = baseUrl.hostname; // 'localhost' for local, hostname for remote
 
+    // Clear any existing rt cookies (domain and host-only) before injecting
+    // the fresh one so stale tokens from prior tests cannot interfere.
+    await page.context().clearCookies({ name: 'rt' });
+
     // Explicitly add the rt cookie to the browser context so page navigations
     // carry it regardless of prior page URL or Playwright's internal routing.
     await page.context().addCookies([
