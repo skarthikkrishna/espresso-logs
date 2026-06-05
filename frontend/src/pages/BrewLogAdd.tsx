@@ -191,7 +191,7 @@ export default function BrewLogAdd() {
     <div className="p-4 md:p-6 max-w-2xl">
       <h1 className="text-2xl font-display text-amber-100 mb-6">Add shot</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form data-testid="brew-log-add-form" onSubmit={handleSubmit} className="space-y-4">
         {/* Bag — full width */}
         <div className="form-control">
           <label className="label">

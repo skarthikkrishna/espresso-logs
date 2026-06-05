@@ -8,7 +8,8 @@ test.describe('D3-buttons — btn-bevel box-shadow consistency', () => {
   test.beforeEach(async ({ page }) => {
     seed = await seedTestData(page);
     await page.goto(`/catalog/${seed.catalogItemId}`);
-    await page.waitForSelector('[data-testid="catalog-detail"]', { timeout: 10_000 });
+    // 20 s covers seed API round-trip + auth cookie + catalog data fetch on WebKit.
+    await page.waitForSelector('[data-testid="catalog-detail"]', { timeout: 20_000 });
   });
 
   test.afterEach(async ({ page }) => {
@@ -18,14 +19,14 @@ test.describe('D3-buttons — btn-bevel box-shadow consistency', () => {
   test('all btn-bevel elements share identical box-shadow and it is not none', async ({ page }) => {
     // Expand the inline "Add bag" form to reveal a third btn-bevel button (Save bag, initially disabled).
     const addBagBtn = page.getByRole('button', { name: '+ Add bag' });
-    await expect(addBagBtn).toBeVisible({ timeout: 5_000 });
+    await expect(addBagBtn).toBeVisible({ timeout: 10_000 });
     await addBagBtn.click();
     // Move mouse to a neutral position to clear hover state on all buttons.
     await page.mouse.move(0, 0);
     await page.waitForTimeout(100);
 
     // Now three btn-bevel buttons are visible: Edit, + Add bag, Save bag (disabled).
-    await page.waitForSelector('.btn-bevel', { timeout: 5_000 });
+    await page.waitForSelector('.btn-bevel', { timeout: 10_000 });
 
     const info = await page.evaluate(() => {
       const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('.btn-bevel'));
