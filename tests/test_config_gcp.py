@@ -244,3 +244,64 @@ class TestAutoDetectGcpProjectValidator:
             s = Settings()
 
         assert s.jwt_secret_previous is None
+
+    def test_jwt_secret_too_short_raises_validation_error(self, monkeypatch):
+        """A non-empty jwt_secret shorter than 32 characters must raise ValidationError (AC-601)."""
+        import pytest
+        from pydantic import ValidationError
+
+        monkeypatch.delenv("APP_SECRETS", raising=False)
+
+        with (
+            patch("app.config._fetch_gcp_project_id", return_value=""),
+            pytest.raises(ValidationError, match="JWT_SECRET must be at least 32 characters"),
+        ):
+            from app.config import Settings
+
+            Settings(spreadsheet_id="dummy", jwt_secret="tooshort")
+
+    def test_app_secrets_jwt_secret_sourced_when_standalone_absent(self, monkeypatch):
+        """jwt_secret from APP_SECRETS blob is used when no standalone JWT_SECRET env var is set.
+
+        In a Cloud Run deployment, JWT_SECRET is never a standalone env var — it comes
+        exclusively from the APP_SECRETS blob (AC-601, AC-607).
+        """
+        import json
+        import secrets
+
+        blob_secret = secrets.token_hex(32)
+        monkeypatch.setenv("SPREADSHEET_ID", "dummy")
+        # Ensure standalone JWT_SECRET is empty so blob takes precedence
+        monkeypatch.setenv("JWT_SECRET", "")
+        monkeypatch.setenv("APP_SECRETS", json.dumps({"JWT_SECRET": blob_secret}))
+
+        with patch("app.config._fetch_gcp_project_id", return_value=""):
+            from app.config import Settings
+
+            s = Settings()
+
+        assert s.jwt_secret == blob_secret
+
+    def test_app_secrets_jwt_secret_previous_sourced_from_blob(self, monkeypatch):
+        """jwt_secret_previous from APP_SECRETS blob is parsed correctly (AC-607 rotation path)."""
+        import json
+        import secrets
+
+        current = secrets.token_hex(32)
+        previous = secrets.token_hex(32)
+        monkeypatch.setenv("SPREADSHEET_ID", "dummy")
+        # Ensure standalone env vars are empty so blob takes precedence
+        monkeypatch.setenv("JWT_SECRET", "")
+        monkeypatch.setenv("JWT_SECRET_PREVIOUS", "")
+        monkeypatch.setenv(
+            "APP_SECRETS",
+            json.dumps({"JWT_SECRET": current, "JWT_SECRET_PREVIOUS": previous}),
+        )
+
+        with patch("app.config._fetch_gcp_project_id", return_value=""):
+            from app.config import Settings
+
+            s = Settings()
+
+        assert s.jwt_secret == current
+        assert s.jwt_secret_previous == previous
