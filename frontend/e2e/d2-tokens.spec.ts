@@ -19,19 +19,24 @@ const TOKENS: string[] = [
 ];
 
 test.describe('D2-tokens — CSS custom property existence', () => {
-  test.beforeEach(async ({ page }) => {
+  // Single navigation shared across all token checks to avoid exhausting
+  // /auth/refresh rate limits from 15 separate beforeEach page.goto() calls.
+  test('all design tokens are defined and non-empty', async ({ page }) => {
     await page.goto('./');
     await page.waitForLoadState('networkidle');
-  });
 
-  for (const token of TOKENS) {
-    test(`${token} is defined and non-empty`, async ({ page }) => {
-      const val = await page.evaluate((t: string) => {
-        return getComputedStyle(document.documentElement)
-          .getPropertyValue(t)
-          .trim();
-      }, token);
-      expect(val, `Expected CSS custom property ${token} to be non-empty`).not.toBe('');
-    });
-  }
+    const values: Record<string, string> = await page.evaluate((tokens: string[]) => {
+      const style = getComputedStyle(document.documentElement);
+      return Object.fromEntries(
+        tokens.map((t) => [t, style.getPropertyValue(t).trim()]),
+      );
+    }, TOKENS);
+
+    // Use expect.soft() so every failing token is reported, not just the first.
+    for (const token of TOKENS) {
+      expect
+        .soft(values[token], `Expected CSS custom property ${token} to be non-empty`)
+        .not.toBe('');
+    }
+  });
 });
