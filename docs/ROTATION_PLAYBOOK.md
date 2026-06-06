@@ -40,7 +40,7 @@ python -c "import secrets; print(secrets.token_hex(32))"
 
 **Example output:**
 ```
-a7f8b9c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5
+<YOUR_NEW_64_CHAR_HEX_SECRET>
 ```
 
 **Save this value securely** — it will be inserted into Secret Manager in Step 2.
@@ -64,7 +64,7 @@ The APP_SECRETS JSON blob in Secret Manager contains the current JWT_SECRET and,
 **New state (after rotation, during 15-min window):**
 ```json
 {
-  "JWT_SECRET": "a7f8b9c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5",
+  "JWT_SECRET": "<YOUR_NEW_64_CHAR_HEX_SECRET>",
   "JWT_SECRET_PREVIOUS": "existing_64_char_hex_string",
   "other_key": "other_value"
 }
@@ -76,7 +76,7 @@ The APP_SECRETS JSON blob in Secret Manager contains the current JWT_SECRET and,
 ```bash
 cat > /tmp/app_secrets.json << 'EOF'
 {
-  "JWT_SECRET": "a7f8b9c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5",
+  "JWT_SECRET": "<YOUR_NEW_64_CHAR_HEX_SECRET>",
   "JWT_SECRET_PREVIOUS": "existing_64_char_hex_string",
   "other_key": "other_value"
 }
@@ -183,7 +183,7 @@ After the 15-minute window has closed, the `JWT_SECRET_PREVIOUS` entry in the AP
 ```bash
 cat > /tmp/app_secrets.json << 'EOF'
 {
-  "JWT_SECRET": "a7f8b9c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5",
+  "JWT_SECRET": "<YOUR_NEW_64_CHAR_HEX_SECRET>",
   "other_key": "other_value"
 }
 EOF
