@@ -1,6 +1,6 @@
 ---
-updated_at: 2026-06-05T06:09:22Z
-focus_area: Spec 036 next; JWT/config cleanup carried forward
+updated_at: 2026-06-06T15:45:50.896-07:00
+focus_area: Read-only branch status confirmed; no new implementation work
 active_issues: []
 ---
 
@@ -8,25 +8,19 @@ active_issues: []
 
 ## Current Team Focus
 
-Spec 036 is the next active work stream. The prior PR #80 / spec-034 review-comment and CI blocker state is stale because the operator confirmed those comments were tackled.
+This session was a read-only branch-status check across Espresso Logs and Coffee Tracker. No application code, tests, specifications, or implementation plans were changed.
 
 ## What Was Completed This Session
 
-- Continuity was cleared: `.squad/identity/now.md` is current, and no prior PR #80/spec-034 blocker should stop the next session.
-- Tariq recorded the state-cleanup routing decision in commit `b36ed48`.
-- The operator confirmed Scribe is being spawned separately to merge decision drops and write the session log.
+- Ralph session-open continuity check returned `CLEAR`.
+- Tariq routing returned `status: DIRECT_PERMITTED` for bounded, read-only branch discovery.
+- Current Espresso Logs branch was confirmed as `fix/prod-shot-save-detail`.
+- Current Coffee Tracker branch was confirmed as `incident/prod-shot-save-detail-logs`.
 
 ## Open Work State
 
-Local uncommitted JWT/config cleanup edits are intentionally carried forward into spec 036 and must not be treated as a blocker:
-
-- `app/config.py`
-- `scripts/_mapping.py`
-- `tests/scripts/test_migrate.py`
-- `tests/test_config_gcp.py`
-
-These application-code edits remain unstaged for the spec 036 implementation path.
+No new implementation work was opened by this session. The branch-status findings are informational only and do not change the active work queue.
 
 ## Next Milestone
 
-Proceed with spec 036 only after normal artifact/gate verification and explicit operator scope confirmation before code changes.
+Continue any existing work from the appropriate branch context. Run the normal Squad routing and gate checks before future code changes.
