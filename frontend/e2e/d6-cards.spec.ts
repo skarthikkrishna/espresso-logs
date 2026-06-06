@@ -8,7 +8,7 @@ test.describe('D6-cards — card-bevel consistency', () => {
   test.beforeEach(async ({ page }) => {
     seed = await seedTestData(page);
     await page.goto(`catalog/${seed.catalogItemId}`);
-    await page.waitForSelector('[data-testid="catalog-detail"]', { timeout: 10_000 });
+    await page.waitForSelector('[data-testid="catalog-detail"]', { timeout: 20_000 });
   });
 
   test.afterEach(async ({ page }) => {

@@ -24,6 +24,7 @@ from app.deps import (
     get_inventory_repo,
 )
 from app.models.base import get_db
+from app.rate_limit import limiter
 from app.repos.sql.refresh_tokens import RefreshTokenRepo
 from app.services.auth import (
     create_access_token,
@@ -237,3 +238,18 @@ async def api_e2e_session(
     access_token = create_access_token(_E2E_USER_ID)
     set_refresh_cookie(response, raw_rt)
     return _SessionOut(access_token=access_token)
+
+
+@router.post("/reset-limiter", status_code=204)
+async def api_e2e_reset_limiter() -> None:
+    """Clear the in-process SlowAPI rate-limiter storage.
+
+    Resets all per-IP counters so subsequent E2E test requests are not
+    rejected with 429 from a previous test's exhausted bucket.
+
+    Only reachable when ``E2E_AUTH_BYPASS=1`` and ``APP_ENV`` is ``local`` or
+    ``test``.  Must never be mounted in production.
+    """
+    if not (_E2E_AUTH_BYPASS and os.environ.get("APP_ENV") in _PERMITTED_E2E_CLEANUP_ENVS):
+        raise HTTPException(status_code=404, detail="Not found")
+    limiter._storage.reset()

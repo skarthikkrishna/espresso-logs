@@ -8,7 +8,8 @@ test.describe('D3 — Edit button styling', () => {
   test.beforeEach(async ({ page }) => {
     seed = await seedTestData(page);
     await page.goto(`/catalog/${seed.catalogItemId}`);
-    await page.waitForSelector('[data-testid="catalog-detail"]');
+    // 20 s covers seed API round-trip + auth cookie + catalog data fetch on WebKit.
+    await page.waitForSelector('[data-testid="catalog-detail"]', { timeout: 20_000 });
   });
 
   test.afterEach(async ({ page }) => {

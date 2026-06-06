@@ -48,7 +48,7 @@ export default function Dashboard() {
 
       {/* ── Editorial hero ── */}
       <div className="pt-6 pb-2">
-        <h1 className="font-display text-7xl sm:text-8xl lg:text-9xl font-bold text-white/80 leading-none tracking-tight drop-shadow-2xl select-none">
+        <h1 data-testid="dashboard-heading" className="font-display text-7xl sm:text-8xl lg:text-9xl font-bold text-white/80 leading-none tracking-tight drop-shadow-2xl select-none">
           Espresso<br />
           <span className="text-amber-200/70">Logs</span>
         </h1>

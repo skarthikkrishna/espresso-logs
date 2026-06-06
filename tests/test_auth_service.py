@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import base64
 import datetime
+import json
+import logging
 import os
 import uuid
 
@@ -80,6 +83,147 @@ class TestCreateAndDecodeAccessToken:
             decode_access_token(expired_token)
         assert exc_info.value.status_code == 401
 
+    def test_decode_requires_sub_claim(self) -> None:
+        """Tokens without sub claim must be rejected (AC-603)."""
+        from jose import jwt as _jwt
+
+        now = datetime.datetime.now(datetime.timezone.utc)
+        payload = {
+            "iat": int(now.timestamp()),
+            "exp": int((now + datetime.timedelta(seconds=900)).timestamp()),
+            # no "sub"
+        }
+        no_sub_token = _jwt.encode(
+            payload,
+            os.environ["JWT_SECRET"],
+            algorithm="HS256",
+        )
+        with pytest.raises(HTTPException) as exc_info:
+            decode_access_token(no_sub_token)
+        assert exc_info.value.status_code == 401
+
+    def test_decode_requires_iat_claim(self) -> None:
+        """Tokens without iat claim must be rejected (AC-603)."""
+        from jose import jwt as _jwt
+
+        user_id = uuid.uuid4()
+        now = datetime.datetime.now(datetime.timezone.utc)
+        payload = {
+            "sub": str(user_id),
+            "exp": int((now + datetime.timedelta(seconds=900)).timestamp()),
+            # no "iat"
+        }
+        no_iat_token = _jwt.encode(
+            payload,
+            os.environ["JWT_SECRET"],
+            algorithm="HS256",
+        )
+        with pytest.raises(HTTPException) as exc_info:
+            decode_access_token(no_iat_token)
+        assert exc_info.value.status_code == 401
+
+    def test_create_access_token_uses_current_key_only(self) -> None:
+        """create_access_token must always sign with the current jwt_secret."""
+        from jose import jwt as _jwt
+
+        user_id = uuid.uuid4()
+        token = create_access_token(user_id)
+        # Must decode with current key without error
+        payload = _jwt.decode(token, os.environ["JWT_SECRET"], algorithms=["HS256"])
+        assert payload["sub"] == str(user_id)
+
+
+class TestDualKeyFallback:
+    """Tests for dual-key decode fallback (ADR-036-03)."""
+
+    def test_fallback_within_window_accepts_previous_key_token(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Token signed with previous key is accepted while rotation window is open."""
+        import app.services.auth as auth_module
+        from app.config import settings
+        from jose import jwt as _jwt
+
+        old_secret = "old-secret-at-least-32-chars-long-xxxx"
+        user_id = uuid.uuid4()
+        now = datetime.datetime.now(datetime.timezone.utc)
+        payload = {
+            "sub": str(user_id),
+            "iat": int(now.timestamp()),
+            "exp": int((now + datetime.timedelta(seconds=900)).timestamp()),
+        }
+        token_signed_with_old = _jwt.encode(payload, old_secret, algorithm="HS256")
+
+        # Patch settings to include previous key and open window
+        monkeypatch.setattr(settings, "jwt_secret_previous", old_secret)
+        monkeypatch.setattr(
+            auth_module,
+            "_rotation_window_opened_at",
+            datetime.datetime.now(datetime.timezone.utc),
+        )
+
+        result = decode_access_token(token_signed_with_old)
+        assert result == user_id
+
+    def test_fallback_after_window_rejects_previous_key_token(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Token signed with previous key is rejected after the 15-min rotation window expires."""
+        import app.services.auth as auth_module
+        from app.config import settings
+        from jose import jwt as _jwt
+
+        old_secret = "old-secret-at-least-32-chars-long-xxxx"
+        user_id = uuid.uuid4()
+        now = datetime.datetime.now(datetime.timezone.utc)
+        payload = {
+            "sub": str(user_id),
+            "iat": int(now.timestamp()),
+            "exp": int((now + datetime.timedelta(seconds=900)).timestamp()),
+        }
+        token_signed_with_old = _jwt.encode(payload, old_secret, algorithm="HS256")
+
+        # Window opened 16 minutes ago — past the 15-min limit
+        monkeypatch.setattr(settings, "jwt_secret_previous", old_secret)
+        monkeypatch.setattr(
+            auth_module,
+            "_rotation_window_opened_at",
+            datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=16),
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            decode_access_token(token_signed_with_old)
+        assert exc_info.value.status_code == 401
+
+    def test_no_fallback_when_previous_key_absent(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Invalid token must raise 401 immediately when no previous key is configured."""
+        import app.services.auth as auth_module
+        from app.config import settings
+
+        monkeypatch.setattr(settings, "jwt_secret_previous", None)
+        monkeypatch.setattr(auth_module, "_rotation_window_opened_at", None)
+
+        with pytest.raises(HTTPException) as exc_info:
+            decode_access_token("not.a.valid.token")
+        assert exc_info.value.status_code == 401
+
+    def test_fallback_does_not_accept_garbage_token(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Even with previous key configured and window open, an invalid token raises 401."""
+        import app.services.auth as auth_module
+        from app.config import settings
+
+        old_secret = "old-secret-at-least-32-chars-long-xxxx"
+        monkeypatch.setattr(settings, "jwt_secret_previous", old_secret)
+        monkeypatch.setattr(
+            auth_module,
+            "_rotation_window_opened_at",
+            datetime.datetime.now(datetime.timezone.utc),
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            decode_access_token("totally.garbage.token")
+        assert exc_info.value.status_code == 401
+
 
 class TestGenerateRefreshToken:
     def test_generate_refresh_token_returns_pair(self) -> None:
@@ -100,3 +244,130 @@ class TestDummyHash:
         # verify() must return False (random password won't match), not raise
         result = pwd_context.verify("anything", DUMMY_HASH)
         assert result is False
+
+
+class TestAlgorithmConfusion:
+    """Algorithm confusion / CVE-2016-5431-style rejection tests (AC-603, CL-01, CL-16)."""
+
+    def test_decode_rejects_alg_none(self) -> None:
+        """Token with alg:none in header must be rejected with 401, not silently accepted."""
+        now = datetime.datetime.now(datetime.timezone.utc)
+        payload_data = {
+            "sub": str(uuid.uuid4()),
+            "iat": int(now.timestamp()),
+            "exp": int((now + datetime.timedelta(seconds=900)).timestamp()),
+        }
+        header_b64 = (
+            base64.urlsafe_b64encode(json.dumps({"alg": "none", "typ": "JWT"}).encode())
+            .rstrip(b"=")
+            .decode()
+        )
+        payload_b64 = (
+            base64.urlsafe_b64encode(json.dumps(payload_data).encode()).rstrip(b"=").decode()
+        )
+        # alg:none tokens have an empty signature segment
+        alg_none_token = f"{header_b64}.{payload_b64}."
+
+        with pytest.raises(HTTPException) as exc_info:
+            decode_access_token(alg_none_token)
+        assert exc_info.value.status_code == 401
+
+    def test_decode_rejects_rs256_header(self) -> None:
+        """Token claiming RS256 algorithm must be rejected — only HS256 is accepted (CL-01)."""
+        now = datetime.datetime.now(datetime.timezone.utc)
+        payload_data = {
+            "sub": str(uuid.uuid4()),
+            "iat": int(now.timestamp()),
+            "exp": int((now + datetime.timedelta(seconds=900)).timestamp()),
+        }
+        header_b64 = (
+            base64.urlsafe_b64encode(json.dumps({"alg": "RS256", "typ": "JWT"}).encode())
+            .rstrip(b"=")
+            .decode()
+        )
+        payload_b64 = (
+            base64.urlsafe_b64encode(json.dumps(payload_data).encode()).rstrip(b"=").decode()
+        )
+        # Fake signature — algorithm check fires before signature verification
+        fake_sig = base64.urlsafe_b64encode(b"not-a-real-rsa-signature").rstrip(b"=").decode()
+        rs256_token = f"{header_b64}.{payload_b64}.{fake_sig}"
+
+        with pytest.raises(HTTPException) as exc_info:
+            decode_access_token(rs256_token)
+        assert exc_info.value.status_code == 401
+
+    def test_decode_rejects_hs384_header(self) -> None:
+        """Token with any non-HS256 HMAC variant (e.g. HS384) is also rejected."""
+        now = datetime.datetime.now(datetime.timezone.utc)
+        payload_data = {
+            "sub": str(uuid.uuid4()),
+            "iat": int(now.timestamp()),
+            "exp": int((now + datetime.timedelta(seconds=900)).timestamp()),
+        }
+        # Sign with current secret but claim HS384 in the header
+        from jose import jwt as _jwt
+
+        hs384_token = _jwt.encode(payload_data, os.environ["JWT_SECRET"], algorithm="HS384")
+
+        with pytest.raises(HTTPException) as exc_info:
+            decode_access_token(hs384_token)
+        assert exc_info.value.status_code == 401
+
+
+class TestIssuanceKeyIsolation:
+    """create_access_token must always use the current key, never the previous key (AC-602)."""
+
+    def test_issuance_with_previous_key_configured_still_uses_current_key(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Even when jwt_secret_previous is set, tokens are signed exclusively with jwt_secret."""
+        from app.config import settings
+        from jose import jwt as _jwt
+
+        old_secret = "old-secret-at-least-32-chars-long-xxxx"
+        monkeypatch.setattr(settings, "jwt_secret_previous", old_secret)
+
+        user_id = uuid.uuid4()
+        token = create_access_token(user_id)
+
+        # Must succeed with current key
+        payload = _jwt.decode(token, os.environ["JWT_SECRET"], algorithms=["HS256"])
+        assert payload["sub"] == str(user_id)
+
+        # Must fail with previous key — token is not signed with it
+        from jose import JWTError as _JWTError
+
+        with pytest.raises(_JWTError):
+            _jwt.decode(token, old_secret, algorithms=["HS256"])
+
+
+class TestNoTokenLogging:
+    """Tokens must never appear in application logs (AC-602, AC-603 security guard)."""
+
+    def test_create_access_token_does_not_log_token_value(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Raw token value must not appear in any log record emitted during creation."""
+        user_id = uuid.uuid4()
+        with caplog.at_level(logging.DEBUG, logger="app"):
+            token = create_access_token(user_id)
+
+        for record in caplog.records:
+            assert token not in record.getMessage(), (
+                f"Token value leaked into log: {record.getMessage()}"
+            )
+
+    def test_decode_access_token_does_not_log_token_value(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Raw token value must not appear in any log record emitted during decode."""
+        user_id = uuid.uuid4()
+        token = create_access_token(user_id)
+
+        with caplog.at_level(logging.DEBUG, logger="app"):
+            decode_access_token(token)
+
+        for record in caplog.records:
+            assert token not in record.getMessage(), (
+                f"Token value leaked into log: {record.getMessage()}"
+            )

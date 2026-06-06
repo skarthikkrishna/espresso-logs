@@ -15,3 +15,15 @@
 # "idem-pg-fail-test-001" re-detected in a later commit after test refactor;
 # still a test idempotency key string, not a real credential.
 fde3171a4961976fe8fe2be3187646b83f52a2ff:tests/test_api_brew_log_idempotency.py:generic-api-key:505
+
+# docs/ROTATION_PLAYBOOK.md — example hex strings used as documentation placeholders in the JWT
+# rotation procedure (lines 67, 79, 186). These are illustrative example values only; the
+# accompanying text explicitly instructs operators to generate a real secret with
+# `secrets.token_hex(32)`. Not real credentials. Current file uses <YOUR_NEW_64_CHAR_HEX_SECRET>
+# placeholders; historical commits retain the old example strings.
+7de8a9caf596b1da94f478b41c8724d21e77051e:docs/ROTATION_PLAYBOOK.md:generic-api-key:67
+7de8a9caf596b1da94f478b41c8724d21e77051e:docs/ROTATION_PLAYBOOK.md:generic-api-key:79
+7de8a9caf596b1da94f478b41c8724d21e77051e:docs/ROTATION_PLAYBOOK.md:generic-api-key:186
+28a1c5ce071aa133d64760b186c8e969a9099c1b:docs/ROTATION_PLAYBOOK.md:generic-api-key:67
+28a1c5ce071aa133d64760b186c8e969a9099c1b:docs/ROTATION_PLAYBOOK.md:generic-api-key:79
+28a1c5ce071aa133d64760b186c8e969a9099c1b:docs/ROTATION_PLAYBOOK.md:generic-api-key:186

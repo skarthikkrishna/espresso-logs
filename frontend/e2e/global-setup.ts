@@ -71,6 +71,26 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
     await context.storageState({ path: AUTH_STATE_PATH });
 
     console.log('[global-setup] storageState written to', AUTH_STATE_PATH);
+
+    // --- Step 4: reset rate-limit counters so /auth/refresh isn't exhausted ---
+    // Soft-guarded: if Alex's endpoint isn't merged yet, warn and continue.
+    try {
+      const rlRes = await context.request.post(`${BASE}/api/e2e/reset-limiter`);
+      if (rlRes.status() === 204) {
+        console.log('[global-setup] Rate-limit counters reset via /api/e2e/reset-limiter');
+      } else {
+        console.warn(
+          `\n[global-setup] WARNING: POST /api/e2e/reset-limiter returned ${rlRes.status()} (expected 204).\n` +
+            'Rate-limit counters were NOT reset — /auth/refresh may be exhausted mid-suite.\n' +
+            'Alex must implement this endpoint to prevent rate-limit flakiness.\n',
+        );
+      }
+    } catch {
+      console.warn(
+        '\n[global-setup] WARNING: POST /api/e2e/reset-limiter threw — endpoint may not exist yet.\n' +
+          'Continuing without rate-limit reset.\n',
+      );
+    }
   } catch (err) {
     // If backend is not running, write empty state so auth-refresh tests still pass.
     const message = err instanceof Error ? err.message : String(err);

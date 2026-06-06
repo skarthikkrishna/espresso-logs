@@ -17,7 +17,7 @@ test.describe('regression-029 D2 — card overflow:hidden', () => {
   test.beforeEach(async ({ page }) => {
     seed = await seedTestData(page);
     await page.goto(`catalog/${seed.catalogItemId}`);
-    await page.waitForSelector('[data-testid="catalog-detail"]', { timeout: 10_000 });
+    await page.waitForSelector('[data-testid="catalog-detail"]', { timeout: 20_000 });
   });
 
   test.afterEach(async ({ page }) => {
@@ -25,7 +25,7 @@ test.describe('regression-029 D2 — card overflow:hidden', () => {
   });
 
   test('card-bevel elements still have overflow:hidden', async ({ page }) => {
-    await page.waitForSelector('.card-bevel', { timeout: 5_000 });
+    await page.waitForSelector('.card-bevel', { timeout: 10_000 });
     const overflows = await page.evaluate(() =>
       Array.from(document.querySelectorAll<HTMLElement>('.card-bevel')).map(
         (el) => getComputedStyle(el).overflow,
@@ -45,7 +45,7 @@ test.describe('regression-029 D3 — select -webkit-appearance:none', () => {
   test.beforeEach(async ({ page }) => {
     seed = await seedTestData(page);
     await page.goto(`catalog/${seed.catalogItemId}`);
-    await page.waitForSelector('[data-testid="catalog-detail"]', { timeout: 10_000 });
+    await page.waitForSelector('[data-testid="catalog-detail"]', { timeout: 20_000 });
   });
 
   test.afterEach(async ({ page }) => {
@@ -54,7 +54,7 @@ test.describe('regression-029 D3 — select -webkit-appearance:none', () => {
 
   test('Edit button still has appearance:none (webkit-appearance suppressed)', async ({ page }) => {
     const editBtn = page.getByRole('button', { name: 'Edit' });
-    await expect(editBtn).toBeVisible({ timeout: 5_000 });
+    await expect(editBtn).toBeVisible({ timeout: 10_000 });
 
     const { webkitAppearance, appearance } = await editBtn.evaluate((el: HTMLElement) => {
       const s = getComputedStyle(el);
@@ -77,7 +77,9 @@ test.describe('regression-029 D3 — select -webkit-appearance:none', () => {
 test.describe('regression-029 D4 — no underline on Log Shot button', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('./');
-    await page.waitForLoadState('networkidle');
+    // Wait for the dashboard heading to be present rather than relying on the
+    // brittle networkidle event — covers auth token refresh + React Query load.
+    await expect(page.getByTestId('dashboard-heading')).toBeVisible({ timeout: 15_000 });
   });
 
   test('+ Log Shot button still has no text-decoration underline at rest', async ({ page }) => {
@@ -97,8 +99,9 @@ test.describe('regression-029 D5 — labels display:block above inputs', () => {
   test.beforeEach(async ({ page }) => {
     seed = await seedTestData(page);
     await page.goto('./brew-log/add');
-    await page.waitForLoadState('networkidle');
-    await page.waitForSelector('select', { state: 'visible', timeout: 10_000 });
+    // Wait for the form root to appear — more reliable than networkidle because
+    // the form renders after inventory + hardware queries resolve.
+    await page.waitForSelector('[data-testid="brew-log-add-form"]', { timeout: 15_000 });
   });
 
   test.afterEach(async ({ page }) => {

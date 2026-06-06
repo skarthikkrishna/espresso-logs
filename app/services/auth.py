@@ -9,14 +9,18 @@ from __future__ import annotations
 import base64
 import datetime
 import hashlib
+import logging
 import secrets
 import uuid
+from typing import Optional
 
 from fastapi import HTTPException, Response
 from jose import JWTError, jwt  # type: ignore[import-untyped]
 from passlib.context import CryptContext  # type: ignore[import-untyped]
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Password hashing context — argon2id with explicit parameters (AC-015)
@@ -36,7 +40,20 @@ pwd_context = CryptContext(
 DUMMY_HASH: str = pwd_context.hash(secrets.token_hex(16))
 
 _ALGORITHM = "HS256"
+# python-jose 3.5.0 uses require_<claim> keys (not options={"require": [...]}).
+_REQUIRE_CLAIMS = {"require_sub": True, "require_iat": True, "require_exp": True}
 
+# ---------------------------------------------------------------------------
+# JWT rotation window (ADR-036-03)
+# ---------------------------------------------------------------------------
+
+# Recorded at module load when jwt_secret_previous is configured.  After 15 minutes of
+# runtime the fallback path is automatically dead — no manual cleanup required.
+_rotation_window_opened_at: Optional[datetime.datetime] = (
+    datetime.datetime.now(datetime.timezone.utc) if settings.jwt_secret_previous else None
+)
+
+_ROTATION_WINDOW = datetime.timedelta(minutes=15)
 
 # ---------------------------------------------------------------------------
 # Password helpers
@@ -85,10 +102,44 @@ def create_access_token(user_id: uuid.UUID) -> str:
 def decode_access_token(token: str) -> uuid.UUID:
     """Decode and validate a JWT access token, returning the user_id UUID.
 
+    Primary decode uses settings.jwt_secret.  On JWTError, falls back to
+    settings.jwt_secret_previous within the 15-minute rotation window (ADR-036-03).
+
     Raises HTTPException(401) on any decode error, including expired tokens.
     """
     try:
-        payload = jwt.decode(token, settings.jwt_secret, algorithms=[_ALGORITHM])
+        payload = jwt.decode(
+            token,
+            settings.jwt_secret,
+            algorithms=[_ALGORITHM],
+            options=_REQUIRE_CLAIMS,
+        )
+    except JWTError as primary_exc:
+        # Fallback: attempt previous key only within the bounded rotation window.
+        if _rotation_window_opened_at is not None and settings.jwt_secret_previous:
+            elapsed = datetime.datetime.now(datetime.timezone.utc) - _rotation_window_opened_at
+            if elapsed <= _ROTATION_WINDOW:
+                try:
+                    payload = jwt.decode(
+                        token,
+                        settings.jwt_secret_previous,
+                        algorithms=[_ALGORITHM],
+                        options=_REQUIRE_CLAIMS,
+                    )
+                    logger.debug("Token validated via previous key (rotation window active)")
+                except JWTError:
+                    raise HTTPException(
+                        status_code=401, detail="Invalid or expired token"
+                    ) from primary_exc
+            else:
+                # Window expired — previous key is permanently dead for this runtime.
+                raise HTTPException(
+                    status_code=401, detail="Invalid or expired token"
+                ) from primary_exc
+        else:
+            raise HTTPException(status_code=401, detail="Invalid or expired token") from primary_exc
+
+    try:
         sub: str | None = payload.get("sub")
         if not sub:
             raise JWTError("missing sub claim")

@@ -169,6 +169,58 @@ def test_brew_log_from_sheets_dict_happy_path() -> None:
     assert result["brewed_at"].tzinfo is not None
 
 
+@pytest.mark.parametrize(
+    "storage_method",
+    [
+        "Frozen — Glass Tube",
+        "Frozen — Plastic Tube",
+        "Frozen — Bag",
+        "Ambient — Glass Tube",
+        "Ambient — Plastic Tube",
+        "Ambient — Bag",
+        "Ambient — Airtight Container",
+    ],
+)
+def test_canonical_storage_methods_are_accepted(storage_method: str) -> None:
+    inventory_row: dict[str, Any] = {
+        "Bag_ID": "BAG-STORAGE",
+        "Beans": "Storage Beans",
+        "RoastDate": "2024-01-15",
+        "RoastLevel": "Medium",
+        "Display_Name": "Storage Test",
+        "Catalog_ID": "",
+        "Status": "Active",
+        "Storage_Method": storage_method,
+    }
+    brew_row: dict[str, Any] = {
+        "Shot_ID": "SHOT-STORAGE",
+        "Date": "2024-01-21",
+        "Bag_ID": "BAG-STORAGE",
+        "Machine_ID": "M01",
+        "Grinder_ID": "G01",
+        "Basket_ID": "B01",
+        "Dose_In_g": "18",
+        "Yield_Out_g": "36",
+        "Time_Sec": "30",
+        "Grind_Setting": "7",
+        "Shot_Eligibility": "Good Espresso",
+        "Taste_Summary": "",
+        "User_Notes": "",
+        "AI_Feedback": "",
+        "Storage_Method": storage_method,
+    }
+
+    inventory_result = from_sheets_dict_inventory(
+        inventory_row,
+        household_id=HH,
+        catalog_id_to_pg_uuid={},
+    )
+    brew_result = from_sheets_dict_brew_log(brew_row, household_id=HH)
+
+    assert inventory_result["storage_method"] == storage_method
+    assert brew_result["storage_method"] == storage_method
+
+
 # ---------------------------------------------------------------------------
 # TC-2: Invalid enum raises ValueError
 # ---------------------------------------------------------------------------

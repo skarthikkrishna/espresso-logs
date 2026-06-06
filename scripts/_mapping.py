@@ -36,8 +36,12 @@ STORAGE_METHOD_ENUM: frozenset[str] = frozenset(
         # Extended values found in production Sheets data
         "Frozen — Bag",
         "Frozen — Glass Tube",
+        "Frozen — Plastic Tube",
+        "Ambient — Glass Tube",
+        "Ambient — Plastic Tube",
         "Frozen — Knodos Glass Tube",
         "Ambient — Bag",
+        "Ambient — Airtight Container",
     }
 )
 HARDWARE_CATEGORY_ENUM: frozenset[str] = frozenset({"Machine", "Grinder", "Basket", "Storage"})

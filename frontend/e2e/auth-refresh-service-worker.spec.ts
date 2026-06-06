@@ -2,6 +2,10 @@ import { expect, test, type Page, type Route } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
+const BASE = process.env.PW_BASE_URL
+  ? new URL(process.env.PW_BASE_URL).origin
+  : 'http://localhost:8000';
+
 const serviceWorkerPath = fileURLToPath(new URL('../../app/static/sw.js', import.meta.url));
 
 const authUser = {
@@ -56,6 +60,17 @@ async function waitForServiceWorkerController(page: Page): Promise<void> {
 }
 
 test.describe('spec-035 service worker auth refresh regression', () => {
+  // Reset /auth/refresh rate-limit counters before this spec batch runs.
+  // Defense-in-depth for any real requests that slip through SW/route-mock
+  // timing windows.
+  test.beforeAll(async ({ request }) => {
+    try {
+      await request.post(`${BASE}/api/e2e/reset-limiter`);
+    } catch {
+      // Soft guard: backend may not be started with E2E_AUTH_BYPASS=1.
+    }
+  });
+
   test('T-13: service worker auth pass-through does not side-fetch /auth/refresh', async () => {
     const source = await readFile(serviceWorkerPath, 'utf8');
 

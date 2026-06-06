@@ -65,6 +65,9 @@ class Settings(BaseSettings):
     # JWT_SECRET must be at least 32 characters (256-bit key for HS256).
     # Source from APP_SECRETS blob in production — never set as a standalone Cloud Run env var.
     jwt_secret: str = ""
+    # JWT_SECRET_PREVIOUS: set during rotation window only (≤15 minutes).
+    # Must also be ≥32 characters when non-empty.
+    jwt_secret_previous: Optional[str] = None
     access_token_expire_seconds: int = 900
 
     # Phase 7 — AI inference
@@ -100,6 +103,14 @@ class Settings(BaseSettings):
             raise ValueError("JWT_SECRET must be at least 32 characters")
         return v
 
+    @field_validator("jwt_secret_previous")
+    @classmethod
+    def _validate_jwt_secret_previous(cls, v: Optional[str]) -> Optional[str]:
+        """Enforce minimum 32-character previous JWT secret when non-empty."""
+        if v and len(v) < 32:
+            raise ValueError("JWT_SECRET_PREVIOUS must be at least 32 characters")
+        return v
+
     @field_validator("allowlist_emails", mode="after")
     @classmethod
     def _warn_allowlist_emails_deprecated(cls, v: Optional[str]) -> Optional[str]:
@@ -133,6 +144,8 @@ class Settings(BaseSettings):
             raise ValueError(
                 f"APP_SECRETS must be a valid JSON object string. Failed to parse: {exc}"
             ) from exc
+        if "JWT_SECRET" not in parsed:
+            logger.warning("APP_SECRETS blob is set but does not contain JWT_SECRET key")
         for key, value in parsed.items():
             field_name = key.lower()
             existing = data.get(field_name)
@@ -185,6 +198,7 @@ class Settings(BaseSettings):
             required: dict[str, str | None] = {
                 "GOOGLE_OAUTH_CLIENT_ID": self.google_oauth_client_id,
                 "GOOGLE_OAUTH_CLIENT_SECRET": self.google_oauth_client_secret,
+                "JWT_SECRET": self.jwt_secret,
             }
             # ALLOWLIST_EMAILS is only required in Sheets-backed mode (use_postgres=False).
             # When use_postgres=True (M4+), household invitations replace the allowlist.
@@ -195,6 +209,7 @@ class Settings(BaseSettings):
                 raise ValueError(
                     f"Missing required environment variables for production: {', '.join(missing)}"
                 )
+            logger.info("JWT_SECRET validated: %d characters", len(self.jwt_secret))
         elif self.session_secret and len(self.session_secret) < 32:
             raise ValueError("SESSION_SECRET must be at least 32 characters when set.")
         return self
