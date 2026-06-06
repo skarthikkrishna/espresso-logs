@@ -1067,3 +1067,522 @@ For this narrow security remediation, a full `quinn-gate.md` artifact is **waive
 routing agent's explicit statement here. The routing agent (Alex) confirms this is a
 documentation-equivalent / scanner-suppression change with no logic delta that would require
 a pre-implementation design review.
+
+---
+
+## Scribe merge: 2026-06-06T15:45:50.896-07:00
+
+### Decision drop: `2026-06-06T154646-0700-branch-discovery-routing.md`
+
+# Routing decision: branch discovery
+
+- Operator request: "what branch are we currently on espresso logs and coffee tracker?"
+- Classification: DIRECT_PERMITTED
+- Rationale: This is a read-only status request limited to discovering the current Git branch in the Espresso Logs repository and sibling/local Coffee Tracker repository. It does not change product behavior, code, configuration, CI, documentation, or governance artifacts beyond this required routing drop.
+- Scope: Read-only branch discovery only; no code changes, no SpecKit, no push, no PR.
+
+---
+
+### Decision drop: `20260605-tariq-route-prod-oauth-rebase.md`
+
+# Routing Decision: fix/prod-oauth-callback rebase + gitleaks remediation
+
+**Status:** `DIRECT_PERMITTED`
+
+**Date:** 2026-06-05 21:15 UTC-7  
+**Ref:** espresso-logs d7c5c3d6  
+**Scope:** Bounded, documentation + dependency integration  
+
+---
+
+## Decision Rationale
+
+**Work is self-contained and mechanical:**
+1. **Rebase** `fix/prod-oauth-callback` onto `origin/main` to include 3 merged Dependabot PRs (#90, #91, #92) — dependency updates only, no feature changes.
+2. **Fix gitleaks false positives** in `docs/ROTATION_PLAYBOOK.md` (lines 67, 79, 186) — documented placeholder secrets, safe to remediate via documentation edits.
+3. **Run existing CI checks** (ruff check/format, mypy --strict, pytest, frontend tests, Playwright).
+
+**Routing criteria met for DIRECT_PERMITTED:**
+- ✅ No feature scope, no architecture decisions, no app code changes in this step.
+- ✅ Bounded work: documented branch, specific remediation targets, known CI suite.
+- ✅ All verification is against existing tooling — no new gates or SpecKit phases required.
+- ✅ User has explicitly authorized proceeding: "Go ahead and do it."
+
+---
+
+## Scope Definition (Coordinator → Implementation)
+
+**Do:**
+- Rebase `fix/prod-oauth-callback` with `origin/main` to resolve behind/ahead status.
+- Edit `docs/ROTATION_PLAYBOOK.md` lines 67, 79, 186: replace placeholder secret examples with safe, non-rotatable equivalents (e.g., `example-`, `demo-`, or documented patterns per security review).
+- Run all required CI checks:
+  - `ruff check app/ tests/`
+  - `ruff format --check app/ tests/`
+  - `mypy app/ --strict`
+  - `SPREADSHEET_ID=dummy pytest tests/ -v --ignore=tests/e2e/`
+  - Frontend and Playwright tests (scope includes frontend + e2e updates).
+- **Do NOT push until all checks pass AND operator explicitly approves.**
+
+**Don't:**
+- Change app code or architecture.
+- Push without operator consent.
+- Modify unrelated files.
+
+---
+
+## Next Coordinator Action
+
+Proceed to rebase, gitleaks remediation, and CI validation. 
+
+**Return status:** `DIRECT_PERMITTED`  
+**Checkpoint:** All four local CI + frontend/Playwright must pass before requesting push approval.
+
+---
+
+### Decision drop: `20260605T055919Z-read-only-main-comparison.md`
+
+# Routing decision: spec 036 squad-state cleanup
+
+status: DIRECT_PERMITTED
+agent: Tariq
+scope: process / sequencing / branch state / repo readiness
+recorded_at: 2026-06-05T05:59:19Z
+
+## Operator request
+Carry the stale PR #80/spec-034 state cleanup forward as part of the 036 changes and make sure scribe/decision logs have enough recorded state that no stale gate blocks routing.
+
+## Classification
+Direct implementation is permitted for squad-state cleanup only. The authorized scope is limited to updating and committing decision-drop files under `.squad/decisions/inbox/`.
+
+No application code, tests, migrations, runtime configuration, or infrastructure files are authorized for edit, staging, or commit by this routing action.
+
+## Observed branch state before this decision-drop commit
+- Current branch: `fix/prod-oauth-callback`
+- Branch status line: `## fix/prod-oauth-callback...origin/main`
+- HEAD: `b4870cf448a3`
+- origin/main: `b4870cf448a3`
+- Routing observation: branch HEAD matched `origin/main` before this squad-state decision commit.
+
+## Operator-cleared stale state
+The PR #80/spec-034 CI/comment blocker is stale and cleared by operator assertion for this routing decision. It must not block carrying the local JWT/config cleanup work into spec 036.
+
+## Local worktree state intentionally carried into spec 036
+The following local uncommitted application/test changes are intentionally carried forward into spec 036 and should not block routing or decision-drop recording:
+
+- `app/config.py`
+- `scripts/_mapping.py`
+- `tests/scripts/test_migrate.py`
+- `tests/test_config_gcp.py`
+
+These files must remain unstaged and uncommitted by this squad-state cleanup.
+
+## Required gates for future implementation
+This decision does not authorize spec 036 implementation. Before any code changes are made or committed for spec 036, the coordinator must verify the normal spec 036 artifacts and gates on disk, including the required Quinn gate where applicable, and must obtain explicit operator confirmation of implementation scope.
+
+## Decision
+status: DIRECT_PERMITTED
+rationale: This is a self-contained repo-readiness and state-recording task. Isolated staging and committing of decision-drop files is safe despite dirty application-code files because those files are intentionally excluded from the index and carried forward into spec 036.
+explicit_scope_confirmation: Only `.squad/decisions/inbox/` decision-drop files may be committed. Application-code and test changes remain untouched.
+
+---
+
+### Decision drop: `20260605T061418Z-spec036-scribe-cleanup-routing.md`
+
+# Routing decision: spec 036 Scribe-managed cleanup
+
+status: DIRECT_PERMITTED
+agent: Tariq
+scope: process / governance / Scribe-managed decision and session-log cleanup
+recorded_at: 2026-06-05T06:14:18Z
+branch: fix/prod-oauth-callback
+head_before_decision_commit: bdcefc9
+
+## Operator request
+Carry the stale PR #80/spec-034 state cleanup forward as part of the 036 changes, and make sure Scribe and logs are updated so that no stale gate blocks the work.
+
+## Authorized cleanup after routing
+Direct implementation is permitted for Scribe-managed governance cleanup only:
+
+1. Merge all `.squad/decisions/inbox/` decision drop files into `.squad/decisions.md` using existing repo conventions.
+2. Clear/delete merged inbox files.
+3. Write `.squad/log/{timestamp}-spec036-state-cleanup.md` documenting:
+   - PR #80/spec-034 stale blocker cleared by operator assertion.
+   - Branch/merge state checked: HEAD matched `origin/main` before the prior squad decision commit.
+   - Local app/test edits are intentionally carried forward into spec 036 and must remain unstaged/uncommitted until spec 036 implementation.
+   - Spec 036 still requires normal artifact/gate verification and operator scope confirmation before implementation starts.
+4. Commit only Scribe-managed `.squad` files.
+5. Do not stage or commit application, infrastructure, test, or docs files outside the Scribe-managed `.squad` cleanup set.
+6. Do not push.
+
+## Classification
+status: DIRECT_PERMITTED
+
+rationale: The requested follow-up is a self-contained process/governance cleanup that updates Squad decision and session-state records only. It does not authorize or require changes to application code, infrastructure, tests, or product behavior. Because the authorized cleanup is limited to Scribe-managed `.squad` files, a full SpecKit cycle is not required.
+
+explicit_scope_confirmation: The implementation scope is limited to Scribe cleanup of `.squad/decisions.md`, merged inbox files under `.squad/decisions/inbox/`, and `.squad/log/{timestamp}-spec036-state-cleanup.md`. Existing local edits in `app/config.py`, `scripts/_mapping.py`, `tests/scripts/test_migrate.py`, and `tests/test_config_gcp.py` must remain unstaged and uncommitted for spec 036.
+
+quinn_gate: WAIVED
+quinn_gate_rationale: Quinn gate is waived for this routing decision because the authorized cleanup is governance/session-record maintenance only and touches no application or infrastructure code.
+
+## State constraints carried forward
+- PR #80/spec-034 stale blocker is cleared by operator assertion for this cleanup path.
+- Previous Tariq decision drop `b36ed48` recorded that branch HEAD matched `origin/main` before the squad decision commit.
+- Current uncommitted application/test edits are intentional spec 036 carry-forward state and must not be staged by Scribe cleanup.
+- Spec 036 implementation remains blocked until normal artifact/gate verification and explicit operator scope confirmation occur.
+
+## Decision
+status: DIRECT_PERMITTED
+rationale: Scribe-only governance/logging cleanup is bounded, non-runtime, and safe to perform directly with strict staging controls.
+explicit_scope_confirmation: Only Scribe-managed `.squad` cleanup files may be edited/staged/committed; no app, infra, test, or docs files outside that scope may be touched.
+
+---
+
+### Decision drop: `20260605T062018Z-scribe-only-governance-cleanup-routing.md`
+
+# Routing decision: Scribe-only governance/logging cleanup
+
+status: DIRECT_PERMITTED
+agent: Tariq
+scope: process / governance / Scribe-managed decision and session-log cleanup
+recorded_at: 2026-06-05T06:20:18Z
+branch: fix/prod-oauth-callback
+head_before_decision_commit: 9f4c2b2
+
+## Operator request
+Route a Scribe-only governance/logging cleanup. If later implemented, the cleanup must merge every current `.squad/decisions/inbox/` file into `.squad/decisions.md` using existing conventions, delete merged inbox files, create `.squad/log/{timestamp}-spec036-state-cleanup.md` documenting the exact requested state points, then stage and commit only Scribe-managed `.squad` files.
+
+## Classification
+status: DIRECT_PERMITTED
+
+rationale: The requested work is self-contained governance/session-record maintenance. It changes only Scribe-managed `.squad` decision and log artifacts, does not alter product behavior, runtime configuration, CI, infrastructure, application code, or tests, and therefore does not require a SpecKit cycle.
+
+explicit_scope_confirmation: Later implementation is limited to `.squad/decisions.md`, merged/deleted files currently under `.squad/decisions/inbox/`, and a new `.squad/log/{timestamp}-spec036-state-cleanup.md`. Existing local uncommitted edits in `app/config.py`, `scripts/_mapping.py`, `tests/scripts/test_migrate.py`, and `tests/test_config_gcp.py` must remain unstaged and uncommitted. No application, test, infrastructure, or non-Scribe files are authorized.
+
+quinn_gate: WAIVED
+quinn_gate_rationale: Quinn gate is waived because this is governance/logging cleanup only and explicitly touches no application or infrastructure code. The waiver does not authorize any runtime, test, CI, or infra edits.
+
+## Required staging controls
+- Stage and commit only the newly created routing decision drop for this routing action.
+- Do not stage or commit `.squad/decisions.md`, `.squad/log/*`, application files, test files, infrastructure files, or pre-existing inbox files as part of this routing commit.
+- Do not push.
+
+## Decision
+status: DIRECT_PERMITTED
+rationale: Scribe-only governance/logging cleanup is bounded, non-runtime, and safe to perform directly with strict staging controls.
+explicit_scope_confirmation: Only Scribe-managed `.squad` cleanup files may be edited/staged/committed during later cleanup; this routing commit stages only this new decision drop.
+
+---
+
+### Decision drop: `20260605T212606Z-tariq-blocker-fix-routing.md`
+
+# Routing Decision: Post-Rebase Blocker Fixes
+**Timestamp:** 2026-06-05T21:26:06Z  
+**Routed by:** Tariq (TPM / CI workflow owner)  
+**Status:** DIRECT_PERMITTED  
+
+---
+
+## Analysis
+
+### Blocker 1: pip-audit failure
+- **aiohttp 3.13.5** → CVE-2026-34993, CVE-2026-47265 | Fix: ≥ 3.14.0
+- **pip 26.1.1** → PYSEC-2026-196 | Fix: ≥ 26.1.2
+- **Nature:** Dependency version pins in pyproject.toml / uv.lock
+- **Scope:** Mechanical, bounded update
+- **Risk:** Low; versions are upstream-maintained; CI validates on update
+
+### Blocker 2: gitleaks findings
+- **Location:** `docs/ROTATION_PLAYBOOK.md` (6 findings, rule: generic-api-key)
+- **Historical commits:** 7de8a9ca, 28a1c5ce (3 findings each)
+- **Nature:** Documentation examples (JWT_SECRET rotation playbook) flagged as API keys
+- **Assessment:** Guidance indicates these are documentation examples, not live secrets
+- **Scope:** Safe allowlist or replace with template placeholders (e.g., `[SECRET]`, `<key>`)
+- **Risk:** Medium; must verify none are actual secrets before committing
+
+---
+
+## Routing Decision
+
+**status: DIRECT_PERMITTED**
+
+### Rationale
+- Both blockers are CI/operational maintenance — standard TPM scope
+- No architectural decisions, no feature/product scope, no multi-repo coordination required
+- Fixes are mechanical and well-scoped:
+  - Dependency updates: standard `uv lock` workflow
+  - Gitleaks: safe replacement + allowlist strategy
+- Quinn gate not required (no application logic changes, no test coverage implications beyond existing CI)
+
+### Exact Fix Scope
+
+#### Fix 1: Dependency Updates (Owner: Copilot coordinator)
+1. Update `aiohttp` to ≥ 3.14.0 in `pyproject.toml`
+2. Update `pip` to ≥ 26.1.2 in `pyproject.toml` (or wherever pinned)
+3. Run `uv lock --upgrade` to regenerate `uv.lock`
+4. Verify: `uv run pip-audit --ignore-vuln PYSEC-2025-185` passes
+5. Commit: "fix(deps): resolve CVE-2026-34993, CVE-2026-47265 (aiohttp), PYSEC-2026-196 (pip)"
+
+#### Fix 2: Gitleaks Findings (Owner: Copilot coordinator)
+1. **Review** `docs/ROTATION_PLAYBOOK.md` for actual secret exposure — redact any live values immediately if found
+2. **Standardize** example placeholders to machine-readable format (e.g., `[SECRET]`, `<key>`, `YOUR_SECRET_HERE`)
+3. **Update** `.gitleaksignore` to allowlist the known documentation pattern (commit + line hash) if replacement alone doesn't resolve
+4. **Verify:** `uv run gitleaks git --redact --exit-code 1` passes
+5. **Commit** both doc and `.gitleaksignore` changes: "fix(security): sanitize gitleaks findings in playbook docs + allowlist documentation pattern"
+
+---
+
+## Next Coordinator Action
+- Verify current pin versions in `pyproject.toml`
+- Apply both fixes in sequence (dependencies first, then gitleaks)
+- Run all four local CI checks after each fix
+- All checks must pass before requesting push approval from operator
+- Do not push without explicit operator affirmative
+
+---
+
+## Assumptions
+- No live secrets are exposed in `docs/ROTATION_PLAYBOOK.md` (guidance indicates examples only)
+- Upstream `aiohttp` ≥ 3.14.0 and `pip` ≥ 26.1.2 are stable and tested
+- `.gitleaksignore` allowlist strategy is acceptable for documentation patterns
+
+---
+
+### Decision drop: `20260605T213907Z-tariq-pr103-routing.md`
+
+# Tariq: PR #103 Blocker-Fix Routing Decision
+
+**Status:** `DIRECT_PERMITTED`  
+**Timestamp:** 2026-06-05T21:39:07Z  
+**Domain:** CI/CD pipeline remediation (pip-audit, gitleaks checks)  
+**Branch:** `fix/prod-oauth-callback`
+
+---
+
+## Scope Confirmation
+
+Blocker-fix commit `64e1bc4` is **pure operational remediation**:
+
+### Changes
+- `.gitleaksignore`: 6 fingerprints added (with rationale comment); no history rewritten
+- `docs/ROTATION_PLAYBOOK.md`: Example hex values replaced with `<YOUR_NEW_64_CHAR_HEX_SECRET>` placeholders (4 replacements)
+- `uv.lock`: Dependency bump (aiohttp 3.13.5→3.14.0, pip 26.1.1→26.1.2)
+
+### Verification
+✅ All four local CI checks pass (verified in commit message):
+- `uv run ruff check app/ tests/` ✓
+- `uv run ruff format --check app/ tests/` ✓
+- `uv run mypy app/ --strict` ✓
+- `SPREADSHEET_ID=dummy uv run pytest tests/ -q --ignore=tests/e2e/` → 643 passed ✓
+
+✅ Blocker 1 (pip-audit): `uv run pip-audit --ignore-vuln PYSEC-2025-185` → no known vulnerabilities  
+✅ Blocker 2 (gitleaks): `gitleaks git --redact --exit-code 1` → no leaks found
+
+### Rationale
+
+1. **No architectural or functional changes:** Dependency updates + docs fixes only
+2. **Contained scope:** Three files modified; zero app code changes
+3. **CI verification complete:** All checks run and pass locally
+4. **No SpecKit cycle needed:** Operational remediation, not feature work or architectural decision
+5. **Push sequence clear:** Coordinator will verify GitHub Actions pipeline passes before requesting final operator confirmation
+
+---
+
+## Next Coordinator Action
+
+1. Verify `.squad/decisions/inbox/` commit appears in log
+2. Run full CI pipeline on GitHub (wait for Actions to complete)
+3. Ask operator: "All local checks pass. All four CI checks pass on GitHub. Ready to push/update PR #103?"
+4. On operator confirmation: `git push origin fix/prod-oauth-callback --force-with-lease`, then close/reopen PR to trigger Actions refresh if needed
+
+---
+
+**Routing complete.** Coordinator may proceed to Step 3 (Direct Implementation) without SpecKit.
+
+---
+
+### Decision drop: `now-2026-06-05-diagnostic-harness.md`
+
+---
+decision_id: diagnostic-harness-auth-429
+timestamp: 2026-06-05T13:01:06Z
+requestor: Karthik Krishna Subramanian
+route_by: Tariq (cross-repo governance)
+status: DIRECT_PERMITTED
+scope: Investigation + diagnostics only
+---
+
+## Decision: Diagnostic Harness for Auth 429 Investigation
+
+### Approved Scope
+- Set up logging harness in espresso-logs (application repo)
+- Enable request/response tracing in FastAPI middleware
+- Collect rate limiter state snapshots during E2E test runs
+- Organize diagnostics into annotated artifacts for review
+
+### Prohibited
+- Production code modifications
+- Real Google OAuth credentials or secrets
+- Destructive changes to test suite
+- Integration of diagnostics into main codebase (temp only)
+
+### Unknown Variables
+- Rate limiter reset behavior (timing, state cleanup)
+- Source of duplicate `/auth/refresh` without `rt` param
+- Backend log correlation with E2E failure trace
+- Whether isolated failing tests pass outside suite rate pressure
+
+### Handoff Recipients
+1. **Quinn** (initial pre-implementation gate)
+2. **Finn** (frontend test harness, E2E flow analysis)
+3. **Alex** (backend rate limiter, auth logic)
+
+### Next Decision Point
+After diagnostic collection + Quinn review: proceed to fix code OR fix tests based on root cause analysis.
+
+### Decision Authority
+Tariq (on behalf of Karthik Krishna Subramanian).  
+No Squad phase required — investigation scope is explicit and bounded.
+
+---
+
+### Decision drop: `quinn-analysis-pw-failures-20260605.md`
+
+# Quinn: Playwright Test Failure Analysis & Fix Plan
+**Date:** 2026-06-05T14:00 PDT  
+**Branch:** fix/prod-oauth-callback  
+**Requested by:** Karthik Krishna Subramanian  
+
+## Routing Decision
+**status: DIRECT_PERMITTED**
+
+This is a **diagnostic + planning-only task** within Quinn's QA domain. No code changes or implementation. Analysis of existing test artifacts and recommendations for Finn (frontend) and Alex (backend) to execute.
+
+---
+
+## Root Cause Analysis
+
+### Summary
+6 Playwright E2E tests fail in the full suite (`--retries=0`) due to **accumulated rate-limit exhaustion** of the `/auth/refresh` endpoint during the d2-tokens block, cascading 401 Unauthorized failures through subsequent specs.
+
+**Evidence:** Diagnostic harness in `tmp/auth-refresh-diagnostics-20260605T130009/` confirms:
+- **Isolated tests pass** — all failing specs pass 100% when run alone
+- **Rate limit is exhausted** — d2-tokens makes 30 page loads × 2 browsers = 60 POST /auth/refresh calls in ~1 minute, exceeding the 20/minute limit
+- **Endpoint not implemented** — `/api/e2e/reset-limiter` endpoint called in global-setup does exist and does work (Alex implemented it), but the problem is upstream
+
+### Failure Chain
+1. **d2-tokens.spec.ts** — 15 CSS token tests × 2 browsers = 30 tests
+   - Each `beforeEach`: `page.goto('./')` + `waitForLoadState('networkidle')`
+   - Each page load triggers `AuthContext.attemptRefresh()` → `POST /auth/refresh`
+   - 30 POSTs in ~60 seconds exhausts the 20/min rate limit window
+   
+2. **d3-edit-button.spec.ts** (and d3-buttons, regression-029 D5) — tests run next
+   - Their `beforeEach` also tries `POST /auth/refresh` → **429 Too Many Requests**
+   - `AuthContext.isRetryableRefreshError(429)` returns `false` → treats as non-retryable
+   - App transitions to `UNAUTHENTICATED` state
+   - All subsequent API calls return **401 Unauthorized** (no Bearer token sent)
+   - `waitForSelector('[data-testid="catalog-detail"]')` times out at 20s → **test failure**
+
+### Failed Tests
+Per diagnostic summary (lines 49–62 of summary.md):
+| Test | Error | Suite |
+|------|-------|-------|
+| [webkit] D3-buttons › box-shadow consistency | TimeoutError waitForSelector 20000ms | d3-buttons |
+| [chromium] D3 Edit › border color alpha | TimeoutError waitForSelector 20000ms | d3-edit-button |
+| [chromium] D3 Edit › appearance suppressed | TimeoutError waitForSelector 20000ms | d3-edit-button |
+| [webkit] regression-029 D5 › Bag label above select | TimeoutError waitForSelector 15000ms | regression-029 |
+
+**Note:** d5-modals and d6-cards specs passed in the full suite (lines 88–96 of full-suite.log) — they do not navigate to catalog pages with seed data, so they don't get caught by the rate-limit cascading failures.
+
+---
+
+## Recommended Fixes
+
+### Fix #1: Reduce d2-tokens Page Load Intensity [Finn - Frontend]
+**Severity:** BLOCKING  
+**Rationale:** d2-tokens' 30 sequential full page loads (each with AuthContext init) is the root cause.
+
+**Option A (Preferred):** Refactor d2-tokens to verify CSS tokens without a real app page load
+- CSS custom properties are static content — can be inspected on any DOM element
+- Use a minimal test harness or a single navigation to load the app once, then verify tokens in all 15 tests
+- Change `beforeEach` to `beforeAll` + shared page state
+
+**Option B (Fallback):** Use a single `beforeAll` navigation instead of `beforeEach`
+- Keeps the real auth page load but reduces 30 navigations to 1 per browser
+- Reduces `/auth/refresh` POSTs from 60 to 4 (initial global-setup + 1 per browser)
+- Less comprehensive but simpler
+
+### Fix #2: Improve Rate-Limiter Reset Mechanism [Alex - Backend]
+**Severity:** BLOCKING (for d2-token fix)  
+**Rationale:** Even with Fix #1, a safety mechanism prevents future flakiness.
+
+**Current state:**
+- `/api/e2e/reset-limiter` endpoint exists and is called in global-setup.ts
+- But it's called AFTER the initial E2E session is created — no rate-limit buffer for d2-tokens
+
+**Recommended:**
+- Verify the endpoint is being called correctly and that `limiter._storage.reset()` is working
+- Consider moving the call to after all initial auth setup + data seeding, right before test suite starts
+- OR add a secondary reset call in the `beforeAll` of d2-tokens (if Fix #1 Option A is chosen)
+
+### Fix #3: Investigate React StrictMode Double-Invoke [Finn - Frontend]
+**Severity:** MEDIUM (secondary issue, does not cause failures directly)  
+**Evidence:** Many API endpoints appear twice in backend logs (200 then 401) even when refresh succeeds
+
+**Cause:** Likely React StrictMode double-invoke in `AuthContext` or `CatalogDetail` `useEffect` without proper cleanup guards
+
+**Recommended:**
+- Use `useRef` guard or `AbortController` to prevent double-invoke
+- Not blocking but improves test reliability and reduces noise in backend logs
+
+### Fix #4: Verify GET /auth/refresh Source [Finn/Alex - Frontend/Backend]
+**Severity:** LOW (secondary issue, does not affect core functionality)  
+**Evidence:** 56 GET /auth/refresh requests appear in backend logs, always after POST on same connection
+
+**Rationale:** There is no registered GET route for `/auth/refresh` — the SPA catch-all serves `index.html`. Source is likely service worker network-first handler or browser prefetch.
+
+**Recommended:**
+- Trace the exact source (Playwright HAR dump, service worker log)
+- If from service worker, add `/auth/refresh` to the no-cache list to prevent caching HTML as auth response
+
+---
+
+## Implementation Sequence
+
+1. **[Immediate] Alex:** Verify `/api/e2e/reset-limiter` is working correctly in global-setup and that `limiter._storage.reset()` is actually clearing the storage
+2. **[Blocking] Finn:** Implement Fix #1 Option A (preferred) — refactor d2-tokens to reduce page loads from 30 to 1–2 per browser
+3. **[Secondary] Finn:** Implement Fix #3 — add useRef guard or AbortController to prevent StrictMode double-invoke
+4. **[Optional] Finn/Alex:** Implement Fix #4 — verify and fix GET /auth/refresh source
+
+---
+
+## Verification Steps
+
+After fixes are implemented:
+1. Run `playwright test e2e/d2-tokens.spec.ts --retries=0` (isolated) — should pass
+2. Run `playwright test e2e/d3-edit-button.spec.ts --retries=0` (isolated) — should pass  
+3. Run `playwright test --retries=0` (full suite) — all 98 tests should pass
+4. If any timeouts occur, check backend logs for 429 or 401 patterns
+
+---
+
+## Files Affected
+
+### Frontend
+- `frontend/e2e/d2-tokens.spec.ts` — Test structure (beforeEach → beforeAll + shared navigation)
+- `frontend/src/components/AuthContext.tsx` — useEffect guards (StrictMode double-invoke)
+- `frontend/src/service-worker.ts` — Cache rules for /auth/refresh
+
+### Backend
+- `app/routers/api_e2e.py` — Verify `/api/e2e/reset-limiter` and timing
+- `app/main.py` — Confirm slowapi limiter configuration
+
+### Test Config
+- `frontend/e2e/global-setup.ts` — Rate-limiter reset timing
+
+---
+
+**Quinn (QA Agent)**  
+Decision drop generated 2026-06-05T14:00 PDT
+
+---
+
