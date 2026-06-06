@@ -238,7 +238,7 @@ The application explicitly validates that JWT_SECRET is sourced from the blob (n
 
 ### Why 256-Bit (32-byte) Minimum
 
-- **RFC 7518 guidance:** HS256 keys should be at least as large as the hash output (256 bits for SHA-256).
+- **RFC 7518 guidance:** HS256 keys MUST be at least as large as the hash output (256 bits for SHA-256).
 - **Brute-force resistance:** A 256-bit key provides 2^256 possible values, making exhaustive search computationally infeasible.
 - **Prevents weak defaults:** Enforcing a minimum at startup prevents accidental use of short or hardcoded secrets in production.
 
