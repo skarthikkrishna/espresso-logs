@@ -238,7 +238,7 @@ The application explicitly validates that JWT_SECRET is sourced from the blob (n
 
 ### Why 256-Bit (32-byte) Minimum
 
-- **NIST recommendations:** HS256 with a 256-bit key meets NIST SP 800-38D guidance for authenticated encryption with associated data (AEAD).
+- **RFC 7518 guidance:** HS256 keys should be at least as large as the hash output (256 bits for SHA-256).
 - **Brute-force resistance:** A 256-bit key provides 2^256 possible values, making exhaustive search computationally infeasible.
 - **Prevents weak defaults:** Enforcing a minimum at startup prevents accidental use of short or hardcoded secrets in production.
 
@@ -273,7 +273,7 @@ A startup warning log is emitted **only when** the APP_SECRETS blob is present b
 WARNING: APP_SECRETS blob is set but does not contain JWT_SECRET key
 ```
 
-This guards against configuration errors where the blob is populated but incomplete. The warning is **not** emitted in local development (where APP_SECRETS may be absent or minimal) — only in production where the blob is expected to be complete.
+This guards against configuration errors where the blob is populated but incomplete. The warning is emitted in any environment where `APP_SECRETS` is set but missing `JWT_SECRET`, including local development or production.
 
 ---
 
@@ -346,7 +346,7 @@ For questions or issues with JWT_SECRET rotation, contact:
 
 ## References
 
-- **Spec-036:** JWT Security Remediation — [specs/036-jwt-security-remediation/spec.md](../specs/036-jwt-security-remediation/spec.md)
+- **Spec-036:** JWT Security Remediation
 - **Plan v1.1:** ADR-036-03 (Runtime TTL) and ADR-036-04 (Startup Integrity Check)
 - **GCP Secret Manager:** https://cloud.google.com/secret-manager/docs
 - **Cloud Run Deployments:** https://cloud.google.com/run/docs/deploying
