@@ -1633,3 +1633,21 @@ Decision drop generated 2026-06-05T14:00 PDT
 - **Out of Scope:** Charter changes; GitHub Actions; push without operator confirmation; touching `fix/prod-shot-save-detail` (active PR #105); any implementation of proposal items.
 - **No-Push Constraint:** Binding on coordinator and all implementation agents. No push without all four CI checks + explicit operator affirmative.
 - **Implementation Gate:** Any proposal item that touches code/infra requires a new SpecKit cycle (specify → clarify → plan → Aria gate → tasks → Quinn gate → implement). Gate is not waived by this drop.
+
+---
+
+## 2026-06-06: Cross-Repo Squad Governance — Spec-038 Plan Phase Routing
+
+### Decision: Tariq routing — SPECKIT_REQUIRED (plan phase advance, Spec-038)
+- **Agent:** Tariq
+- **Date:** 2026-06-06T22:23:39-07:00
+- **Status:** COMMITTED
+- **Classification:** SPECKIT_REQUIRED
+- **drop_id:** 2026-06-06-spec-038-plan-phase-routing
+- **Operator Request:** Advance Spec-038 (`Cross-Repo Squad Governance, Handoff, Privacy Gates, and Artifact Hygiene`) from `clarified` state into the plan phase.
+- **Rationale:** Spec-038 completed specify → clarify (commits `e5ebd8d` + `f993f85`); frontmatter confirms `status: clarified`; no `[NEEDS CLARIFICATION]` markers remain. Non-trivial cross-repo governance scope; direct implementation not permitted.
+- **Scope Authorized:** Plan phase only — Maya produces `plan.md` and `compliance.md` in the Coffee Tracker worktree (`spec/038-cross-repo-squad-governance`).
+- **Not Authorized:** tasks generation, implementation fan-out, Aria gate, Quinn gate, PR creation, or any `git push`.
+- **Worktree:** `/Users/krishna/Documents/Development/GitHub/coffee_tracker-spec-038`, branch `spec/038-cross-repo-squad-governance`.
+- **Constraint:** Primary Coffee Tracker worktree on stale incident branch — do not touch. No pushes without operator confirmation + all four CI checks.
+- **Outcome:** Maya ran `speckit.plan`; plan commit `b29c3209189f25208dd4e2468b79b21687fe48fc`; `plan.md` and `compliance.md` confirmed via `git ls-files`. Branch ahead 3 of origin/main. Aria design gate deemed not applicable (governance/process work, no user-facing UI). Session closed at plan phase; tasks/Quinn gate/implementation not started.
