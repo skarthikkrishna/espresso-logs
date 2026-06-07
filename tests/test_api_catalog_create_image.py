@@ -353,7 +353,7 @@ async def test_sql_catalog_create_then_upload_image_contract(
                 catalog_id = created.json()["catalog_id"]
                 uploaded = await client.post(
                     f"/api/catalog/{catalog_id}/image",
-                    files={"file": ("bag.png", b"\x89PNG\r\n", "image/png")},
+                    files={"file": ("bag.png", b"\x89PNG\r\n\x1a\n", "image/png")},
                     cookies={"session": _AUTHED_COOKIE},
                 )
                 detail = await client.get(
@@ -474,6 +474,20 @@ async def test_catalog_upload_image_rejects_missing_content_type() -> None:
     catalog_repo.get.return_value = {"Catalog_ID": "CAT001"}
 
     with pytest.raises(HTTPException, match="file must be a JPEG, PNG, or WebP image."):
+        await api_catalog_upload_image("CAT001", file=file, catalog_repo=catalog_repo)
+
+
+async def test_catalog_upload_image_rejects_mismatched_content_bytes() -> None:
+    """Declared image type is not enough; uploaded bytes must match it."""
+    file = UploadFile(
+        io.BytesIO(b"not actually a png"),
+        filename="bag.png",
+        headers=Headers({"content-type": "image/png"}),
+    )
+    catalog_repo = AsyncMock()
+    catalog_repo.get.return_value = {"Catalog_ID": "CAT001"}
+
+    with pytest.raises(HTTPException, match="file content does not match"):
         await api_catalog_upload_image("CAT001", file=file, catalog_repo=catalog_repo)
 
 

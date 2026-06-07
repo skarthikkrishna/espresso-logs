@@ -87,12 +87,35 @@ async def test_update_correction_fails_closed_when_postgres_disabled() -> None:
     sql = AsyncMock()
     repo = _DualWriteBrewLogRepo(sheets=sheets, sql=sql)
 
-    with patch("app.deps.settings.use_postgres", False):
-        updated = await repo.update_correction("SHOT001", {"taste_summary": "corrected"})
+    with (
+        patch("app.deps.settings.use_postgres", False),
+        pytest.raises(RuntimeError, match="requires Postgres writes"),
+    ):
+        await repo.update_correction("SHOT001", {"taste_summary": "corrected"})
 
-    assert updated is None
     sheets.get.assert_not_called()
     sql.update_correction.assert_not_called()
+
+
+async def test_patch_brew_log_surfaces_disabled_postgres_as_http_500() -> None:
+    """PATCH /api/brew-log must not report a fake 404 when correction writes are disabled."""
+    fake = FakeSheetsClient({"Brew_Log": [], "Inventory": [], "Catalog": [], "Hardware": []})
+    app.dependency_overrides[get_sheets_client] = lambda: fake
+
+    try:
+        with patch("app.config.settings.use_postgres", False):
+            async with AsyncClient(
+                transport=ASGITransport(app=app, raise_app_exceptions=False),
+                base_url="http://test",
+            ) as client:
+                response = await client.patch(
+                    "/api/brew-log/SHOT001",
+                    json={"taste_summary": "corrected"},
+                )
+    finally:
+        app.dependency_overrides.pop(get_sheets_client, None)
+
+    assert response.status_code == 500
 
 
 async def test_post_brew_log_surfaces_sql_failure_as_http_500() -> None:

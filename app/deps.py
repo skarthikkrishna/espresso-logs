@@ -485,7 +485,7 @@ class _DualWriteBrewLogRepo:
         fields: dict[str, Any],
     ) -> dict[str, Any] | None:
         if not settings.use_postgres:
-            return None
+            raise RuntimeError("Brew-log correction requires Postgres writes to be enabled")
         sql = _require_sql_repo(self._sql, entity_type="brew_log", operation="update_correction")
         try:
             return await sql.update_correction(shot_id, fields)
