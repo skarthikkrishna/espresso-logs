@@ -1,30 +1,29 @@
 ---
-updated_at: 2026-06-07T10:36:45.974-07:00
-focus_area: Spec-039 validation-failure RCA authorized as governance triage
-milestone: Tariq routed RCA as DIRECT_PERMITTED; implementation remains unauthorized
-active_phase: Session closed; next authorized work is a .squad/log RCA artifact only
+updated_at: 2026-06-07T11:02:00.697-07:00
+focus_area: Spec-039 validation RCA closed; remediation remains unauthorized
+milestone: RCA artifact d4ac318 and Scribe closeout cf60d54 committed
+active_phase: T32 Playwright remains failing and blocks T33/T34 completion
 ---
 
-# Session Status: Spec-039 RCA Triage Authorized (2026-06-07)
+# Session Status: Spec-039 Validation RCA Closed (2026-06-07)
 
 ## Current Team Focus
 
-- Tariq routed the requested Spec-039 validation-failure RCA as `DIRECT_PERMITTED`.
-- The next authorized work is a `.squad/log/` RCA/triage artifact only.
-- No application edits, test edits, implementation work, or push are authorized by that routing.
-- Quinn gate is waived only for documentation/governance triage in `.squad/log/`.
+- The Spec-039 validation RCA session is closed with `.squad` artifacts only.
+- RCA artifact committed at `d4ac318`; Scribe closeout committed at `cf60d54`.
+- No new SpecKit cycle is needed for the RCA findings; they remain within the approved Spec-039 validation/remediation graph.
+- No application, test, frontend, generated build, dependency, or push authorization was granted.
 
-## Preserved Continuity
+## Validation State
 
-- Spec-039 planning remains complete and closed for handoff: specification, plan, compliance, tasks, Aria gate, and Quinn gate are committed in `coffee_tracker`.
-- Scribe closeout completed after planning: `espresso-logs` commit `ac06223` and `coffee_tracker` commit `a62d55a`.
-- Evidence status remains: B01, B02, B04, B05, B06, and B07 are reproducible/actionable; B03 and B08 were not reproducible locally.
-- Preserve `fix/prod-shot-save-detail` and Spec-038 worktrees until a future routed hygiene pass explicitly resolves them.
+- T32 Playwright remains failing and blocks T33/T34 completion.
+- Targeted backend subset passed during triage, but this was diagnostic and does not satisfy T33.
+- Targeted frontend subset passed during triage, but this was diagnostic and does not satisfy T33.
+- T33 must not be considered complete until T32 passes; T34 must not proceed until T33 passes.
 
 ## Open Work / Next Session
 
-1. If the operator proceeds with Spec-039 validation-failure RCA, write only a `.squad/log/` RCA/triage artifact under Tariq's direct authorization.
-2. Do not edit application or test files under this routing.
-3. Do not push under this routing.
-4. Any Spec-039 code or test fix still requires the normal owner/gate process before implementation.
-5. Do not push local process or continuity commits without explicit operator authorization.
+1. Route any Spec-039 code or test remediation through the normal owner/gate process before implementation.
+2. Do not edit application, test, or frontend source files under the RCA/session-close authorization.
+3. Do not mark T32, T33, or T34 complete until their prerequisite validation passes in order.
+4. Do not push without explicit operator authorization.
