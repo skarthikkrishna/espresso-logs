@@ -1682,3 +1682,28 @@ Decision drop generated 2026-06-05T14:00 PDT
 - **Espresso Logs worktree:** `/Users/krishna/Documents/Development/GitHub/espresso-logs-spec-038`, branch `spec/038-cross-repo-squad-governance`.
 - **tf-infra worktree:** `/Users/krishna/Documents/Development/GitHub/tf-infra-spec-038`, branch `spec/038-cross-repo-squad-governance`.
 - **No-Push Constraint:** No `git push` authorised in this session without all four local CI checks passing and explicit operator affirmative.
+
+---
+
+## 2026-06-07: Spec-038 PR Preparation and Raise
+
+### Decision: Tariq routing — DIRECT_PERMITTED (Spec-038 PR prep and push)
+- **Agent:** Tariq
+- **Date:** 2026-06-07T00:19:25-07:00
+- **Status:** COMMITTED
+- **Classification:** DIRECT_PERMITTED
+- **drop_id:** 20260607-001-tariq-spec038-pr-prep-routing
+- **Operator Request:** "Let's get started with the next remaining steps. Raise PRs for all the repos modified."
+- **Rationale:** Continuation of already-approved Spec-038 implementation workflow. No new scope introduced. Work is: run local CI checks, ask operator for push authorisation, push branches, create PRs.
+- **Scope Confirmed:** Local CI checks (all four) → push gate (operator explicit affirmative) → push three branches → create three PRs.
+- **T041/T042:** Committed in Coffee Tracker spec worktree at `305a07f` by Tariq before push. Included in PR branch.
+- **No-Push Constraint:** Binding. Operator must explicitly authorise before `git push`. This drop does not constitute push authorisation.
+- **Outcome:**
+  - Local CI: espresso-logs four checks passed; tf-infra terraform fmt/validate/tflint/trivy passed; coffee_tracker `git diff --check` passed.
+  - Operator explicitly authorised push for all three repos.
+  - Branches pushed and PRs created:
+    - coffee_tracker PR #123: https://github.com/skarthikkrishna/coffee_tracker/pull/123
+    - espresso-logs PR #106: https://github.com/skarthikkrishna/espresso-logs/pull/106
+    - tf-infra PR #31: https://github.com/skarthikkrishna/tf-infra/pull/31
+  - `@copilot` review request comments posted on all three PRs.
+  - CI at close: espresso-logs green; tf-infra green; coffee_tracker no checks on branch.
