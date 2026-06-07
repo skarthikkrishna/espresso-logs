@@ -52,7 +52,7 @@ The initial migrate step was attempting to read `DATABASE_URL` from the `APP_SEC
 
 **`cloudbuild.yaml`**
 - Added `DATABASE_URL=DATABASE_URL:latest` to `--set-secrets` in the deploy step
-- Added `--add-cloudsql-instances <your-gcp-project>:us-west1:espresso-logs-db` to deploy step
+- Added `--add-cloudsql-instances [REDACTED — Spec-038 T035]` to deploy step
 - Added `migrate` build step (runs `alembic upgrade head` using `$$DATABASE_URL` injected as Cloud Build secret)
 
 **`app/routers/api_catalog.py`** (if applicable)
