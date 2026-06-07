@@ -1774,3 +1774,18 @@ Decision drop generated 2026-06-05T14:00 PDT
   - espresso-logs #106 merged at `2026-06-07T07:54:05Z`, squash commit `be7ae041f46d82bd8a50877d77eeac332f1705e7`
   - tf-infra #31 merged at `2026-06-07T07:54:11Z`, squash commit `d1f218d458eb12e352c6d2d4981061af583135d2`
   - No branch deletions performed. No deployment or branch protection changes.
+
+---
+
+## 2026-06-07: Spec-039 Validation RCA Scribe Closeout
+
+### Decision: Tariq routing — DIRECT_PERMITTED (Scribe session closeout)
+- **Agent:** Tariq
+- **Date:** 2026-06-07T11:14:24.639-07:00
+- **Status:** COMMITTED
+- **Classification:** DIRECT_PERMITTED
+- **drop_id:** 20260607T111424-0700-tariq-route-scribe-closeout
+- **Operator Request:** Perform Scribe session-close duties for completed Spec-039 validation triage/RCA without touching application, frontend, backend test, E2E test, dependency, or generated build files, and without pushing.
+- **Rationale:** Documentation/session-hygiene work only: merge decision inbox entries, clear the inbox, and add or update non-duplicative closeout logging if needed. No product behavior, architecture, runtime code, tests, dependencies, generated assets, or release configuration changed; SpecKit was not required.
+- **Scope Confirmed:** `.squad/decisions.md`, `.squad/decisions/inbox/`, and optional `.squad/log/` closeout note only.
+- **Quinn Gate:** Waived for documentation/session-close-only work.
