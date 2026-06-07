@@ -1,7 +1,7 @@
 # Team Decisions Log
 
 **Project:** espresso-logs  
-**Last Updated:** 2026-06-01T04:36:41Z
+**Last Updated:** 2026-06-07T17:28:53Z
 
 ---
 
@@ -212,5 +212,53 @@ Independent QA validation of scenarios A–E is authorised as a bounded, read-on
 - inspect source code as evidence and report PASS / PARTIAL / FAIL findings
 
 **Explicit exclusions:** no changes to `app/`, `frontend/src/`, `tests/`, `docs/`, or `specs/`; no push.
+
+---
+
+## 2026-06-07
+
+### Spec-039 implementation squad handoff — DIRECT_PERMITTED
+
+**Author:** Tariq (routing)  
+**Branch:** chore/planning-session-hygiene  
+**Status:** Committed (decision drop: `2026-06-07T0947-tariq-spec039-routing.md`)
+
+Tariq authorized direct implementation from the existing tracked SpecKit artifacts in `coffee_tracker/specs/039-ui-data-freshness-bug-evidence`; no new/full SpecKit cycle was required while implementation stayed within the bounded spec-039 task graph.
+
+**Scope confirmed:** B01 finish/reactivate freshness, B02 historical shot correction, B04 AI feedback generation mutation, B05 catalog image selection at create time, B06 catalog roast authority, and B07 active-bag Add Brew prepopulation. B03 and B08 remain diagnostic/regression-only unless new evidence appears.
+
+**Gates:** Quinn gate required and not waived for application/test implementation; `coffee_tracker` Quinn gate was tracked with `status: APPROVED_WITH_NOTES` and `implementation_may_proceed: true`.
+
+---
+
+### Spec-039 validation-failure RCA triage — DIRECT_PERMITTED
+
+**Author:** Tariq (routing)  
+**Branch:** chore/planning-session-hygiene  
+**Status:** Committed (decision drop: `2026-06-07T1029-tariq-spec039-validation-triage-routing.md`)
+
+Tariq authorized a bounded process/CI diagnosis for Spec-039 validation failures. This was governance/triage work only, not product implementation or a test/application fix.
+
+**Scope confirmed:** Inspect repository state and relevant failure areas only as needed for diagnosis; write the RCA/triage artifact under `.squad/log/`; classify failures, assign owners, sequence fixes, include two code-review findings, state SpecKit need, and document Quinn T32-T34 rerun expectations.
+
+**Explicit exclusions:** No application, frontend, backend test, frontend test, e2e, dependency manifest, generated build output, or push authorization.
+
+**Gates:** Quinn gate waived only for documentation/governance triage. Any later code or test fixes require normal gate/owner process before implementation.
+
+---
+
+### Spec-039 routing triage authorization closeout — DIRECT_PERMITTED
+
+**Author:** Tariq (routing)  
+**Branch:** chore/planning-session-hygiene  
+**Status:** Committed (decision drop: `20260607T173324Z-tariq-spec-039-routing-triage-authorization.md`)
+
+Tariq authorized Scribe to complete mandatory session-close logging only for the Spec-039 routing triage authorization session.
+
+**Scope confirmed:** Merge `.squad/decisions/inbox/` entries into this decisions log, clear the inbox, write one session log under `.squad/log/20260607T102853-0700-spec-039-routing-triage-authorization.md`, and commit only `.squad` session-close artifacts locally if changes are made.
+
+**Explicit exclusions:** No application edits, test edits, SpecKit edits outside `.squad/`, CI/CD changes, or push authorization.
+
+**Gates:** Quinn gate waived because the authorized work is documentation/governance session-close logging only.
 
 ---
