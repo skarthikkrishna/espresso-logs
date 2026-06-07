@@ -1586,3 +1586,51 @@ Decision drop generated 2026-06-05T14:00 PDT
 
 ---
 
+
+## 2026-06-07 — Spec-038 Retro Inbox Drop Merges (T040)
+
+*Processed by Scribe at Implementation-Cycle Close Retro T040. Three drops merged from `.squad/decisions/inbox/`; drop files deleted after this commit.*
+
+---
+
+### 038-T035-E06 — Cloud SQL Reference Redaction (T035)
+
+| Field | Value |
+|-------|-------|
+| **Date** | 2026-06-06 |
+| **Drop file** | `t035-redact-e06-cloudsql-reference.md` |
+| **Agent** | Tariq (Spec-038 T035 executor) |
+| **Decision** | Redact Cloud SQL instance connection string from pre-existing squad log; line replaced with `[REDACTED — Spec-038 T035]`. No file deleted wholesale. |
+| **Scope** | `.squad/log/2026-05-15-hotfix-beans-catalog-brew-log.md` line 55 (Pattern 7 match) |
+| **Operator authorization** | Recorded 2026-06-06T23:23 PST — operator selected "Redact the specific line now (Recommended)" for inventory finding E-06 |
+| **Commit** | `02a4214` (espresso-logs spec/038 branch) |
+| **Post-scan result** | Zero Pattern 7 instance-format matches after remediation; remaining `cloudsql` references are role/flag names — accepted false positives |
+| **Status** | Accepted |
+
+---
+
+### 038-Parallel-Branch-Safety — Tariq Routing Decision
+
+| Field | Value |
+|-------|-------|
+| **Date** | 2026-06-06 |
+| **Drop file** | `2026-06-06-155049-tariq-routing-parallel-branches.md` |
+| **Agent** | Tariq (routing) |
+| **Decision** | `DIRECT_PERMITTED` — operator's question about safe parallel-session branch isolation is a process/safety status check only; no code, Terraform, SpecKit artifact, push, PR, or merge action is required or authorized by this decision |
+| **Scope** | Process clarification only; no artifact or code changes |
+| **Status** | Accepted |
+
+---
+
+### 038-Charter-Reconciliation-Tariq-Scribe — Charter Update (T015, T016)
+
+| Field | Value |
+|-------|-------|
+| **Date** | 2026-06-06 |
+| **Drop file** | `charter-reconciliation-20260606-tariq-scribe.md` |
+| **Agent** | Tariq (reconciliation trigger author) |
+| **Decision** | Tariq charter updated to `v3.1-espresso` (T015); Scribe charter updated to `v2.1-espresso` (T016). Both derived from `coffee_tracker` canonical versions. Zero type-(c) behavioral contradictions. Reconciliation complete for this cycle. Four type-(b) non-blocking stale items tracked in `charter-audit.md`. |
+| **Canonical refs** | Tariq: `coffee_tracker/.squad/agents/tariq/charter.md` v3.1; Scribe: `coffee_tracker/.squad/agents/scribe/charter.md` v2.1 |
+| **Next reconciliation trigger** | Any charter update to `coffee_tracker/.squad/agents/tariq/` or `scribe/` after commit `a01523d` |
+| **Status** | Accepted |
+
