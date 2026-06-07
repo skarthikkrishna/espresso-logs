@@ -1,59 +1,54 @@
 ---
-updated_at: 2026-06-07T00:10:00.470-07:00
-focus_area: Spec-038 cross-repo Squad governance — locally implemented through T040 across all three target repos; push/spec-close gates pending operator decisions
+updated_at: 2026-06-07T00:18:29.980-07:00
+focus_area: Spec-038 cross-repo Squad governance — PRs open across all three repos; awaiting Copilot review feedback, CI resolution, and merge sequencing
 active_issues:
+  - spec-038-pr-review-pending
+  - spec-038-merge-sequencing
+  - spec-038-t009-t020-deferred
   - coffee-tracker-incident-branch-disposal
-  - espresso-logs-artifact-privacy-gate
   - coffee-tracker-ahead-2-handling
-  - spec-038-push-gate-pending
-  - spec-038-t038-t040-incomplete
-  - spec-038-t009-t020-t041-t042-deferred
+  - spec-038-branch-deletion-post-merge
 ---
 
 # What We're Focused On
 
 ## Current Team Focus
 
-Spec-038 (cross-repo Squad governance) is locally implemented through T040 in all three target repositories. No pushes have been made. The branches exist only locally:
-- **Coffee Tracker spec worktree** — `spec/038-cross-repo-squad-governance` through `e96e7c7`
-- **Espresso Logs spec worktree** — `spec/038-cross-repo-squad-governance` through `1e21d6b` (T012 = first espresso `.squad` write)
-- **tf-infra spec worktree** — `spec/038-cross-repo-squad-governance` through `bd37dd2` (T030 = first tf-infra `.squad` content after root AGENTS)
+Spec-038 (cross-repo Squad governance) implementation is complete and pushed. PRs are open across all three target repositories, Copilot review has been requested on each, and CI is green (espresso-logs and tf-infra) or has no checks (coffee_tracker). The team is now in **review and merge follow-up** mode.
 
-All remaining gates are **operator-decision gates** before any push, branch deletion, PR, workflow deployment, or primary-worktree mutation can occur.
+Active PRs:
+- **Coffee Tracker** — PR #123: https://github.com/skarthikkrishna/coffee_tracker/pull/123 (no checks reported)
+- **Espresso Logs** — PR #106: https://github.com/skarthikkrishna/espresso-logs/pull/106 (CI green)
+- **tf-infra** — PR #31: https://github.com/skarthikkrishna/tf-infra/pull/31 (CI green)
 
 ## What Was Completed This Session
 
-- Spec-038 implementation fan-out advanced locally through T040 across all three target repos.
-- T012: first espresso-logs `.squad` write committed to the espresso-logs spec worktree.
-- T030: first tf-infra `.squad` content (after root `AGENTS.md`) committed to the tf-infra spec worktree.
-- T035: authorized redaction completed (privacy scan pass).
-- T039: final privacy scan passed — zero real findings.
-- All local commits are on isolated worktree branches. No pushes, no branch deletions, no PRs, no workflow deployments, no branch protection changes, no primary-worktree mutations were performed.
+- All three spec worktree branches pushed to remote after operator explicit authorization and local CI pass.
+- PRs raised for all three repos; Copilot bot tagged for review on each after checks were green/no-checks.
+- Local validation (all four CI checks) passed before push.
+- No merges, branch deletions, workflow deployments, or branch protection changes were performed.
 
 ## Open Work State
 
-### Coffee Tracker spec worktree — `spec/038-cross-repo-squad-governance` (local, not pushed)
-- Isolated worktree at `/Users/krishna/Documents/Development/GitHub/coffee_tracker-spec-038`.
-- Implementation commits through `e96e7c7`.
-- `specs/038-cross-repo-squad-governance/quinn-gate.md` — `status: APPROVED_WITH_NOTES`.
-- Tasks T038/T040 not fully complete — push/main-touching/branch-deletion gates remain paused.
-- Tasks T009 and T020 deferred; T041/T042 not started.
+### Spec-038 PRs — under review
+- Coffee Tracker PR #123: awaiting Copilot review feedback; no CI checks configured on that repo currently.
+- Espresso Logs PR #106: CI green; awaiting Copilot review feedback.
+- tf-infra PR #31: CI green; awaiting Copilot review feedback.
 
-### Espresso Logs spec worktree — `spec/038-cross-repo-squad-governance` (local, not pushed)
-- Isolated worktree at `/Users/krishna/Documents/Development/GitHub/espresso-logs-spec-038`.
-- Implementation commits through `1e21d6b`.
-- T012 (first espresso `.squad` write) committed. Subsequent target tasks completed locally through T040 scope.
+### Merge sequencing
+- Likely order: **Coffee Tracker first**, then Espresso Logs and tf-infra (target repos depend on governance artifacts landing in Coffee Tracker).
+- No merges performed yet; operator to authorize each merge after review is satisfied.
 
-### tf-infra spec worktree — `spec/038-cross-repo-squad-governance` (local, not pushed)
-- Isolated worktree at `/Users/krishna/Documents/Development/GitHub/tf-infra-spec-038`.
-- Implementation commits through `bd37dd2`.
-- T030 (first tf-infra `.squad` content after root AGENTS) committed.
+### Deferred tasks — T009 / T020
+- T009 and T020 (workflow deployment tasks) remain deferred.
+- Not included in the current PRs.
+- Operator to decide: carry forward to a follow-on spec or close as out-of-scope.
 
 ### Espresso Logs — `fix/prod-shot-save-detail` (ahead 1, not pushed)
 - Contains the Tariq decision-drop commit from a prior session.
-- Awaiting operator decision on push timing.
+- Awaiting operator decision on push timing (independent of Spec-038).
 
-### Coffee Tracker — `incident/prod-shot-save-detail-logs` (stale merged branch, NOT cleaned)
+### Coffee Tracker — `incident/prod-shot-save-detail-logs` (stale, NOT cleaned)
 - Branch has one local-only commit (`4fccbcb`) and untracked file `.squad/log/20260607T031900Z-rca.md`.
 - **Operator decision required** before disposal: preserve artifacts, migrate them, or discard.
 
@@ -61,18 +56,19 @@ All remaining gates are **operator-decision gates** before any push, branch dele
 - Two local governance/triage commits exist.
 - **Operator decision required**: push to remote, squash, or hold.
 
-## Pending Operator Decisions (before any push or spec close)
+### Post-merge cleanup (blocked until PRs merge)
+- Delete spec worktree branches locally and remotely after each PR merges.
+- Remove isolated worktree checkouts once branches are deleted.
 
-1. **Spec-038 push authorization** — all four local CI checks must pass in current terminal session; operator must explicitly say yes before any `git push` on any of the three spec worktree branches.
-2. **T038/T040 completion gate** — push/main-touching/branch-deletion sub-tasks within Spec-038 remain paused; operator must authorize each step explicitly.
-3. **Deferred tasks disposition** — T009, T020 (deferred); T041, T042 (not started). Operator to decide: defer to follow-on spec, carry forward, or close as out-of-scope.
-4. **Espresso Logs artifact privacy gate** — establish policy for what Squad artifacts are safe to push to the public repo (required before the espresso-logs spec worktree branch is pushed).
-5. **Charter sync strategy** — how to keep `.squad/agents/` in sync across repos (copy, symlink, submodule, or single source of truth repo).
-6. **Coffee Tracker spec-branch push** — push, squash, or hold the Coffee Tracker spec branch once operator authorizes.
-7. **Incident branch disposal** — resolve `incident/prod-shot-save-detail-logs` local artifacts before deleting the branch.
-8. **Coffee Tracker `main` ahead-2 handling** — push to remote, squash, or hold.
-9. **Scheduled cleanup action vs manual Scribe retro** — automate stale-branch cleanup or keep it a manual ceremony.
+## Pending Operator Decisions
+
+1. **PR review response** — monitor Copilot bot feedback on all three PRs; address any requested changes before merge.
+2. **Merge sequencing authorization** — operator explicitly authorizes each merge in order (Coffee Tracker → Espresso Logs → tf-infra).
+3. **Deferred tasks disposition** — T009, T020: defer to follow-on spec, carry forward, or close as out-of-scope.
+4. **Incident branch disposal** — resolve `incident/prod-shot-save-detail-logs` local artifacts.
+5. **Coffee Tracker `main` ahead-2 handling** — push to remote, squash, or hold.
+6. **`fix/prod-shot-save-detail` push timing** — operator decision on when to push the stale Tariq decision-drop branch.
 
 ## Next Milestone
 
-Operator explicitly authorizes push on all three spec worktree branches (after all four CI checks pass per repo) → PRs raised → Copilot bot tagged for review → CI green → merge. Then: T038/T040 push/branch-deletion sub-tasks → deferred task closure → Spec-038 formally closed. No pushes, deletions, or PRs until operator explicitly says yes.
+Copilot review feedback addressed → operator authorizes merges in sequence (Coffee Tracker first) → PRs merged → spec worktree branches and local worktrees deleted → T009/T020 disposition decided → Spec-038 formally closed.
