@@ -1,7 +1,7 @@
 # Team Decisions Log
 
 **Project:** espresso-logs  
-**Last Updated:** 2026-06-07T17:28:53Z
+**Last Updated:** 2026-06-07T17:59:05Z
 
 ---
 
@@ -260,5 +260,22 @@ Tariq authorized Scribe to complete mandatory session-close logging only for the
 **Explicit exclusions:** No application edits, test edits, SpecKit edits outside `.squad/`, CI/CD changes, or push authorization.
 
 **Gates:** Quinn gate waived because the authorized work is documentation/governance session-close logging only.
+
+---
+
+
+### Spec-039 validation RCA session closeout — DIRECT_PERMITTED
+
+**Author:** Tariq (routing)  
+**Branch:** chore/planning-session-hygiene  
+**Status:** Committed (decision drop: `20260607T105905-0700-tariq-spec-039-validation-rca-closeout-routing.md`)
+
+Tariq authorized a bounded `.squad`-only closeout for the Spec-039 validation RCA session.
+
+**Scope confirmed:** Merge processed decision drops from `.squad/decisions/inbox/` into this decisions log, remove those inbox files, and write one concise session log under `.squad/log/20260607T105905-0700-spec-039-validation-rca-session-close.md`.
+
+**Session facts preserved:** Ralph opened clear; the RCA artifact `.squad/log/20260607T105900-0700-spec-039-validation-rca.md` was written and committed in `d4ac318`; T32 Playwright failed while targeted backend/frontend validation passed; no application/test edits or push were authorized by this session.
+
+**Gates:** Quinn gate waived only because the authorized work is documentation/governance triage and session-close logging under `.squad/`. Any later code or test fix requires normal owner/gate authorization.
 
 ---
