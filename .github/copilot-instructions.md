@@ -47,16 +47,19 @@ git checkout -b <type>/<slug>   # e.g. fix/brew-log-ordering
 
 - All public functions and methods must have type annotations
 - Module-level docstrings required on all routers and services
-- Tests use `SPREADSHEET_ID=dummy` and `FakeSheetsClient` (never real sheets)
+- Unit tests use `SPREADSHEET_ID=dummy` and `FakeSheetsClient` for Sheets access
+- Backend CI-parity tests require a local Postgres `DATABASE_URL` so SQL/RLS paths run locally exactly as they do in GitHub Actions
 - `pytest-asyncio` in `auto` mode — no `@pytest.mark.asyncio` markers needed
 ### Local CI-equivalent — all four must pass before any push is considered
 
 1. `uv run ruff check app/ tests/`
 2. `uv run ruff format --check app/ tests/`
 3. `uv run mypy app/ --strict`
-4. `SPREADSHEET_ID=dummy uv run pytest tests/ -v --ignore=tests/e2e/`
+4. `SPREADSHEET_ID=dummy DATABASE_URL=postgresql+asyncpg://espresso:espresso@localhost:5432/espresso_logs bash scripts/run-ci-tests.sh`
 
 All four are required. Not three. Not "the ones that seem relevant." All four.
+
+`scripts/run-ci-tests.sh` intentionally fails fast when `DATABASE_URL` is unset. This prevents local validation from skipping SQL/RLS tests that GitHub Actions runs with Postgres.
 
 ## Documentation
 
@@ -180,7 +183,7 @@ Only proceed here if STEP 1 returned `status: DIRECT_PERMITTED` with explicit ra
 Follow `.github/copilot-prompts/pr-merge-workflow.md` exactly. No step may be skipped.
 
 **Before any `git push`:**
-1. Run all four local CI checks (see Local CI-equivalent section). All four must pass.
+1. Run all four local CI checks (see Local CI-equivalent section), including `scripts/run-ci-tests.sh` with `DATABASE_URL` set. All four must pass.
 2. **STOP. Ask the operator:** "All four local checks pass. Ready for me to push to [branch]?"
 3. **Wait for explicit affirmative reply.**
 4. Only then: `git push`.

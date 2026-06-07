@@ -56,6 +56,7 @@ fi
 # Check 4: pytest
 CURRENT_CHECK=4
 section_header "$CURRENT_CHECK" "Pytest tests (DATABASE_URL-backed CI parity)"
+echo "DATABASE_URL is required here so local pytest runs the same SQL/RLS coverage as GitHub Actions."
 if ! SPREADSHEET_ID=dummy bash scripts/run-ci-tests.sh; then
     on_failure "$CURRENT_CHECK" "SPREADSHEET_ID=dummy bash scripts/run-ci-tests.sh"
 fi
