@@ -48,7 +48,7 @@ async def test_dual_write_brew_log_add_does_not_call_sheets_write() -> None:
     await repo.add(row)
 
     mock_sheets.add.assert_not_called()
-    mock_sql.add.assert_awaited_once_with(row)
+    mock_sql.add.assert_awaited_once_with(row, commit=True)
 
 
 async def test_dual_write_catalog_upsert_does_not_call_sheets_write() -> None:
