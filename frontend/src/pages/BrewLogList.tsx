@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query'
-import { listBrewLog, getBrewLogDetail } from '../api/brewLog'
+import { brewLogDetailQueryKey, listBrewLog, getBrewLogDetail } from '../api/brewLog'
 import LoadingSpinner from '../components/LoadingSpinner'
 
 export default function BrewLogList() {
@@ -70,7 +70,7 @@ export default function BrewLogList() {
                 to={`/brew-log/${entry.shot_id}`}
                 onMouseEnter={() => {
                   queryClient.prefetchQuery({
-                    queryKey: ['brew-log', entry.shot_id],
+                    queryKey: brewLogDetailQueryKey(entry.shot_id),
                     queryFn: () => getBrewLogDetail(entry.shot_id),
                     staleTime: 60_000,
                   })
@@ -133,4 +133,3 @@ export default function BrewLogList() {
     </div>
   )
 }
-

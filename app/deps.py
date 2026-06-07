@@ -393,12 +393,12 @@ class _DualWriteBrewLogRepo:
             return await sql.get(shot_id)
         return self._sheets.get(shot_id)
 
-    async def add(self, row: dict[str, Any]) -> None:
+    async def add(self, row: dict[str, Any], *, commit: bool = True) -> None:
         if not settings.use_postgres:
             return
         sql = _require_sql_repo(self._sql, entity_type="brew_log", operation="add")
         try:
-            await sql.add(row)
+            await sql.add(row, commit=commit)
         except Exception as exc:
             await sql._db.rollback()
             _dw_log.warning(
@@ -411,6 +411,34 @@ class _DualWriteBrewLogRepo:
                 },
             )
             raise
+
+    async def commit(self) -> None:
+        if not settings.use_postgres:
+            return
+        sql = _require_sql_repo(self._sql, entity_type="brew_log", operation="commit")
+        await sql.commit()
+
+    async def rollback(self) -> None:
+        if not settings.use_postgres:
+            return
+        sql = _require_sql_repo(self._sql, entity_type="brew_log", operation="rollback")
+        await sql.rollback()
+
+    async def set_household_context(self, household_id: uuid.UUID) -> None:
+        if not settings.use_postgres:
+            return
+        sql = _require_sql_repo(
+            self._sql, entity_type="brew_log", operation="set_household_context"
+        )
+        await sql.set_household_context(household_id)
+
+    async def get_by_idempotency_key(self, idempotency_key: str) -> dict[str, Any] | None:
+        sql = _sql_repo_for_read(
+            self._sql, entity_type="brew_log", operation="get_by_idempotency_key"
+        )
+        if sql is not None:
+            return await sql.get_by_idempotency_key(idempotency_key)
+        return None
 
     async def add_many(self, rows: builtins.list[dict[str, Any]]) -> None:
         if not settings.use_postgres:

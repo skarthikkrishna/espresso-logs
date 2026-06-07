@@ -1,29 +1,10 @@
-/**
- * T031 — Unit tests for BrewLogDetail
- *
- * 6 test cases covering the three new data-testid anchors added in the
- * bugfix/compass-layout-dup-guard branch:
- *   1. eligibility-badge renders with correct text
- *   2. taste-summary-row renders in Shot parameters
- *   3. notes-section renders when user_notes is present
- *   4. notes-section is absent when user_notes is empty
- *   5. eligibility-badge absent when shot_eligibility is undefined
- *   6. taste-summary-row absent when taste_summary is undefined
- *
- * Strategy: pre-seed the QueryClient cache with ['brew-log'] list data so the
- * component's initialData selector resolves synchronously — no async loading.
- */
-
 import React from 'react'
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
+import type { BrewLogPage } from '../api/brewLog'
 import type { BrewLogEntry } from '../types/entities'
-
-// ---------------------------------------------------------------------------
-// Module mocks — hoisted before any import of the mocked module
-// ---------------------------------------------------------------------------
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
@@ -36,6 +17,8 @@ vi.mock('react-router-dom', async () => {
 })
 
 vi.mock('../api/brewLog', () => ({
+  brewLogDetailQueryKey: (id: string) => ['brew-log-detail', id] as const,
+  brewLogFeedbackQueryKey: (id: string) => ['brew-log-detail', id, 'feedback'] as const,
   listBrewLog: vi.fn(),
   getBrewLogDetail: vi.fn(),
   getBrewLogFeedback: vi.fn(),
@@ -44,10 +27,6 @@ vi.mock('../api/brewLog', () => ({
 
 import { getBrewLogDetail, getBrewLogFeedback } from '../api/brewLog'
 import BrewLogDetail from './BrewLogDetail'
-
-// ---------------------------------------------------------------------------
-// Fixtures
-// ---------------------------------------------------------------------------
 
 const baseShot: BrewLogEntry = {
   shot_id: 'SHOT-001',
@@ -68,104 +47,163 @@ const baseShot: BrewLogEntry = {
   taste_summary: 'Sweet & Balanced',
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+const otherShot: BrewLogEntry = {
+  ...baseShot,
+  shot_id: 'SHOT-999',
+  bag_display: 'Other Roaster — Other Bean',
+}
 
-/**
- * Creates a QueryClient pre-seeded with ['brew-log'] list data so the
- * component's initialData selector resolves without a network call.
- */
-function makeQueryClient(shots: BrewLogEntry[]): QueryClient {
-  const qc = new QueryClient({
+function makeQueryClient(): QueryClient {
+  return new QueryClient({
     defaultOptions: {
       queries: { retry: false },
       mutations: { retry: false },
     },
   })
-  qc.setQueryData(['brew-log'], shots)
-  return qc
 }
 
-function renderInContext(shot: BrewLogEntry) {
-  const queryClient = makeQueryClient([shot])
-  return render(
-    <MemoryRouter>
-      <QueryClientProvider client={queryClient}>
-        <BrewLogDetail />
-      </QueryClientProvider>
-    </MemoryRouter>
-  )
+function brewLogPage(items: BrewLogEntry[]): BrewLogPage {
+  return {
+    items,
+    page: 1,
+    per_page: 100,
+    total_count: items.length,
+    has_next: false,
+    sync_alert: false,
+  }
 }
 
-// ---------------------------------------------------------------------------
-// Setup
-// ---------------------------------------------------------------------------
+function renderInContext(queryClient = makeQueryClient()) {
+  return {
+    queryClient,
+    ...render(
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <BrewLogDetail />
+        </QueryClientProvider>
+      </MemoryRouter>
+    ),
+  }
+}
+
+function renderWithPaginatedCache(shot: BrewLogEntry = baseShot) {
+  const queryClient = makeQueryClient()
+  queryClient.setQueryData(['brew-log', 1, 100], brewLogPage([shot]))
+  return renderInContext(queryClient)
+}
 
 beforeEach(() => {
   vi.clearAllMocks()
-  // getBrewLogDetail should never be called in these tests (initialData resolves)
-  // but provide a safe fallback in case
   vi.mocked(getBrewLogDetail).mockResolvedValue(baseShot)
   vi.mocked(getBrewLogFeedback).mockResolvedValue({ ai_feedback: '' })
 })
 
-// ===========================================================================
-// Tests
-// ===========================================================================
+describe('BrewLogDetail — cache contract and fallback', () => {
+  it('uses BrewLogPage.items from paginated brew-log caches as initial detail data', () => {
+    vi.mocked(getBrewLogDetail).mockReturnValue(new Promise<BrewLogEntry>(() => {}))
 
-describe('BrewLogDetail — new data-testid anchors', () => {
+    renderWithPaginatedCache({ ...baseShot, bag_display: 'Cached Roaster — Cached Bean' })
 
-  // ── Test 1: eligibility badge renders with correct text ──────────────────
+    expect(screen.getByText('Cached Roaster — Cached Bean')).toBeInTheDocument()
+    expect(screen.getByTestId('brew-log-detail')).toBeInTheDocument()
+  })
+
+  it('does not read legacy [\'brew-log\'] array cache data as BrewLogEntry[]', async () => {
+    const queryClient = makeQueryClient()
+    queryClient.setQueryData(['brew-log'], [{ ...baseShot, bag_display: 'Stale Array — Wrong Shape' }])
+    vi.mocked(getBrewLogDetail).mockResolvedValue({ ...baseShot, bag_display: 'API Detail — Correct Shape' })
+
+    renderInContext(queryClient)
+
+    expect(await screen.findByText('API Detail — Correct Shape')).toBeInTheDocument()
+    expect(screen.queryByText('Stale Array — Wrong Shape')).not.toBeInTheDocument()
+    expect(getBrewLogDetail).toHaveBeenCalledWith('SHOT-001')
+  })
+
+  it('calls the detail API fallback when no paginated cache is available', async () => {
+    vi.mocked(getBrewLogDetail).mockResolvedValue({ ...baseShot, bag_display: 'API Detail — No Cache' })
+
+    renderInContext()
+
+    expect(await screen.findByText('API Detail — No Cache')).toBeInTheDocument()
+    expect(getBrewLogDetail).toHaveBeenCalledWith('SHOT-001')
+  })
+
+  it('calls the detail API fallback when paginated cache misses the route shot_id', async () => {
+    const queryClient = makeQueryClient()
+    queryClient.setQueryData(['brew-log', 1, 100], brewLogPage([otherShot]))
+    vi.mocked(getBrewLogDetail).mockResolvedValue({ ...baseShot, bag_display: 'API Detail — Cache Miss' })
+
+    renderInContext(queryClient)
+
+    expect(await screen.findByText('API Detail — Cache Miss')).toBeInTheDocument()
+    expect(getBrewLogDetail).toHaveBeenCalledWith('SHOT-001')
+  })
+
+  it('calls the detail API fallback when a brew-log cache entry is malformed', async () => {
+    const queryClient = makeQueryClient()
+    queryClient.setQueryData(['brew-log', 1, 100], { items: 'not-an-array' })
+    vi.mocked(getBrewLogDetail).mockResolvedValue({ ...baseShot, bag_display: 'API Detail — Malformed Cache' })
+
+    renderInContext(queryClient)
+
+    expect(await screen.findByText('API Detail — Malformed Cache')).toBeInTheDocument()
+    expect(getBrewLogDetail).toHaveBeenCalledWith('SHOT-001')
+  })
+
+  it('uses the dedicated detail query key instead of colliding with paginated list keys', async () => {
+    const { queryClient } = renderInContext()
+
+    expect(await screen.findByText('Verve Coffee — Seabright')).toBeInTheDocument()
+    expect(queryClient.getQueryState(['brew-log-detail', 'SHOT-001'])).toBeDefined()
+    expect(queryClient.getQueryState(['brew-log', 'SHOT-001'])).toBeUndefined()
+  })
+})
+
+describe('BrewLogDetail — detail presentation anchors', () => {
   it('renders eligibility badge in header', () => {
-    renderInContext(baseShot)
+    renderWithPaginatedCache(baseShot)
 
     const badge = screen.getByTestId('eligibility-badge')
     expect(badge).toBeInTheDocument()
     expect(badge).toHaveTextContent('Good Espresso')
   })
 
-  // ── Test 2: taste summary row renders in Shot parameters section ──────────
   it('renders taste summary row in parameters section', () => {
-    renderInContext(baseShot)
+    renderWithPaginatedCache(baseShot)
 
     const tasteDt = screen.getByTestId('taste-summary-row')
     expect(tasteDt).toBeInTheDocument()
     expect(tasteDt).toHaveTextContent('Taste')
-
-    // The value "Sweet & Balanced" must be visible somewhere on the page
     expect(screen.getByText('Sweet & Balanced')).toBeInTheDocument()
   })
 
-  // ── Test 3: notes section renders when user_notes is present ─────────────
   it('renders notes section when user_notes is present', () => {
-    renderInContext({ ...baseShot, user_notes: 'First shot of the bag' })
+    renderWithPaginatedCache({ ...baseShot, user_notes: 'First shot of the bag' })
 
     expect(screen.getByTestId('notes-section')).toBeInTheDocument()
     expect(screen.getByText('First shot of the bag')).toBeInTheDocument()
   })
 
-  // ── Test 4: notes section absent when user_notes is empty ────────────────
   it('hides notes section when user_notes is empty', () => {
-    renderInContext({ ...baseShot, user_notes: '' })
+    renderWithPaginatedCache({ ...baseShot, user_notes: '' })
 
     expect(screen.queryByTestId('notes-section')).toBeNull()
   })
 
-  // ── Test 5: eligibility badge absent when shot_eligibility is undefined ───
   it('eligibility badge absent when shot_eligibility is undefined', () => {
     const { shot_eligibility: _omit, ...shotWithout } = baseShot
-    renderInContext(shotWithout as BrewLogEntry)
+
+    renderWithPaginatedCache(shotWithout as BrewLogEntry)
 
     expect(screen.queryByTestId('eligibility-badge')).toBeNull()
   })
 
-  // ── Test 6: taste summary row absent when taste_summary is undefined ──────
   it('taste summary row absent when taste_summary is undefined', () => {
     const { taste_summary: _omit, ...shotWithout } = baseShot
-    renderInContext(shotWithout as BrewLogEntry)
+
+    renderWithPaginatedCache(shotWithout as BrewLogEntry)
 
     expect(screen.queryByTestId('taste-summary-row')).toBeNull()
   })
-
 })

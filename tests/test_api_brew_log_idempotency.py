@@ -15,15 +15,27 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
+import os
+import uuid
+from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock, patch
 
 import pytest
+import sqlalchemy as sa
+from fastapi import Depends
 from httpx import ASGITransport, AsyncClient
 from itsdangerous import TimestampSigner
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.deps import current_household_membership
 from app.main import app
+from app.models.base import get_db
+from app.models.brew_log import BrewLog
+from app.models.household import HouseholdMember
 from app.services.idempotency_store import IdempotencyStore
 from tests.doubles import FakeSheetsClient
+
+pytestmark = pytest.mark.asyncio(loop_scope="module")
 
 # ---------------------------------------------------------------------------
 # Auth helpers (mirrors test_api.py)
@@ -80,6 +92,8 @@ _POST_BODY_BASE: dict = {
     "grind_setting": "12",
     "shot_eligibility": "Good Espresso",
 }
+
+_SQL_SCHEMA_READY = False
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -146,6 +160,213 @@ def _remove_overrides() -> None:
 
 def _client_ctx():
     return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
+
+
+def _require_sql_backend(monkeypatch: pytest.MonkeyPatch) -> None:
+    if not os.environ.get("DATABASE_URL"):
+        pytest.skip("DATABASE_URL not set — skipping SQL-backed idempotency regression")
+    global _SQL_SCHEMA_READY
+    if not _SQL_SCHEMA_READY:
+        from tests.conftest import _run_alembic_upgrade_head
+
+        _run_alembic_upgrade_head()
+        _SQL_SCHEMA_READY = True
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "use_postgres", True)
+
+
+def _sessionmaker() -> async_sessionmaker[AsyncSession]:
+    import app.models.base as base
+
+    return async_sessionmaker(base.get_engine(), expire_on_commit=False)
+
+
+async def _seed_household_lookup_data(
+    household_id: uuid.UUID,
+    user_id: uuid.UUID,
+    *,
+    suffix: str,
+) -> dict[str, str]:
+    bag_id = f"BAG-SQL-{suffix}"
+    catalog_id = f"CAT-SQL-{suffix}"
+    machine_id = f"HW-SQL-M-{suffix}"
+    grinder_id = f"HW-SQL-G-{suffix}"
+    basket_id = f"HW-SQL-B-{suffix}"
+    session_factory = _sessionmaker()
+    async with session_factory() as session:
+        await session.execute(
+            sa.text(
+                """
+                INSERT INTO users (id, username, password_hash, display_name)
+                VALUES (:uid, :username, 'fixture-only', :display_name)
+                ON CONFLICT (id) DO UPDATE
+                SET display_name = EXCLUDED.display_name
+                """
+            ),
+            {
+                "uid": user_id,
+                "username": f"sql-idem-{suffix}",
+                "display_name": f"SQL Idem {suffix}",
+            },
+        )
+        await session.execute(
+            sa.text(
+                """
+                INSERT INTO households (id, name, created_by)
+                VALUES (:hid, :name, :uid)
+                ON CONFLICT (id) DO NOTHING
+                """
+            ),
+            {"hid": household_id, "name": f"SQL Household {suffix}", "uid": user_id},
+        )
+        await session.execute(
+            sa.text(
+                """
+                INSERT INTO household_members (household_id, user_id, role)
+                VALUES (:hid, :uid, 'admin')
+                ON CONFLICT (household_id, user_id) DO UPDATE
+                SET role = EXCLUDED.role
+                """
+            ),
+            {"hid": household_id, "uid": user_id},
+        )
+        await session.execute(
+            sa.text("UPDATE users SET active_household_id = :hid WHERE id = :uid"),
+            {"hid": household_id, "uid": user_id},
+        )
+        await session.execute(
+            sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+            {"hid": str(household_id)},
+        )
+        await session.execute(
+            sa.text(
+                """
+                INSERT INTO catalog (household_id, sheets_id, roaster, bean_name, roast_level)
+                VALUES (:hid, :catalog_id, :roaster, :bean, 'Medium')
+                """
+            ),
+            {
+                "hid": household_id,
+                "catalog_id": catalog_id,
+                "roaster": f"SQL Roaster {suffix}",
+                "bean": f"SQL Bean {suffix}",
+            },
+        )
+        await session.execute(
+            sa.text(
+                """
+                INSERT INTO inventory_bags (
+                    household_id, sheets_id, sheets_catalog_id, beans, display_name,
+                    roast_level, status, storage_method
+                )
+                VALUES (
+                    :hid, :bag_id, :catalog_id, :beans, :display_name,
+                    'Medium', 'Active', 'Ambient'
+                )
+                """
+            ),
+            {
+                "hid": household_id,
+                "bag_id": bag_id,
+                "catalog_id": catalog_id,
+                "beans": f"SQL Roaster {suffix} — SQL Bean {suffix}",
+                "display_name": f"SQL Roaster {suffix} — SQL Bean {suffix}",
+            },
+        )
+        for hardware_id, category, name in (
+            (machine_id, "Machine", f"SQL Machine {suffix}"),
+            (grinder_id, "Grinder", f"SQL Grinder {suffix}"),
+            (basket_id, "Basket", f"SQL Basket {suffix}"),
+        ):
+            await session.execute(
+                sa.text(
+                    """
+                    INSERT INTO hardware (household_id, sheets_id, category, name)
+                    VALUES (:hid, :hardware_id, :category, :name)
+                    """
+                ),
+                {
+                    "hid": household_id,
+                    "hardware_id": hardware_id,
+                    "category": category,
+                    "name": name,
+                },
+            )
+        await session.commit()
+    return {
+        "bag_id": bag_id,
+        "machine_id": machine_id,
+        "grinder_id": grinder_id,
+        "basket_id": basket_id,
+    }
+
+
+def _install_sql_app_overrides(active: dict[str, uuid.UUID]) -> None:
+    fake = _make_fake_client()
+    _install_overrides(fake)
+    session_factory = _sessionmaker()
+
+    async def _sql_db() -> AsyncGenerator[AsyncSession, None]:
+        async with session_factory() as session:
+            yield session
+
+    async def _sql_membership(
+        db: AsyncSession = Depends(get_db),
+    ) -> HouseholdMember:
+        await db.execute(
+            sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+            {"hid": str(active["household_id"])},
+        )
+        member = HouseholdMember(
+            household_id=active["household_id"],
+            user_id=active["user_id"],
+            role="admin",
+        )
+        member.id = uuid.uuid4()
+        return member
+
+    app.dependency_overrides[get_db] = _sql_db
+    app.dependency_overrides[current_household_membership] = _sql_membership
+
+
+def _clear_sql_app_overrides() -> None:
+    app.dependency_overrides.pop(get_db, None)
+    app.dependency_overrides.pop(current_household_membership, None)
+    _remove_overrides()
+
+
+def _shot_date_for_sql_ids(ids: dict[str, str]) -> str:
+    suffix = ids["bag_id"].rsplit("-", 1)[-1]
+    seed = int(suffix[:8], 16)
+    year = 2200 + (seed % 7000)
+    month = 1 + ((seed // 7000) % 12)
+    day = 1 + ((seed // (7000 * 12)) % 28)
+    return f"{year:04d}-{month:02d}-{day:02d}"
+
+
+def _sql_body(ids: dict[str, str], key: str) -> dict:
+    return {
+        **_POST_BODY_BASE,
+        **ids,
+        "shot_date": _shot_date_for_sql_ids(ids),
+        "idempotency_key": key,
+    }
+
+
+async def _count_rows_for_key(household_id: uuid.UUID, key: str) -> int:
+    session_factory = _sessionmaker()
+    async with session_factory() as session:
+        await session.execute(
+            sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+            {"hid": str(household_id)},
+        )
+        result = await session.execute(
+            sa.select(sa.func.count())
+            .select_from(BrewLog)
+            .where(BrewLog.household_id == household_id, BrewLog.idempotency_key == key)
+        )
+        return int(result.scalar_one())
 
 
 # ===========================================================================
@@ -323,11 +544,11 @@ async def test_write_failure_no_cache_entry():
     call_count: list[int] = [0]
     original_add = _DualWriteBrewLogRepo.add
 
-    async def failing_then_succeeding_add(self, row: dict) -> None:  # type: ignore[misc]
+    async def failing_then_succeeding_add(self, row: dict, *, commit: bool = True) -> None:  # type: ignore[misc]
         call_count[0] += 1
         if call_count[0] == 1:
             raise RuntimeError("Simulated SQL write failure")
-        return await original_add(self, row)
+        return await original_add(self, row, commit=commit)
 
     _install_overrides(fake)
     body = {**_POST_BODY_BASE, "idempotency_key": "write-fail-key-xyz"}
@@ -527,3 +748,184 @@ async def test_postgres_mirror_failure_does_not_cache_success():
             )
     finally:
         _remove_overrides()
+
+
+async def test_sql_create_preserves_rls_context_for_response_lookups(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """POST insert + lookup serialization keeps household RLS context through response build."""
+    _require_sql_backend(monkeypatch)
+    suffix = uuid.uuid4().hex[:10]
+    household_id = uuid.uuid4()
+    user_id = uuid.uuid4()
+    ids = await _seed_household_lookup_data(household_id, user_id, suffix=suffix)
+    active = {"household_id": household_id, "user_id": user_id}
+    _install_sql_app_overrides(active)
+    body = _sql_body(ids, f"sql-rls-{suffix}")
+
+    try:
+        with patch("app.routers.api_brew_log.get_ai_feedback", AsyncMock(return_value="ok")):
+            async with _client_ctx() as client:
+                response = await client.post("/api/brew-log", json=body)
+    finally:
+        _clear_sql_app_overrides()
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["bag_display"] == f"SQL Roaster {suffix} — SQL Bean {suffix}"
+    assert data["machine_name"] == f"SQL Machine {suffix}"
+    assert data["grinder_name"] == f"SQL Grinder {suffix}"
+    assert data["basket_name"] == f"SQL Basket {suffix}"
+    assert await _count_rows_for_key(household_id, body["idempotency_key"]) == 1
+
+
+async def test_sql_create_response_failure_rolls_back_partial_insert(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """If response-critical lookup serialization fails before commit, no partial row remains."""
+    _require_sql_backend(monkeypatch)
+    suffix = uuid.uuid4().hex[:10]
+    household_id = uuid.uuid4()
+    user_id = uuid.uuid4()
+    ids = await _seed_household_lookup_data(household_id, user_id, suffix=suffix)
+    active = {"household_id": household_id, "user_id": user_id}
+    _install_sql_app_overrides(active)
+    body = _sql_body(ids, f"sql-rollback-{suffix}")
+
+    try:
+        with patch(
+            "app.routers.api_brew_log._build_lookups",
+            AsyncMock(side_effect=RuntimeError("lookup serialization failed")),
+        ):
+            async with AsyncClient(
+                transport=ASGITransport(app=app, raise_app_exceptions=False),
+                base_url="http://test",
+            ) as client:
+                response = await client.post("/api/brew-log", json=body)
+    finally:
+        _clear_sql_app_overrides()
+
+    assert response.status_code == 500
+    assert await _count_rows_for_key(household_id, body["idempotency_key"]) == 0
+
+
+async def test_sql_same_household_same_key_replays_original_after_store_clear(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """SQL idempotency is authoritative after process-local cache loss."""
+    _require_sql_backend(monkeypatch)
+    suffix = uuid.uuid4().hex[:10]
+    household_id = uuid.uuid4()
+    user_id = uuid.uuid4()
+    ids = await _seed_household_lookup_data(household_id, user_id, suffix=suffix)
+    active = {"household_id": household_id, "user_id": user_id}
+    _install_sql_app_overrides(active)
+    body = _sql_body(ids, f"sql-replay-{suffix}")
+
+    try:
+        with patch("app.routers.api_brew_log.get_ai_feedback", AsyncMock(return_value="ok")):
+            async with _client_ctx() as client:
+                first = await client.post("/api/brew-log", json=body)
+                from app.deps import get_idempotency_store
+
+                get_idempotency_store().clear()
+                second = await client.post("/api/brew-log", json=body)
+    finally:
+        _clear_sql_app_overrides()
+
+    assert first.status_code == 201
+    assert second.status_code == 200
+    assert second.json()["shot_id"] == first.json()["shot_id"]
+    assert await _count_rows_for_key(household_id, body["idempotency_key"]) == 1
+
+
+async def test_sql_same_household_same_key_different_payload_returns_409(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Reusing an idempotency key with a materially different payload is rejected."""
+    _require_sql_backend(monkeypatch)
+    suffix = uuid.uuid4().hex[:10]
+    household_id = uuid.uuid4()
+    user_id = uuid.uuid4()
+    ids = await _seed_household_lookup_data(household_id, user_id, suffix=suffix)
+    active = {"household_id": household_id, "user_id": user_id}
+    _install_sql_app_overrides(active)
+    body = _sql_body(ids, f"sql-conflict-{suffix}")
+    changed = {**body, "dose_in_g": 19.0}
+
+    try:
+        with patch("app.routers.api_brew_log.get_ai_feedback", AsyncMock(return_value="ok")):
+            async with _client_ctx() as client:
+                first = await client.post("/api/brew-log", json=body)
+                second = await client.post("/api/brew-log", json=changed)
+    finally:
+        _clear_sql_app_overrides()
+
+    assert first.status_code == 201
+    assert second.status_code == 409
+    assert await _count_rows_for_key(household_id, body["idempotency_key"]) == 1
+
+
+async def test_sql_same_key_is_independent_across_households(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The same idempotency key can create independent rows in different households."""
+    _require_sql_backend(monkeypatch)
+    key = f"sql-cross-household-{uuid.uuid4().hex[:10]}"
+    household_one = uuid.uuid4()
+    user_one = uuid.uuid4()
+    suffix_one = uuid.uuid4().hex[:10]
+    ids_one = await _seed_household_lookup_data(household_one, user_one, suffix=suffix_one)
+    household_two = uuid.uuid4()
+    user_two = uuid.uuid4()
+    suffix_two = uuid.uuid4().hex[:10]
+    ids_two = await _seed_household_lookup_data(household_two, user_two, suffix=suffix_two)
+    active = {"household_id": household_one, "user_id": user_one}
+    _install_sql_app_overrides(active)
+
+    try:
+        with patch("app.routers.api_brew_log.get_ai_feedback", AsyncMock(return_value="ok")):
+            async with _client_ctx() as client:
+                first = await client.post("/api/brew-log", json=_sql_body(ids_one, key))
+                active["household_id"] = household_two
+                active["user_id"] = user_two
+                second = await client.post("/api/brew-log", json=_sql_body(ids_two, key))
+    finally:
+        _clear_sql_app_overrides()
+
+    assert first.status_code == 201
+    assert second.status_code == 201
+    assert first.json()["shot_id"] != second.json()["shot_id"]
+    assert await _count_rows_for_key(household_one, key) == 1
+    assert await _count_rows_for_key(household_two, key) == 1
+
+
+async def test_sql_different_keys_allow_identical_shot_content(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Durable idempotency does not introduce content-based deduplication."""
+    _require_sql_backend(monkeypatch)
+    suffix = uuid.uuid4().hex[:10]
+    household_id = uuid.uuid4()
+    user_id = uuid.uuid4()
+    ids = await _seed_household_lookup_data(household_id, user_id, suffix=suffix)
+    active = {"household_id": household_id, "user_id": user_id}
+    _install_sql_app_overrides(active)
+    key_one = f"sql-distinct-one-{suffix}"
+    key_two = f"sql-distinct-two-{suffix}"
+    body_one = _sql_body(ids, key_one)
+    body_two = {**body_one, "idempotency_key": key_two}
+
+    try:
+        with patch("app.routers.api_brew_log.get_ai_feedback", AsyncMock(return_value="ok")):
+            async with _client_ctx() as client:
+                first = await client.post("/api/brew-log", json=body_one)
+                second = await client.post("/api/brew-log", json=body_two)
+    finally:
+        _clear_sql_app_overrides()
+
+    assert first.status_code == 201
+    assert second.status_code == 201
+    assert first.json()["shot_id"] != second.json()["shot_id"]
+    assert await _count_rows_for_key(household_id, key_one) == 1
+    assert await _count_rows_for_key(household_id, key_two) == 1

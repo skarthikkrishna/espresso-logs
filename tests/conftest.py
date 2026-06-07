@@ -102,6 +102,14 @@ async def _tenant_schema_present(engine) -> bool:
                   to_regclass('public.users') IS NOT NULL
                   AND to_regclass('public.households') IS NOT NULL
                   AND to_regclass('public.household_members') IS NOT NULL
+                  AND to_regclass('public.brew_log') IS NOT NULL
+                  AND EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'brew_log'
+                      AND column_name = 'idempotency_key'
+                  )
                 """
             )
         )
@@ -221,26 +229,29 @@ def _patch_get_db():
     from contextlib import asynccontextmanager
 
     if _database_url_active():
-        import app.models.base as base
         from sqlalchemy.ext.asyncio import AsyncSession
+        from sqlalchemy.ext.asyncio import create_async_engine
 
         @asynccontextmanager
         async def _tenant_cm():
-            engine = base.get_engine()
+            engine = create_async_engine(os.environ["DATABASE_URL"], echo=False)
             await _ensure_tenant_schema(engine)
-            async with engine.connect() as conn:
-                transaction = await conn.begin()
-                await _seed_global_tenant_context(conn)
-                session = AsyncSession(
-                    bind=conn,
-                    expire_on_commit=False,
-                    join_transaction_mode="create_savepoint",
-                )
-                try:
-                    yield session
-                finally:
-                    await session.close()
-                    await transaction.rollback()
+            try:
+                async with engine.connect() as conn:
+                    transaction = await conn.begin()
+                    await _seed_global_tenant_context(conn)
+                    session = AsyncSession(
+                        bind=conn,
+                        expire_on_commit=False,
+                        join_transaction_mode="create_savepoint",
+                    )
+                    try:
+                        yield session
+                    finally:
+                        await session.close()
+                        await transaction.rollback()
+            finally:
+                await engine.dispose()
 
         def _tenant_get_session_factory():
             return lambda: _tenant_cm()

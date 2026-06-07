@@ -6,7 +6,7 @@
  */
 
 import React from 'react'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
@@ -25,11 +25,12 @@ vi.mock('react-router-dom', async () => {
 })
 
 vi.mock('../api/brewLog', () => ({
+  brewLogDetailQueryKey: (id: string) => ['brew-log-detail', id] as const,
   listBrewLog: vi.fn(),
   getBrewLogDetail: vi.fn(),
 }))
 
-import { listBrewLog } from '../api/brewLog'
+import { getBrewLogDetail, listBrewLog } from '../api/brewLog'
 import BrewLogList from './BrewLogList'
 
 function renderWithQuery(ui: React.ReactElement) {
@@ -39,11 +40,14 @@ function renderWithQuery(ui: React.ReactElement) {
       mutations: { retry: false },
     },
   })
-  return render(
-    <MemoryRouter>
-      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
-    </MemoryRouter>
-  )
+  return {
+    queryClient,
+    ...render(
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+      </MemoryRouter>
+    ),
+  }
 }
 
 beforeEach(() => {
@@ -62,6 +66,12 @@ beforeEach(() => {
     has_next: false,
     sync_alert: false,
   })
+  vi.mocked(getBrewLogDetail).mockResolvedValue({
+    shot_id: 'shot-1',
+    date: '2025-07-29',
+    bag_display: 'Test Roaster — Test Bean',
+    roast_level: 'Light',
+  })
 })
 
 describe('BrewLogList — portal regression', () => {
@@ -73,6 +83,22 @@ describe('BrewLogList — portal regression', () => {
     expect(fab).toBeInTheDocument()             // sanity: element exists
     expect(container).not.toContainElement(fab) // NOT inside component root
     expect(document.body).toContainElement(fab) // IS portalled to body
+  })
+})
+
+describe('BrewLogList — detail prefetch cache key', () => {
+  it('prefetches shot detail under a dedicated key that does not collide with paginated list keys', async () => {
+    const { queryClient } = renderWithQuery(<BrewLogList />)
+
+    const entry = await screen.findByTestId('brew-log-entry')
+    fireEvent.mouseEnter(entry)
+
+    await waitFor(() => {
+      expect(getBrewLogDetail).toHaveBeenCalledWith('shot-1')
+      expect(queryClient.getQueryState(['brew-log-detail', 'shot-1'])).toBeDefined()
+    })
+    expect(queryClient.getQueryState(['brew-log', 'shot-1'])).toBeUndefined()
+    expect(queryClient.getQueryState(['brew-log', 1, 100])).toBeDefined()
   })
 })
 

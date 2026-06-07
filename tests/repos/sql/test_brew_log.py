@@ -53,6 +53,22 @@ async def test_add_creates_row(db_session: AsyncSession, test_household_id) -> N
     assert entry.catalog_id is None
 
 
+async def test_add_without_commit_preserves_household_context(
+    db_session: AsyncSession,
+    test_household_id: uuid.UUID,
+) -> None:
+    """Create-path add(commit=False) keeps SET LOCAL context for response-critical reads."""
+    repo = SqlBrewLogRepo(db=db_session)
+
+    await repo.add({"Shot_ID": "SH-RLS-NOCOMMIT-001", "User_Notes": "context"}, commit=False)
+
+    current = await db_session.execute(
+        sa.text("SELECT current_setting('app.current_household_id', true)")
+    )
+    assert current.scalar_one() == str(test_household_id)
+    assert await repo.get("SH-RLS-NOCOMMIT-001") is not None
+
+
 async def test_add_uses_current_household_setting_when_household_omitted(
     db_session: AsyncSession,
 ) -> None:
@@ -69,6 +85,84 @@ async def test_add_uses_current_household_setting_when_household_omitted(
     result = await db_session.execute(select(BrewLog).where(BrewLog.sheets_id == "SH-RLS-001"))
     entry = result.scalar_one()
     assert entry.household_id == household_id
+
+
+async def test_empty_household_context_fails_closed_without_uuid_cast_error(
+    db_session: AsyncSession,
+) -> None:
+    """Empty app.current_household_id hides tenant rows instead of raising UUID cast errors."""
+    household_id = await _make_household(db_session, "brew_log_empty_context")
+    await db_session.execute(
+        sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+        {"hid": str(household_id)},
+    )
+    repo = SqlBrewLogRepo(db=db_session)
+    await repo.add({"Shot_ID": "SH-RLS-EMPTY-001", "User_Notes": "hidden on empty context"})
+
+    await db_session.execute(sa.text("SELECT set_config('app.current_household_id', '', true)"))
+
+    assert await repo.list() == []
+    assert await repo.get("SH-RLS-EMPTY-001") is None
+
+
+async def test_household_rls_isolates_brew_log_reads(db_session: AsyncSession) -> None:
+    """Two households can write/read only their own brew-log rows under RLS."""
+    household_one = await _make_household(db_session, "brew_log_iso_one")
+    household_two = await _make_household(db_session, "brew_log_iso_two")
+    repo = SqlBrewLogRepo(db=db_session)
+
+    await repo.set_household_context(household_one)
+    await repo.add({"Shot_ID": "SH-RLS-ISO-001", "User_Notes": "household one"})
+    await repo.set_household_context(household_two)
+    await repo.add({"Shot_ID": "SH-RLS-ISO-002", "User_Notes": "household two"})
+
+    await repo.set_household_context(household_one)
+    rows_one = await repo.list()
+    assert {row["Shot_ID"] for row in rows_one} == {"SH-RLS-ISO-001"}
+    assert await repo.get("SH-RLS-ISO-002") is None
+
+    await repo.set_household_context(household_two)
+    rows_two = await repo.list()
+    assert {row["Shot_ID"] for row in rows_two} == {"SH-RLS-ISO-002"}
+    assert await repo.get("SH-RLS-ISO-001") is None
+
+
+async def test_idempotency_key_is_unique_per_household(db_session: AsyncSession) -> None:
+    """The durable idempotency key is scoped by household, not shot content."""
+    household_one = await _make_household(db_session, "brew_log_idem_one")
+    household_two = await _make_household(db_session, "brew_log_idem_two")
+    repo = SqlBrewLogRepo(db=db_session)
+
+    await repo.set_household_context(household_one)
+    await repo.add(
+        {
+            "Shot_ID": "SH-IDEM-001",
+            "User_Notes": "first household",
+            "Idempotency_Key": "shared-key",
+            "Idempotency_Request_Hash": "hash-one",
+        }
+    )
+    await repo.set_household_context(household_two)
+    await repo.add(
+        {
+            "Shot_ID": "SH-IDEM-002",
+            "User_Notes": "second household",
+            "Idempotency_Key": "shared-key",
+            "Idempotency_Request_Hash": "hash-two",
+        }
+    )
+
+    await repo.set_household_context(household_one)
+    existing_one = await repo.get_by_idempotency_key("shared-key")
+    assert existing_one is not None
+    assert existing_one["Shot_ID"] == "SH-IDEM-001"
+    assert existing_one["Idempotency_Request_Hash"] == "hash-one"
+
+    await repo.set_household_context(household_two)
+    existing_two = await repo.get_by_idempotency_key("shared-key")
+    assert existing_two is not None
+    assert existing_two["Shot_ID"] == "SH-IDEM-002"
+    assert existing_two["Idempotency_Request_Hash"] == "hash-two"
 
 
 async def test_add_handles_empty_numerics(db_session: AsyncSession) -> None:

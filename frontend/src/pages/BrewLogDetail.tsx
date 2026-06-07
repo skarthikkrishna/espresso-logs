@@ -1,7 +1,14 @@
 import { useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { getBrewLogDetail, getBrewLogFeedback } from '../api/brewLog'
+import type { QueryClient } from '@tanstack/react-query'
+import {
+  brewLogDetailQueryKey,
+  brewLogFeedbackQueryKey,
+  getBrewLogDetail,
+  getBrewLogFeedback,
+} from '../api/brewLog'
+import type { BrewLogPage } from '../api/brewLog'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Chip from '../components/Chip'
 import type { BrewLogEntry } from '../types/entities'
@@ -16,30 +23,62 @@ function eligibilityBadgeClasses(eligibility: string): string {
   }
 }
 
+type CachedBrewLogShot = {
+  shot: BrewLogEntry
+  dataUpdatedAt: number | undefined
+}
+
+function isBrewLogEntry(value: unknown): value is BrewLogEntry {
+  if (!value || typeof value !== 'object') return false
+  return typeof (value as { shot_id?: unknown }).shot_id === 'string'
+}
+
+function isBrewLogPage(value: unknown): value is BrewLogPage {
+  if (!value || typeof value !== 'object') return false
+  const items = (value as { items?: unknown }).items
+  return Array.isArray(items) && items.every(isBrewLogEntry)
+}
+
+function findCachedBrewLogShot(queryClient: QueryClient, shotId: string): CachedBrewLogShot | undefined {
+  if (!shotId) return undefined
+
+  for (const [queryKey, page] of queryClient.getQueriesData<unknown>({ queryKey: ['brew-log'] })) {
+    if (!isBrewLogPage(page)) continue
+
+    const shot = page.items.find((entry) => entry.shot_id === shotId)
+    if (shot) {
+      return {
+        shot,
+        dataUpdatedAt: queryClient.getQueryState(queryKey)?.dataUpdatedAt,
+      }
+    }
+  }
+
+  return undefined
+}
+
 export default function BrewLogDetail() {
   const { id } = useParams<{ id: string }>()
+  const shotId = id ?? ''
   const [searchParams] = useSearchParams()
   const rawBack = searchParams.get('back')
   // Security guard: accept only root-relative paths; reject protocol-relative (//evil.com)
   const backTarget = rawBack?.startsWith('/') && !rawBack?.startsWith('//') ? rawBack : '/brew-log'
   const [feedbackEnabled, setFeedbackEnabled] = useState(false)
   const queryClient = useQueryClient()
+  const cachedShot = findCachedBrewLogShot(queryClient, shotId)
 
   const { data: shot, isLoading, error } = useQuery({
-    queryKey: ['brew-log', id],
-    queryFn: () => getBrewLogDetail(id!),
+    queryKey: brewLogDetailQueryKey(shotId),
+    queryFn: () => getBrewLogDetail(shotId),
     enabled: !!id,
-    initialData: () => {
-      const list = queryClient.getQueryData<BrewLogEntry[]>(['brew-log'])
-      return list?.find((s) => s.shot_id === id)
-    },
-    initialDataUpdatedAt: () =>
-      queryClient.getQueryState(['brew-log'])?.dataUpdatedAt,
+    initialData: () => cachedShot?.shot,
+    initialDataUpdatedAt: () => cachedShot?.dataUpdatedAt,
   })
 
   const { data: feedbackData, isLoading: feedbackLoading } = useQuery({
-    queryKey: ['brew-log', id, 'feedback'],
-    queryFn: () => getBrewLogFeedback(id!),
+    queryKey: brewLogFeedbackQueryKey(shotId),
+    queryFn: () => getBrewLogFeedback(shotId),
     enabled: !!id && feedbackEnabled,
   })
 
@@ -171,4 +210,3 @@ export default function BrewLogDetail() {
     </div>
   )
 }
-
