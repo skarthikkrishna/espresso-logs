@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import io
 import json
 import os
 import uuid
@@ -11,16 +12,18 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 import sqlalchemy as sa
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from httpx import ASGITransport, AsyncClient
 from itsdangerous import TimestampSigner
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from starlette.datastructures import Headers, UploadFile
 
 from app.deps import current_household_membership, get_llm_client, get_sheets_client
 from app.main import app
 from app.models.base import get_db
 from app.models.household import HouseholdMember
 from app.repos.base import get_process_cache
+from app.routers.api_catalog import api_catalog_upload_image
 
 pytestmark = pytest.mark.asyncio(loop_scope="module")
 
@@ -462,6 +465,16 @@ async def test_sql_catalog_image_upload_rejects_non_image_without_deleting_catal
     assert rejected.status_code == 422
     assert detail.status_code == 200
     assert detail.json()["item"]["image_path"] is None
+
+
+async def test_catalog_upload_image_rejects_missing_content_type() -> None:
+    """Missing upload content_type is rejected instead of defaulting to JPEG."""
+    file = UploadFile(io.BytesIO(b"\xff\xd8\xff"), filename="bag.jpg", headers=Headers())
+    catalog_repo = AsyncMock()
+    catalog_repo.get.return_value = {"Catalog_ID": "CAT001"}
+
+    with pytest.raises(HTTPException, match="file must be a JPEG, PNG, or WebP image."):
+        await api_catalog_upload_image("CAT001", file=file, catalog_repo=catalog_repo)
 
 
 async def test_sql_catalog_add_bag_rejects_roast_mismatch_when_catalog_roast_present(

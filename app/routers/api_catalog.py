@@ -478,7 +478,7 @@ async def api_catalog_upload_image(
     if entry is None:
         raise HTTPException(status_code=404, detail="Catalog entry not found")
 
-    content_type = (file.content_type or "image/jpeg").split(";")[0].strip()
+    content_type = (file.content_type or "").split(";")[0].strip()
     if content_type not in _ALLOWED_UPLOAD_CONTENT_TYPES:
         raise HTTPException(status_code=422, detail="file must be a JPEG, PNG, or WebP image.")
     img_bytes = await file.read()

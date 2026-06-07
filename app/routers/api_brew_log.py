@@ -6,6 +6,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import math
 from datetime import date
 from typing import Any
 
@@ -254,8 +255,10 @@ def _normalise_brew_log_patch(body: _BrewLogPatchBody) -> dict[str, Any]:
             updates["grind_setting"] = ""
         else:
             try:
-                float(grind_setting)
+                numeric_grind_setting = float(grind_setting)
             except ValueError:
+                raise HTTPException(status_code=422, detail="grind_setting must be numeric.")
+            if not math.isfinite(numeric_grind_setting):
                 raise HTTPException(status_code=422, detail="grind_setting must be numeric.")
             updates["grind_setting"] = grind_setting.strip()
 

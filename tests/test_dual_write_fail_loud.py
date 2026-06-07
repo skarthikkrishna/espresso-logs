@@ -81,6 +81,20 @@ async def test_catalog_read_raises_when_sql_missing_in_postgres_mode() -> None:
     sheets.get.assert_not_called()
 
 
+async def test_update_correction_fails_closed_when_postgres_disabled() -> None:
+    """Brew-log PATCH must not pretend to persist when Sheets writes are disabled."""
+    sheets = MagicMock()
+    sql = AsyncMock()
+    repo = _DualWriteBrewLogRepo(sheets=sheets, sql=sql)
+
+    with patch("app.deps.settings.use_postgres", False):
+        updated = await repo.update_correction("SHOT001", {"taste_summary": "corrected"})
+
+    assert updated is None
+    sheets.get.assert_not_called()
+    sql.update_correction.assert_not_called()
+
+
 async def test_post_brew_log_surfaces_sql_failure_as_http_500() -> None:
     """A Postgres write failure must surface to the caller as HTTP 500, not silent 201."""
     fake = FakeSheetsClient({"Brew_Log": [], "Inventory": [], "Catalog": [], "Hardware": []})
