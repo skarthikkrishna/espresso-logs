@@ -1,5 +1,34 @@
 # Decisions Archive
 
+## 2026-06-07: Spec-039 UI Bug Repro Planning Closeout
+
+### Decision: Tariq routing — DIRECT_PERMITTED (Scribe closure)
+- **Agent:** Tariq
+- **Date:** 2026-06-07T03:50:22-07:00
+- **Status:** COMMITTED
+- **Classification:** DIRECT_PERMITTED
+- **drop_id:** 20260607T035022-0700-tariq-scribe-closure-routing
+- **Source drop:** `.squad/decisions/inbox/20260607T035022-0700-tariq-scribe-closure-routing.md`
+- **Operator Request:** Close the Spec-039 planning session by merging decision drops, writing concise session logs in the involved repositories, clearing processed inbox files, and committing documentation/process changes locally.
+- **Rationale:** The closeout is documentation/process-only. It does not authorize UI, API, cache, AI, infrastructure, test, deployment, production-data, or SpecKit requirement changes.
+- **Scope:** Merge and clear current decision inbox files; write `.squad/log/20260607T035022-0700-ui-bug-repro-plan.md` in the involved repositories; commit only Scribe closeout artifacts locally.
+- **Gate Note:** Quinn gate is waived for this closure only because no application or infrastructure implementation is authorized. The existing Spec-039 Quinn gate remains `APPROVED_WITH_NOTES` at `c25e65d` and is still required before implementation begins.
+- **Outcome:** This Scribe close merged pending app-repo drops, cleared processed inbox files, wrote cross-repo session logs, did not implement fixes, and did not push.
+
+### Decision: Finn routing — DIRECT_PERMITTED (Spec-039 Aria gate mirror)
+- **Agent:** Finn
+- **Date:** 2026-06-07T02:56:34-07:00
+- **Status:** COMMITTED
+- **Classification:** DIRECT_PERMITTED
+- **drop_id:** 20260607T025734-0700-finn-aria-gate-routing
+- **Source drop:** `.squad/decisions/inbox/20260607T025734-0700-finn-aria-gate-routing.md`
+- **Operator Request:** Aria must review the existing Spec-039 artifacts and create/commit only `coffee_tracker/specs/039-ui-data-freshness-bug-evidence/aria-gate.md`.
+- **Rationale:** This was a self-contained gate-artifact step over already-created `spec.md`, `plan.md`, and `compliance.md`; no new product scope, implementation, or app-repo change was authorized.
+- **Scope:** Create and commit only the Spec-039 Aria gate in `coffee_tracker`; do not modify `espresso-logs`, other SpecKit artifacts, or push.
+- **Outcome:** Aria approved the gate in `d5d9243 design: approve spec-039 aria gate`; `aria-gate.md` has `status: APPROVED`. This app-repo mirror records and clears the pending Finn drop without changing application code.
+
+---
+
 ## 2026-06-06: Cross-Repo Squad Governance — Spec-038 Routing
 
 ### Decision: Tariq routing — SPECKIT_REQUIRED (cross-repo squad governance spec)
