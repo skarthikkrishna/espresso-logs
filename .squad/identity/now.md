@@ -1,38 +1,27 @@
 ---
-updated_at: 2026-06-07T01:05:42.873-07:00
-focus_area: New session gate clear — prior Spec-038 cleanup and stale state disposed
-active_issues: []
+updated_at: 2026-06-07T01:26:23.830-07:00
+focus_area: Cross-repo repo hygiene and planning-session cleanup continuity
+active_issues:
+  - Preserve fix/prod-shot-save-detail until ownership and merge status are explicit
+  - Preserve Spec-038 worktree unless a future hygiene pass proves it is safe to remove
 ---
 
 # What We're Focused On
 
 ## Current Team Focus
 
-Spec-038 (cross-repo Squad governance) is merged across Coffee Tracker, Espresso Logs, and tf-infra. The prior post-merge cleanup/disposition items have been handled for the Espresso Logs session gate and are no longer blocking new routed work.
+The active cross-repo work is governance-only repo hygiene/planning-session cleanup routed by Tariq in `coffee_tracker`. No Espresso Logs app source, UI, API, tests, infrastructure, or feature SpecKit artifacts are authorized for editing under this direct path.
 
-## Disposition Applied
+## Verified Espresso Logs State at Close
 
-### Post-merge local cleanup
-- Operator authorised Ralph to clear/dispose stale work and rerun the gate.
-- Current Espresso Logs working tree is clean.
-- The stale Spec-038 worktree/branch is preserved rather than deleted; no uncommitted work was found, and preserving it avoids deleting local artifacts during gate cleanup.
-- Remaining local branch/worktree hygiene is non-blocking maintenance, not active in-progress Squad work.
+- Current branch: `fix/prod-shot-save-detail`.
+- Working tree: clean.
+- Remote tracking: ahead of `origin/fix/prod-shot-save-detail` by 23 commits.
+- Worktrees: primary checkout plus preserved Spec-038 worktree at `../espresso-logs-spec-038`.
+- No push has been performed. Ralph close made no destructive reset/checkout and did not delete branches or worktrees.
 
-### Deferred tasks — T009 / T020
-- T009 and T020 are closed as deferred/out-of-scope for the merged Spec-038 work in this repo.
-- If workflow deployment or charter-drift remediation is needed later, it should enter a new routed request/spec rather than remain as active carryover state.
+## Open Work / Next Session
 
-### Coffee Tracker incident branch artifacts
-- `incident/prod-shot-save-detail-logs` was a Coffee Tracker artifact, not an Espresso Logs working-tree item.
-- For this repo's Ralph gate, it is marked non-blocking and outside current session scope.
-- No Coffee Tracker files, branches, commits, or artifacts were deleted from this repo.
-
-## Rerun Gate Result
-
-- `now.md` is current within 7 days.
-- `.squad/decisions/inbox/` is absent/empty for pending decisions in this checkout.
-- No unresolved in-progress Squad state remains in `.squad/identity/now.md`.
-
-## Next Milestone
-
-Proceed with the next routed operator request from a clean Squad session state.
+1. Preserve `fix/prod-shot-save-detail` until ownership, merge status, and next action are explicit.
+2. If repo hygiene continues, prove branch/worktree merge safety before any prune/delete; preserve uncertain work.
+3. Re-route before any application, UI, API, test, infrastructure, or feature SpecKit implementation work.
