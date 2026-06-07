@@ -9,6 +9,7 @@ from typing import Any
 
 from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.elements import ColumnElement
 
 from app.models.brew_log import BrewLog
 
@@ -65,6 +66,12 @@ class SqlBrewLogRepo:
             text("SELECT set_config('app.current_household_id', :hid, true)"),
             {"hid": str(household_id)},
         )
+
+    async def _current_household_filter(self) -> ColumnElement[bool] | None:
+        household_id = await self._current_household_id()
+        if household_id is None:
+            return None
+        return BrewLog.household_id == household_id
 
     async def commit(self) -> None:
         await self._db.commit()
@@ -125,12 +132,22 @@ class SqlBrewLogRepo:
 
     async def list(self) -> builtins.list[dict[str, Any]]:
         """Return all brew log entries ordered by brew date descending."""
-        result = await self._db.execute(select(BrewLog).order_by(BrewLog.brewed_at.desc()))
+        household_filter = await self._current_household_filter()
+        if household_filter is None:
+            return []
+        result = await self._db.execute(
+            select(BrewLog).where(household_filter).order_by(BrewLog.brewed_at.desc())
+        )
         return [self._to_dict(r) for r in result.scalars().all()]
 
     async def list_recent(self, n: int = 20) -> builtins.list[dict[str, Any]]:
         """Return the N most recent brew log entries."""
-        result = await self._db.execute(select(BrewLog).order_by(BrewLog.brewed_at.desc()).limit(n))
+        household_filter = await self._current_household_filter()
+        if household_filter is None:
+            return []
+        result = await self._db.execute(
+            select(BrewLog).where(household_filter).order_by(BrewLog.brewed_at.desc()).limit(n)
+        )
         return [self._to_dict(r) for r in result.scalars().all()]
 
     async def list_paginated(
@@ -140,12 +157,19 @@ class SqlBrewLogRepo:
 
         Returns (rows, total_count) where rows is ordered newest-first.
         """
-        count_result = await self._db.execute(select(func.count()).select_from(BrewLog))
+        household_filter = await self._current_household_filter()
+        if household_filter is None:
+            return [], 0
+
+        count_result = await self._db.execute(
+            select(func.count()).select_from(BrewLog).where(household_filter)
+        )
         total_count: int = count_result.scalar_one()
 
         offset = (page - 1) * per_page
         result = await self._db.execute(
             select(BrewLog)
+            .where(household_filter)
             .order_by(BrewLog.brewed_at.desc(), BrewLog.id.desc())
             .limit(per_page)
             .offset(offset)
@@ -155,7 +179,12 @@ class SqlBrewLogRepo:
 
     async def list_for_bag(self, bag_id: str) -> builtins.list[dict[str, Any]]:
         """Return all brew log entries for a given bag."""
-        result = await self._db.execute(select(BrewLog).where(BrewLog.bag_id == bag_id))
+        household_filter = await self._current_household_filter()
+        if household_filter is None:
+            return []
+        result = await self._db.execute(
+            select(BrewLog).where(household_filter, BrewLog.bag_id == bag_id)
+        )
         return [self._to_dict(r) for r in result.scalars().all()]
 
     async def list_existing_ids(self) -> builtins.list[str]:
@@ -167,24 +196,39 @@ class SqlBrewLogRepo:
 
     async def get(self, shot_id: str) -> dict[str, Any] | None:
         """Fetch a single brew log entry by Sheets Shot_ID."""
-        result = await self._db.execute(select(BrewLog).where(BrewLog.sheets_id == shot_id))
+        household_filter = await self._current_household_filter()
+        if household_filter is None:
+            return None
+        result = await self._db.execute(
+            select(BrewLog).where(household_filter, BrewLog.sheets_id == shot_id)
+        )
         row = result.scalar_one_or_none()
         return self._to_dict(row) if row else None
 
     async def get_by_idempotency_key(self, idempotency_key: str) -> dict[str, Any] | None:
         """Fetch a brew log entry by household-scoped idempotency key."""
+        household_filter = await self._current_household_filter()
+        if household_filter is None:
+            return None
         result = await self._db.execute(
-            select(BrewLog).where(BrewLog.idempotency_key == idempotency_key)
+            select(BrewLog).where(household_filter, BrewLog.idempotency_key == idempotency_key)
         )
         row = result.scalar_one_or_none()
         return self._to_dict(row) if row else None
 
     async def delete_by_shot_id(self, shot_id: str) -> bool:
         """Delete a brew log entry by Sheets Shot_ID. Returns True if a row was deleted."""
-        check = await self._db.execute(select(BrewLog.id).where(BrewLog.sheets_id == shot_id))
+        household_filter = await self._current_household_filter()
+        if household_filter is None:
+            return False
+        check = await self._db.execute(
+            select(BrewLog.id).where(household_filter, BrewLog.sheets_id == shot_id)
+        )
         if check.scalar_one_or_none() is None:
             return False
-        await self._db.execute(delete(BrewLog).where(BrewLog.sheets_id == shot_id))
+        await self._db.execute(
+            delete(BrewLog).where(household_filter, BrewLog.sheets_id == shot_id)
+        )
         await self._db.commit()
         return True
 

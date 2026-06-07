@@ -55,9 +55,9 @@ fi
 
 # Check 4: pytest
 CURRENT_CHECK=4
-section_header "$CURRENT_CHECK" "Pytest tests (SPREADSHEET_ID=dummy uv run pytest tests/ -v --ignore=tests/e2e/)"
-if ! SPREADSHEET_ID=dummy uv run pytest tests/ -v --ignore=tests/e2e/; then
-    on_failure "$CURRENT_CHECK" "SPREADSHEET_ID=dummy uv run pytest tests/ -v --ignore=tests/e2e/"
+section_header "$CURRENT_CHECK" "Pytest tests (DATABASE_URL-backed CI parity)"
+if ! SPREADSHEET_ID=dummy bash scripts/run-ci-tests.sh; then
+    on_failure "$CURRENT_CHECK" "SPREADSHEET_ID=dummy bash scripts/run-ci-tests.sh"
 fi
 
 # All checks passed
