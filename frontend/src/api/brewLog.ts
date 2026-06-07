@@ -26,6 +26,10 @@ export interface SubmitShotPayload {
   idempotency_key: string
 }
 
+export const brewLogDetailQueryKey = (id: string) => ['brew-log-detail', id] as const
+
+export const brewLogFeedbackQueryKey = (id: string) => ['brew-log-detail', id, 'feedback'] as const
+
 export const listBrewLog = (page = 1, perPage = 100) =>
   apiClient
     .get<BrewLogPage>('/api/brew-log', { params: { page, per_page: perPage } })
