@@ -362,7 +362,9 @@ async def _count_rows_for_key(household_id: uuid.UUID, key: str) -> int:
             {"hid": str(household_id)},
         )
         result = await session.execute(
-            sa.select(sa.func.count()).select_from(BrewLog).where(BrewLog.idempotency_key == key)
+            sa.select(sa.func.count())
+            .select_from(BrewLog)
+            .where(BrewLog.household_id == household_id, BrewLog.idempotency_key == key)
         )
         return int(result.scalar_one())
 
