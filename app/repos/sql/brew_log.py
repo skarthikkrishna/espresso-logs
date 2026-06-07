@@ -60,8 +60,24 @@ class SqlBrewLogRepo:
         )
         return _parse_uuid(result.scalar_one_or_none())
 
-    async def add(self, row: dict[str, Any]) -> None:
+    async def set_household_context(self, household_id: uuid.UUID) -> None:
+        await self._db.execute(
+            text("SELECT set_config('app.current_household_id', :hid, true)"),
+            {"hid": str(household_id)},
+        )
+
+    async def commit(self) -> None:
+        await self._db.commit()
+
+    async def rollback(self) -> None:
+        await self._db.rollback()
+
+    async def add(self, row: dict[str, Any], *, commit: bool = True) -> None:
         """Append a brew log row, inheriting tenant context when omitted."""
+        idempotency_key = row.get("idempotency_key") or row.get("Idempotency_Key") or None
+        idempotency_request_hash = (
+            row.get("idempotency_request_hash") or row.get("Idempotency_Request_Hash") or None
+        )
         entry = BrewLog(
             household_id=_parse_uuid(row.get("household_id") or row.get("Household_ID")),
             sheets_id=row.get("Shot_ID"),
@@ -81,13 +97,16 @@ class SqlBrewLogRepo:
             storage_method=row.get("Storage_Method"),
             brew_method=row.get("Brew_Method"),
             rating=_to_int(row.get("Rating")),
+            idempotency_key=idempotency_key,
+            idempotency_request_hash=idempotency_request_hash,
         )
         if entry.household_id is None:
             entry.household_id = await self._current_household_id()
         self._db.add(entry)
         await self._db.flush()
         await self._db.refresh(entry)
-        await self._db.commit()
+        if commit:
+            await self._db.commit()
 
     async def add_many(self, rows: list[dict[str, Any]]) -> None:
         """Bulk insert."""
@@ -152,6 +171,14 @@ class SqlBrewLogRepo:
         row = result.scalar_one_or_none()
         return self._to_dict(row) if row else None
 
+    async def get_by_idempotency_key(self, idempotency_key: str) -> dict[str, Any] | None:
+        """Fetch a brew log entry by household-scoped idempotency key."""
+        result = await self._db.execute(
+            select(BrewLog).where(BrewLog.idempotency_key == idempotency_key)
+        )
+        row = result.scalar_one_or_none()
+        return self._to_dict(row) if row else None
+
     async def delete_by_shot_id(self, shot_id: str) -> bool:
         """Delete a brew log entry by Sheets Shot_ID. Returns True if a row was deleted."""
         check = await self._db.execute(select(BrewLog.id).where(BrewLog.sheets_id == shot_id))
@@ -178,4 +205,6 @@ class SqlBrewLogRepo:
             "User_Notes": row.notes or "",
             "AI_Feedback": row.ai_feedback or "",
             "Storage_Method": row.storage_method or "",
+            "Idempotency_Key": row.idempotency_key or "",
+            "Idempotency_Request_Hash": row.idempotency_request_hash or "",
         }

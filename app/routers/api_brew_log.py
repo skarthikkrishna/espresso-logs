@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import json
 import logging
 from datetime import date
 from typing import Any
@@ -10,6 +12,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from sqlalchemy.exc import IntegrityError
 
 from app.config import settings
 from app.deps import (
@@ -191,10 +194,65 @@ class _BrewLogCreateBody(BaseModel):
     idempotency_key: str | None = None  # stripped before repo layer; never written to Sheets
 
 
+def _normalise_idempotency_key(key: str | None) -> str | None:
+    if key is None:
+        return None
+    key = key.strip()
+    return key or None
+
+
+def _idempotency_request_hash(body: _BrewLogCreateBody, shot_date: date) -> str:
+    payload = {
+        "bag_id": body.bag_id,
+        "basket_id": body.basket_id,
+        "dose_in_g": body.dose_in_g,
+        "grinder_id": body.grinder_id,
+        "grind_setting": body.grind_setting,
+        "machine_id": body.machine_id,
+        "shot_date": shot_date.isoformat(),
+        "shot_eligibility": body.shot_eligibility,
+        "storage_method": body.storage_method,
+        "taste_summary": body.taste_summary,
+        "time_sec": body.time_sec,
+        "user_notes": body.user_notes,
+        "yield_out_g": body.yield_out_g,
+    }
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+async def _render_shot_response(
+    shot: dict[str, Any],
+    inventory_repo: _DualWriteInventoryRepo,
+    catalog_repo: _DualWriteCatalogRepo,
+    hardware_repo: _DualWriteHardwareRepo,
+) -> BrewLogEntryOut:
+    bags, catalog, hardware = await _build_lookups(inventory_repo, catalog_repo, hardware_repo)
+    names = _resolve_names_from_dicts(shot, bags, catalog, hardware)
+    return _shot_to_out(shot, names)
+
+
+async def _existing_idempotent_response(
+    idempotency_key: str,
+    request_hash: str,
+    brew_log_repo: _DualWriteBrewLogRepo,
+    inventory_repo: _DualWriteInventoryRepo,
+    catalog_repo: _DualWriteCatalogRepo,
+    hardware_repo: _DualWriteHardwareRepo,
+) -> JSONResponse | None:
+    existing = await brew_log_repo.get_by_idempotency_key(idempotency_key)
+    if existing is None:
+        return None
+    if existing.get("Idempotency_Request_Hash") != request_hash:
+        raise HTTPException(status_code=409, detail="Idempotency key reused with different payload")
+    shot_out = await _render_shot_response(existing, inventory_repo, catalog_repo, hardware_repo)
+    return JSONResponse(status_code=200, content=shot_out.model_dump())
+
+
 @router.post("/brew-log", response_model=BrewLogEntryOut, status_code=201)
 async def api_brew_log_create(
     body: _BrewLogCreateBody,
-    _: HouseholdMember = Depends(current_household_membership),
+    membership: HouseholdMember = Depends(current_household_membership),
     brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
     inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
     catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
@@ -202,7 +260,7 @@ async def api_brew_log_create(
     maintenance_repo: _DualWriteMaintenanceRepo = Depends(get_maintenance_repo),
     llm_client: LLMClient = Depends(get_llm_client),
     store: IdempotencyStore = Depends(get_idempotency_store),
-) -> BrewLogEntryOut:
+) -> BrewLogEntryOut | JSONResponse:
     shot_date = date.today()
     if body.shot_date:
         try:
@@ -210,11 +268,24 @@ async def api_brew_log_create(
         except ValueError:
             raise HTTPException(status_code=422, detail="shot_date must be ISO format (YYYY-MM-DD)")
 
-    # Idempotency check — fail-open: skip entirely if key is absent/null/empty
-    if body.idempotency_key:
-        cached = await store.check_and_set_sentinel(body.idempotency_key)
+    idempotency_key = _normalise_idempotency_key(body.idempotency_key)
+    request_hash = _idempotency_request_hash(body, shot_date) if idempotency_key else None
+
+    if settings.use_postgres and idempotency_key and request_hash:
+        existing_response = await _existing_idempotent_response(
+            idempotency_key,
+            request_hash,
+            brew_log_repo,
+            inventory_repo,
+            catalog_repo,
+            hardware_repo,
+        )
+        if existing_response is not None:
+            return existing_response
+    elif idempotency_key:
+        cached = await store.check_and_set_sentinel(idempotency_key)
         if cached is not None:
-            return JSONResponse(status_code=200, content=cached)  # type: ignore[return-value]
+            return JSONResponse(status_code=200, content=cached)
 
     existing_ids = await brew_log_repo.list_existing_ids()
     shot_id = make_shot_id(shot_date, body.bag_id, existing_ids)
@@ -235,11 +306,36 @@ async def api_brew_log_create(
         "User_Notes": body.user_notes,
         "Storage_Method": body.storage_method,
     }
-    await brew_log_repo.add(row)
+    if idempotency_key and request_hash:
+        row["Idempotency_Key"] = idempotency_key
+        row["Idempotency_Request_Hash"] = request_hash
 
-    # Await AI feedback inline — fire-and-forget loses the task on Cloud Run scale-to-zero
-    bags, catalog, hardware = await _build_lookups(inventory_repo, catalog_repo, hardware_repo)
-    names = _resolve_names_from_dicts(row, bags, catalog, hardware)
+    try:
+        await brew_log_repo.add(row, commit=not settings.use_postgres)
+        bags, catalog, hardware = await _build_lookups(inventory_repo, catalog_repo, hardware_repo)
+        names = _resolve_names_from_dicts(row, bags, catalog, hardware)
+        shot_out = _shot_to_out(row, names)
+        if settings.use_postgres:
+            await brew_log_repo.commit()
+    except IntegrityError:
+        await brew_log_repo.rollback()
+        if settings.use_postgres and idempotency_key and request_hash:
+            await brew_log_repo.set_household_context(membership.household_id)
+            existing_response = await _existing_idempotent_response(
+                idempotency_key,
+                request_hash,
+                brew_log_repo,
+                inventory_repo,
+                catalog_repo,
+                hardware_repo,
+            )
+            if existing_response is not None:
+                return existing_response
+        raise
+    except Exception:
+        await brew_log_repo.rollback()
+        raise
+
     extra_context = {
         "machine_name": names.get("machine_name") or "",
         "grinder_name": names.get("grinder_name") or "",
@@ -249,6 +345,8 @@ async def api_brew_log_create(
         "storage_method": body.storage_method or "",
     }
     try:
+        if settings.use_postgres:
+            await brew_log_repo.set_household_context(membership.household_id)
         await asyncio.wait_for(
             get_ai_feedback(
                 shot_id, brew_log_repo, maintenance_repo, llm_client, extra_context=extra_context
@@ -260,12 +358,16 @@ async def api_brew_log_create(
             "get_ai_feedback timed out after 35 s for shot_id=%r — proceeding without feedback",
             shot_id,
         )
-
-    shot_out = _shot_to_out(row, names)
+    except Exception:
+        if settings.use_postgres:
+            await brew_log_repo.rollback()
+        logger.warning(
+            "get_ai_feedback failed for shot_id=%r — proceeding without feedback", shot_id
+        )
 
     # Cache the response for idempotent replay — only on the successful path
-    if body.idempotency_key:
-        await store.store(body.idempotency_key, shot_out.model_dump())
+    if idempotency_key:
+        await store.store(idempotency_key, shot_out.model_dump())
 
     return shot_out
 

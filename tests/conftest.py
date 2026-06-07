@@ -102,6 +102,14 @@ async def _tenant_schema_present(engine) -> bool:
                   to_regclass('public.users') IS NOT NULL
                   AND to_regclass('public.households') IS NOT NULL
                   AND to_regclass('public.household_members') IS NOT NULL
+                  AND to_regclass('public.brew_log') IS NOT NULL
+                  AND EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'brew_log'
+                      AND column_name = 'idempotency_key'
+                  )
                 """
             )
         )

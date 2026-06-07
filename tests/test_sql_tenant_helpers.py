@@ -50,7 +50,7 @@ class TestCurrentHouseholdId:
     async def test_returns_none_when_setting_empty(self) -> None:
         db = AsyncMock()
         mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = None
+        mock_result.scalar_one_or_none.return_value = ""
         db.execute.return_value = mock_result
 
         result = await current_household_id(db)

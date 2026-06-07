@@ -49,6 +49,8 @@ class BrewLog(Base):
     taste_summary: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     ai_feedback: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     storage_method: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    idempotency_key: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
+    idempotency_request_hash: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     brewed_at: Mapped[datetime.datetime] = mapped_column(
         sa.TIMESTAMP(timezone=True),
         nullable=False,
