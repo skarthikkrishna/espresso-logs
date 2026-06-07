@@ -27,3 +27,11 @@ fde3171a4961976fe8fe2be3187646b83f52a2ff:tests/test_api_brew_log_idempotency.py:
 28a1c5ce071aa133d64760b186c8e969a9099c1b:docs/ROTATION_PLAYBOOK.md:generic-api-key:67
 28a1c5ce071aa133d64760b186c8e969a9099c1b:docs/ROTATION_PLAYBOOK.md:generic-api-key:79
 28a1c5ce071aa133d64760b186c8e969a9099c1b:docs/ROTATION_PLAYBOOK.md:generic-api-key:186
+
+# README.md — historical documentation examples copied from gitleaks upstream output in commit
+# 7438c2c. These are scanner example strings, not real repository secrets, and the current README
+# no longer contains them. Ignore the PR-history findings without weakening active scanning.
+7438c2c44865cac36e20ca8ac672c1fbf00b724e:README.md:sidekiq-secret:42
+7438c2c44865cac36e20ca8ac672c1fbf00b724e:README.md:aws-access-token:221
+7438c2c44865cac36e20ca8ac672c1fbf00b724e:README.md:aws-access-token:223
+7438c2c44865cac36e20ca8ac672c1fbf00b724e:README.md:aws-access-token:259

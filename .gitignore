@@ -54,3 +54,6 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Spec Kit Cache
+.specify/extensions/.cache/
