@@ -1664,3 +1664,21 @@ Decision drop generated 2026-06-05T14:00 PDT
 - **Worktree:** `/Users/krishna/Documents/Development/GitHub/coffee_tracker-spec-038`, branch `spec/038-cross-repo-squad-governance`.
 - **Constraint:** Primary Coffee Tracker worktree on stale incident branch — do not touch. No pushes without operator confirmation + all four CI checks.
 - **Outcome:** Maya ran `speckit.plan`; plan commit `b29c3209189f25208dd4e2468b79b21687fe48fc`; `plan.md` and `compliance.md` confirmed via `git ls-files`. Branch ahead 3 of origin/main. Aria design gate deemed not applicable (governance/process work, no user-facing UI). Session closed at plan phase; tasks/Quinn gate/implementation not started.
+
+---
+
+## 2026-06-07: Spec-038 Implementation Fan-Out Authorization
+
+### Decision: Tariq routing — DIRECT_PERMITTED (Spec-038 implementation fan-out)
+- **Agent:** Tariq
+- **Date:** 2026-06-07T05:51:14Z
+- **Status:** COMMITTED
+- **Classification:** DIRECT_PERMITTED
+- **drop_id:** routing-drop-spec038-20260607T055114Z
+- **Operator Request:** "Go ahead. Let's get started" — authorising Spec-038 implementation fan-out start.
+- **Rationale:** Full SpecKit cycle for Spec-038 complete (specify → clarify → plan → tasks → Quinn gate `APPROVED_WITH_NOTES` at `1418752`). Operator resuming paused workflow; no new SpecKit cycle required. Implementation fan-out continuation under already-approved gate.
+- **Pre-fanout Scope (Coffee Tracker isolated worktree):** T010 `handoff-espresso-logs.md`, T011 `handoff-tf-infra.md`.
+- **Fan-out Gate:** T010 + T011 committed + Quinn gate APPROVED → T012 (espresso-logs privacy-gate first) and T021 (tf-infra privacy-gate first).
+- **Espresso Logs worktree:** `/Users/krishna/Documents/Development/GitHub/espresso-logs-spec-038`, branch `spec/038-cross-repo-squad-governance`.
+- **tf-infra worktree:** `/Users/krishna/Documents/Development/GitHub/tf-infra-spec-038`, branch `spec/038-cross-repo-squad-governance`.
+- **No-Push Constraint:** No `git push` authorised in this session without all four local CI checks passing and explicit operator affirmative.
