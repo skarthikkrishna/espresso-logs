@@ -1586,3 +1586,33 @@ Decision drop generated 2026-06-05T14:00 PDT
 
 ---
 
+
+---
+
+## 2026-06-06: Parallel Branch Safety — Process Query
+
+### Decision: Tariq routing — DIRECT_PERMITTED (parallel branch safety question)
+- **Agent:** Tariq
+- **Date:** 2026-06-06
+- **Status:** COMMITTED
+- **Classification:** DIRECT_PERMITTED
+- **Operator Request:** "Another Copilot session is working on these branches. Are you able to run a completely different task on completely different branches without impacting the changes being done there?"
+- **Rationale:** Process/safety status question only. No code, infrastructure, SpecKit artifact, push, PR, or merge action requested.
+- **Scope Confirmed:** Use separate worktree/clone or clean branch; avoid shared working-directory changes; do not touch/push the other session's branches; coordinate before operations that affect shared refs or state.
+
+---
+
+## 2026-06-07: Cross-Repo Squad Governance Proposal
+
+### Decision: Tariq routing — DIRECT_PERMITTED (cross-repo governance proposal)
+- **Agent:** Tariq
+- **Date:** 2026-06-07T04:38:00Z
+- **Status:** COMMITTED
+- **Classification:** DIRECT_PERMITTED
+- **drop_id:** 2026-06-07-tariq-routing-cross-repo-governance-proposal
+- **Operator Request:** (1) Local cleanup/rebase/branch pruning across all three repos. (2) Cross-repo state-of-union review. (3) Squad proposal covering: charter drift remediation, CI loop reduction, multi-repo independence, privacy/security gates, retro ceremony with artifact pruning, sustainable cleanup process, artifact hygiene.
+- **Rationale:** Git cleanup is operational maintenance (reversible, pre-push). State-of-union is discovery only. Proposal is explicitly scoped to written documents produced by Squad agents — no implementation authorised. Scope is cross-cutting governance (Tariq) + architecture standards (Maya) + session continuity (Ralph), all permitting direct Squad engagement for proposal work without full SpecKit cycle.
+- **In Scope:** espresso-logs rebase + stale branch prune; coffee_tracker local inspection; tf-infra read-only; Squad proposal committed locally; artifact hygiene review.
+- **Out of Scope:** Charter changes; GitHub Actions; push without operator confirmation; touching `fix/prod-shot-save-detail` (active PR #105); any implementation of proposal items.
+- **No-Push Constraint:** Binding on coordinator and all implementation agents. No push without all four CI checks + explicit operator affirmative.
+- **Implementation Gate:** Any proposal item that touches code/infra requires a new SpecKit cycle (specify → clarify → plan → Aria gate → tasks → Quinn gate → implement). Gate is not waived by this drop.
