@@ -1744,3 +1744,18 @@ Decision drop generated 2026-06-05T14:00 PDT
 | **Next reconciliation trigger** | Any charter update to `coffee_tracker/.squad/agents/tariq/` or `scribe/` after commit `a01523d` |
 | **Status** | Accepted |
 
+
+---
+
+## 2026-06-07: Spec-039 Production Readiness Branch Correction
+
+### Decision: Tariq routing — DIRECT_PERMITTED (Spec-039 branch correction)
+- **Agent:** Tariq
+- **Date:** 2026-06-07T12:35:22.603-07:00
+- **Status:** MERGED
+- **Classification:** DIRECT_PERMITTED
+- **Source drop:** `.squad/decisions/inbox/20260607T123522-0700-tariq-route-spec039-branch-correction.md`
+- **Request:** Correct the locally validated Spec-039 production-readiness work off `chore/planning-session-hygiene` onto a separate bug-fix branch without pushing, rewriting published history, discarding local commits, or accessing production data/secrets.
+- **Rationale:** Bounded process/git correction for an already validated local work unit; no product scope or code behavior changed by the branch correction itself.
+- **Scope:** Create `fix/spec-039-production-readiness` from `origin/main`, cherry-pick the validated implementation and routing-drop commits, preserve local commits, and stop before any push.
+- **Outcome:** New branch `fix/spec-039-production-readiness` was created from `origin/main`; validated work was cherry-picked; Ralph resolved the `.squad/identity/now.md` conflict; an empty duplicate cherry-pick was skipped; no push, deploy, PR creation, production data access, or secrets access occurred.
