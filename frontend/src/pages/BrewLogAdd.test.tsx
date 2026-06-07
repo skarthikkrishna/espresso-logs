@@ -26,11 +26,14 @@ import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/reac
 // Module mocks — hoisted before any import of the mocked module
 // ---------------------------------------------------------------------------
 
+const searchParamsMock = vi.hoisted(() => ({ value: new URLSearchParams() }))
+
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
   return {
     ...actual,
     useNavigate: () => vi.fn(),
+    useSearchParams: () => [searchParamsMock.value, vi.fn()],
   }
 })
 
@@ -79,6 +82,15 @@ const FAKE_BAG = {
   status: 'Active' as const,
 }
 
+const SECOND_FAKE_BAG = {
+  ...FAKE_BAG,
+  bag_id: 'BB-2024-02-M-002',
+  display_name: 'Sightglass — Owl Howl',
+  beans: 'Sightglass — Owl Howl',
+  roast_level: 'Medium',
+  catalog_id: 'CAT002',
+}
+
 /** Wraps component in a fresh QueryClientProvider (retries disabled for fast tests). */
 function renderWithQuery(ui: React.ReactElement) {
   const queryClient = new QueryClient({
@@ -87,9 +99,17 @@ function renderWithQuery(ui: React.ReactElement) {
       mutations: { retry: false },
     },
   })
-  return render(
+  const rendered = render(
     <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
   )
+  return {
+    queryClient,
+    ...rendered,
+    rerender: (nextUi: React.ReactElement) =>
+      rendered.rerender(
+        <QueryClientProvider client={queryClient}>{nextUi}</QueryClientProvider>
+      ),
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -98,6 +118,7 @@ function renderWithQuery(ui: React.ReactElement) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  searchParamsMock.value = new URLSearchParams()
 
   // Default stubs — individual tests may override with mockResolvedValueOnce
   vi.mocked(listInventory).mockResolvedValue([FAKE_BAG])
@@ -112,6 +133,25 @@ beforeEach(() => {
 // ===========================================================================
 
 describe('BrewLogAdd', () => {
+  it('associates user-visible field labels with their controls', async () => {
+    renderWithQuery(<BrewLogAdd />)
+
+    expect(await screen.findByLabelText('Bag')).toBeInTheDocument()
+    expect(screen.getByLabelText('Dose (g)')).toBeInTheDocument()
+    expect(screen.getByLabelText('Yield (g)')).toBeInTheDocument()
+    expect(screen.getByLabelText('Time (s)')).toBeInTheDocument()
+    expect(screen.getByLabelText('Basket')).toBeInTheDocument()
+    expect(screen.getByLabelText(/shot eligibility/i)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /more options/i }))
+
+    expect(screen.getByLabelText('Machine')).toBeInTheDocument()
+    expect(screen.getByLabelText('Grinder')).toBeInTheDocument()
+    expect(screen.getByLabelText('Grind setting')).toBeInTheDocument()
+    expect(screen.getByLabelText('Storage method')).toBeInTheDocument()
+    expect(screen.getByLabelText('Notes')).toBeInTheDocument()
+  })
+
   // ── Test 1: Basket select renders with hardware query options ─────────────
   it('renders basket select with hardware-sourced IMS option', async () => {
     vi.mocked(listHardware).mockResolvedValue([
@@ -155,23 +195,57 @@ describe('BrewLogAdd', () => {
 
     renderWithQuery(<BrewLogAdd />)
 
-    // Wait for inventory to load and bag select to appear.
-    // The bag <select> has no htmlFor/id label association, so we match on its
-    // placeholder option text ("Select bag…") rather than an accessible name.
-    const bagSelect = await screen.findByDisplayValue('Select bag…')
+    const bagSelect = await screen.findByLabelText('Bag')
 
     // Select the bag to enable the defaults query
     fireEvent.change(bagSelect, { target: { value: 'BB-2024-01-L-001' } })
 
     // Wait for defaults to apply to the dose field
     await waitFor(() => {
-      const doseInput = document.querySelector('input[type="number"]') as HTMLInputElement | null
-        ?? document.querySelector('input') as HTMLInputElement | null
-      // dose_in_g = '18' → field value should be '18' (or parsed number 18)
-      if (doseInput) {
-        expect(doseInput.value).toBe('18')
-      }
+      expect(screen.getByLabelText('Dose (g)')).toHaveValue(18)
     })
+  })
+
+  it('preselects a valid active bag from the bag_id query param and hydrates defaults', async () => {
+    searchParamsMock.value = new URLSearchParams('bag_id=BB-2024-01-L-001')
+    vi.mocked(getDefaults).mockResolvedValue({
+      dose_in_g: '19',
+      yield_out_g: '38',
+      grind_setting: '11',
+    })
+
+    renderWithQuery(<BrewLogAdd />)
+
+    const bagSelect = await screen.findByLabelText('Bag') as HTMLSelectElement
+    expect(bagSelect.value).toBe('BB-2024-01-L-001')
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Dose (g)')).toHaveValue(19)
+    })
+  })
+
+  it('does not overwrite a bag manually selected before a later bag_id query param appears', async () => {
+    vi.mocked(listInventory).mockResolvedValue([FAKE_BAG, SECOND_FAKE_BAG])
+
+    const { rerender } = renderWithQuery(<BrewLogAdd />)
+    const bagSelect = await screen.findByLabelText('Bag') as HTMLSelectElement
+    fireEvent.change(bagSelect, { target: { value: 'BB-2024-02-M-002' } })
+
+    searchParamsMock.value = new URLSearchParams('bag_id=BB-2024-01-L-001')
+    rerender(<BrewLogAdd />)
+
+    await waitFor(() => {
+      expect(bagSelect.value).toBe('BB-2024-02-M-002')
+    })
+  })
+
+  it('shows a non-blocking notice for a missing or finished bag_id query param', async () => {
+    searchParamsMock.value = new URLSearchParams('bag_id=FINISHED-BAG-001')
+
+    renderWithQuery(<BrewLogAdd />)
+
+    expect(await screen.findByText(/finished or unavailable/i)).toBeInTheDocument()
+    expect(screen.getByLabelText('Bag')).toBeInTheDocument()
   })
 
   // ── Test 4: Dirty dose field is protected after bag is already selected ─────
@@ -184,28 +258,24 @@ describe('BrewLogAdd', () => {
 
     renderWithQuery(<BrewLogAdd />)
 
-    const bagSelect = await screen.findByDisplayValue('Select bag…')
+    const bagSelect = await screen.findByLabelText('Bag')
 
     // Select the bag first (triggers reset + defaults)
     fireEvent.change(bagSelect, { target: { value: 'BB-2024-01-L-001' } })
 
     // Wait for defaults to populate dose
     await waitFor(() => {
-      const doseInput = document.querySelector('input[type="number"]') as HTMLInputElement | null
-      if (doseInput) expect(doseInput.value).toBe('18')
+      expect(screen.getByLabelText('Dose (g)')).toHaveValue(18)
     })
 
     // Now the user overrides dose manually — this marks the field dirty
-    const inputs = document.querySelectorAll('input[type="number"]')
-    const doseInput = inputs[0] as HTMLInputElement | null
-    if (doseInput) {
-      fireEvent.change(doseInput, { target: { value: '20' } })
-      expect(doseInput.value).toBe('20')
-    }
+    const doseInput = screen.getByLabelText('Dose (g)')
+    fireEvent.change(doseInput, { target: { value: '20' } })
+    expect(doseInput).toHaveValue(20)
 
     // Defaults resolve again (same bagId, no re-query) — dirty field must be protected
     await waitFor(() => {
-      if (doseInput) expect(doseInput.value).toBe('20')
+      expect(doseInput).toHaveValue(20)
     })
   })
 
@@ -223,36 +293,25 @@ describe('BrewLogAdd', () => {
     renderWithQuery(<BrewLogAdd />)
 
     // Select the bag — triggers defaults query → basket becomes 'B01'
-    const bagSelect = await screen.findByDisplayValue('Select bag…')
+    const bagSelect = await screen.findByLabelText('Bag')
     fireEvent.change(bagSelect, { target: { value: 'BB-2024-01-L-001' } })
 
     // Wait for defaults to set basket to B01
     await waitFor(() => {
-      const basketSelect = document.querySelector('select[value="B01"]') as HTMLSelectElement | null
-      // Also try by displayed value
-      const allSelects = Array.from(document.querySelectorAll('select')) as HTMLSelectElement[]
-      const basketEl = allSelects.find(s => s.value === 'B01')
-      expect(basketEl).toBeDefined()
+      expect(screen.getByLabelText('Basket')).toHaveValue('B01')
     })
 
     // User changes basket to B02 — marks dirtyFields basket
-    const allSelects = Array.from(document.querySelectorAll('select')) as HTMLSelectElement[]
-    const basketEl = allSelects.find(s =>
-      Array.from(s.options).some(o => o.value === 'B01')
-    )
-    if (basketEl) {
-      fireEvent.change(basketEl, { target: { value: 'B02' } })
-      expect(basketEl.value).toBe('B02')
+    const basketEl = screen.getByLabelText('Basket')
+    fireEvent.change(basketEl, { target: { value: 'B02' } })
+    expect(basketEl).toHaveValue('B02')
 
-      // Re-resolve defaults (simulates defaults re-fetch triggered by basket key change)
-      vi.mocked(getDefaults).mockResolvedValue({ basket_id: 'B01', dose_in_g: '18' })
+    // Re-resolve defaults (simulates defaults re-fetch triggered by basket key change)
+    vi.mocked(getDefaults).mockResolvedValue({ basket_id: 'B01', dose_in_g: '18' })
 
-      await waitFor(() => {
-        expect(basketEl.value).toBe('B02')
-      })
-    } else {
-      console.warn('Test 4b: basket select not found — skipping assertion')
-    }
+    await waitFor(() => {
+      expect(basketEl).toHaveValue('B02')
+    })
   })
 
   // ── Test 5: Progressive disclosure — advanced section hidden by default ────
@@ -283,7 +342,7 @@ describe('BrewLogAdd', () => {
 
     renderWithQuery(<BrewLogAdd />)
 
-    const bagSelect = await screen.findByDisplayValue('Select bag…')
+    const bagSelect = await screen.findByLabelText('Bag')
 
     // Select a bag to trigger defaults query
     fireEvent.change(bagSelect, { target: { value: 'BB-2024-01-L-001' } })
@@ -307,7 +366,7 @@ describe('BrewLogAdd', () => {
     renderWithQuery(<BrewLogAdd />)
 
     // Select a bag — enables the submit button (disabled when !bagId)
-    const bagSelect = await screen.findByDisplayValue('Select bag…')
+    const bagSelect = await screen.findByLabelText('Bag')
     fireEvent.change(bagSelect, { target: { value: 'BB-2024-01-L-001' } })
 
     // Submit — use fireEvent.submit on the form so jsdom fires onSubmit
@@ -339,7 +398,7 @@ describe('BrewLogAdd', () => {
 
     renderWithQuery(<BrewLogAdd />)
 
-    const bagSelect = await screen.findByDisplayValue('Select bag…')
+    const bagSelect = await screen.findByLabelText('Bag')
     fireEvent.change(bagSelect, { target: { value: 'BB-2024-01-L-001' } })
 
     const form = document.querySelector('form')!
@@ -366,7 +425,7 @@ describe('BrewLogAdd', () => {
 
     renderWithQuery(<BrewLogAdd />)
 
-    const bagSelect = await screen.findByDisplayValue('Select bag…')
+    const bagSelect = await screen.findByLabelText('Bag')
     fireEvent.change(bagSelect, { target: { value: 'BB-2024-01-L-001' } })
 
     const form = document.querySelector('form')!
@@ -404,7 +463,7 @@ describe('BrewLogAdd', () => {
 
     renderWithQuery(<BrewLogAdd />)
 
-    const bagSelect = await screen.findByDisplayValue('Select bag…')
+    const bagSelect = await screen.findByLabelText('Bag')
     fireEvent.change(bagSelect, { target: { value: 'BB-2024-01-L-001' } })
 
     const form = document.querySelector('form')!
@@ -451,7 +510,7 @@ describe('BrewLogAdd', () => {
     // ── Mount 1 ──
     const { unmount } = renderWithQuery(<BrewLogAdd />)
 
-    const bagSelect1 = await screen.findByDisplayValue('Select bag…')
+    const bagSelect1 = await screen.findByLabelText('Bag')
     fireEvent.change(bagSelect1, { target: { value: 'BB-2024-01-L-001' } })
 
     const form1 = document.querySelector('form')!
@@ -471,7 +530,7 @@ describe('BrewLogAdd', () => {
     vi.mocked(submitShot).mockResolvedValueOnce({ shot_id: 'SH-TEST-001' } as any)
     renderWithQuery(<BrewLogAdd />)
 
-    const bagSelect2 = await screen.findByDisplayValue('Select bag…')
+    const bagSelect2 = await screen.findByLabelText('Bag')
     fireEvent.change(bagSelect2, { target: { value: 'BB-2024-01-L-001' } })
 
     const form2 = document.querySelector('form')!

@@ -122,10 +122,50 @@ class SqlBrewLogRepo:
 
     async def update_feedback(self, shot_id: str, ai_feedback: str) -> None:
         """Update AI feedback for a brew log entry identified by Sheets Shot_ID."""
+        household_filter = await self._current_household_filter()
+        if household_filter is None:
+            return
         await self._db.execute(
-            update(BrewLog).where(BrewLog.sheets_id == shot_id).values(ai_feedback=ai_feedback)
+            update(BrewLog)
+            .where(household_filter, BrewLog.sheets_id == shot_id)
+            .values(ai_feedback=ai_feedback)
         )
         await self._db.commit()
+
+    async def update_correction(
+        self,
+        shot_id: str,
+        fields: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        """Patch typo-safe brew-log fields under the active household context."""
+        household_filter = await self._current_household_filter()
+        if household_filter is None:
+            return None
+
+        values: dict[str, Any] = {}
+        if "taste_summary" in fields:
+            values["taste_summary"] = fields["taste_summary"] or None
+        if "user_notes" in fields:
+            values["notes"] = fields["user_notes"] or None
+        if "grind_setting" in fields:
+            values["grind_setting"] = _to_float(fields["grind_setting"])
+        if "shot_eligibility" in fields:
+            values["shot_eligibility"] = fields["shot_eligibility"] or None
+
+        if not values:
+            return await self.get(shot_id)
+
+        result = await self._db.execute(
+            update(BrewLog)
+            .where(household_filter, BrewLog.sheets_id == shot_id)
+            .values(**values)
+            .returning(BrewLog)
+        )
+        updated = result.scalar_one_or_none()
+        if updated is None:
+            return None
+        await self._db.commit()
+        return self._to_dict(updated)
 
     def delete_rows(self, start_row: int, end_row: int) -> None:
         """No-op."""

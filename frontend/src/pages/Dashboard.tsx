@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import { getDashboard } from '../api/dashboard'
 import { listBrewLog } from '../api/brewLog'
+import { brewLogListQueryKey, dashboardQueryKey } from '../api/queryKeys'
 import type { BrewLogPage } from '../api/brewLog'
 import Chip from '../components/Chip'
 import type { DashboardBag, BrewLogEntry } from '../types/entities'
@@ -10,12 +11,12 @@ import type { DashboardBag, BrewLogEntry } from '../types/entities'
 export default function Dashboard() {
   const navigate = useNavigate()
   const { data: bags, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['dashboard'],
+    queryKey: dashboardQueryKey(),
     queryFn: getDashboard,
   })
 
   const { data: recentShots = [] } = useQuery({
-    queryKey: ['brew-log'],
+    queryKey: brewLogListQueryKey(),
     queryFn: () => listBrewLog(1, 5),
     select: (page: BrewLogPage) => page.items.slice(0, 5),
   })
@@ -90,7 +91,7 @@ export default function Dashboard() {
               <div
                 key={bag.bag_id}
                 className="glass-card card-bevel p-4 cursor-pointer"
-                onClick={() => navigate('/brew-log/add')}
+                onClick={() => navigate(`/brew-log/add?bag_id=${encodeURIComponent(bag.bag_id)}`)}
               >
                 <p className="font-semibold text-amber-100 text-sm leading-snug">{bag.display_name}</p>
                 <Chip label={bag.roast_level} className="mt-2" />
@@ -156,4 +157,3 @@ export default function Dashboard() {
     </div>
   )
 }
-

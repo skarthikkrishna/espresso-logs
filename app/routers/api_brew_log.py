@@ -11,7 +11,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.exc import IntegrityError
 
 from app.config import settings
@@ -36,11 +36,13 @@ from app.models.api import BrewLogEntryOut, BrewLogPageOut, FeedbackOut
 from app.models.household import GuestToken, HouseholdMember
 from app.services.idempotency_store import IdempotencyStore
 from app.services.ids import make_shot_id
-from app.services.inference import LLMClient, get_ai_feedback
+from app.services.inference import LLMClient, LLMError, get_ai_feedback
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["brew-log"])
+
+_SHOT_ELIGIBILITIES = frozenset({"Reject", "Passable", "Good Espresso", "God Shot"})
 
 
 def _float(v: object) -> float | None:
@@ -194,6 +196,15 @@ class _BrewLogCreateBody(BaseModel):
     idempotency_key: str | None = None  # stripped before repo layer; never written to Sheets
 
 
+class _BrewLogPatchBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    taste_summary: str | None = None
+    user_notes: str | None = None
+    grind_setting: str | None = None
+    shot_eligibility: str | None = None
+
+
 def _normalise_idempotency_key(key: str | None) -> str | None:
     if key is None:
         return None
@@ -230,6 +241,119 @@ async def _render_shot_response(
     bags, catalog, hardware = await _build_lookups(inventory_repo, catalog_repo, hardware_repo)
     names = _resolve_names_from_dicts(shot, bags, catalog, hardware)
     return _shot_to_out(shot, names)
+
+
+def _normalise_brew_log_patch(body: _BrewLogPatchBody) -> dict[str, Any]:
+    updates = body.model_dump(exclude_unset=True)
+    if not updates:
+        raise HTTPException(status_code=422, detail="At least one editable field is required.")
+
+    if "grind_setting" in updates:
+        grind_setting = updates["grind_setting"]
+        if grind_setting is None or grind_setting.strip() == "":
+            updates["grind_setting"] = ""
+        else:
+            try:
+                float(grind_setting)
+            except ValueError:
+                raise HTTPException(status_code=422, detail="grind_setting must be numeric.")
+            updates["grind_setting"] = grind_setting.strip()
+
+    if "shot_eligibility" in updates:
+        shot_eligibility = updates["shot_eligibility"]
+        if shot_eligibility is None:
+            updates["shot_eligibility"] = None
+        else:
+            shot_eligibility = shot_eligibility.strip()
+            if shot_eligibility == "":
+                updates["shot_eligibility"] = None
+            elif shot_eligibility not in _SHOT_ELIGIBILITIES:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"shot_eligibility must be one of: {sorted(_SHOT_ELIGIBILITIES)}",
+                )
+            else:
+                updates["shot_eligibility"] = shot_eligibility
+
+    return updates
+
+
+@router.patch("/brew-log/{shot_id}", response_model=BrewLogEntryOut)
+async def api_brew_log_patch(
+    shot_id: str,
+    body: _BrewLogPatchBody,
+    _: HouseholdMember = Depends(current_household_membership),
+    brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
+    inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
+    catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
+    hardware_repo: _DualWriteHardwareRepo = Depends(get_hardware_repo),
+) -> BrewLogEntryOut:
+    updates = _normalise_brew_log_patch(body)
+    updated = await brew_log_repo.update_correction(shot_id, updates)
+    if updated is None:
+        raise HTTPException(status_code=404, detail="Shot not found")
+    return await _render_shot_response(updated, inventory_repo, catalog_repo, hardware_repo)
+
+
+@router.post("/brew-log/{shot_id}/feedback", response_model=FeedbackOut)
+async def api_brew_log_feedback_generate(
+    shot_id: str,
+    membership: HouseholdMember = Depends(current_household_membership),
+    brew_log_repo: _DualWriteBrewLogRepo = Depends(get_brew_log_repo),
+    inventory_repo: _DualWriteInventoryRepo = Depends(get_inventory_repo),
+    catalog_repo: _DualWriteCatalogRepo = Depends(get_catalog_repo),
+    hardware_repo: _DualWriteHardwareRepo = Depends(get_hardware_repo),
+    maintenance_repo: _DualWriteMaintenanceRepo = Depends(get_maintenance_repo),
+    llm_client: LLMClient = Depends(get_llm_client),
+) -> FeedbackOut:
+    shot = await brew_log_repo.get(shot_id)
+    if shot is None:
+        raise HTTPException(status_code=404, detail="Shot not found")
+
+    bags, catalog, hardware = await _build_lookups(inventory_repo, catalog_repo, hardware_repo)
+    names = _resolve_names_from_dicts(shot, bags, catalog, hardware)
+    extra_context = {
+        "machine_name": names.get("machine_name") or "",
+        "grinder_name": names.get("grinder_name") or "",
+        "basket_name": names.get("basket_name") or "",
+        "roast_level": names.get("roast_level") or "",
+        "taste_summary": shot.get("Taste_Summary") or "",
+        "storage_method": shot.get("Storage_Method") or "",
+    }
+
+    try:
+        if settings.use_postgres:
+            await brew_log_repo.set_household_context(membership.household_id)
+        feedback = await asyncio.wait_for(
+            get_ai_feedback(
+                shot_id,
+                brew_log_repo,
+                maintenance_repo,
+                llm_client,
+                extra_context=extra_context,
+                force=True,
+                raise_on_error=True,
+            ),
+            timeout=35.0,
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=504,
+            detail={
+                "error": "AI_FEEDBACK_TIMEOUT",
+                "message": "AI feedback generation timed out. Please try again.",
+            },
+        )
+    except (LLMError, ValueError):
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "error": "AI_FEEDBACK_GENERATION_FAILED",
+                "message": "AI feedback generation failed. Please try again.",
+            },
+        )
+
+    return FeedbackOut(ai_feedback=feedback)
 
 
 async def _existing_idempotent_response(

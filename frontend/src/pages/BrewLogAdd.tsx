@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listInventory } from '../api/inventory'
 import { listHardware } from '../api/hardware'
 import { getDefaults } from '../api/defaults'
 import { submitShot } from '../api/brewLog'
+import { brewLogListQueryKey, dashboardQueryKey, defaultsQueryKey, inventoryQueryKey } from '../api/queryKeys'
 import LoadingSpinner from '../components/LoadingSpinner'
 import CompassChart from '../components/CompassChart'
 import { getBasketDefaults } from '../utils/basketDefaults'
@@ -12,8 +13,11 @@ import { deriveZoneBoundaries } from '../utils/zoneBoundaries'
 
 export default function BrewLogAdd() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const queryClient = useQueryClient()
+  const requestedBagId = searchParams.get('bag_id')?.trim() ?? ''
   const [bagId, setBagId] = useState('')
+  const [bagParamNotice, setBagParamNotice] = useState<string | null>(null)
   const [doseG, setDoseG] = useState('')
   const [yieldG, setYieldG] = useState('')
   const [timeSec, setTimeSec] = useState('')
@@ -30,6 +34,8 @@ export default function BrewLogAdd() {
   // useRef keeps the set current inside every closure without appearing in dep arrays.
   // Never use useState here — a stale closure over useState value silently skips dirty guards.
   const dirtyFields = useRef<Set<'dose' | 'yield' | 'grind' | 'basket'>>(new Set())
+  const userSelectedBagRef = useRef(false)
+  const handledRequestedBagRef = useRef<string | null>(null)
 
   // Progressive disclosure (BC-4, FR-009)
   const [advancedOpen, setAdvancedOpen] = useState<boolean>(false)
@@ -42,7 +48,7 @@ export default function BrewLogAdd() {
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID())
 
   const { data: inventory, isLoading: invLoading, isError: invError, refetch: refetchInventory } = useQuery({
-    queryKey: ['inventory'],
+    queryKey: inventoryQueryKey(),
     queryFn: () => listInventory('Active'),
   })
 
@@ -66,10 +72,40 @@ export default function BrewLogAdd() {
   const zoneBoundaries = deriveZoneBoundaries(machineName, roastLevel)
 
   const { data: defaults, isSuccess: defaultsIsSuccess } = useQuery({
-    queryKey: ['defaults', bagId, basketId],
+    queryKey: defaultsQueryKey(bagId, basketId),
     queryFn: () => getDefaults(bagId, basketId || undefined),
     enabled: !!bagId,
   })
+
+  /* eslint-disable react-hooks/set-state-in-effect -- Query-param bag resolution synchronizes URL state after inventory data loads. */
+  useEffect(() => {
+    if (!requestedBagId) {
+      handledRequestedBagRef.current = null
+      setBagParamNotice(null)
+      return
+    }
+    if (!inventory) return
+    if (handledRequestedBagRef.current === requestedBagId) return
+
+    const requestedBag = inventory.find((bag) => bag.bag_id === requestedBagId && bag.status === 'Active')
+    if (!requestedBag) {
+      setBagParamNotice('The bag from Home is finished or unavailable. Choose an active bag below.')
+      return
+    }
+
+    handledRequestedBagRef.current = requestedBagId
+
+    if (!userSelectedBagRef.current && !bagId) {
+      setBagId(requestedBag.bag_id)
+      setBagParamNotice(null)
+      return
+    }
+
+    if (bagId === requestedBag.bag_id) {
+      setBagParamNotice(null)
+    }
+  }, [bagId, inventory, requestedBagId])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Reset all derived form state when the bag changes so the new bag's defaults
   // fill cleanly (threads 1 & 4 from Copilot review: dirty-field ref and
@@ -142,8 +178,8 @@ export default function BrewLogAdd() {
     mutationFn: submitShot,
     onSuccess: async () => {
       setIdempotencyKey(crypto.randomUUID())
-      await queryClient.invalidateQueries({ queryKey: ['brew-log'] })
-      await queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      await queryClient.invalidateQueries({ queryKey: brewLogListQueryKey() })
+      await queryClient.invalidateQueries({ queryKey: dashboardQueryKey() })
       navigate('/brew-log?toast=shot-saved')
     },
     onSettled: () => { isSubmittingRef.current = false },
@@ -194,13 +230,18 @@ export default function BrewLogAdd() {
       <form data-testid="brew-log-add-form" onSubmit={handleSubmit} className="space-y-4">
         {/* Bag — full width */}
         <div className="form-control">
-          <label className="label">
+          <label className="label" htmlFor="brew-log-bag">
             <span className="label-text text-amber-200/70">Bag</span>
           </label>
           <select
+            id="brew-log-bag"
             className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
             value={bagId}
-            onChange={(e) => setBagId(e.target.value)}
+            onChange={(e) => {
+              userSelectedBagRef.current = true
+              setBagParamNotice(null)
+              setBagId(e.target.value)
+            }}
             required
           >
             <option value="">Select bag…</option>
@@ -210,6 +251,12 @@ export default function BrewLogAdd() {
               </option>
             ))}
           </select>
+          {requestedBagId && !inventory && (
+            <p className="text-xs text-amber-200/60 mt-1">Checking selected bag from Home…</p>
+          )}
+          {bagParamNotice && (
+            <p role="status" className="text-xs text-amber-300 mt-1">{bagParamNotice}</p>
+          )}
         </div>
 
         {/* Flat form fields: dose/yield/time, eligibility, basket (FR-004) */}
@@ -217,10 +264,11 @@ export default function BrewLogAdd() {
           {/* Dose / Yield / Time */}
           <div className="grid grid-cols-3 gap-3">
             <div className="form-control">
-              <label className="label">
+              <label className="label" htmlFor="brew-log-dose">
                 <span className="label-text text-amber-200/70">Dose (g)</span>
               </label>
               <input
+                id="brew-log-dose"
                 type="number"
                 step="0.1"
                 min="0"
@@ -230,10 +278,11 @@ export default function BrewLogAdd() {
               />
             </div>
             <div className="form-control">
-              <label className="label">
+              <label className="label" htmlFor="brew-log-yield">
                 <span className="label-text text-amber-200/70">Yield (g)</span>
               </label>
               <input
+                id="brew-log-yield"
                 type="number"
                 step="0.1"
                 min="0"
@@ -243,10 +292,11 @@ export default function BrewLogAdd() {
               />
             </div>
             <div className="form-control">
-              <label className="label">
+              <label className="label" htmlFor="brew-log-time">
                 <span className="label-text text-amber-200/70">Time (s)</span>
               </label>
               <input
+                id="brew-log-time"
                 type="number"
                 min="0"
                 className="input input-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
@@ -260,21 +310,22 @@ export default function BrewLogAdd() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* Basket first */}
             <div className="form-control">
-              <label className="label">
+              <label className="label" htmlFor="brew-log-basket">
                 <span className="label-text text-amber-200/70">Basket</span>
               </label>
               {hardwareIsLoading && (
-                <select disabled className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100/50 input-styled">
+                <select id="brew-log-basket" disabled className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100/50 input-styled">
                   <option>Loading baskets…</option>
                 </select>
               )}
               {hardwareIsSuccess && baskets.length === 0 && (
-                <select disabled className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100/50 input-styled">
+                <select id="brew-log-basket" disabled className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100/50 input-styled">
                   <option>No baskets found</option>
                 </select>
               )}
               {hardwareIsSuccess && baskets.length > 0 && (
                 <select
+                  id="brew-log-basket"
                   value={basketId}
                   onChange={e => { dirtyFields.current.add('basket'); setBasketId(e.target.value) }}
                   className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
@@ -289,10 +340,11 @@ export default function BrewLogAdd() {
 
             {/* Shot eligibility second */}
             <div className="form-control">
-              <label className="label">
-                <span className="label-text text-amber-200/70">Shot eligibility <span className="text-error">*</span></span>
+              <label className="label" htmlFor="brew-log-shot-eligibility">
+                <span className="label-text text-amber-200/70">Shot eligibility <span aria-hidden="true" className="text-error">*</span></span>
               </label>
               <select
+                id="brew-log-shot-eligibility"
                 value={eligibility}
                 onChange={e => setEligibility(e.target.value)}
                 required
@@ -311,10 +363,10 @@ export default function BrewLogAdd() {
         {/* Full-width Extraction compass (FR-001/FR-003) */}
         <div className="mt-4 max-w-[560px] mx-auto w-full">
           <div className="form-control">
-            <label className="label">
+            <p id="extraction-compass-label" className="label">
               <span className="label-text text-amber-200/70">Extraction compass</span>
-            </label>
-            <div className="glass-card p-3 w-full">
+            </p>
+            <div className="glass-card p-3 w-full" role="group" aria-labelledby="extraction-compass-label">
               <CompassChart
                 doseG={doseG ? parseFloat(doseG) : null}
                 yieldG={yieldG ? parseFloat(yieldG) : null}
@@ -350,10 +402,11 @@ export default function BrewLogAdd() {
           {/* Machine + Grinder — two-column row */}
           <div className="grid grid-cols-2 gap-3">
             <div className="form-control">
-              <label className="label">
+              <label className="label" htmlFor="brew-log-machine">
                 <span className="label-text text-amber-200/70">Machine</span>
               </label>
               <select
+                id="brew-log-machine"
                 value={machineId}
                 onChange={e => setMachineId(e.target.value)}
                 disabled={hardwareIsLoading}
@@ -366,10 +419,11 @@ export default function BrewLogAdd() {
               </select>
             </div>
             <div className="form-control">
-              <label className="label">
+              <label className="label" htmlFor="brew-log-grinder">
                 <span className="label-text text-amber-200/70">Grinder</span>
               </label>
               <select
+                id="brew-log-grinder"
                 value={grinderId}
                 onChange={e => setGrinderId(e.target.value)}
                 disabled={hardwareIsLoading}
@@ -387,10 +441,11 @@ export default function BrewLogAdd() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* Grind setting */}
             <div className="form-control">
-              <label className="label">
+              <label className="label" htmlFor="brew-log-grind-setting">
                 <span className="label-text text-amber-200/70">Grind setting</span>
               </label>
               <input
+                id="brew-log-grind-setting"
                 type="text"
                 className="input input-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
                 value={grindSetting}
@@ -400,10 +455,11 @@ export default function BrewLogAdd() {
 
             {/* Storage method */}
             <div className="form-control">
-              <label className="label">
+              <label className="label" htmlFor="brew-log-storage-method">
                 <span className="label-text text-amber-200/70">Storage method</span>
               </label>
               <select
+                id="brew-log-storage-method"
                 value={storageMethod}
                 onChange={e => setStorageMethod(e.target.value)}
                 disabled={hardwareIsLoading}
@@ -419,10 +475,11 @@ export default function BrewLogAdd() {
 
           {/* Notes */}
           <div className="form-control">
-            <label className="label">
+            <label className="label" htmlFor="brew-log-notes">
               <span className="label-text text-amber-200/70">Notes</span>
             </label>
             <textarea
+              id="brew-log-notes"
               rows={3}
               className="textarea textarea-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
               value={notes}
@@ -446,4 +503,3 @@ export default function BrewLogAdd() {
     </div>
   )
 }
-

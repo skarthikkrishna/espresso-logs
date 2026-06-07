@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import axios from 'axios'
-import { inferCatalogItem, createCatalogItem } from '../api/catalog'
+import { Link } from 'react-router-dom'
+import { inferCatalogItem, createCatalogItem, uploadCatalogImage } from '../api/catalog'
+import type { CatalogItem } from '../types/entities'
 import { ROAST_LEVELS } from '../utils/roastLevels'
 
 type InferredFields = {
@@ -12,20 +14,25 @@ type InferredFields = {
 
 interface AddBeanModalProps {
   onClose: () => void
-  onSaved: () => void
+  onSaved: (item?: CatalogItem) => void
 }
+
+type SavePhase = 'idle' | 'creating' | 'uploading'
 
 export default function AddBeanModal({ onClose, onSaved }: AddBeanModalProps) {
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
+  const [savePhase, setSavePhase] = useState<SavePhase>('idle')
   const [inferredFields, setInferredFields] = useState<InferredFields | null>(null)
   const [manualMode, setManualMode] = useState(false)
   const [roaster, setRoaster] = useState('')
   const [beanName, setBeanName] = useState('')
   const [roastLevel, setRoastLevel] = useState('')
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [createdItem, setCreatedItem] = useState<CatalogItem | null>(null)
   const [inferError, setInferError] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<{ roaster?: string; beanName?: string; roastLevel?: string }>({})
   const [touched, setTouched] = useState<{ roaster?: boolean; beanName?: boolean; roastLevel?: boolean }>({})
 
@@ -66,17 +73,34 @@ export default function AddBeanModal({ onClose, onSaved }: AddBeanModalProps) {
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
 
-    setSaving(true)
+    setSavePhase('creating')
     setSaveError(null)
+    setImageUploadError(null)
     try {
-      await createCatalogItem({
+      const created = await createCatalogItem({
         roaster,
         bean_name: beanName,
         roast_level: roastLevel,
         product_url: url || undefined,
         source_image_url: inferredFields?.image_path ?? undefined,
       })
-      onSaved()
+      setCreatedItem(created)
+      if (selectedImage) {
+        setSavePhase('uploading')
+        try {
+          const { image_path } = await uploadCatalogImage(created.catalog_id, selectedImage)
+          onSaved({ ...created, image_path })
+          onClose()
+        } catch {
+          onSaved(created)
+          setImageUploadError(
+            'Bean saved, but image upload failed. Open the saved bean detail and choose Replace image to retry.',
+          )
+        }
+        return
+      }
+      onSaved(created)
+      onClose()
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 422) {
         const detail = err.response.data?.detail
@@ -98,22 +122,29 @@ export default function AddBeanModal({ onClose, onSaved }: AddBeanModalProps) {
         setSaveError('Failed to save bean. Please try again.')
       }
     } finally {
-      setSaving(false)
+      setSavePhase('idle')
     }
   }
 
   const showForm = manualMode || inferredFields !== null
+  const saving = savePhase !== 'idle'
+  const saveButtonLabel = savePhase === 'creating'
+    ? 'Creating bean…'
+    : savePhase === 'uploading'
+      ? 'Uploading image…'
+      : 'Save bean'
 
   return (
-    <dialog className="modal modal-open glass-modal-backdrop">
+    <dialog open className="modal modal-open glass-modal-backdrop">
       <div className="modal-box bg-stone-900 border border-amber-900/30 glass-modal-surface">
         <h3 className="font-semibold text-lg text-amber-300 mb-4">Add bean</h3>
 
         {/* URL lookup */}
         <div className="mb-3">
-          <label className="label text-sm text-amber-200/70 mb-1">Product URL (optional)</label>
+          <label className="label text-sm text-amber-200/70 mb-1" htmlFor="bean-product-url">Product URL (optional)</label>
           <div className="flex gap-2">
             <input
+              id="bean-product-url"
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
@@ -149,10 +180,11 @@ export default function AddBeanModal({ onClose, onSaved }: AddBeanModalProps) {
         {showForm && (
           <div className="flex flex-col gap-3 mt-2">
             <div>
-              <label className="label text-sm text-amber-200/70 mb-1">
+              <label className="label text-sm text-amber-200/70 mb-1" htmlFor="manual-roaster">
                 Roaster <span className="text-error">*</span>
               </label>
               <input
+                id="manual-roaster"
                 type="text"
                 value={roaster}
                 onChange={(e) => { setRoaster(e.target.value); if (touched.roaster) setFieldErrors(prev => ({ ...prev, roaster: e.target.value.trim() ? undefined : 'Roaster is required' })) }}
@@ -164,10 +196,11 @@ export default function AddBeanModal({ onClose, onSaved }: AddBeanModalProps) {
               )}
             </div>
             <div>
-              <label className="label text-sm text-amber-200/70 mb-1">
+              <label className="label text-sm text-amber-200/70 mb-1" htmlFor="manual-bean-name">
                 Bean name <span className="text-error">*</span>
               </label>
               <input
+                id="manual-bean-name"
                 type="text"
                 value={beanName}
                 onChange={(e) => { setBeanName(e.target.value); if (touched.beanName) setFieldErrors(prev => ({ ...prev, beanName: e.target.value.trim() ? undefined : 'Bean name is required' })) }}
@@ -179,10 +212,11 @@ export default function AddBeanModal({ onClose, onSaved }: AddBeanModalProps) {
               )}
             </div>
             <div>
-              <label className="label text-sm text-amber-200/70 mb-1">
+              <label className="label text-sm text-amber-200/70 mb-1" htmlFor="manual-roast-level">
                 Roast level <span className="text-error">*</span>
               </label>
               <select
+                id="manual-roast-level"
                 value={roastLevel}
                 onChange={(e) => { setRoastLevel(e.target.value); setTouched(prev => ({ ...prev, roastLevel: true })); setFieldErrors(prev => ({ ...prev, roastLevel: e.target.value ? undefined : 'Roast level is required' })) }}
                 onBlur={() => { setTouched(prev => ({ ...prev, roastLevel: true })); setFieldErrors(prev => ({ ...prev, roastLevel: roastLevel ? undefined : 'Roast level is required' })) }}
@@ -197,6 +231,26 @@ export default function AddBeanModal({ onClose, onSaved }: AddBeanModalProps) {
                 <p className="text-xs text-error mt-1">{fieldErrors.roastLevel}</p>
               )}
             </div>
+            <div>
+              <label className="label text-sm text-amber-200/70 mb-1" htmlFor="manual-bean-image">
+                Bean image (optional)
+              </label>
+              <input
+                id="manual-bean-image"
+                type="file"
+                accept="image/*"
+                disabled={saving || Boolean(createdItem)}
+                className="file-input file-input-bordered file-input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
+                onChange={(e) => {
+                  setSelectedImage(e.target.files?.[0] ?? null)
+                  setImageUploadError(null)
+                }}
+              />
+              <p className="text-xs text-amber-200/50 mt-1">Choose a JPG, PNG, or other image file to upload after the bean is saved.</p>
+              {selectedImage && (
+                <p className="text-xs text-amber-300 mt-1">Selected: {selectedImage.name}</p>
+              )}
+            </div>
           </div>
         )}
 
@@ -204,6 +258,20 @@ export default function AddBeanModal({ onClose, onSaved }: AddBeanModalProps) {
         <div className="modal-action mt-4 flex-col items-stretch gap-2">
           {saveError && (
             <p className="text-xs text-red-400 text-center w-full">{saveError}</p>
+          )}
+          {imageUploadError && (
+            <div className="rounded-lg border border-amber-700/40 bg-amber-950/50 p-3 text-xs text-amber-100">
+              <p>{imageUploadError}</p>
+              {createdItem && (
+                <Link
+                  to={`/catalog/${createdItem.catalog_id}`}
+                  onClick={onClose}
+                  className="link link-warning mt-2 inline-block"
+                >
+                  Open saved bean detail
+                </Link>
+              )}
+            </div>
           )}
           <div className="flex justify-end gap-2">
           <button
@@ -215,10 +283,11 @@ export default function AddBeanModal({ onClose, onSaved }: AddBeanModalProps) {
           {showForm && (
             <button
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || Boolean(createdItem)}
               className="btn btn-sm bg-amber-600 hover:bg-amber-500 border-none text-white btn-bevel"
             >
-              {saving ? <span className="loading loading-spinner loading-xs" /> : 'Save bean'}
+              {saving && <span className="loading loading-spinner loading-xs mr-2" />}
+              {saveButtonLabel}
             </button>
           )}
           </div>

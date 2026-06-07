@@ -1,8 +1,18 @@
 import { useState, useRef } from 'react'
+import axios from 'axios'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getCatalogDetail, createInventoryBag, updateCatalogItem, uploadCatalogImage } from '../api/catalog'
-import type { CatalogItem } from '../types/entities'
+import { updateInventoryBagStatus } from '../api/inventory'
+import {
+  brewLogListQueryKey,
+  catalogDetailQueryKey,
+  catalogListQueryKey,
+  dashboardQueryKey,
+  defaultsBagQueryKey,
+  inventoryQueryKey,
+} from '../api/queryKeys'
+import type { CatalogDetail as CatalogDetailData, CatalogItem, InventoryBag } from '../types/entities'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Chip from '../components/Chip'
 import { ROAST_LEVELS } from '../utils/roastLevels'
@@ -17,6 +27,7 @@ export default function CatalogDetail() {
   const [bagRoastLevel, setBagRoastLevel] = useState('')
   const [bagSaving, setBagSaving] = useState(false)
   const [bagError, setBagError] = useState<string | null>(null)
+  const [statusErrors, setStatusErrors] = useState<Record<string, string | undefined>>({})
 
   const [editing, setEditing] = useState(false)
   const [editRoaster, setEditRoaster] = useState('')
@@ -39,17 +50,46 @@ export default function CatalogDetail() {
    * until the React Query staleTime (60s) elapses.
    */
   const invalidateAllCatalogConsumers = () => {
-    queryClient.invalidateQueries({ queryKey: ['catalog', id] })
-    queryClient.invalidateQueries({ queryKey: ['catalog'] })
-    queryClient.invalidateQueries({ queryKey: ['inventory'] })
-    queryClient.invalidateQueries({ queryKey: ['dashboard'] })
-    queryClient.invalidateQueries({ queryKey: ['brew-log'] })
+    if (!id) return
+    queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(id) })
+    queryClient.invalidateQueries({ queryKey: catalogListQueryKey() })
+    queryClient.invalidateQueries({ queryKey: inventoryQueryKey() })
+    queryClient.invalidateQueries({ queryKey: dashboardQueryKey() })
+    queryClient.invalidateQueries({ queryKey: brewLogListQueryKey() })
   }
 
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['catalog', id],
+    queryKey: catalogDetailQueryKey(id ?? ''),
     queryFn: () => getCatalogDetail(id!),
     enabled: !!id,
+  })
+
+  const bagStatusMutation = useMutation({
+    mutationFn: ({ bagId, status }: { bagId: string; status: InventoryBag['status'] }) =>
+      updateInventoryBagStatus(bagId, status),
+    onMutate: ({ bagId }) => {
+      setStatusErrors((prev) => ({ ...prev, [bagId]: undefined }))
+    },
+    onSuccess: (updatedBag) => {
+      if (!id) return
+      queryClient.setQueryData<CatalogDetailData>(
+        catalogDetailQueryKey(id),
+        (old) => old
+          ? { ...old, bags: old.bags.map((bag) => bag.bag_id === updatedBag.bag_id ? { ...bag, ...updatedBag } : bag) }
+          : old,
+      )
+      queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(id) })
+      queryClient.invalidateQueries({ queryKey: inventoryQueryKey() })
+      queryClient.invalidateQueries({ queryKey: dashboardQueryKey() })
+      queryClient.invalidateQueries({ queryKey: defaultsBagQueryKey(updatedBag.bag_id) })
+      queryClient.invalidateQueries({ queryKey: brewLogListQueryKey() })
+    },
+    onError: (_error, variables) => {
+      setStatusErrors((prev) => ({
+        ...prev,
+        [variables.bagId]: `Failed to ${variables.status === 'Finished' ? 'finish' : 'reactivate'} bag. Please try again.`,
+      }))
+    },
   })
 
   if (isLoading) return <LoadingSpinner />
@@ -64,6 +104,30 @@ export default function CatalogDetail() {
   if (!data) return null
 
   const { item, bags, recent_shots } = data
+  const lockedCatalogRoast = item.roast_level?.trim() ?? ''
+
+  const addBagRoastLevel = lockedCatalogRoast || bagRoastLevel
+
+  const openAddBagForm = () => {
+    setAddingBag(true)
+    setBagError(null)
+    setBagRoastLevel(lockedCatalogRoast)
+  }
+
+  const resetAddBagForm = () => {
+    setAddingBag(false)
+    setBagRoastDate('')
+    setBagRoastLevel('')
+    setBagError(null)
+  }
+
+  const errorMessage = (err: unknown, fallback: string) => {
+    if (!axios.isAxiosError(err)) return fallback
+    const detail = err.response?.data?.detail
+    if (typeof detail === 'string') return detail
+    if (Array.isArray(detail) && detail.length > 0) return 'Validation failed. Please check the bag details.'
+    return fallback
+  }
 
   return (
     <div data-testid="catalog-detail" className="p-4 md:p-6 space-y-8 max-w-3xl">
@@ -119,24 +183,24 @@ export default function CatalogDetail() {
                     // detail preview and the catalog-list thumbnail update immediately
                     // without waiting for a background refetch to complete.
                     queryClient.setQueryData<Awaited<ReturnType<typeof getCatalogDetail>>>(
-                      ['catalog', id],
+                      catalogDetailQueryKey(id),
                       (old) => old ? { ...old, item: { ...old.item, image_path } } : old
                     )
                     // Use the exact list key (not a prefix match) to avoid invoking
                     // the updater with CatalogDetail objects from ['catalog', id] queries.
                     queryClient.setQueryData<CatalogItem[]>(
-                      ['catalog'],
+                      catalogListQueryKey(),
                       (old) => old?.map((c) => c.catalog_id === id ? { ...c, image_path } : c)
                     )
                     // Invalidate non-catalog consumers immediately; for catalog queries
                     // use refetchType:'inactive' so they only refetch on next mount —
                     // this prevents a stale Cloud Run instance from returning old data
                     // and overwriting the optimistic cache entries above.
-                    queryClient.invalidateQueries({ queryKey: ['catalog', id], refetchType: 'inactive' })
-                    queryClient.invalidateQueries({ queryKey: ['catalog'], refetchType: 'inactive' })
-                    queryClient.invalidateQueries({ queryKey: ['inventory'] })
-                    queryClient.invalidateQueries({ queryKey: ['dashboard'] })
-                    queryClient.invalidateQueries({ queryKey: ['brew-log'] })
+                    queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(id), refetchType: 'inactive' })
+                    queryClient.invalidateQueries({ queryKey: catalogListQueryKey(), refetchType: 'inactive' })
+                    queryClient.invalidateQueries({ queryKey: inventoryQueryKey() })
+                    queryClient.invalidateQueries({ queryKey: dashboardQueryKey() })
+                    queryClient.invalidateQueries({ queryKey: brewLogListQueryKey() })
                   } catch {
                     setImageError('Failed to upload image. Please try again.')
                   } finally {
@@ -152,8 +216,9 @@ export default function CatalogDetail() {
           {editing ? (
             <div className="space-y-2">
               <div>
-                <label className="label text-xs text-amber-200/70 pb-1">Roaster</label>
+                <label className="label text-xs text-amber-200/70 pb-1" htmlFor="catalog-edit-roaster">Roaster</label>
                 <input
+                  id="catalog-edit-roaster"
                   type="text"
                   value={editRoaster}
                   onChange={(e) => setEditRoaster(e.target.value)}
@@ -161,8 +226,9 @@ export default function CatalogDetail() {
                 />
               </div>
               <div>
-                <label className="label text-xs text-amber-200/70 pb-1">Bean name</label>
+                <label className="label text-xs text-amber-200/70 pb-1" htmlFor="catalog-edit-bean-name">Bean name</label>
                 <input
+                  id="catalog-edit-bean-name"
                   type="text"
                   value={editBeanName}
                   onChange={(e) => setEditBeanName(e.target.value)}
@@ -170,8 +236,9 @@ export default function CatalogDetail() {
                 />
               </div>
               <div>
-                <label className="label text-xs text-amber-200/70 pb-1">Roast level</label>
+                <label className="label text-xs text-amber-200/70 pb-1" htmlFor="catalog-edit-roast-level">Roast level</label>
                 <select
+                  id="catalog-edit-roast-level"
                   value={editRoastLevel}
                   onChange={(e) => setEditRoastLevel(e.target.value)}
                   className="select select-bordered select-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
@@ -183,8 +250,9 @@ export default function CatalogDetail() {
                 </select>
               </div>
               <div>
-                <label className="label text-xs text-amber-200/70 pb-1">Product URL (optional)</label>
+                <label className="label text-xs text-amber-200/70 pb-1" htmlFor="catalog-edit-product-url">Product URL (optional)</label>
                 <input
+                  id="catalog-edit-product-url"
                   type="url"
                   value={editProductUrl}
                   onChange={(e) => setEditProductUrl(e.target.value)}
@@ -215,7 +283,7 @@ export default function CatalogDetail() {
                         product_url: editProductUrl.trim() || null,
                       })
                       setEditing(false)
-                      await queryClient.invalidateQueries({ queryKey: ['catalog', id] })
+                      await queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(id) })
                       invalidateAllCatalogConsumers()
                     } catch {
                       setEditError('Failed to save. Please try again.')
@@ -270,7 +338,7 @@ export default function CatalogDetail() {
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-display text-amber-200">Bags</h2>
           <button
-            onClick={() => { setAddingBag(true); setBagError(null) }}
+            onClick={openAddBagForm}
             className="btn btn-xs bg-amber-700 hover:bg-amber-600 border-none text-white overflow-hidden btn-bevel"
           >
             + Add bag
@@ -281,51 +349,71 @@ export default function CatalogDetail() {
           <div className="glass-card card-bevel p-4 mb-3 space-y-3">
             <div className="flex gap-3 flex-wrap">
               <div className="flex-1 min-w-[140px]">
-                <label className="label text-xs text-amber-200/70 pb-1">Roast date</label>
+                <label className="label text-xs text-amber-200/70 pb-1" htmlFor="add-bag-roast-date">Roast date</label>
                 <input
+                  id="add-bag-roast-date"
                   type="date"
                   value={bagRoastDate}
                   onChange={(e) => setBagRoastDate(e.target.value)}
                   className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
                 />
               </div>
-              <div className="flex-1 min-w-[140px]">
-                <label className="label text-xs text-amber-200/70 pb-1">Roast level</label>
-                <select
-                  value={bagRoastLevel}
-                  onChange={(e) => setBagRoastLevel(e.target.value)}
-                  className="select select-bordered select-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
-                >
-                  <option value="">Select…</option>
-                  {ROAST_LEVELS.map((r) => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
-              </div>
+              {lockedCatalogRoast ? (
+                <div className="flex-1 min-w-[140px]">
+                  <label className="label text-xs text-amber-200/70 pb-1" htmlFor="add-bag-roast-level-locked">Roast level</label>
+                  <input
+                    id="add-bag-roast-level-locked"
+                    type="text"
+                    value={lockedCatalogRoast}
+                    readOnly
+                    disabled
+                    aria-describedby="add-bag-roast-level-locked-note"
+                    className="input input-bordered input-sm w-full bg-amber-950/50 border-amber-700/30 text-amber-100"
+                  />
+                  <p id="add-bag-roast-level-locked-note" className="text-xs text-amber-200/60 mt-1">
+                    Roast level set by catalog: {lockedCatalogRoast}
+                  </p>
+                </div>
+              ) : (
+                <div className="flex-1 min-w-[140px]">
+                  <label className="label text-xs text-amber-200/70 pb-1" htmlFor="add-bag-roast-level">Roast level</label>
+                  <select
+                    id="add-bag-roast-level"
+                    value={bagRoastLevel}
+                    onChange={(e) => setBagRoastLevel(e.target.value)}
+                    required
+                    className="select select-bordered select-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
+                  >
+                    <option value="">Select…</option>
+                    {ROAST_LEVELS.map((r) => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
             {bagError && <p className="text-xs text-red-400">{bagError}</p>}
             <div className="flex gap-2 justify-end">
               <button
-                onClick={() => { setAddingBag(false); setBagRoastDate(''); setBagRoastLevel('') }}
+                onClick={resetAddBagForm}
                 className="btn btn-xs btn-ghost text-amber-300/70"
               >
                 Cancel
               </button>
               <button
-                disabled={bagSaving || !bagRoastDate || !bagRoastLevel}
+                disabled={bagSaving || !bagRoastDate || !addBagRoastLevel}
                 onClick={async () => {
                   setBagSaving(true)
                   setBagError(null)
                   try {
-                    await createInventoryBag(id!, { roast_date: bagRoastDate, roast_level: bagRoastLevel })
-                    setAddingBag(false)
-                    setBagRoastDate('')
-                    setBagRoastLevel('')
-                    queryClient.invalidateQueries({ queryKey: ['catalog', id] })
-                    queryClient.invalidateQueries({ queryKey: ['inventory'] })
-                    queryClient.invalidateQueries({ queryKey: ['dashboard'] })
-                  } catch {
-                    setBagError('Failed to add bag. Please try again.')
+                    await createInventoryBag(id!, { roast_date: bagRoastDate, roast_level: addBagRoastLevel })
+                    resetAddBagForm()
+                    queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(id!) })
+                    queryClient.invalidateQueries({ queryKey: inventoryQueryKey() })
+                    queryClient.invalidateQueries({ queryKey: dashboardQueryKey() })
+                    queryClient.invalidateQueries({ queryKey: brewLogListQueryKey() })
+                  } catch (err) {
+                    setBagError(errorMessage(err, 'Failed to add bag. Please try again.'))
                   } finally {
                     setBagSaving(false)
                   }
@@ -342,16 +430,32 @@ export default function CatalogDetail() {
           <p className="text-amber-200/60 text-sm">No bags in inventory.</p>
         ) : (
           <div className="space-y-2">
-            {bags.map((bag) => (
-              <div key={bag.bag_id} className="glass-card card-bevel px-4 py-3 flex items-center gap-3">
+            {bags.map((bag) => {
+              const nextStatus = bag.status === 'Active' ? 'Finished' : 'Active'
+              const pending = bagStatusMutation.isPending && bagStatusMutation.variables?.bagId === bag.bag_id
+              const actionLabel = bag.status === 'Active' ? 'Finish bag' : 'Reactivate'
+              return (
+              <div key={bag.bag_id} className="glass-card card-bevel px-4 py-3 flex items-center justify-between gap-3">
                 <div>
                   {bag.roast_date && (
                     <p data-testid="bag-roast-date" className="text-sm text-amber-300 mt-0.5">{bag.roast_date}</p>
                   )}
                   <p data-testid="bag-status" className="text-sm text-amber-300 capitalize">{bag.status}</p>
+                  {statusErrors[bag.bag_id] && (
+                    <p className="text-xs text-red-400 mt-1">{statusErrors[bag.bag_id]}</p>
+                  )}
                 </div>
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => bagStatusMutation.mutate({ bagId: bag.bag_id, status: nextStatus })}
+                  className="btn btn-xs btn-outline border-amber-600/40 text-amber-300 hover:bg-amber-800/40 btn-bevel"
+                >
+                  {pending ? 'Saving…' : actionLabel}
+                </button>
               </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </section>
@@ -395,4 +499,3 @@ export default function CatalogDetail() {
     </div>
   )
 }
-

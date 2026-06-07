@@ -127,6 +127,91 @@ async def test_household_rls_isolates_brew_log_reads(db_session: AsyncSession) -
     assert await repo.get("SH-RLS-ISO-001") is None
 
 
+async def test_update_correction_patches_allowed_fields_preserves_ai_feedback(
+    db_session: AsyncSession,
+) -> None:
+    """update_correction() updates typo-safe fields without touching AI feedback."""
+    repo = SqlBrewLogRepo(db=db_session)
+    await repo.add(
+        {
+            "Shot_ID": "SH-SPEC039-CORRECT-001",
+            "Grind_Setting": "12",
+            "Shot_Eligibility": "Good Espresso",
+            "Taste_Summary": "Sweet typo",
+            "User_Notes": "Original typo note",
+            "AI_Feedback": "Existing feedback",
+        }
+    )
+
+    updated = await repo.update_correction(
+        "SH-SPEC039-CORRECT-001",
+        {
+            "taste_summary": "Balanced correction",
+            "user_notes": "Corrected note",
+            "grind_setting": "13.5",
+            "shot_eligibility": "Passable",
+        },
+    )
+
+    assert updated is not None
+    assert updated["Taste_Summary"] == "Balanced correction"
+    assert updated["User_Notes"] == "Corrected note"
+    assert updated["Grind_Setting"] == "13.5"
+    assert updated["Shot_Eligibility"] == "Passable"
+    assert updated["AI_Feedback"] == "Existing feedback"
+
+
+async def test_update_correction_clears_shot_eligibility_to_null(
+    db_session: AsyncSession,
+) -> None:
+    """update_correction() persists empty eligibility clears as the SQL nullable value."""
+    repo = SqlBrewLogRepo(db=db_session)
+    await repo.add(
+        {
+            "Shot_ID": "SH-SPEC039-CLEAR-001",
+            "Shot_Eligibility": "Good Espresso",
+        }
+    )
+
+    updated = await repo.update_correction(
+        "SH-SPEC039-CLEAR-001",
+        {"shot_eligibility": ""},
+    )
+
+    assert updated is not None
+    assert updated["Shot_Eligibility"] == ""
+    result = await db_session.execute(
+        select(BrewLog).where(BrewLog.sheets_id == "SH-SPEC039-CLEAR-001")
+    )
+    assert result.scalar_one().shot_eligibility is None
+
+
+async def test_update_correction_returns_none_for_other_household(
+    db_session: AsyncSession,
+) -> None:
+    """update_correction() is scoped by the active household context."""
+    household_one = await _make_household(db_session, "brew_log_patch_one")
+    household_two = await _make_household(db_session, "brew_log_patch_two")
+    repo = SqlBrewLogRepo(db=db_session)
+
+    await repo.set_household_context(household_one)
+    await repo.add({"Shot_ID": "SH-SPEC039-CORRECT-002", "User_Notes": "household one"})
+
+    await repo.set_household_context(household_two)
+    assert (
+        await repo.update_correction(
+            "SH-SPEC039-CORRECT-002",
+            {"user_notes": "cross household edit"},
+        )
+        is None
+    )
+
+    await repo.set_household_context(household_one)
+    original = await repo.get("SH-SPEC039-CORRECT-002")
+    assert original is not None
+    assert original["User_Notes"] == "household one"
+
+
 async def test_idempotency_key_is_unique_per_household(db_session: AsyncSession) -> None:
     """The durable idempotency key is scoped by household, not shot content."""
     household_one = await _make_household(db_session, "brew_log_idem_one")
