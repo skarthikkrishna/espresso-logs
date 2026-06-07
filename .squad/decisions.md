@@ -1707,3 +1707,41 @@ Decision drop generated 2026-06-05T14:00 PDT
     - tf-infra PR #31: https://github.com/skarthikkrishna/tf-infra/pull/31
   - `@copilot` review request comments posted on all three PRs.
   - CI at close: espresso-logs green; tf-infra green; coffee_tracker no checks on branch.
+
+---
+
+## 2026-06-07: Spec-038 PR Status Check
+
+### Decision: Tariq routing — DIRECT_PERMITTED (read-only PR status check)
+- **Agent:** Tariq
+- **Date:** 2026-06-07T00:50:45Z
+- **Status:** COMMITTED
+- **Classification:** DIRECT_PERMITTED
+- **drop_id:** 2026-06-07T0050-spec038-status-check
+- **Operator Request:** Check status of Spec-038 PRs (#123, #106, #31).
+- **Rationale:** Pure read-only query — CI check status, review state, mergeability. No code changes, no PR edits, no merges, no pushes requested or implied. SpecKit not triggered by observational/reporting tasks.
+- **Scope Confirmed:** Query CI check status, review approval state, mergeability/merge-blocking conditions. No write actions of any kind.
+- **No-Change Constraint:** Binding. Any write action requires a new routing decision before proceeding.
+
+---
+
+## 2026-06-07: Spec-038 PR Merge Authorization
+
+### Decision: Tariq routing — DIRECT_PERMITTED (PR merge, Spec-038 all three repos)
+- **Agent:** Tariq
+- **Date:** 2026-06-07T00:52:44-07:00
+- **Status:** COMMITTED
+- **Classification:** DIRECT_PERMITTED
+- **drop_id:** 2026-06-07T0052-tariq-pr-merge-routing
+- **Operator Request:** "If the PRs look good, go ahead and merge them."
+- **Rationale:** All three PRs MERGEABLE, no blocking reviews. Merge operation on already-reviewed and CI-green PRs. No SpecKit cycle applies. Operator explicitly authorized merge if conditions met.
+- **PR Verification:**
+  - coffee_tracker #123: OPEN, MERGEABLE, no CI checks (spec/artifact-only — expected)
+  - espresso-logs #106: OPEN, MERGEABLE, 14 checks all SUCCESS (fe-e2e SKIPPED — expected)
+  - tf-infra #31: OPEN, MERGEABLE, 4 checks all SUCCESS
+- **Merge Sequence:** coffee_tracker → espresso-logs → tf-infra (squash merge)
+- **Outcome:**
+  - coffee_tracker #123 merged at `2026-06-07T07:53:59Z`, squash commit `8f6a56dc3c099a3e34dd08f2cb61978686dd1601`
+  - espresso-logs #106 merged at `2026-06-07T07:54:05Z`, squash commit `be7ae041f46d82bd8a50877d77eeac332f1705e7`
+  - tf-infra #31 merged at `2026-06-07T07:54:11Z`, squash commit `d1f218d458eb12e352c6d2d4981061af583135d2`
+  - No branch deletions performed. No deployment or branch protection changes.
