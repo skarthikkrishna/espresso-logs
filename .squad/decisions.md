@@ -15,6 +15,19 @@
 - **No-Push Constraint:** Binding. All commits local only.
 - **Outcome:** Priya specify + clarify complete (commits `e5ebd8d`, `f993f85` in `coffee_tracker-spec-038` worktree). Spec frontmatter `status: clarified`.
 
+### Decision: Tariq routing — SPECKIT_REQUIRED (Spec-038 tasks phase continuation)
+- **Agent:** Tariq
+- **Date:** 2026-06-06T22:37:02-07:00
+- **Status:** COMMITTED
+- **Classification:** SPECKIT_REQUIRED
+- **drop_id:** 2026-06-06-spec038-tasks-routing
+- **Operator Request:** "Let's go for it — When will we start making changes to the other repos?"
+- **Rationale:** Active SpecKit cycle at tasks phase. Spec-038 specified + clarified + planned. `tasks.md` not yet committed; implementation not authorised in any repo.
+- **Scope:** `speckit.tasks` only. Zero implementation edits to espresso-logs or tf-infra permitted.
+- **Timing Answer:** Other repos (espresso-logs, tf-infra) begin receiving changes only after: (1) `tasks.md` committed, (2) Quinn gate approved, (3) `git ls-files` confirms gate file, (4) fan-out authorised. First writes: T012 (espresso-logs), T021 (tf-infra).
+- **No-Push Constraint:** Binding. All commits local only.
+- **Outcome (this session):** Tariq generated `tasks.md` (commit `16f9300`); Quinn gate committed `quinn-gate.md` (commit `1418752`) with `status: APPROVED_WITH_NOTES`. Implementation fan-out not yet started.
+
 ---
 
 ## 2026-05-21: M5 Spec-034 Planning Cycle Complete
