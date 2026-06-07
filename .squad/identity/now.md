@@ -1,29 +1,22 @@
 ---
-updated_at: 2026-06-07T11:02:00.697-07:00
-focus_area: Spec-039 validation RCA closed; remediation remains unauthorized
-milestone: RCA artifact d4ac318 and Scribe closeout cf60d54 committed
-active_phase: T32 Playwright remains failing and blocks T33/T34 completion
+updated_at: 2026-06-07T11:17:15.844-07:00
+focus_area: Spec-039 validation triage complete; remediation remains owner-assigned
+milestone: Scribe closed RCA session with d3a308b and 06b398a
+active_phase: Waiting on Alex/Finn/Quinn fixes; Quinn reruns T32-T34 after fixes
 ---
 
 # Session Status: Spec-039 Validation RCA Closed (2026-06-07)
 
 ## Current Team Focus
 
-- The Spec-039 validation RCA session is closed with `.squad` artifacts only.
-- RCA artifact committed at `d4ac318`; Scribe closeout committed at `cf60d54`.
-- No new SpecKit cycle is needed for the RCA findings; they remain within the approved Spec-039 validation/remediation graph.
-- No application, test, frontend, generated build, dependency, or push authorization was granted.
-
-## Validation State
-
-- T32 Playwright remains failing and blocks T33/T34 completion.
-- Targeted backend subset passed during triage, but this was diagnostic and does not satisfy T33.
-- Targeted frontend subset passed during triage, but this was diagnostic and does not satisfy T33.
-- T33 must not be considered complete until T32 passes; T34 must not proceed until T33 passes.
+- Spec-039 validation triage/RCA is complete; Scribe closeout commits `d3a308b` and `06b398a` are recorded.
+- No new SpecKit cycle is needed for the validation failures.
+- Fixes remain assigned to Alex, Finn, and Quinn according to `.squad/log/20260607T105900-0700-spec-039-validation-rca.md`.
+- No push is authorized.
 
 ## Open Work / Next Session
 
-1. Route any Spec-039 code or test remediation through the normal owner/gate process before implementation.
-2. Do not edit application, test, or frontend source files under the RCA/session-close authorization.
-3. Do not mark T32, T33, or T34 complete until their prerequisite validation passes in order.
+1. Alex/Finn/Quinn complete the assigned fixes from the RCA log without expanding scope.
+2. Quinn reruns T32 after fixes; T33 only after T32 passes; T34 only after T33 passes.
+3. Keep application, frontend, backend test, E2E test, dependency, and generated build files untouched under this continuity update.
 4. Do not push without explicit operator authorization.
