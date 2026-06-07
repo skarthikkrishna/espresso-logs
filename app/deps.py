@@ -479,6 +479,41 @@ class _DualWriteBrewLogRepo:
             )
             raise
 
+    async def update_correction(
+        self,
+        shot_id: str,
+        fields: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        if not settings.use_postgres:
+            row = self._sheets.get(shot_id)
+            if row is None:
+                return None
+            updated = dict(row)
+            if "taste_summary" in fields:
+                updated["Taste_Summary"] = fields["taste_summary"] or ""
+            if "user_notes" in fields:
+                updated["User_Notes"] = fields["user_notes"] or ""
+            if "grind_setting" in fields:
+                updated["Grind_Setting"] = fields["grind_setting"] or ""
+            if "shot_eligibility" in fields:
+                updated["Shot_Eligibility"] = fields["shot_eligibility"] or ""
+            return updated
+        sql = _require_sql_repo(self._sql, entity_type="brew_log", operation="update_correction")
+        try:
+            return await sql.update_correction(shot_id, fields)
+        except Exception as exc:
+            await sql._db.rollback()
+            _dw_log.warning(
+                "Postgres write failed",
+                extra={
+                    "component": "dual_write",
+                    "entity_type": "brew_log",
+                    "operation": "update_correction",
+                    "error": str(exc),
+                },
+            )
+            raise
+
     def delete_rows(self, start_row: int, end_row: int) -> None:
         _dw_log.debug("DualWrite Sheets write path disabled (M5)")
 
@@ -757,8 +792,13 @@ async def get_brew_log_repo(
 def get_llm_client() -> "LLMClient":
     """FastAPI dependency that provides the configured LLMClient."""
     from app.config import settings
-    from app.services.inference import get_llm_client as _factory
+    from app.services.inference import (
+        get_hermetic_e2e_llm_client,
+        get_llm_client as _factory,
+    )
 
+    if _E2E_AUTH_BYPASS and os.environ.get("APP_ENV") in _PERMITTED_E2E_ENVS:
+        return get_hermetic_e2e_llm_client()
     return _factory(settings.anthropic_api_key, settings.llm_api_key)
 
 

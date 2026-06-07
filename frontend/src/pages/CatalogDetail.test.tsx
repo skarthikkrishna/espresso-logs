@@ -2,7 +2,7 @@
  * T032 — CatalogDetail bag card order and dead link removal tests
  */
 import React from 'react'
-import { render, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
@@ -19,7 +19,12 @@ vi.mock('../api/catalog', () => ({
   createInventoryBag: vi.fn(),
 }))
 
-import { getCatalogDetail, updateCatalogItem, uploadCatalogImage } from '../api/catalog'
+vi.mock('../api/inventory', () => ({
+  updateInventoryBagStatus: vi.fn(),
+}))
+
+import { createInventoryBag, getCatalogDetail, updateCatalogItem, uploadCatalogImage } from '../api/catalog'
+import { updateInventoryBagStatus } from '../api/inventory'
 import CatalogDetail from './CatalogDetail'
 
 const FIXTURE_WITH_ROAST_DATE = {
@@ -76,6 +81,107 @@ describe('CatalogDetail — bag card', () => {
       expect(nodes[1]).toHaveAttribute('data-testid', 'bag-status')
     })
   })
+
+    describe('CatalogDetail — bag status actions', () => {
+      it('finishes an active bag and updates the row status without a full reload', async () => {
+        const finishedFixture = {
+          ...FIXTURE_WITH_ROAST_DATE,
+          bags: [{ ...FIXTURE_WITH_ROAST_DATE.bags[0], status: 'Finished' as const }],
+        }
+        vi.mocked(getCatalogDetail)
+          .mockResolvedValueOnce(FIXTURE_WITH_ROAST_DATE)
+          .mockResolvedValue(finishedFixture)
+        vi.mocked(updateInventoryBagStatus).mockResolvedValue({
+          ...FIXTURE_WITH_ROAST_DATE.bags[0],
+          status: 'Finished',
+        })
+
+        renderWithProviders(<CatalogDetail />)
+
+        fireEvent.click(await screen.findByRole('button', { name: /finish bag/i }))
+
+        await waitFor(() => {
+          expect(updateInventoryBagStatus).toHaveBeenCalledWith('BAG001', 'Finished')
+          expect(screen.getByTestId('bag-status')).toHaveTextContent('Finished')
+        })
+      })
+
+      it('reactivates a finished bag and shows a retryable row error on failure', async () => {
+        vi.mocked(getCatalogDetail).mockResolvedValue(FIXTURE_NULL_ROAST_DATE)
+        vi.mocked(updateInventoryBagStatus).mockRejectedValue(new Error('network'))
+
+        renderWithProviders(<CatalogDetail />)
+
+        fireEvent.click(await screen.findByRole('button', { name: /reactivate/i }))
+
+        await waitFor(() => {
+          expect(updateInventoryBagStatus).toHaveBeenCalledWith('BAG002', 'Active')
+          expect(screen.getByText(/failed to reactivate bag/i)).toBeInTheDocument()
+          expect(screen.getByTestId('bag-status')).toHaveTextContent('Finished')
+        })
+      })
+    })
+
+    describe('CatalogDetail — add bag roast handling', () => {
+      it('locks add-bag roast to the catalog roast when present', async () => {
+        vi.mocked(getCatalogDetail).mockResolvedValue(FIXTURE_WITH_ROAST_DATE)
+        vi.mocked(createInventoryBag).mockResolvedValue({
+          ...FIXTURE_WITH_ROAST_DATE.bags[0],
+          bag_id: 'BAG003',
+          roast_level: 'Medium',
+        })
+
+        renderWithProviders(<CatalogDetail />)
+        fireEvent.click(await screen.findByRole('button', { name: /\+ add bag/i }))
+
+        expect(screen.getByText('Roast level set by catalog: Medium')).toBeInTheDocument()
+        expect(screen.getByLabelText('Roast level')).toHaveValue('Medium')
+        expect(screen.getByLabelText('Roast level')).toBeDisabled()
+        fireEvent.change(screen.getByLabelText('Roast date'), {
+          target: { value: '2024-02-01' },
+        })
+        fireEvent.click(screen.getByRole('button', { name: /save bag/i }))
+
+        await waitFor(() => {
+          expect(createInventoryBag).toHaveBeenCalledWith('CAT001', {
+            roast_date: '2024-02-01',
+            roast_level: 'Medium',
+          })
+        })
+      })
+
+      it('requires a selectable roast when the catalog roast is empty', async () => {
+        const emptyRoastFixture = {
+          ...FIXTURE_WITH_ROAST_DATE,
+          item: { ...FIXTURE_WITH_ROAST_DATE.item, roast_level: '' },
+        }
+        vi.mocked(getCatalogDetail).mockResolvedValue(emptyRoastFixture)
+        vi.mocked(createInventoryBag).mockResolvedValue({
+          ...FIXTURE_WITH_ROAST_DATE.bags[0],
+          bag_id: 'BAG004',
+          roast_level: 'Dark',
+        })
+
+        renderWithProviders(<CatalogDetail />)
+        fireEvent.click(await screen.findByRole('button', { name: /\+ add bag/i }))
+
+        const saveButton = screen.getByRole('button', { name: /save bag/i })
+        expect(saveButton).toBeDisabled()
+        fireEvent.change(screen.getByLabelText('Roast date'), {
+          target: { value: '2024-02-02' },
+        })
+        const roastSelect = screen.getByLabelText('Roast level')
+        fireEvent.change(roastSelect, { target: { value: 'Dark' } })
+        fireEvent.click(saveButton)
+
+        await waitFor(() => {
+          expect(createInventoryBag).toHaveBeenCalledWith('CAT001', {
+            roast_date: '2024-02-02',
+            roast_level: 'Dark',
+          })
+        })
+      })
+    })
 
   it('no_bags_href_link_present', async () => {
     vi.mocked(getCatalogDetail).mockResolvedValue(FIXTURE_WITH_ROAST_DATE)

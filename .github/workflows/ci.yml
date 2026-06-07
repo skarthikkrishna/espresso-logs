@@ -140,13 +140,34 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: uv sync --frozen
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Configure non-privileged runtime database role
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGDATABASE: ${{ vars.CI_DB_NAME }}
+          PGUSER: ${{ vars.CI_DB_USER }}
+          PGPASSWORD: ${{ vars.CI_DB_PASSWORD }}
+          CI_RUNTIME_DB_USER: espresso_ci_runtime
+          CI_RUNTIME_DB_PASSWORD: ${{ vars.CI_DB_PASSWORD }}
+        run: |
+          psql -v ON_ERROR_STOP=1 \
+            -v runtime_user="$CI_RUNTIME_DB_USER" \
+            -v runtime_password="$CI_RUNTIME_DB_PASSWORD" \
+            -v database_name="${{ vars.CI_DB_NAME }}" <<'SQL'
+          CREATE ROLE :"runtime_user" LOGIN PASSWORD :'runtime_password'
+            NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOREPLICATION NOBYPASSRLS;
+          GRANT CONNECT, TEMPORARY ON DATABASE :"database_name" TO :"runtime_user";
+          GRANT USAGE, CREATE ON SCHEMA public TO :"runtime_user";
+          SQL
       - run: uv run alembic upgrade head
         env:
-          DATABASE_URL: postgresql+asyncpg://${{ vars.CI_DB_USER }}:${{ vars.CI_DB_PASSWORD }}@localhost:5432/${{ vars.CI_DB_NAME }}
+          DATABASE_URL: postgresql+asyncpg://espresso_ci_runtime:${{ vars.CI_DB_PASSWORD }}@localhost:5432/${{ vars.CI_DB_NAME }}
       - run: bash scripts/run-ci-tests.sh
         env:
           SPREADSHEET_ID: dummy
-          DATABASE_URL: postgresql+asyncpg://${{ vars.CI_DB_USER }}:${{ vars.CI_DB_PASSWORD }}@localhost:5432/${{ vars.CI_DB_NAME }}
+          DATABASE_URL: postgresql+asyncpg://espresso_ci_runtime:${{ vars.CI_DB_PASSWORD }}@localhost:5432/${{ vars.CI_DB_NAME }}
       - uses: actions/upload-artifact@v7
         if: always()
         with:

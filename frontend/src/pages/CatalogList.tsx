@@ -3,9 +3,11 @@ import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { listCatalog } from '../api/catalog'
+import { catalogDetailQueryKey, catalogListQueryKey } from '../api/queryKeys'
 import LoadingSpinner from '../components/LoadingSpinner'
 import AddBeanModal from '../components/AddBeanModal'
 import Chip from '../components/Chip'
+import type { CatalogItem } from '../types/entities'
 
 export default function CatalogList() {
   const [search, setSearch] = useState('')
@@ -13,7 +15,7 @@ export default function CatalogList() {
   const [modalOpen, setModalOpen] = useState(false)
 
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['catalog'],
+    queryKey: catalogListQueryKey(),
     queryFn: listCatalog,
   })
 
@@ -134,13 +136,20 @@ export default function CatalogList() {
       {modalOpen && (
         <AddBeanModal
           onClose={() => setModalOpen(false)}
-          onSaved={() => {
-            setModalOpen(false)
-            queryClient.invalidateQueries({ queryKey: ['catalog'] })
+          onSaved={(savedItem?: CatalogItem) => {
+            if (savedItem) {
+              queryClient.setQueryData<CatalogItem[]>(catalogListQueryKey(), (old) => {
+                if (!old) return [savedItem]
+                return old.some((item) => item.catalog_id === savedItem.catalog_id)
+                  ? old.map((item) => item.catalog_id === savedItem.catalog_id ? { ...item, ...savedItem } : item)
+                  : [savedItem, ...old]
+              })
+              queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(savedItem.catalog_id) })
+            }
+            queryClient.invalidateQueries({ queryKey: catalogListQueryKey() })
           }}
         />
       )}
     </div>
   )
 }
-

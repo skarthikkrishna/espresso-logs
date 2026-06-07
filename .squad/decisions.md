@@ -1,5 +1,115 @@
 # Decisions Archive
 
+## 2026-06-07: Spec-039 Bounded Remediation and Quinn Harness Closeout
+
+### Decision: Tariq routing — DIRECT_PERMITTED (Spec-039 bounded remediation)
+- **Agent:** Tariq
+- **Date:** 2026-06-07T11:26:32-07:00
+- **Status:** MERGED
+- **Classification:** DIRECT_PERMITTED
+- **Source drop:** `.squad/decisions/inbox/20260607T112632-0700-tariq-route-spec039-remediation.md`
+- **Scope:** Bounded recovery for already-approved Spec-039 implementation/validation blockers only.
+- **Permitted owners:** Alex for backend/API/test remediation, Finn for frontend/UI/cache/accessibility remediation, Quinn for E2E harness/selectors/fixture evidence and validation reruns.
+- **Out of scope:** New feature behavior, broad cache rewrites, production data/log/image access, deploys, pushes, or PR/review requests.
+- **Quinn gate:** Filesystem verification in `coffee_tracker` found `specs/039-ui-data-freshness-bug-evidence/quinn-gate.md`; frontmatter status was `APPROVED_WITH_NOTES`.
+- **Validation sequence:** Fix bounded blockers, rerun T32, then T33, then T34; pause for Tariq triage on any validation failure.
+
+### Decision: Tariq routing — DIRECT_PERMITTED (Spec-039 E2E harness/test-evidence remediation)
+- **Agent:** Tariq
+- **Date:** 2026-06-07T11:35:32-07:00
+- **Status:** MERGED
+- **Classification:** DIRECT_PERMITTED
+- **Source drop:** `.squad/decisions/inbox/20260607T113532-0700-tariq-route-spec039-e2e-harness-remediation.md`
+- **Scope:** E2E harness and evidence remediation limited to `frontend/e2e/spec039-seed.ts`, `frontend/e2e/spec039-ui-data-freshness.spec.ts`, and `frontend/playwright.config.ts` only if browser-state isolation required it.
+- **Permitted fixes:** Protected API probes with active synthetic-session authorization, unambiguous Medium locator, session/browser-state hard-navigation stability, and seed-derived B07 dose expectation reconciliation.
+- **Out of scope:** Application behavior changes, backend/API changes, frontend product component changes, broad cache rewrites, non-Spec-039 tests, production/external provider access, deploys, pushes, or PR/review activity.
+- **Quinn gate:** Existing `coffee_tracker/specs/039-ui-data-freshness-bug-evidence/quinn-gate.md` was noted as `APPROVED_WITH_NOTES`; coordinator still had to verify the filesystem artifact before implementation.
+- **Handling:** Preserve unrelated worktree changes; touch only scoped harness/config files for this remediation.
+
+### Decision: Alex routing — DIRECT_PERMITTED (Spec-039 backend/API/test remediation)
+- **Agent:** Alex
+- **Date:** 2026-06-07T11:36:20.679-07:00
+- **Status:** MERGED
+- **Classification:** DIRECT_PERMITTED
+- **Source drop:** `.squad/decisions/inbox/20260607T113620-0700-alex-route-spec039-backend-remediation.md`
+- **Scope:** Backend/API/test remediation only for Spec-039 tasks in Alex's lane.
+- **Rationale:** Prior Tariq routing authorized bounded remediation; Spec-039 tasks assign Alex the backend/API track; the Quinn gate path was stated as `APPROVED_WITH_NOTES`.
+- **Out of scope:** Finn-owned frontend/UI work, Tariq/Quinn evidence/process work unless coordinated, new SpecKit cycle, new product scope, production data access, deploys, merges, or pushes.
+- **No-push constraint:** No push authorized; any later push requires all four local CI-equivalent checks and explicit operator approval.
+
+### Decision: Tariq routing — DIRECT_PERMITTED (Spec-039 T35 no-push handoff)
+- **Agent:** Tariq
+- **Date:** 2026-06-07T12:26:19.472-07:00
+- **Status:** MERGED
+- **Classification:** DIRECT_PERMITTED
+- **Source drop:** `.squad/decisions/inbox/20260607T122619-0700-tariq-route-spec039-t35-handoff.md`
+- **Scope:** Documentation/process PR-readiness handoff only for Spec-039 T35.
+- **Rationale:** Existing Spec-039 `[P][PROCESS]` handoff task; no new feature/product/backend/frontend/infrastructure/production-data scope.
+- **Gate note:** Quinn gate waived for this handoff because it is documentation/governance-only.
+- **Constraints:** No application/infrastructure code changes, push, deploy, PR creation, or production data/secrets access authorized.
+- **Outcome:** T35 no-push handoff artifact exists at `.squad/log/2026-06-07T12-25-23-0700-spec039-t35-pr-readiness.md`; T32/T33/T34 passed; T35 completed; implementation remains local and coordinator must ask before push.
+
+---
+
+## 2026-06-07: Spec-039 UI Bug Repro Planning Closeout
+
+### Decision: Tariq routing — DIRECT_PERMITTED (Scribe closure)
+- **Agent:** Tariq
+- **Date:** 2026-06-07T03:50:22-07:00
+- **Status:** COMMITTED
+- **Classification:** DIRECT_PERMITTED
+- **drop_id:** 20260607T035022-0700-tariq-scribe-closure-routing
+- **Source drop:** `.squad/decisions/inbox/20260607T035022-0700-tariq-scribe-closure-routing.md`
+- **Operator Request:** Close the Spec-039 planning session by merging decision drops, writing concise session logs in the involved repositories, clearing processed inbox files, and committing documentation/process changes locally.
+- **Rationale:** The closeout is documentation/process-only. It does not authorize UI, API, cache, AI, infrastructure, test, deployment, production-data, or SpecKit requirement changes.
+- **Scope:** Merge and clear current decision inbox files; write `.squad/log/20260607T035022-0700-ui-bug-repro-plan.md` in the involved repositories; commit only Scribe closeout artifacts locally.
+- **Gate Note:** Quinn gate is waived for this closure only because no application or infrastructure implementation is authorized. The existing Spec-039 Quinn gate remains `APPROVED_WITH_NOTES` at `c25e65d` and is still required before implementation begins.
+- **Outcome:** This Scribe close merged pending app-repo drops, cleared processed inbox files, wrote cross-repo session logs, did not implement fixes, and did not push.
+
+### Decision: Finn routing — DIRECT_PERMITTED (Spec-039 Aria gate mirror)
+- **Agent:** Finn
+- **Date:** 2026-06-07T02:56:34-07:00
+- **Status:** COMMITTED
+- **Classification:** DIRECT_PERMITTED
+- **drop_id:** 20260607T025734-0700-finn-aria-gate-routing
+- **Source drop:** `.squad/decisions/inbox/20260607T025734-0700-finn-aria-gate-routing.md`
+- **Operator Request:** Aria must review the existing Spec-039 artifacts and create/commit only `coffee_tracker/specs/039-ui-data-freshness-bug-evidence/aria-gate.md`.
+- **Rationale:** This was a self-contained gate-artifact step over already-created `spec.md`, `plan.md`, and `compliance.md`; no new product scope, implementation, or app-repo change was authorized.
+- **Scope:** Create and commit only the Spec-039 Aria gate in `coffee_tracker`; do not modify `espresso-logs`, other SpecKit artifacts, or push.
+- **Outcome:** Aria approved the gate in `d5d9243 design: approve spec-039 aria gate`; `aria-gate.md` has `status: APPROVED`. This app-repo mirror records and clears the pending Finn drop without changing application code.
+
+---
+
+## 2026-06-06: Cross-Repo Squad Governance — Spec-038 Routing
+
+### Decision: Tariq routing — SPECKIT_REQUIRED (cross-repo squad governance spec)
+- **Agent:** Tariq
+- **Date:** 2026-06-06T22:03:49-07:00
+- **Status:** COMMITTED
+- **Classification:** SPECKIT_REQUIRED
+- **drop_id:** 2026-06-06-tariq-squad-governance-spec-routing
+- **Operator Request:** Build a spec for cross-repo Squad governance covering: charter drift, CI debug loops, multi-repo parallel implementation, hub-and-spoke Squad model, privacy/security gates, retro ceremony with artifact pruning, and sustainable cleanup model.
+- **Rationale:** Multi-repo, cross-cutting governance touching new Squad protocols, per-repo Squad infrastructure, privacy/security gate definitions, retro ceremony design, and automation tradeoff. None are bounded single-file changes; all span three repos (`coffee_tracker`, `espresso-logs`, `tf-infra`).
+- **SpecKit Hub:** `coffee_tracker`. All gate artifacts land there. This drop is a local routing record in `espresso-logs` only.
+- **Scope:** Cross-repo charter normalization; hub-and-spoke handoff protocol; privacy/security gates; retro ceremony; artifact cleanup model; automation tradeoff.
+- **No-Push Constraint:** Binding. All commits local only.
+- **Outcome:** Priya specify + clarify complete (commits `e5ebd8d`, `f993f85` in `coffee_tracker-spec-038` worktree). Spec frontmatter `status: clarified`.
+
+### Decision: Tariq routing — SPECKIT_REQUIRED (Spec-038 tasks phase continuation)
+- **Agent:** Tariq
+- **Date:** 2026-06-06T22:37:02-07:00
+- **Status:** COMMITTED
+- **Classification:** SPECKIT_REQUIRED
+- **drop_id:** 2026-06-06-spec038-tasks-routing
+- **Operator Request:** "Let's go for it — When will we start making changes to the other repos?"
+- **Rationale:** Active SpecKit cycle at tasks phase. Spec-038 specified + clarified + planned. `tasks.md` not yet committed; implementation not authorised in any repo.
+- **Scope:** `speckit.tasks` only. Zero implementation edits to espresso-logs or tf-infra permitted.
+- **Timing Answer:** Other repos (espresso-logs, tf-infra) begin receiving changes only after: (1) `tasks.md` committed, (2) Quinn gate approved, (3) `git ls-files` confirms gate file, (4) fan-out authorised. First writes: T012 (espresso-logs), T021 (tf-infra).
+- **No-Push Constraint:** Binding. All commits local only.
+- **Outcome (this session):** Tariq generated `tasks.md` (commit `16f9300`); Quinn gate committed `quinn-gate.md` (commit `1418752`) with `status: APPROVED_WITH_NOTES`. Implementation fan-out not yet started.
+
+---
+
 ## 2026-05-21: M5 Spec-034 Planning Cycle Complete
 
 ### Decision: Full SpecKit cycle execution for M5 spec-034
@@ -1634,3 +1744,18 @@ Decision drop generated 2026-06-05T14:00 PDT
 | **Next reconciliation trigger** | Any charter update to `coffee_tracker/.squad/agents/tariq/` or `scribe/` after commit `a01523d` |
 | **Status** | Accepted |
 
+
+---
+
+## 2026-06-07: Spec-039 Production Readiness Branch Correction
+
+### Decision: Tariq routing — DIRECT_PERMITTED (Spec-039 branch correction)
+- **Agent:** Tariq
+- **Date:** 2026-06-07T12:35:22.603-07:00
+- **Status:** MERGED
+- **Classification:** DIRECT_PERMITTED
+- **Source drop:** `.squad/decisions/inbox/20260607T123522-0700-tariq-route-spec039-branch-correction.md`
+- **Request:** Correct the locally validated Spec-039 production-readiness work off `chore/planning-session-hygiene` onto a separate bug-fix branch without pushing, rewriting published history, discarding local commits, or accessing production data/secrets.
+- **Rationale:** Bounded process/git correction for an already validated local work unit; no product scope or code behavior changed by the branch correction itself.
+- **Scope:** Create `fix/spec-039-production-readiness` from `origin/main`, cherry-pick the validated implementation and routing-drop commits, preserve local commits, and stop before any push.
+- **Outcome:** New branch `fix/spec-039-production-readiness` was created from `origin/main`; validated work was cherry-picked; Ralph resolved the `.squad/identity/now.md` conflict; an empty duplicate cherry-pick was skipped; no push, deploy, PR creation, production data access, or secrets access occurred.
