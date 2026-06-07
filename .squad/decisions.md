@@ -1,5 +1,22 @@
 # Decisions Archive
 
+## 2026-06-06: Cross-Repo Squad Governance — Spec-038 Routing
+
+### Decision: Tariq routing — SPECKIT_REQUIRED (cross-repo squad governance spec)
+- **Agent:** Tariq
+- **Date:** 2026-06-06T22:03:49-07:00
+- **Status:** COMMITTED
+- **Classification:** SPECKIT_REQUIRED
+- **drop_id:** 2026-06-06-tariq-squad-governance-spec-routing
+- **Operator Request:** Build a spec for cross-repo Squad governance covering: charter drift, CI debug loops, multi-repo parallel implementation, hub-and-spoke Squad model, privacy/security gates, retro ceremony with artifact pruning, and sustainable cleanup model.
+- **Rationale:** Multi-repo, cross-cutting governance touching new Squad protocols, per-repo Squad infrastructure, privacy/security gate definitions, retro ceremony design, and automation tradeoff. None are bounded single-file changes; all span three repos (`coffee_tracker`, `espresso-logs`, `tf-infra`).
+- **SpecKit Hub:** `coffee_tracker`. All gate artifacts land there. This drop is a local routing record in `espresso-logs` only.
+- **Scope:** Cross-repo charter normalization; hub-and-spoke handoff protocol; privacy/security gates; retro ceremony; artifact cleanup model; automation tradeoff.
+- **No-Push Constraint:** Binding. All commits local only.
+- **Outcome:** Priya specify + clarify complete (commits `e5ebd8d`, `f993f85` in `coffee_tracker-spec-038` worktree). Spec frontmatter `status: clarified`.
+
+---
+
 ## 2026-05-21: M5 Spec-034 Planning Cycle Complete
 
 ### Decision: Full SpecKit cycle execution for M5 spec-034
