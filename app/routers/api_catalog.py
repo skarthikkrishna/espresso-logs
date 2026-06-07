@@ -40,6 +40,10 @@ router = APIRouter(prefix="/api", tags=["catalog"])
 _ROAST_LEVELS = ["Light", "Light / Medium", "Medium", "Medium / Dark", "Dark"]
 _ALLOWED_UPLOAD_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 _MAX_UPLOAD_BYTES = 2_097_152
+_JPEG_SIGNATURES = (b"\xff\xd8\xff",)
+_PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+_WEBP_RIFF_SIGNATURE = b"RIFF"
+_WEBP_FORMAT_SIGNATURE = b"WEBP"
 
 
 def _next_catalog_id(existing: list[dict[str, Any]]) -> str:
@@ -63,6 +67,20 @@ def _catalog_to_out(row: dict[str, Any]) -> CatalogItemOut:
         product_url=row.get("Product_URL") or None,
         image_path=row.get("Local_Image_Path") or None,
     )
+
+
+def _upload_bytes_match_content_type(img_bytes: bytes, content_type: str) -> bool:
+    if content_type == "image/jpeg":
+        return img_bytes.startswith(_JPEG_SIGNATURES)
+    if content_type == "image/png":
+        return img_bytes.startswith(_PNG_SIGNATURE)
+    if content_type == "image/webp":
+        return (
+            len(img_bytes) >= 12
+            and img_bytes.startswith(_WEBP_RIFF_SIGNATURE)
+            and img_bytes[8:12] == _WEBP_FORMAT_SIGNATURE
+        )
+    return False
 
 
 def _bag_to_out(row: dict[str, Any], display_name: str) -> InventoryBagOut:
@@ -478,7 +496,7 @@ async def api_catalog_upload_image(
     if entry is None:
         raise HTTPException(status_code=404, detail="Catalog entry not found")
 
-    content_type = (file.content_type or "image/jpeg").split(";")[0].strip()
+    content_type = (file.content_type or "").split(";")[0].strip()
     if content_type not in _ALLOWED_UPLOAD_CONTENT_TYPES:
         raise HTTPException(status_code=422, detail="file must be a JPEG, PNG, or WebP image.")
     img_bytes = await file.read()
@@ -486,6 +504,11 @@ async def api_catalog_upload_image(
         raise HTTPException(status_code=422, detail="file must not be empty.")
     if len(img_bytes) > _MAX_UPLOAD_BYTES:
         raise HTTPException(status_code=413, detail="file must be 2 MB or smaller.")
+    if not _upload_bytes_match_content_type(img_bytes, content_type):
+        raise HTTPException(
+            status_code=422,
+            detail="file content does not match the declared image type.",
+        )
     ext = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}[content_type]
     obj_name = f"bean-images/{catalog_id}-{uuid.uuid4().hex[:8]}.{ext}"
     image_path = await upload_image(img_bytes, content_type, obj_name, settings.assets_bucket)

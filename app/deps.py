@@ -485,19 +485,7 @@ class _DualWriteBrewLogRepo:
         fields: dict[str, Any],
     ) -> dict[str, Any] | None:
         if not settings.use_postgres:
-            row = self._sheets.get(shot_id)
-            if row is None:
-                return None
-            updated = dict(row)
-            if "taste_summary" in fields:
-                updated["Taste_Summary"] = fields["taste_summary"] or ""
-            if "user_notes" in fields:
-                updated["User_Notes"] = fields["user_notes"] or ""
-            if "grind_setting" in fields:
-                updated["Grind_Setting"] = fields["grind_setting"] or ""
-            if "shot_eligibility" in fields:
-                updated["Shot_Eligibility"] = fields["shot_eligibility"] or ""
-            return updated
+            raise RuntimeError("Brew-log correction requires Postgres writes to be enabled")
         sql = _require_sql_repo(self._sql, entity_type="brew_log", operation="update_correction")
         try:
             return await sql.update_correction(shot_id, fields)

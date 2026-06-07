@@ -22,7 +22,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 import sqlalchemy as sa
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from httpx import ASGITransport, AsyncClient
 from itsdangerous import TimestampSigner
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -999,6 +999,17 @@ async def test_brew_log_patch_normalises_empty_eligibility_as_clear() -> None:
     assert empty_updates == {"shot_eligibility": None}
     assert null_updates == {"shot_eligibility": None}
     assert valid_updates == {"shot_eligibility": "Passable"}
+
+
+async def test_brew_log_patch_rejects_non_finite_grind_setting() -> None:
+    """NaN/Infinity grind_setting values are rejected before persistence."""
+    from app.routers.api_brew_log import _BrewLogPatchBody, _normalise_brew_log_patch
+
+    with pytest.raises(HTTPException, match="grind_setting must be a finite number."):
+        _normalise_brew_log_patch(_BrewLogPatchBody(grind_setting="NaN"))
+
+    with pytest.raises(HTTPException, match="grind_setting must be a finite number."):
+        _normalise_brew_log_patch(_BrewLogPatchBody(grind_setting="inf"))
 
 
 async def test_sql_brew_log_patch_updates_typo_fields_and_preserves_ai_feedback(
