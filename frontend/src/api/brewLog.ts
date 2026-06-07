@@ -26,6 +26,13 @@ export interface SubmitShotPayload {
   idempotency_key: string
 }
 
+export interface BrewLogCorrectionPayload {
+  taste_summary?: string
+  user_notes?: string
+  grind_setting?: string
+  shot_eligibility?: string
+}
+
 export const brewLogDetailQueryKey = (id: string) => ['brew-log-detail', id] as const
 
 export const brewLogFeedbackQueryKey = (id: string) => ['brew-log-detail', id, 'feedback'] as const
@@ -41,5 +48,11 @@ export const getBrewLogDetail = (id: string) =>
 export const submitShot = (data: SubmitShotPayload) =>
   apiClient.post<BrewLogEntry>('/api/brew-log', data).then((r) => r.data)
 
+export const updateBrewLogEntry = (id: string, data: BrewLogCorrectionPayload) =>
+  apiClient.patch<BrewLogEntry>(`/api/brew-log/${id}`, data).then((r) => r.data)
+
 export const getBrewLogFeedback = (id: string) =>
   apiClient.get<{ ai_feedback: string | null }>(`/api/brew-log/${id}/feedback`).then((r) => r.data)
+
+export const generateBrewLogFeedback = (id: string) =>
+  apiClient.post<{ ai_feedback: string | null }>(`/api/brew-log/${id}/feedback`).then((r) => r.data)

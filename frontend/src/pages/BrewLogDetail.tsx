@@ -1,13 +1,18 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import axios from 'axios'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
 import {
   brewLogDetailQueryKey,
   brewLogFeedbackQueryKey,
+  generateBrewLogFeedback,
   getBrewLogDetail,
   getBrewLogFeedback,
+  updateBrewLogEntry,
 } from '../api/brewLog'
+import type { BrewLogCorrectionPayload } from '../api/brewLog'
+import { brewLogListQueryKey, dashboardQueryKey } from '../api/queryKeys'
 import type { BrewLogPage } from '../api/brewLog'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Chip from '../components/Chip'
@@ -27,6 +32,15 @@ type CachedBrewLogShot = {
   shot: BrewLogEntry
   dataUpdatedAt: number | undefined
 }
+
+type CorrectionForm = {
+  taste_summary: string
+  user_notes: string
+  grind_setting: string
+  shot_eligibility: string
+}
+
+const ELIGIBILITY_OPTIONS = ['Reject', 'Passable', 'Good Espresso', 'God Shot'] as const
 
 function isBrewLogEntry(value: unknown): value is BrewLogEntry {
   if (!value || typeof value !== 'object') return false
@@ -57,6 +71,14 @@ function findCachedBrewLogShot(queryClient: QueryClient, shotId: string): Cached
   return undefined
 }
 
+function apiErrorMessage(err: unknown, fallback: string): string {
+  if (!axios.isAxiosError(err)) return fallback
+  const detail = err.response?.data?.detail
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail) && detail.length > 0) return 'Validation failed. Please check the highlighted fields.'
+  return fallback
+}
+
 export default function BrewLogDetail() {
   const { id } = useParams<{ id: string }>()
   const shotId = id ?? ''
@@ -64,7 +86,16 @@ export default function BrewLogDetail() {
   const rawBack = searchParams.get('back')
   // Security guard: accept only root-relative paths; reject protocol-relative (//evil.com)
   const backTarget = rawBack?.startsWith('/') && !rawBack?.startsWith('//') ? rawBack : '/brew-log'
-  const [feedbackEnabled, setFeedbackEnabled] = useState(false)
+  const [correctionOpen, setCorrectionOpen] = useState(false)
+  const [correctionForm, setCorrectionForm] = useState<CorrectionForm>({
+    taste_summary: '',
+    user_notes: '',
+    grind_setting: '',
+    shot_eligibility: '',
+  })
+  const [correctionFieldError, setCorrectionFieldError] = useState<string | null>(null)
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
+  const feedbackInFlightRef = useRef(false)
   const queryClient = useQueryClient()
   const cachedShot = findCachedBrewLogShot(queryClient, shotId)
 
@@ -76,15 +107,92 @@ export default function BrewLogDetail() {
     initialDataUpdatedAt: () => cachedShot?.dataUpdatedAt,
   })
 
-  const { data: feedbackData, isLoading: feedbackLoading } = useQuery({
+  const { data: feedbackData } = useQuery({
     queryKey: brewLogFeedbackQueryKey(shotId),
     queryFn: () => getBrewLogFeedback(shotId),
-    enabled: !!id && feedbackEnabled,
+    enabled: !!id,
+  })
+
+  const correctionMutation = useMutation({
+    mutationFn: (payload: BrewLogCorrectionPayload) => updateBrewLogEntry(shotId, payload),
+    onSuccess: (updatedShot) => {
+      const previous = queryClient.getQueryData<BrewLogEntry>(brewLogDetailQueryKey(shotId))
+      const mergedShot = {
+        ...updatedShot,
+        ai_feedback: updatedShot.ai_feedback ?? previous?.ai_feedback ?? shot?.ai_feedback,
+      }
+      queryClient.setQueryData<BrewLogEntry>(brewLogDetailQueryKey(shotId), mergedShot)
+      queryClient.invalidateQueries({ queryKey: brewLogListQueryKey() })
+      queryClient.invalidateQueries({ queryKey: dashboardQueryKey() })
+      queryClient.invalidateQueries({ queryKey: brewLogDetailQueryKey(shotId), refetchType: 'inactive' })
+      setCorrectionOpen(false)
+      setCorrectionFieldError(null)
+    },
+    onError: (err) => {
+      setCorrectionFieldError(apiErrorMessage(err, 'Failed to save corrections. Please try again.'))
+    },
+  })
+
+  const feedbackMutation = useMutation({
+    mutationFn: () => generateBrewLogFeedback(shotId),
+    onMutate: () => {
+      setFeedbackMessage(null)
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(brewLogFeedbackQueryKey(shotId), data)
+      queryClient.setQueryData<BrewLogEntry>(
+        brewLogDetailQueryKey(shotId),
+        (old) => old ? { ...old, ai_feedback: data.ai_feedback ?? old.ai_feedback } : old,
+      )
+      queryClient.invalidateQueries({ queryKey: brewLogDetailQueryKey(shotId), refetchType: 'inactive' })
+      queryClient.invalidateQueries({ queryKey: brewLogListQueryKey() })
+      queryClient.invalidateQueries({ queryKey: dashboardQueryKey() })
+      setFeedbackMessage('AI feedback updated.')
+    },
+    onSettled: () => {
+      feedbackInFlightRef.current = false
+    },
   })
 
   if (isLoading) return <LoadingSpinner />
   if (error) return <div className="p-6 text-error">Failed to load shot.</div>
   if (!shot) return null
+
+  const openCorrectionForm = () => {
+    setCorrectionForm({
+      taste_summary: shot.taste_summary ?? '',
+      user_notes: shot.user_notes ?? '',
+      grind_setting: shot.grind_setting ?? '',
+      shot_eligibility: shot.shot_eligibility ?? '',
+    })
+    setCorrectionFieldError(null)
+    setCorrectionOpen(true)
+  }
+
+  const correctionPayload: BrewLogCorrectionPayload = {}
+  if (correctionForm.taste_summary !== (shot.taste_summary ?? '')) correctionPayload.taste_summary = correctionForm.taste_summary
+  if (correctionForm.user_notes !== (shot.user_notes ?? '')) correctionPayload.user_notes = correctionForm.user_notes
+  if (correctionForm.grind_setting !== (shot.grind_setting ?? '')) correctionPayload.grind_setting = correctionForm.grind_setting
+  if (correctionForm.shot_eligibility !== (shot.shot_eligibility ?? '')) {
+    correctionPayload.shot_eligibility = correctionForm.shot_eligibility
+  }
+  const hasCorrectionChanges = Object.keys(correctionPayload).length > 0
+  const correctionEligibilityValid = !correctionForm.shot_eligibility
+    || ELIGIBILITY_OPTIONS.includes(correctionForm.shot_eligibility as (typeof ELIGIBILITY_OPTIONS)[number])
+  const visibleFeedback = feedbackData?.ai_feedback || shot.ai_feedback || ''
+  const feedbackError = feedbackMutation.isError
+    ? apiErrorMessage(feedbackMutation.error, 'Failed to generate AI feedback. Please try again.')
+    : null
+
+  const submitCorrections = () => {
+    if (!hasCorrectionChanges || correctionMutation.isPending) return
+    if (!correctionEligibilityValid) {
+      setCorrectionFieldError('Shot eligibility must be one of the listed values.')
+      return
+    }
+    setCorrectionFieldError(null)
+    correctionMutation.mutate(correctionPayload)
+  }
 
   return (
     <div data-testid="brew-log-detail" className="p-4 md:p-6 space-y-6 max-w-2xl">
@@ -105,7 +213,102 @@ export default function BrewLogDetail() {
             {shot.shot_eligibility}
           </span>
         )}
+        {!correctionOpen && (
+          <button
+            type="button"
+            onClick={openCorrectionForm}
+            className="btn btn-xs btn-outline border-amber-600/40 text-amber-300 hover:bg-amber-800/40 mt-3 block btn-bevel"
+          >
+            Correct shot details
+          </button>
+        )}
       </div>
+
+      {correctionOpen && (
+        <section className="glass-card p-4">
+          <h2 className="text-sm font-semibold text-amber-300 mb-1">Correct typo-safe fields</h2>
+          <p className="text-xs text-amber-200/60 mb-3">
+            Only notes, taste, grind setting, and shot eligibility can be corrected here.
+          </p>
+          <div className="space-y-3">
+            <div>
+              <label className="label text-xs text-amber-200/70 pb-1" htmlFor="correction-taste-summary">Taste summary</label>
+              <input
+                id="correction-taste-summary"
+                type="text"
+                value={correctionForm.taste_summary}
+                onChange={(e) => setCorrectionForm((prev) => ({ ...prev, taste_summary: e.target.value }))}
+                className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
+              />
+            </div>
+            <div>
+              <label className="label text-xs text-amber-200/70 pb-1" htmlFor="correction-grind-setting">Grind setting</label>
+              <input
+                id="correction-grind-setting"
+                type="text"
+                value={correctionForm.grind_setting}
+                onChange={(e) => setCorrectionForm((prev) => ({ ...prev, grind_setting: e.target.value }))}
+                className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
+              />
+            </div>
+            <div>
+              <label className="label text-xs text-amber-200/70 pb-1" htmlFor="correction-shot-eligibility">Shot eligibility</label>
+              <select
+                id="correction-shot-eligibility"
+                value={correctionForm.shot_eligibility}
+                onChange={(e) => {
+                  setCorrectionForm((prev) => ({ ...prev, shot_eligibility: e.target.value }))
+                  setCorrectionFieldError(null)
+                }}
+                aria-invalid={!correctionEligibilityValid}
+                className="select select-bordered select-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
+              >
+                <option value="">No eligibility</option>
+                {ELIGIBILITY_OPTIONS.map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+              {!correctionEligibilityValid && (
+                <p className="text-xs text-error mt-1">Choose a listed eligibility value.</p>
+              )}
+            </div>
+            <div>
+              <label className="label text-xs text-amber-200/70 pb-1" htmlFor="correction-user-notes">Notes</label>
+              <textarea
+                id="correction-user-notes"
+                rows={3}
+                value={correctionForm.user_notes}
+                onChange={(e) => setCorrectionForm((prev) => ({ ...prev, user_notes: e.target.value }))}
+                className="textarea textarea-bordered textarea-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
+              />
+            </div>
+          </div>
+          {correctionFieldError && (
+            <p role="alert" className="text-xs text-red-400 mt-3">{correctionFieldError}</p>
+          )}
+          <div className="flex justify-end gap-2 mt-4">
+            <button
+              type="button"
+              onClick={() => {
+                setCorrectionOpen(false)
+                setCorrectionFieldError(null)
+              }}
+              disabled={correctionMutation.isPending}
+              className="btn btn-xs btn-ghost text-amber-300/70"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={submitCorrections}
+              disabled={!hasCorrectionChanges || !correctionEligibilityValid || correctionMutation.isPending}
+              className="btn btn-xs bg-amber-600 hover:bg-amber-500 border-none text-white btn-bevel"
+            >
+              {correctionMutation.isPending ? 'Saving…' : 'Save corrections'}
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* Shot parameters */}
       <section className="glass-card p-4">
@@ -188,24 +391,35 @@ export default function BrewLogDetail() {
       {/* AI feedback */}
       <section className="glass-card p-4">
         <h2 className="text-sm font-semibold text-amber-300 mb-3">AI feedback</h2>
-        {shot.ai_feedback ? (
-          <p className="text-sm text-amber-100">{shot.ai_feedback}</p>
-        ) : feedbackEnabled ? (
-          feedbackLoading ? (
-            <LoadingSpinner message="Getting feedback…" />
-          ) : feedbackData?.ai_feedback ? (
-            <p className="text-sm text-amber-100">{feedbackData.ai_feedback}</p>
-          ) : (
-            <p className="text-amber-200/50 text-sm">No feedback available.</p>
-          )
+        {visibleFeedback ? (
+          <p className="text-sm text-amber-100">{visibleFeedback}</p>
         ) : (
+          <p className="text-amber-200/50 text-sm mb-3">No feedback available yet.</p>
+        )}
+        {feedbackError && (
+          <p role="alert" className="text-xs text-red-400 mt-3">{feedbackError}</p>
+        )}
+        {feedbackMessage && !feedbackError && (
+          <p role="status" className="text-xs text-amber-300 mt-3">{feedbackMessage}</p>
+        )}
+        <div className="mt-3">
           <button
-            onClick={() => setFeedbackEnabled(true)}
+            type="button"
+            onClick={() => {
+              if (feedbackInFlightRef.current || feedbackMutation.isPending) return
+              feedbackInFlightRef.current = true
+              feedbackMutation.mutate()
+            }}
+            disabled={feedbackMutation.isPending}
             className="btn btn-sm border-amber-600/40 text-amber-400 bg-transparent hover:bg-amber-800/40"
           >
-            Get AI feedback
+            {feedbackMutation.isPending
+              ? 'Generating…'
+              : visibleFeedback
+                ? 'Regenerate AI feedback'
+                : 'Get AI feedback'}
           </button>
-        )}
+        </div>
       </section>
     </div>
   )

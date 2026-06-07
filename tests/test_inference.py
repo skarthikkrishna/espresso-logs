@@ -295,6 +295,26 @@ async def test_get_ai_feedback_noop_client():
     # Verify the return value only.
 
 
+@pytest.mark.asyncio
+async def test_get_ai_feedback_forced_noop_raises_for_generation_endpoint():
+    from app.services.inference import LLMError, _NoopLLMClient, get_ai_feedback
+
+    fake_sheets = FakeSheetsClient({"Brew_Log": [_SHOT.copy()], "Maintenance": []})
+    cache = TTLCache()
+    brew_repo = _brew_repo(fake_sheets, cache)
+    mnt_repo = _maint_repo(fake_sheets, cache)
+
+    with pytest.raises(LLMError, match="no usable feedback"):
+        await get_ai_feedback(
+            shot_id="SHOT-001",
+            brew_log_repo=brew_repo,
+            maintenance_repo=mnt_repo,
+            llm_client=_NoopLLMClient(),
+            force=True,
+            raise_on_error=True,
+        )
+
+
 # ---------------------------------------------------------------------------
 # T008-h: get_ai_feedback — shot not found returns graceful string, no LLM call
 # ---------------------------------------------------------------------------

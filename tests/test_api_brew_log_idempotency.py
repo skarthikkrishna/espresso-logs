@@ -369,6 +369,63 @@ async def _count_rows_for_key(household_id: uuid.UUID, key: str) -> int:
         return int(result.scalar_one())
 
 
+async def _seed_sql_shot(
+    household_id: uuid.UUID,
+    ids: dict[str, str],
+    *,
+    shot_id: str,
+    ai_feedback: str | None = None,
+) -> None:
+    session_factory = _sessionmaker()
+    async with session_factory() as session:
+        await session.execute(
+            sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+            {"hid": str(household_id)},
+        )
+        await session.execute(
+            sa.text(
+                """
+                INSERT INTO brew_log (
+                    household_id, sheets_id, bag_id, machine_id, grinder_id, basket_id,
+                    dose_g, yield_g, time_sec, grind_setting, shot_eligibility,
+                    taste_summary, notes, ai_feedback, storage_method
+                )
+                VALUES (
+                    :hid, :shot_id, :bag_id, :machine_id, :grinder_id, :basket_id,
+                    18.0, 36.0, 28, 12.0, 'Good Espresso',
+                    'Sweet typo', 'Original typo note', :ai_feedback, 'Ambient'
+                )
+                """
+            ),
+            {
+                "hid": household_id,
+                "shot_id": shot_id,
+                "bag_id": ids["bag_id"],
+                "machine_id": ids["machine_id"],
+                "grinder_id": ids["grinder_id"],
+                "basket_id": ids["basket_id"],
+                "ai_feedback": ai_feedback,
+            },
+        )
+        await session.commit()
+
+
+async def _read_sql_shot(household_id: uuid.UUID, shot_id: str) -> BrewLog | None:
+    session_factory = _sessionmaker()
+    async with session_factory() as session:
+        await session.execute(
+            sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+            {"hid": str(household_id)},
+        )
+        result = await session.execute(
+            sa.select(BrewLog).where(
+                BrewLog.household_id == household_id,
+                BrewLog.sheets_id == shot_id,
+            )
+        )
+        return result.scalar_one_or_none()
+
+
 # ===========================================================================
 # Tests
 # ===========================================================================
@@ -929,3 +986,332 @@ async def test_sql_different_keys_allow_identical_shot_content(
     assert first.json()["shot_id"] != second.json()["shot_id"]
     assert await _count_rows_for_key(household_id, key_one) == 1
     assert await _count_rows_for_key(household_id, key_two) == 1
+
+
+async def test_brew_log_patch_normalises_empty_eligibility_as_clear() -> None:
+    """Empty/null shot_eligibility clears are accepted before repo persistence."""
+    from app.routers.api_brew_log import _BrewLogPatchBody, _normalise_brew_log_patch
+
+    empty_updates = _normalise_brew_log_patch(_BrewLogPatchBody(shot_eligibility=""))
+    null_updates = _normalise_brew_log_patch(_BrewLogPatchBody(shot_eligibility=None))
+    valid_updates = _normalise_brew_log_patch(_BrewLogPatchBody(shot_eligibility=" Passable "))
+
+    assert empty_updates == {"shot_eligibility": None}
+    assert null_updates == {"shot_eligibility": None}
+    assert valid_updates == {"shot_eligibility": "Passable"}
+
+
+async def test_sql_brew_log_patch_updates_typo_fields_and_preserves_ai_feedback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """PATCH /api/brew-log/{shot_id} edits bounded fields without changing AI feedback."""
+    _require_sql_backend(monkeypatch)
+    suffix = uuid.uuid4().hex[:10]
+    household_id = uuid.uuid4()
+    user_id = uuid.uuid4()
+    ids = await _seed_household_lookup_data(household_id, user_id, suffix=suffix)
+    shot_id = f"SHOT-SPEC039-PATCH-{suffix}"
+    await _seed_sql_shot(
+        household_id,
+        ids,
+        shot_id=shot_id,
+        ai_feedback="Existing SPEC039 feedback",
+    )
+    active = {"household_id": household_id, "user_id": user_id}
+    _install_sql_app_overrides(active)
+
+    try:
+        async with _client_ctx() as client:
+            response = await client.patch(
+                f"/api/brew-log/{shot_id}",
+                json={
+                    "taste_summary": "Balanced correction",
+                    "user_notes": "Corrected note",
+                    "grind_setting": "13.5",
+                    "shot_eligibility": "Passable",
+                },
+            )
+            detail = await client.get(f"/api/brew-log/{shot_id}")
+    finally:
+        _clear_sql_app_overrides()
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["taste_summary"] == "Balanced correction"
+    assert data["user_notes"] == "Corrected note"
+    assert data["grind_setting"] == "13.5"
+    assert data["shot_eligibility"] == "Passable"
+    assert data["ai_feedback"] == "Existing SPEC039 feedback"
+    assert detail.status_code == 200
+    assert detail.json()["user_notes"] == "Corrected note"
+    persisted = await _read_sql_shot(household_id, shot_id)
+    assert persisted is not None
+    assert persisted.ai_feedback == "Existing SPEC039 feedback"
+    assert persisted.bag_id == ids["bag_id"]
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"ai_feedback": "New feedback is not editable"},
+        {"bag_id": "BAG-IMMUTABLE"},
+        {"date": "2026-06-07"},
+        {"shot_id": "SHOT-IMMUTABLE"},
+        {"idempotency_key": "new-key"},
+        {"bag_display": "Generated display"},
+    ],
+)
+async def test_sql_brew_log_patch_rejects_immutable_generated_and_ai_fields(
+    monkeypatch: pytest.MonkeyPatch,
+    payload: dict[str, str],
+) -> None:
+    """PATCH rejects fields outside the typo-safe correction allowlist."""
+    _require_sql_backend(monkeypatch)
+    suffix = uuid.uuid4().hex[:10]
+    household_id = uuid.uuid4()
+    user_id = uuid.uuid4()
+    ids = await _seed_household_lookup_data(household_id, user_id, suffix=suffix)
+    shot_id = f"SHOT-SPEC039-REJECT-{suffix}"
+    await _seed_sql_shot(household_id, ids, shot_id=shot_id, ai_feedback="Keep me")
+    active = {"household_id": household_id, "user_id": user_id}
+    _install_sql_app_overrides(active)
+
+    try:
+        async with _client_ctx() as client:
+            response = await client.patch(f"/api/brew-log/{shot_id}", json=payload)
+    finally:
+        _clear_sql_app_overrides()
+
+    assert response.status_code == 422
+    persisted = await _read_sql_shot(household_id, shot_id)
+    assert persisted is not None
+    assert persisted.ai_feedback == "Keep me"
+    assert persisted.notes == "Original typo note"
+
+
+async def test_sql_brew_log_patch_rejects_invalid_eligibility(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """PATCH validates shot_eligibility against the documented vocabulary."""
+    _require_sql_backend(monkeypatch)
+    suffix = uuid.uuid4().hex[:10]
+    household_id = uuid.uuid4()
+    user_id = uuid.uuid4()
+    ids = await _seed_household_lookup_data(household_id, user_id, suffix=suffix)
+    shot_id = f"SHOT-SPEC039-ELIG-{suffix}"
+    await _seed_sql_shot(household_id, ids, shot_id=shot_id)
+    active = {"household_id": household_id, "user_id": user_id}
+    _install_sql_app_overrides(active)
+
+    try:
+        async with _client_ctx() as client:
+            response = await client.patch(
+                f"/api/brew-log/{shot_id}",
+                json={"shot_eligibility": "Nearly OK"},
+            )
+    finally:
+        _clear_sql_app_overrides()
+
+    assert response.status_code == 422
+    assert "shot_eligibility" in response.text
+
+
+async def test_sql_brew_log_patch_clears_eligibility_with_empty_and_null(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """PATCH accepts empty/null shot_eligibility to clear the stored enum value."""
+    _require_sql_backend(monkeypatch)
+    suffix = uuid.uuid4().hex[:10]
+    household_id = uuid.uuid4()
+    user_id = uuid.uuid4()
+    ids = await _seed_household_lookup_data(household_id, user_id, suffix=suffix)
+    shot_id = f"SHOT-SPEC039-CLEAR-{suffix}"
+    await _seed_sql_shot(household_id, ids, shot_id=shot_id)
+    active = {"household_id": household_id, "user_id": user_id}
+    _install_sql_app_overrides(active)
+
+    try:
+        async with _client_ctx() as client:
+            empty_response = await client.patch(
+                f"/api/brew-log/{shot_id}",
+                json={"shot_eligibility": ""},
+            )
+            reset_response = await client.patch(
+                f"/api/brew-log/{shot_id}",
+                json={"shot_eligibility": "Good Espresso"},
+            )
+            null_response = await client.patch(
+                f"/api/brew-log/{shot_id}",
+                json={"shot_eligibility": None},
+            )
+    finally:
+        _clear_sql_app_overrides()
+
+    assert empty_response.status_code == 200
+    assert empty_response.json()["shot_eligibility"] is None
+    assert reset_response.status_code == 200
+    assert reset_response.json()["shot_eligibility"] == "Good Espresso"
+    assert null_response.status_code == 200
+    assert null_response.json()["shot_eligibility"] is None
+    persisted = await _read_sql_shot(household_id, shot_id)
+    assert persisted is not None
+    assert persisted.shot_eligibility is None
+
+
+async def test_sql_brew_log_patch_cross_household_returns_404(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """PATCH cannot mutate another household's shot."""
+    _require_sql_backend(monkeypatch)
+    suffix_one = uuid.uuid4().hex[:10]
+    household_one = uuid.uuid4()
+    user_one = uuid.uuid4()
+    ids_one = await _seed_household_lookup_data(household_one, user_one, suffix=suffix_one)
+    shot_id = f"SHOT-SPEC039-XHH-{suffix_one}"
+    await _seed_sql_shot(household_one, ids_one, shot_id=shot_id)
+
+    suffix_two = uuid.uuid4().hex[:10]
+    household_two = uuid.uuid4()
+    user_two = uuid.uuid4()
+    await _seed_household_lookup_data(household_two, user_two, suffix=suffix_two)
+    active = {"household_id": household_two, "user_id": user_two}
+    _install_sql_app_overrides(active)
+
+    try:
+        async with _client_ctx() as client:
+            response = await client.patch(
+                f"/api/brew-log/{shot_id}",
+                json={"user_notes": "attempted cross-household edit"},
+            )
+    finally:
+        _clear_sql_app_overrides()
+
+    assert response.status_code == 404
+    persisted = await _read_sql_shot(household_one, shot_id)
+    assert persisted is not None
+    assert persisted.notes == "Original typo note"
+
+
+async def test_sql_brew_log_feedback_post_persists_fake_llm_and_get_is_read_only(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """POST /feedback is mutating; GET /feedback remains read-only hydration."""
+    from app.deps import get_llm_client
+
+    class _FakeFeedbackLLM:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        async def complete(self, prompt: str, max_tokens: int = 512) -> str:
+            self.calls += 1
+            return "SPEC039 fake feedback"
+
+    _require_sql_backend(monkeypatch)
+    suffix = uuid.uuid4().hex[:10]
+    household_id = uuid.uuid4()
+    user_id = uuid.uuid4()
+    ids = await _seed_household_lookup_data(household_id, user_id, suffix=suffix)
+    shot_id = f"SHOT-SPEC039-FEED-{suffix}"
+    await _seed_sql_shot(household_id, ids, shot_id=shot_id, ai_feedback=None)
+    active = {"household_id": household_id, "user_id": user_id}
+    fake_llm = _FakeFeedbackLLM()
+    _install_sql_app_overrides(active)
+    app.dependency_overrides[get_llm_client] = lambda: fake_llm
+
+    try:
+        async with _client_ctx() as client:
+            before = await client.get(f"/api/brew-log/{shot_id}/feedback")
+            generated = await client.post(f"/api/brew-log/{shot_id}/feedback")
+            after = await client.get(f"/api/brew-log/{shot_id}/feedback")
+    finally:
+        app.dependency_overrides.pop(get_llm_client, None)
+        _clear_sql_app_overrides()
+
+    assert before.status_code == 200
+    assert before.json()["ai_feedback"] is None
+    assert generated.status_code == 200
+    assert generated.json() == {"ai_feedback": "SPEC039 fake feedback"}
+    assert after.status_code == 200
+    assert after.json() == {"ai_feedback": "SPEC039 fake feedback"}
+    assert fake_llm.calls == 1
+    persisted = await _read_sql_shot(household_id, shot_id)
+    assert persisted is not None
+    assert persisted.ai_feedback == "SPEC039 fake feedback"
+
+
+async def test_sql_brew_log_feedback_post_provider_error_is_non_2xx(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """POST /feedback surfaces provider failures instead of a silent no-op."""
+    from app.deps import get_llm_client
+    from app.services.inference import LLMError
+
+    class _FailingFeedbackLLM:
+        async def complete(self, prompt: str, max_tokens: int = 512) -> str:
+            raise LLMError("simulated provider failure")
+
+    _require_sql_backend(monkeypatch)
+    suffix = uuid.uuid4().hex[:10]
+    household_id = uuid.uuid4()
+    user_id = uuid.uuid4()
+    ids = await _seed_household_lookup_data(household_id, user_id, suffix=suffix)
+    shot_id = f"SHOT-SPEC039-FAIL-{suffix}"
+    await _seed_sql_shot(household_id, ids, shot_id=shot_id, ai_feedback=None)
+    active = {"household_id": household_id, "user_id": user_id}
+    _install_sql_app_overrides(active)
+    app.dependency_overrides[get_llm_client] = lambda: _FailingFeedbackLLM()
+
+    try:
+        async with _client_ctx() as client:
+            response = await client.post(f"/api/brew-log/{shot_id}/feedback")
+    finally:
+        app.dependency_overrides.pop(get_llm_client, None)
+        _clear_sql_app_overrides()
+
+    assert response.status_code == 502
+    assert response.json()["detail"]["error"] == "AI_FEEDBACK_GENERATION_FAILED"
+    persisted = await _read_sql_shot(household_id, shot_id)
+    assert persisted is not None
+    assert persisted.ai_feedback is None
+
+
+async def test_sql_brew_log_feedback_post_cross_household_returns_404(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """POST /feedback cannot generate feedback for another household's shot."""
+    from app.deps import get_llm_client
+
+    class _CountingLLM:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        async def complete(self, prompt: str, max_tokens: int = 512) -> str:
+            self.calls += 1
+            return "should not be called"
+
+    _require_sql_backend(monkeypatch)
+    suffix_one = uuid.uuid4().hex[:10]
+    household_one = uuid.uuid4()
+    user_one = uuid.uuid4()
+    ids_one = await _seed_household_lookup_data(household_one, user_one, suffix=suffix_one)
+    shot_id = f"SHOT-SPEC039-FXHH-{suffix_one}"
+    await _seed_sql_shot(household_one, ids_one, shot_id=shot_id)
+
+    suffix_two = uuid.uuid4().hex[:10]
+    household_two = uuid.uuid4()
+    user_two = uuid.uuid4()
+    await _seed_household_lookup_data(household_two, user_two, suffix=suffix_two)
+    active = {"household_id": household_two, "user_id": user_two}
+    fake_llm = _CountingLLM()
+    _install_sql_app_overrides(active)
+    app.dependency_overrides[get_llm_client] = lambda: fake_llm
+
+    try:
+        async with _client_ctx() as client:
+            response = await client.post(f"/api/brew-log/{shot_id}/feedback")
+    finally:
+        app.dependency_overrides.pop(get_llm_client, None)
+        _clear_sql_app_overrides()
+
+    assert response.status_code == 404
+    assert fake_llm.calls == 0

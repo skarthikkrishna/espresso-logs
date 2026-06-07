@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import datetime
+import uuid
 
+import sqlalchemy as sa
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -113,6 +115,81 @@ async def test_get_returns_inserted_row(db_session: AsyncSession) -> None:
     assert result["Bag_ID"] == "BAG-002"
     assert result["Beans"] == "Kenya AA"
     assert result["RoastDate"] == "2026-04-20"
+
+
+async def test_status_transition_preserves_unrelated_bag_fields(
+    db_session: AsyncSession,
+) -> None:
+    """Spec-039 B01: Active/Finished updates keep the frontend status contract narrow."""
+    repo = SqlInventoryRepo(db=db_session)
+    await repo.upsert(
+        {
+            "Bag_ID": "BAG-SPEC039-STATUS",
+            "Beans": "Spec Roaster — Spec Bean",
+            "RoastDate": "2026-06-01",
+            "RoastLevel": "Medium",
+            "Display_Name": "Spec Roaster — Spec Bean",
+            "Status": "Active",
+            "Storage_Method": "Freezer",
+        }
+    )
+
+    active = await repo.get("BAG-SPEC039-STATUS")
+    assert active is not None
+    await repo.upsert({**active, "Status": "Finished"})
+
+    finished = await repo.get("BAG-SPEC039-STATUS")
+    assert finished is not None
+    assert finished["Status"] == "Finished"
+    assert finished["RoastLevel"] == "Medium"
+    assert finished["Storage_Method"] == "Freezer"
+    assert finished["Beans"] == "Spec Roaster — Spec Bean"
+
+    await repo.upsert({**finished, "Status": "Active"})
+    reactivated = await repo.get("BAG-SPEC039-STATUS")
+    assert reactivated is not None
+    assert reactivated["Status"] == "Active"
+
+
+async def test_inventory_get_is_household_scoped_by_rls(
+    db_session: AsyncSession,
+) -> None:
+    """Spec-039 B01: another household cannot see an active/finished bag."""
+    repo = SqlInventoryRepo(db=db_session)
+    await repo.upsert(
+        {
+            "Bag_ID": "BAG-SPEC039-RLS",
+            "Beans": "Household One",
+            "Status": "Active",
+        }
+    )
+
+    other_user_id = uuid.uuid4()
+    other_household_id = uuid.uuid4()
+    await db_session.execute(
+        sa.text(
+            """
+            INSERT INTO users (id, username, password_hash, display_name)
+            VALUES (:uid, :username, 'fixture-only', 'Inventory RLS')
+            """
+        ),
+        {"uid": other_user_id, "username": f"inventory-rls-{other_user_id.hex}"},
+    )
+    await db_session.execute(
+        sa.text(
+            """
+            INSERT INTO households (id, name, created_by)
+            VALUES (:hid, 'Inventory RLS Household', :uid)
+            """
+        ),
+        {"hid": other_household_id, "uid": other_user_id},
+    )
+    await db_session.execute(
+        sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+        {"hid": str(other_household_id)},
+    )
+
+    assert await repo.get("BAG-SPEC039-RLS") is None
 
 
 # ---------------------------------------------------------------------------

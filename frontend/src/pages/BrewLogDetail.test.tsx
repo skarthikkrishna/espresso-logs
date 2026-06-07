@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
@@ -22,10 +22,12 @@ vi.mock('../api/brewLog', () => ({
   listBrewLog: vi.fn(),
   getBrewLogDetail: vi.fn(),
   getBrewLogFeedback: vi.fn(),
+  updateBrewLogEntry: vi.fn(),
+  generateBrewLogFeedback: vi.fn(),
   submitShot: vi.fn(),
 }))
 
-import { getBrewLogDetail, getBrewLogFeedback } from '../api/brewLog'
+import { generateBrewLogFeedback, getBrewLogDetail, getBrewLogFeedback, updateBrewLogEntry } from '../api/brewLog'
 import BrewLogDetail from './BrewLogDetail'
 
 const baseShot: BrewLogEntry = {
@@ -96,6 +98,8 @@ beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(getBrewLogDetail).mockResolvedValue(baseShot)
   vi.mocked(getBrewLogFeedback).mockResolvedValue({ ai_feedback: '' })
+  vi.mocked(updateBrewLogEntry).mockResolvedValue(baseShot)
+  vi.mocked(generateBrewLogFeedback).mockResolvedValue({ ai_feedback: 'Generated feedback' })
 })
 
 describe('BrewLogDetail — cache contract and fallback', () => {
@@ -205,5 +209,119 @@ describe('BrewLogDetail — detail presentation anchors', () => {
     renderWithPaginatedCache(shotWithout as BrewLogEntry)
 
     expect(screen.queryByTestId('taste-summary-row')).toBeNull()
+  })
+})
+
+describe('BrewLogDetail — historical corrections', () => {
+  it('submits only changed typo-safe fields and preserves existing AI feedback', async () => {
+    const shotWithFeedback = { ...baseShot, ai_feedback: 'Existing AI feedback' }
+    vi.mocked(getBrewLogDetail).mockResolvedValue(shotWithFeedback)
+    vi.mocked(updateBrewLogEntry).mockResolvedValue({
+      ...shotWithFeedback,
+      user_notes: 'Corrected typo',
+    })
+
+    renderInContext()
+
+    fireEvent.click(await screen.findByRole('button', { name: /correct shot details/i }))
+    expect(screen.queryByLabelText(/^dose/i)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/ai feedback/i)).not.toBeInTheDocument()
+    const saveButton = screen.getByRole('button', { name: /save corrections/i })
+    expect(saveButton).toBeDisabled()
+
+    fireEvent.change(screen.getByLabelText(/notes/i), { target: { value: 'Corrected typo' } })
+    fireEvent.click(saveButton)
+
+    await waitFor(() => {
+      expect(updateBrewLogEntry).toHaveBeenCalledWith('SHOT-001', { user_notes: 'Corrected typo' })
+      expect(screen.getByText('Existing AI feedback')).toBeInTheDocument()
+    })
+  })
+
+  it('cancels correction edits without saving', async () => {
+    renderInContext()
+
+    fireEvent.click(await screen.findByRole('button', { name: /correct shot details/i }))
+    fireEvent.change(screen.getByLabelText(/notes/i), { target: { value: 'Discard me' } })
+    fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
+
+    expect(updateBrewLogEntry).not.toHaveBeenCalled()
+    expect(screen.queryByDisplayValue('Discard me')).not.toBeInTheDocument()
+  })
+
+  it('sends an explicit empty shot eligibility when the user clears eligibility', async () => {
+    vi.mocked(updateBrewLogEntry).mockResolvedValue({
+      ...baseShot,
+      shot_eligibility: '',
+    })
+
+    renderInContext()
+
+    fireEvent.click(await screen.findByRole('button', { name: /correct shot details/i }))
+    fireEvent.change(screen.getByLabelText(/shot eligibility/i), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: /save corrections/i }))
+
+    await waitFor(() => {
+      expect(updateBrewLogEntry).toHaveBeenCalledWith('SHOT-001', { shot_eligibility: '' })
+    })
+  })
+})
+
+describe('BrewLogDetail — AI feedback generation', () => {
+  it('calls the mutating feedback endpoint once, prevents duplicate clicks, and updates caches', async () => {
+    let resolveFeedback!: (value: { ai_feedback: string }) => void
+    vi.mocked(generateBrewLogFeedback).mockReturnValue(new Promise((resolve) => {
+      resolveFeedback = resolve
+    }))
+    const { queryClient } = renderInContext()
+
+    const button = await screen.findByRole('button', { name: /get ai feedback/i })
+    fireEvent.click(button)
+    fireEvent.click(button)
+
+    await waitFor(() => {
+      expect(generateBrewLogFeedback).toHaveBeenCalledTimes(1)
+      expect(screen.getByRole('button', { name: /generating/i })).toBeDisabled()
+    })
+
+    resolveFeedback({ ai_feedback: 'Generated feedback' })
+
+    expect(await screen.findByText('Generated feedback')).toBeInTheDocument()
+    expect(queryClient.getQueryData(['brew-log-detail', 'SHOT-001', 'feedback'])).toEqual({
+      ai_feedback: 'Generated feedback',
+    })
+    expect(queryClient.getQueryData(['brew-log-detail', 'SHOT-001'])).toMatchObject({
+      ai_feedback: 'Generated feedback',
+    })
+  })
+
+  it('keeps existing feedback visible while regeneration is pending', async () => {
+    vi.mocked(getBrewLogDetail).mockResolvedValue({ ...baseShot, ai_feedback: 'Existing feedback' })
+    let resolveFeedback!: (value: { ai_feedback: string }) => void
+    vi.mocked(generateBrewLogFeedback).mockReturnValue(new Promise((resolve) => {
+      resolveFeedback = resolve
+    }))
+
+    renderInContext()
+
+    expect(await screen.findByText('Existing feedback')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /regenerate ai feedback/i }))
+
+    expect(screen.getByText('Existing feedback')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /generating/i })).toBeDisabled()
+
+    resolveFeedback({ ai_feedback: 'Replacement feedback' })
+    expect(await screen.findByText('Replacement feedback')).toBeInTheDocument()
+  })
+
+  it('shows an actionable error without hiding the no-feedback state on generation failure', async () => {
+    vi.mocked(generateBrewLogFeedback).mockRejectedValue(new Error('provider failed'))
+
+    renderInContext()
+
+    fireEvent.click(await screen.findByRole('button', { name: /get ai feedback/i }))
+
+    expect(await screen.findByText(/failed to generate ai feedback/i)).toBeInTheDocument()
+    expect(screen.getByText(/no feedback available yet/i)).toBeInTheDocument()
   })
 })

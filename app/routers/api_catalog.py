@@ -38,6 +38,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["catalog"])
 
 _ROAST_LEVELS = ["Light", "Light / Medium", "Medium", "Medium / Dark", "Dark"]
+_ALLOWED_UPLOAD_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
+_MAX_UPLOAD_BYTES = 2_097_152
 
 
 def _next_catalog_id(existing: list[dict[str, Any]]) -> str:
@@ -426,20 +428,36 @@ async def api_catalog_add_bag(
         raise HTTPException(status_code=404, detail="Catalog entry not found")
 
     roaster = entry.get("Roaster", "")
+    catalog_roast_level = (entry.get("Roast_Level") or "").strip()
+    body_roast_level = body.roast_level.strip()
+    if catalog_roast_level:
+        if body_roast_level != catalog_roast_level:
+            raise HTTPException(
+                status_code=422,
+                detail=f"roast_level must match catalog roast level: {catalog_roast_level}",
+            )
+        effective_roast_level = catalog_roast_level
+    else:
+        if not body_roast_level:
+            raise HTTPException(status_code=422, detail="roast_level is required.")
+        if body_roast_level not in _ROAST_LEVELS:
+            raise HTTPException(status_code=422, detail="Invalid roast level.")
+        effective_roast_level = body_roast_level
+
     try:
         roast_date = date.fromisoformat(body.roast_date)
     except ValueError:
         raise HTTPException(status_code=422, detail="roast_date must be ISO format (YYYY-MM-DD)")
 
     existing_ids = [b["Bag_ID"] for b in await inventory_repo.list(status=None)]
-    bag_id = make_inventory_id(roaster, roast_date, body.roast_level, existing_ids)
+    bag_id = make_inventory_id(roaster, roast_date, effective_roast_level, existing_ids)
 
     display_name = f"{roaster} — {entry.get('Bean_Name', '')}"
     row = {
         "Bag_ID": bag_id,
         "Beans": body.beans or display_name,
         "RoastDate": body.roast_date,
-        "RoastLevel": body.roast_level,
+        "RoastLevel": effective_roast_level,
         "Display_Name": display_name,
         "Catalog_ID": catalog_id,
         "Status": "Active",
@@ -460,9 +478,16 @@ async def api_catalog_upload_image(
     if entry is None:
         raise HTTPException(status_code=404, detail="Catalog entry not found")
 
-    img_bytes = await file.read()
     content_type = (file.content_type or "image/jpeg").split(";")[0].strip()
-    obj_name = f"bean-images/{catalog_id}-{uuid.uuid4().hex[:8]}.jpg"
+    if content_type not in _ALLOWED_UPLOAD_CONTENT_TYPES:
+        raise HTTPException(status_code=422, detail="file must be a JPEG, PNG, or WebP image.")
+    img_bytes = await file.read()
+    if not img_bytes:
+        raise HTTPException(status_code=422, detail="file must not be empty.")
+    if len(img_bytes) > _MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="file must be 2 MB or smaller.")
+    ext = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}[content_type]
+    obj_name = f"bean-images/{catalog_id}-{uuid.uuid4().hex[:8]}.{ext}"
     image_path = await upload_image(img_bytes, content_type, obj_name, settings.assets_bucket)
     fresh = await catalog_repo.get(catalog_id)
     if fresh is not None:

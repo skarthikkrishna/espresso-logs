@@ -21,9 +21,23 @@ class LLMClient(Protocol):
     async def complete(self, prompt: str, max_tokens: int = 512) -> str: ...
 
 
+_NOOP_FEEDBACK = "AI feedback unavailable — no API key configured."
+_HERMETIC_E2E_FEEDBACK = "SPEC039 fake AI feedback — local E2E only."
+
+
 class _NoopLLMClient:
     async def complete(self, prompt: str, max_tokens: int = 512) -> str:
-        return "AI feedback unavailable \u2014 no API key configured."
+        return _NOOP_FEEDBACK
+
+
+class _HermeticE2ELLMClient:
+    async def complete(self, prompt: str, max_tokens: int = 512) -> str:
+        return _HERMETIC_E2E_FEEDBACK
+
+
+def get_hermetic_e2e_llm_client() -> LLMClient:
+    """Return a deterministic local/test LLM client that never reaches providers."""
+    return _HermeticE2ELLMClient()
 
 
 class GeminiClient:
@@ -242,15 +256,20 @@ async def get_ai_feedback(
     maintenance_repo: "_DualWriteMaintenanceRepo",
     llm_client: LLMClient,
     extra_context: dict[str, Any] | None = None,
+    *,
+    force: bool = False,
+    raise_on_error: bool = False,
 ) -> str:
     # Step 1: fetch shot
     shot = await brew_log_repo.get(shot_id)
     if shot is None:
+        if raise_on_error:
+            raise KeyError("shot not found")
         return _GRACEFUL_NOT_FOUND
 
     # Step 2 (CL-004): short-circuit if feedback already set
     existing = shot.get("AI_Feedback")
-    if existing:
+    if existing and not force:
         return cast(str, existing)
 
     # Step 3: fetch non-Reject shot history for this bag (exclude current shot)
@@ -300,15 +319,27 @@ async def get_ai_feedback(
         try:
             prompt = build_prompt(shot, history, [], extra_context=extra_context)
         except ValueError:
+            if raise_on_error:
+                raise
             return _GRACEFUL_ERROR
 
     # Step 6: call LLM
     try:
         feedback_text = await llm_client.complete(prompt)
     except LLMError:
+        if raise_on_error:
+            raise
         return _GRACEFUL_ERROR
 
     if not feedback_text:
+        if raise_on_error:
+            raise LLMError("LLM returned no feedback")
+        return _GRACEFUL_ERROR
+
+    noop_message_allowed = feedback_text == _NOOP_FEEDBACK and not raise_on_error
+    if feedback_text.startswith("AI feedback unavailable") and not noop_message_allowed:
+        if raise_on_error:
+            raise LLMError("LLM returned no usable feedback")
         return _GRACEFUL_ERROR
 
     # Step 7: persist

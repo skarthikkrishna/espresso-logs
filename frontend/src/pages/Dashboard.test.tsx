@@ -6,7 +6,7 @@
  */
 
 import React from 'react'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
@@ -15,11 +15,13 @@ import { MemoryRouter } from 'react-router-dom'
 // Module mocks — hoisted before any import of the mocked module
 // ---------------------------------------------------------------------------
 
+const navigateMock = vi.hoisted(() => vi.fn())
+
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
   return {
     ...actual,
-    useNavigate: () => vi.fn(),
+    useNavigate: () => navigateMock,
   }
 })
 
@@ -51,6 +53,7 @@ function renderWithQuery(ui: React.ReactElement) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  navigateMock.mockClear()
   vi.mocked(getDashboard).mockResolvedValue([
     {
       bag_id: 'bag-1',
@@ -83,5 +86,14 @@ describe('Dashboard — portal regression', () => {
     expect(fab).toBeInTheDocument()             // sanity: element exists
     expect(container).not.toContainElement(fab) // NOT inside component root
     expect(document.body).toContainElement(fab) // IS portalled to body
+  })
+
+  it('navigates active bag cards to Add Brew with a reload-safe bag_id query param', async () => {
+    renderWithQuery(<Dashboard />)
+
+    const [activeBagCardText] = await screen.findAllByText('Test Roaster — Test Bean')
+    fireEvent.click(activeBagCardText)
+
+    expect(navigateMock).toHaveBeenCalledWith('/brew-log/add?bag_id=bag-1')
   })
 })

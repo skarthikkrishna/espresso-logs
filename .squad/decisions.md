@@ -1,5 +1,56 @@
 # Decisions Archive
 
+## 2026-06-07: Spec-039 Bounded Remediation and Quinn Harness Closeout
+
+### Decision: Tariq routing — DIRECT_PERMITTED (Spec-039 bounded remediation)
+- **Agent:** Tariq
+- **Date:** 2026-06-07T11:26:32-07:00
+- **Status:** MERGED
+- **Classification:** DIRECT_PERMITTED
+- **Source drop:** `.squad/decisions/inbox/20260607T112632-0700-tariq-route-spec039-remediation.md`
+- **Scope:** Bounded recovery for already-approved Spec-039 implementation/validation blockers only.
+- **Permitted owners:** Alex for backend/API/test remediation, Finn for frontend/UI/cache/accessibility remediation, Quinn for E2E harness/selectors/fixture evidence and validation reruns.
+- **Out of scope:** New feature behavior, broad cache rewrites, production data/log/image access, deploys, pushes, or PR/review requests.
+- **Quinn gate:** Filesystem verification in `coffee_tracker` found `specs/039-ui-data-freshness-bug-evidence/quinn-gate.md`; frontmatter status was `APPROVED_WITH_NOTES`.
+- **Validation sequence:** Fix bounded blockers, rerun T32, then T33, then T34; pause for Tariq triage on any validation failure.
+
+### Decision: Tariq routing — DIRECT_PERMITTED (Spec-039 E2E harness/test-evidence remediation)
+- **Agent:** Tariq
+- **Date:** 2026-06-07T11:35:32-07:00
+- **Status:** MERGED
+- **Classification:** DIRECT_PERMITTED
+- **Source drop:** `.squad/decisions/inbox/20260607T113532-0700-tariq-route-spec039-e2e-harness-remediation.md`
+- **Scope:** E2E harness and evidence remediation limited to `frontend/e2e/spec039-seed.ts`, `frontend/e2e/spec039-ui-data-freshness.spec.ts`, and `frontend/playwright.config.ts` only if browser-state isolation required it.
+- **Permitted fixes:** Protected API probes with active synthetic-session authorization, unambiguous Medium locator, session/browser-state hard-navigation stability, and seed-derived B07 dose expectation reconciliation.
+- **Out of scope:** Application behavior changes, backend/API changes, frontend product component changes, broad cache rewrites, non-Spec-039 tests, production/external provider access, deploys, pushes, or PR/review activity.
+- **Quinn gate:** Existing `coffee_tracker/specs/039-ui-data-freshness-bug-evidence/quinn-gate.md` was noted as `APPROVED_WITH_NOTES`; coordinator still had to verify the filesystem artifact before implementation.
+- **Handling:** Preserve unrelated worktree changes; touch only scoped harness/config files for this remediation.
+
+### Decision: Alex routing — DIRECT_PERMITTED (Spec-039 backend/API/test remediation)
+- **Agent:** Alex
+- **Date:** 2026-06-07T11:36:20.679-07:00
+- **Status:** MERGED
+- **Classification:** DIRECT_PERMITTED
+- **Source drop:** `.squad/decisions/inbox/20260607T113620-0700-alex-route-spec039-backend-remediation.md`
+- **Scope:** Backend/API/test remediation only for Spec-039 tasks in Alex's lane.
+- **Rationale:** Prior Tariq routing authorized bounded remediation; Spec-039 tasks assign Alex the backend/API track; the Quinn gate path was stated as `APPROVED_WITH_NOTES`.
+- **Out of scope:** Finn-owned frontend/UI work, Tariq/Quinn evidence/process work unless coordinated, new SpecKit cycle, new product scope, production data access, deploys, merges, or pushes.
+- **No-push constraint:** No push authorized; any later push requires all four local CI-equivalent checks and explicit operator approval.
+
+### Decision: Tariq routing — DIRECT_PERMITTED (Spec-039 T35 no-push handoff)
+- **Agent:** Tariq
+- **Date:** 2026-06-07T12:26:19.472-07:00
+- **Status:** MERGED
+- **Classification:** DIRECT_PERMITTED
+- **Source drop:** `.squad/decisions/inbox/20260607T122619-0700-tariq-route-spec039-t35-handoff.md`
+- **Scope:** Documentation/process PR-readiness handoff only for Spec-039 T35.
+- **Rationale:** Existing Spec-039 `[P][PROCESS]` handoff task; no new feature/product/backend/frontend/infrastructure/production-data scope.
+- **Gate note:** Quinn gate waived for this handoff because it is documentation/governance-only.
+- **Constraints:** No application/infrastructure code changes, push, deploy, PR creation, or production data/secrets access authorized.
+- **Outcome:** T35 no-push handoff artifact exists at `.squad/log/2026-06-07T12-25-23-0700-spec039-t35-pr-readiness.md`; T32/T33/T34 passed; T35 completed; implementation remains local and coordinator must ask before push.
+
+---
+
 ## 2026-06-07: Spec-039 UI Bug Repro Planning Closeout
 
 ### Decision: Tariq routing — DIRECT_PERMITTED (Scribe closure)
