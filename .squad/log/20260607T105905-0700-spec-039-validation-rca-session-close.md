@@ -19,3 +19,7 @@ Closed the Spec-039 validation RCA session with `.squad` artifacts only. Ralph o
 ## Next Session
 
 Any Spec-039 code/test remediation must be newly routed through the normal owner and Quinn-gate process before implementation.
+
+## Post-closeout housekeeping
+
+- Ralph continuity created `20260607-1105-session-continuity-routing.md`; Scribe merged it into `decisions.md` and cleared the inbox.

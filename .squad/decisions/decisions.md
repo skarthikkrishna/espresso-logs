@@ -1,7 +1,7 @@
 # Team Decisions Log
 
 **Project:** espresso-logs  
-**Last Updated:** 2026-06-07T17:59:05Z
+**Last Updated:** 2026-06-07T18:09:00Z
 
 ---
 
@@ -277,5 +277,19 @@ Tariq authorized a bounded `.squad`-only closeout for the Spec-039 validation RC
 **Session facts preserved:** Ralph opened clear; the RCA artifact `.squad/log/20260607T105900-0700-spec-039-validation-rca.md` was written and committed in `d4ac318`; T32 Playwright failed while targeted backend/frontend validation passed; no application/test edits or push were authorized by this session.
 
 **Gates:** Quinn gate waived only because the authorized work is documentation/governance triage and session-close logging under `.squad/`. Any later code or test fix requires normal owner/gate authorization.
+
+---
+
+### Session continuity routing after Spec-039 validation RCA — DIRECT_PERMITTED
+
+**Author:** Tariq (routing)  
+**Branch:** chore/planning-session-hygiene  
+**Status:** Committed (decision drop: `20260607-1105-session-continuity-routing.md`)
+
+Tariq authorized Ralph's bounded session-continuity update after the Spec-039 validation RCA closeout.
+
+**Scope confirmed:** `.squad/identity/now.md` only if content changed; no application, test, frontend, infrastructure, or SpecKit edits; no push.
+
+**Gates:** Quinn gate waived because this was documentation/session-continuity-only work under `.squad/`.
 
 ---
