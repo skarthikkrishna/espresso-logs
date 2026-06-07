@@ -259,7 +259,9 @@ def _normalise_brew_log_patch(body: _BrewLogPatchBody) -> dict[str, Any]:
             except ValueError:
                 raise HTTPException(status_code=422, detail="grind_setting must be numeric.")
             if not math.isfinite(numeric_grind_setting):
-                raise HTTPException(status_code=422, detail="grind_setting must be numeric.")
+                raise HTTPException(
+                    status_code=422, detail="grind_setting must be a finite number."
+                )
             updates["grind_setting"] = grind_setting.strip()
 
     if "shot_eligibility" in updates:

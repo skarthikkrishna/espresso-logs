@@ -1005,10 +1005,10 @@ async def test_brew_log_patch_rejects_non_finite_grind_setting() -> None:
     """NaN/Infinity grind_setting values are rejected before persistence."""
     from app.routers.api_brew_log import _BrewLogPatchBody, _normalise_brew_log_patch
 
-    with pytest.raises(HTTPException, match="grind_setting must be numeric."):
+    with pytest.raises(HTTPException, match="grind_setting must be a finite number."):
         _normalise_brew_log_patch(_BrewLogPatchBody(grind_setting="NaN"))
 
-    with pytest.raises(HTTPException, match="grind_setting must be numeric."):
+    with pytest.raises(HTTPException, match="grind_setting must be a finite number."):
         _normalise_brew_log_patch(_BrewLogPatchBody(grind_setting="inf"))
 
 
