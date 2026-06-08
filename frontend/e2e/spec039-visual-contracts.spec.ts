@@ -151,7 +151,7 @@ async function tabToFocusVisible(page: Page, selector: string): Promise<void> {
   const target = page.locator(selector).first()
   await expect(target).toBeVisible()
 
-  for (const tabKey of ['Tab', 'Alt+Tab']) {
+  for (const tabKey of ['Tab', 'Shift+Tab']) {
     await page.evaluate(() => {
       if (document.activeElement instanceof HTMLElement) {
         document.activeElement.blur()
@@ -172,7 +172,7 @@ async function tabToFocusVisible(page: Page, selector: string): Promise<void> {
     }
   }
 
-  throw new Error(`${selector} was not reachable by keyboard Tab or Alt+Tab`)
+  throw new Error(`${selector} was not reachable by keyboard Tab or Shift+Tab`)
 }
 
 async function expectTokenizedInput(page: Page, selector: string): Promise<void> {
@@ -312,6 +312,15 @@ async function expectTokenizedButton(page: Page, selector: string): Promise<void
   const disabled = await button.evaluate((element) => {
     if (!(element instanceof HTMLButtonElement)) return null
 
+    function computedToken(token: string, property: string): string {
+      const probe = document.createElement('div')
+      probe.style.setProperty(property, `var(${token})`)
+      document.body.append(probe)
+      const value = getComputedStyle(probe).getPropertyValue(property).trim()
+      probe.remove()
+      return value
+    }
+
     const control = element
     const wasDisabled = control.disabled
     control.disabled = true
@@ -319,6 +328,7 @@ async function expectTokenizedButton(page: Page, selector: string): Promise<void
     const result = {
       boxShadow: style.boxShadow,
       cursor: style.cursor,
+      disabledOpacity: computedToken('--btn-disabled-opacity', 'opacity'),
       opacity: style.opacity,
     }
     control.disabled = wasDisabled
@@ -329,7 +339,9 @@ async function expectTokenizedButton(page: Page, selector: string): Promise<void
 
   expect(disabled.boxShadow, `${selector} disabled state must be flat`).toBe('none')
   expect(disabled.cursor, `${selector} disabled cursor must be not-allowed`).toBe('not-allowed')
-  expect(disabled.opacity, `${selector} disabled opacity must use --btn-disabled-opacity`).toBe('0.4')
+  expect(disabled.opacity, `${selector} disabled opacity must use --btn-disabled-opacity`).toBe(
+    disabled.disabledOpacity,
+  )
 }
 
 test.describe('spec-039 visual contracts — auth and household surfaces', () => {
