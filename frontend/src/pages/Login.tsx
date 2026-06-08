@@ -216,7 +216,7 @@ export default function Login() {
     return (
       <div className="min-h-screen bg-base-100 flex items-start justify-center pt-20 px-4">
         <div className="w-full max-w-sm">
-          <div className="bg-base-200/80 border border-[rgba(255,255,255,0.08)] rounded-xl p-6 shadow-lg text-center">
+          <div className="glass-card card-bevel p-6 text-center">
             <span className="loading loading-spinner loading-lg text-primary" aria-label="Signing in" />
             <p className="mt-4 text-base-content/70">Signing you in...</p>
           </div>
@@ -232,7 +232,7 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-base-100 flex items-start justify-center pt-20 px-4">
       <div className="w-full max-w-sm">
-        <div className="bg-base-200/80 border border-[rgba(255,255,255,0.08)] rounded-xl p-6 shadow-lg">
+        <div className="glass-card card-bevel p-6">
           <h1 className="font-display text-2xl text-base-content text-center mb-6">
             Sign in
           </h1>
@@ -266,7 +266,7 @@ export default function Login() {
                 type="text"
                 autoComplete="username"
                 required
-                className={`input input-bordered w-full bg-[var(--input-bg)] ${fieldErrors.username ? 'input-error' : ''}`}
+                className={`input input-bordered input-styled w-full ${fieldErrors.username ? 'input-error' : ''}`}
                 aria-invalid={fieldErrors.username ? 'true' : 'false'}
                 aria-describedby={fieldErrors.username ? 'login-username-error' : formError ? 'login-form-error' : undefined}
                 value={username}
@@ -291,7 +291,7 @@ export default function Login() {
                 type="password"
                 autoComplete="current-password"
                 required
-                className={`input input-bordered w-full bg-[var(--input-bg)] ${fieldErrors.password ? 'input-error' : ''}`}
+                className={`input input-bordered input-styled w-full ${fieldErrors.password ? 'input-error' : ''}`}
                 aria-invalid={fieldErrors.password ? 'true' : 'false'}
                 aria-describedby={fieldErrors.password ? 'login-password-error' : formError ? 'login-form-error' : undefined}
                 value={password}
@@ -324,7 +324,7 @@ export default function Login() {
 
           <a
             href="/auth/google"
-            className="btn btn-outline w-full border-[rgba(255,255,255,0.08)]"
+            className="btn btn-outline btn-bevel w-full"
             aria-label="Sign in with Google"
           >
             <GoogleIcon />

@@ -1,0 +1,193 @@
+{
+  "task": "spec-039 T002 baseline regression run",
+  "generated_at": "2026-06-08T03:59:34.711Z",
+  "command": "PW_BASE_URL=http://localhost:8000 npm run test:e2e -- --config=playwright.spec039-baseline.config.ts e2e/auth-refresh-state-machine.spec.ts e2e/auth-refresh-service-worker.spec.ts e2e/smoke.spec.ts e2e/d2-add-bag-button.spec.ts e2e/d2-tokens.spec.ts e2e/d3-buttons.spec.ts e2e/d3-edit-button.spec.ts e2e/d4-forms.spec.ts e2e/d4-log-shot-button.spec.ts e2e/d5-form-labels.spec.ts e2e/d5-modals.spec.ts e2e/d6-cards.spec.ts e2e/regression-029.spec.ts",
+  "browsers": [
+    "chromium",
+    "webkit"
+  ],
+  "viewports": [
+    375,
+    768,
+    1280
+  ],
+  "screenshot_trace_video": "disabled for baseline artifact privacy",
+  "totals": {
+    "passed": 207,
+    "failed": 0,
+    "skipped": 3,
+    "timedOut": 0,
+    "interrupted": 0,
+    "total": 210,
+    "pass_rate": 0.9857
+  },
+  "by_project": {
+    "chromium-1280": {
+      "passed": 35,
+      "failed": 0,
+      "skipped": 0,
+      "timedOut": 0,
+      "interrupted": 0,
+      "total": 35
+    },
+    "chromium-375": {
+      "passed": 35,
+      "failed": 0,
+      "skipped": 0,
+      "timedOut": 0,
+      "interrupted": 0,
+      "total": 35
+    },
+    "chromium-768": {
+      "passed": 35,
+      "failed": 0,
+      "skipped": 0,
+      "timedOut": 0,
+      "interrupted": 0,
+      "total": 35
+    },
+    "webkit-1280": {
+      "passed": 34,
+      "failed": 0,
+      "skipped": 1,
+      "timedOut": 0,
+      "interrupted": 0,
+      "total": 35
+    },
+    "webkit-375": {
+      "passed": 34,
+      "failed": 0,
+      "skipped": 1,
+      "timedOut": 0,
+      "interrupted": 0,
+      "total": 35
+    },
+    "webkit-768": {
+      "passed": 34,
+      "failed": 0,
+      "skipped": 1,
+      "timedOut": 0,
+      "interrupted": 0,
+      "total": 35
+    }
+  },
+  "by_file": {
+    "auth-refresh-service-worker.spec.ts": {
+      "passed": 9,
+      "failed": 0,
+      "skipped": 3,
+      "timedOut": 0,
+      "interrupted": 0,
+      "total": 12
+    },
+    "auth-refresh-state-machine.spec.ts": {
+      "passed": 42,
+      "failed": 0,
+      "skipped": 0,
+      "timedOut": 0,
+      "interrupted": 0,
+      "total": 42
+    },
+    "d2-add-bag-button.spec.ts": {
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0,
+      "timedOut": 0,
+      "interrupted": 0,
+      "total": 12
+    },
+    "d2-tokens.spec.ts": {
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "timedOut": 0,
+      "interrupted": 0,
+      "total": 6
+    },
+    "d3-buttons.spec.ts": {
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "timedOut": 0,
+      "interrupted": 0,
+      "total": 6
+    },
+    "d3-edit-button.spec.ts": {
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0,
+      "timedOut": 0,
+      "interrupted": 0,
+      "total": 24
+    },
+    "d4-forms.spec.ts": {
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0,
+      "timedOut": 0,
+      "interrupted": 0,
+      "total": 12
+    },
+    "d4-log-shot-button.spec.ts": {
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0,
+      "timedOut": 0,
+      "interrupted": 0,
+      "total": 12
+    },
+    "d5-form-labels.spec.ts": {
+      "passed": 18,
+      "failed": 0,
+      "skipped": 0,
+      "timedOut": 0,
+      "interrupted": 0,
+      "total": 18
+    },
+    "d5-modals.spec.ts": {
+      "passed": 18,
+      "failed": 0,
+      "skipped": 0,
+      "timedOut": 0,
+      "interrupted": 0,
+      "total": 18
+    },
+    "d6-cards.spec.ts": {
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0,
+      "timedOut": 0,
+      "interrupted": 0,
+      "total": 12
+    },
+    "regression-029.spec.ts": {
+      "passed": 30,
+      "failed": 0,
+      "skipped": 0,
+      "timedOut": 0,
+      "interrupted": 0,
+      "total": 30
+    },
+    "smoke.spec.ts": {
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "timedOut": 0,
+      "interrupted": 0,
+      "total": 6
+    }
+  },
+  "known_failures": [],
+  "computed_style_coverage": [
+    "d2-add-bag-button.spec.ts",
+    "d2-tokens.spec.ts",
+    "d3-buttons.spec.ts",
+    "d3-edit-button.spec.ts",
+    "d4-forms.spec.ts",
+    "d4-log-shot-button.spec.ts",
+    "d5-form-labels.spec.ts",
+    "d5-modals.spec.ts",
+    "d6-cards.spec.ts",
+    "regression-029.spec.ts"
+  ]
+}

@@ -12,7 +12,7 @@ export default function HouseholdGuestView() {
   return (
     <div className="min-h-screen bg-base-100 px-4 py-8">
       <div className="mx-auto max-w-4xl space-y-6">
-        <div className="alert alert-warning shadow-sm">
+        <div className="alert alert-warning card-bevel">
           <span>
             You&apos;re viewing household <strong>{householdId ?? 'unknown'}</strong> as a guest. Sign in or create an account to log shots.
           </span>
@@ -28,17 +28,17 @@ export default function HouseholdGuestView() {
         </div>
 
         <section className="grid gap-4 md:grid-cols-3">
-          <article className="rounded-xl border border-base-300/50 bg-base-200/60 p-5 shadow-sm">
+          <article className="glass-card card-bevel p-5">
             <h1 className="text-lg font-display text-amber-100">Guest household view</h1>
             <p className="mt-2 text-sm text-base-content/70">
               This public route is wired for read-only household browsing. Interactive write actions remain hidden for guests.
             </p>
           </article>
-          <article className="rounded-xl border border-base-300/50 bg-base-200/60 p-5 shadow-sm">
+          <article className="glass-card card-bevel p-5">
             <h2 className="text-sm font-medium uppercase tracking-wide text-amber-200/80">Brew log</h2>
             <p className="mt-2 text-sm text-base-content/70">Read-only brew history will render here.</p>
           </article>
-          <article className="rounded-xl border border-base-300/50 bg-base-200/60 p-5 shadow-sm">
+          <article className="glass-card card-bevel p-5">
             <h2 className="text-sm font-medium uppercase tracking-wide text-amber-200/80">Catalog</h2>
             <p className="mt-2 text-sm text-base-content/70">Shared catalog data will render here.</p>
           </article>

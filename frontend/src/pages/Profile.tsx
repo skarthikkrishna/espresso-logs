@@ -29,21 +29,21 @@ export default function Profile() {
         <div className="grid gap-4 md:grid-cols-2">
           <label className="form-control">
             <span className="label-text text-sm text-base-content/60">Username</span>
-            <input className="input input-bordered" value={user.username} readOnly />
+            <input className="input input-bordered input-styled" value={user.username} readOnly />
           </label>
           <label className="form-control">
             <span className="label-text text-sm text-base-content/60">Display name</span>
-            <input className="input input-bordered" value={user.display_name} readOnly />
+            <input className="input input-bordered input-styled" value={user.display_name} readOnly />
           </label>
           {user.email ? (
             <label className="form-control md:col-span-2">
               <span className="label-text text-sm text-base-content/60">Email</span>
-              <input className="input input-bordered" value={user.email} readOnly />
+              <input className="input input-bordered input-styled" value={user.email} readOnly />
             </label>
           ) : null}
           <label className="form-control">
             <span className="label-text text-sm text-base-content/60">Joined date</span>
-            <input className="input input-bordered" value={formatDate(joinedAt)} readOnly />
+            <input className="input input-bordered input-styled" value={formatDate(joinedAt)} readOnly />
           </label>
           <div className="space-y-2">
             <span className="label-text text-sm text-base-content/60">Auth method</span>
@@ -53,7 +53,7 @@ export default function Profile() {
                 <img
                   src={user.picture_url}
                   alt={`${user.display_name} profile`}
-                  className="h-10 w-10 rounded-full object-cover"
+                  className="h-10 w-10 object-cover card-bevel"
                 />
               ) : null}
             </div>
@@ -74,7 +74,7 @@ export default function Profile() {
             return (
               <li
                 key={membership.household_id}
-                className="flex flex-col gap-3 rounded-lg border border-base-300/50 bg-base-100/30 p-3 md:flex-row md:items-center md:justify-between"
+                className="glass-card card-bevel flex flex-col gap-3 p-3 md:flex-row md:items-center md:justify-between"
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -115,17 +115,17 @@ export default function Profile() {
         <form className="grid gap-3 md:grid-cols-2" onSubmit={(event) => event.preventDefault()}>
           <label className="form-control md:col-span-2">
             <span className="label-text text-sm text-base-content/60">Current password</span>
-            <input className="input input-bordered" type="password" placeholder="Current password" />
+            <input className="input input-bordered input-styled" type="password" placeholder="Current password" />
           </label>
           <label className="form-control">
             <span className="label-text text-sm text-base-content/60">New password</span>
-            <input className="input input-bordered" type="password" placeholder="New password" />
+            <input className="input input-bordered input-styled" type="password" placeholder="New password" />
           </label>
           <label className="form-control">
             <span className="label-text text-sm text-base-content/60">Confirm new password</span>
-            <input className="input input-bordered" type="password" placeholder="Confirm new password" />
+            <input className="input input-bordered input-styled" type="password" placeholder="Confirm new password" />
           </label>
-          <div className="md:col-span-2 rounded-lg border border-dashed border-base-300/60 p-3 text-sm text-base-content/60">
+          <div className="md:col-span-2 glass-card card-bevel p-3 text-sm text-base-content/60">
             TODO: wire this form to the password-change API when the backend endpoint is available.
           </div>
         </form>

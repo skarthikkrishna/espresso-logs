@@ -127,7 +127,7 @@ export default function HouseholdSettings() {
       <h1 className="text-xl font-display text-amber-100 pt-2">Household settings</h1>
 
       {stubNotice ? (
-        <div className="alert alert-info shadow-sm">
+        <div className="alert alert-info card-bevel">
           <span>{stubNotice}</span>
         </div>
       ) : null}
@@ -137,7 +137,7 @@ export default function HouseholdSettings() {
           <label className="form-control flex-1">
             <span className="label-text text-sm text-base-content/60">Household name</span>
             <input
-              className="input input-bordered"
+              className="input input-bordered input-styled"
               value={householdNameDraft ?? data.name}
               maxLength={64}
               onChange={(event) => setHouseholdNameDraft(event.target.value)}
@@ -163,7 +163,7 @@ export default function HouseholdSettings() {
             return (
               <li
                 key={member.user_id}
-                className="flex flex-col gap-3 rounded-lg border border-base-300/50 bg-base-100/30 p-3 md:flex-row md:items-center md:justify-between"
+                className="glass-card card-bevel flex flex-col gap-3 p-3 md:flex-row md:items-center md:justify-between"
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -212,14 +212,14 @@ export default function HouseholdSettings() {
           <input
             id="invite-email"
             type="email"
-            className="input input-bordered w-full bg-[var(--input-bg)]"
+            className="input input-bordered input-styled w-full"
             value={inviteEmail}
             onChange={(event) => setInviteEmail(event.target.value)}
             placeholder="Email (optional)"
           />
           <select
             id="invite-role"
-            className="select select-bordered w-full bg-[var(--input-bg)]"
+            className="select select-bordered input-styled w-full"
             value={inviteRole}
             onChange={(event) => setInviteRole(event.target.value as 'member' | 'admin')}
           >
@@ -245,7 +245,7 @@ export default function HouseholdSettings() {
               {pendingInvitations.map((invite) => (
                 <li
                   key={invite.invite_id}
-                  className="flex flex-col gap-2 rounded-lg border border-base-300/50 bg-base-100/30 p-3 md:flex-row md:items-center md:justify-between"
+                  className="glass-card card-bevel flex flex-col gap-2 p-3 md:flex-row md:items-center md:justify-between"
                 >
                   <div>
                     <p className="text-sm text-base-content">{invite.invited_email ?? 'Link-only invite'}</p>
