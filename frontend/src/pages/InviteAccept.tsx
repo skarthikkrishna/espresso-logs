@@ -126,7 +126,7 @@ export default function InviteAccept() {
   return (
     <div className="min-h-screen bg-base-100 flex items-start justify-center pt-16 px-4">
       <div className="w-full max-w-sm">
-        <div className="bg-base-200/80 border border-[rgba(255,255,255,0.08)] rounded-xl p-6 shadow-lg space-y-5">
+        <div className="glass-card card-bevel p-6 space-y-5">
           <div className="text-center">
             <p className="text-4xl mb-2" aria-hidden="true">🏠</p>
             <h1 className="text-xl font-display text-amber-100">Household Invitation</h1>

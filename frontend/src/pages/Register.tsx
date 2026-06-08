@@ -197,7 +197,7 @@ export default function Register() {
   return (
     <div className="min-h-screen bg-base-100 flex items-start justify-center pt-20 px-4">
       <div className="w-full max-w-sm">
-        <div className="bg-base-200/80 border border-[rgba(255,255,255,0.08)] rounded-xl p-6 shadow-lg">
+        <div className="glass-card card-bevel p-6">
           <h1 className="font-display text-2xl text-base-content text-center mb-6">
             Create account
           </h1>
@@ -220,7 +220,7 @@ export default function Register() {
                 type="text"
                 autoComplete="username"
                 required
-                className={`input input-bordered w-full bg-[var(--input-bg)] ${errors.username ? 'input-error' : ''}`}
+                className={`input input-bordered input-styled w-full ${errors.username ? 'input-error' : ''}`}
                 aria-invalid={errors.username ? 'true' : 'false'}
                 aria-describedby={errors.username ? 'reg-username-error' : undefined}
                 value={username}
@@ -243,7 +243,7 @@ export default function Register() {
                 name="display_name"
                 type="text"
                 autoComplete="name"
-                className="input input-bordered w-full bg-[var(--input-bg)]"
+                className="input input-bordered input-styled w-full"
                 aria-invalid="false"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
@@ -262,7 +262,7 @@ export default function Register() {
                 type="password"
                 autoComplete="new-password"
                 required
-                className={`input input-bordered w-full bg-[var(--input-bg)] ${errors.password ? 'input-error' : ''}`}
+                className={`input input-bordered input-styled w-full ${errors.password ? 'input-error' : ''}`}
                 aria-invalid={errors.password ? 'true' : 'false'}
                 aria-describedby={errors.password ? 'reg-password-error' : undefined}
                 value={password}
@@ -286,7 +286,7 @@ export default function Register() {
                 type="password"
                 autoComplete="new-password"
                 required
-                className={`input input-bordered w-full bg-[var(--input-bg)] ${errors.confirmPassword ? 'input-error' : ''}`}
+                className={`input input-bordered input-styled w-full ${errors.confirmPassword ? 'input-error' : ''}`}
                 aria-invalid={errors.confirmPassword ? 'true' : 'false'}
                 aria-describedby={
                   errors.confirmPassword ? 'reg-confirm-error' : undefined

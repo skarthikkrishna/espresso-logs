@@ -172,9 +172,9 @@ h1, h2, .font-display {
 .glass-card {
   position: relative;
   z-index: 1;
-  background: rgba(16, 11, 6, 0.48);
-  border: 1px solid rgba(200, 134, 10, 0.12);
-  border-radius: 0.75rem;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--bevel-radius);
 }
 
 /* ── Liquid Glass Card — Catalog & Hardware cards ──────────────────────── */
@@ -330,12 +330,14 @@ input[type="file"]::file-selector-button {
 .btn-bevel:focus-visible {
   box-shadow: var(--btn-rest-shadow), var(--input-focus-ring);
   outline: none;
+  transition: opacity 100ms ease;
 }
 .btn-bevel:disabled,
 .btn-bevel[disabled] {
   box-shadow: none;
   opacity: var(--btn-disabled-opacity);
   cursor: not-allowed;
+  transition: none;
 }
 
 /* ── Border suppression — remove DaisyUI btn-primary/btn-secondary border on all
@@ -351,7 +353,7 @@ input[type="file"]::file-selector-button {
 .glass-modal-backdrop {
   background: var(--glass-bg);
   -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: var(--glass-blur);
 }
 .glass-modal-surface {
   box-shadow: var(--glass-highlight), var(--bevel-shadow-raised);
@@ -412,4 +414,3 @@ select.input-styled,
     transition: none;
   }
 }
-

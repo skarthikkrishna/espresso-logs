@@ -80,7 +80,7 @@ export default function Welcome() {
   return (
     <div className="min-h-screen bg-base-100 flex items-start justify-center pt-16 px-4">
       <div className="w-full max-w-md space-y-6">
-        <div className="bg-base-200/80 border border-[rgba(255,255,255,0.08)] rounded-xl p-6 shadow-lg space-y-5">
+        <div className="glass-card card-bevel p-6 space-y-5">
           {step === 'choose' ? (
             <>
               <div className="text-center space-y-3">
@@ -101,7 +101,7 @@ export default function Welcome() {
 
               <button
                 type="button"
-                className="btn btn-outline w-full border-[rgba(255,255,255,0.08)]"
+                className="btn btn-outline btn-bevel w-full"
                 onClick={() => setStep('invite-instructions')}
               >
                 I have an invitation
@@ -130,7 +130,7 @@ export default function Welcome() {
                     autoComplete="off"
                     required
                     maxLength={64}
-                    className={`input input-bordered w-full bg-[var(--input-bg)] ${nameError ? 'input-error' : ''}`}
+                    className={`input input-bordered input-styled w-full ${nameError ? 'input-error' : ''}`}
                     aria-invalid={nameError ? 'true' : 'false'}
                     aria-describedby={nameError ? 'welcome-name-error' : undefined}
                     value={name}
