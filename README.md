@@ -73,7 +73,7 @@ espresso-logs/
 | Tool | Version | Install |
 |------|---------|---------|
 | Python | 3.12.x | [python.org](https://www.python.org/downloads/) or `brew install python@3.12` |
-| Node | 20+ or 22+ | [nodejs.org](https://nodejs.org/) or `brew install node` |
+| Node | 20.19+ or 22.12+ | [nodejs.org](https://nodejs.org/) or `brew install node` |
 | `uv` | latest | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
 | Docker | any recent | [docker.com](https://www.docker.com/) — for local PostgreSQL |
 
