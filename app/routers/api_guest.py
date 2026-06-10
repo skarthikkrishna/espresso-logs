@@ -154,7 +154,7 @@ async def guest_household_view(
     hardware_repo: _DualWriteHardwareRepo = Depends(get_hardware_repo),
 ) -> GuestViewOut:
     repo = HouseholdRepo()
-    guest_token = await repo.get_guest_token_by_hash(db, hash_token(key))
+    guest_token = await repo.get_guest_token_by_hash_include_expired(db, hash_token(key))
     if guest_token is None:
         raise HTTPException(status_code=401, detail="Invalid or expired guest token")
     if guest_token.household_id != household_id:

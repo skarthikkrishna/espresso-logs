@@ -932,7 +932,9 @@ async def test_public_guest_view_returns_sanitized_read_only_dto(db_override: As
     app.dependency_overrides[get_hardware_repo] = lambda: hardware_repo
     try:
         with patch("app.routers.api_guest.HouseholdRepo") as MockHHRepo:
-            MockHHRepo.return_value.get_guest_token_by_hash = AsyncMock(return_value=guest_token)
+            MockHHRepo.return_value.get_guest_token_by_hash_include_expired = AsyncMock(
+                return_value=guest_token
+            )
             MockHHRepo.return_value.get_by_id = AsyncMock(return_value=household)
 
             async with AsyncClient(
@@ -955,6 +957,52 @@ async def test_public_guest_view_returns_sanitized_read_only_dto(db_override: As
     assert str(household_id) not in rendered
     assert "SHOT1" not in rendered
     assert "BAG1" not in rendered
+
+
+async def test_public_guest_view_returns_410_for_expired_link(db_override: AsyncMock) -> None:
+    """Expired guest links surface the dedicated 410 response for frontend handling."""
+    from app.deps import get_brew_log_repo, get_catalog_repo, get_hardware_repo, get_inventory_repo
+
+    household_id = uuid.uuid4()
+    raw_token = "expired-guest-view"
+    guest_token = MagicMock()
+    guest_token.household_id = household_id
+    guest_token.expires_at = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
+        minutes=1
+    )
+    brew_repo = AsyncMock()
+    inventory_repo = AsyncMock()
+    catalog_repo = AsyncMock()
+    hardware_repo = AsyncMock()
+
+    app.dependency_overrides[get_brew_log_repo] = lambda: brew_repo
+    app.dependency_overrides[get_inventory_repo] = lambda: inventory_repo
+    app.dependency_overrides[get_catalog_repo] = lambda: catalog_repo
+    app.dependency_overrides[get_hardware_repo] = lambda: hardware_repo
+    try:
+        with patch("app.routers.api_guest.HouseholdRepo") as MockHHRepo:
+            MockHHRepo.return_value.get_guest_token_by_hash_include_expired = AsyncMock(
+                return_value=guest_token
+            )
+
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                resp = await client.get(
+                    f"/api/guest/households/{household_id}/view",
+                    params={"key": raw_token},
+                )
+    finally:
+        for dep in (get_brew_log_repo, get_inventory_repo, get_catalog_repo, get_hardware_repo):
+            app.dependency_overrides.pop(dep, None)
+
+    assert resp.status_code == 410, resp.text
+    assert resp.json() == {"detail": "Guest link expired"}
+    MockHHRepo.return_value.get_by_id.assert_not_called()
+    brew_repo.list_paginated.assert_not_awaited()
+    inventory_repo.list.assert_not_awaited()
+    catalog_repo.list.assert_not_awaited()
+    hardware_repo.list.assert_not_awaited()
 
 
 # ---------------------------------------------------------------------------

@@ -15,12 +15,39 @@ describe('HouseholdGuestView', () => {
       household: { name: 'Home Espresso Bar' },
       banner: "You're viewing Home Espresso Bar as a guest. Sign in or create an account to log shots.",
       dashboard: {
-        active_bags: [{ bag_id: 'bag-internal-id', display_name: 'Roaster — Bean', roast_level: 'Light' }],
-        recent_shots: [{ shot_id: 'shot-internal-id', date: '2026-06-01', bag_display: 'Roaster — Bean' }],
+        active_bags: [{
+          display_name: 'Roaster — Bean',
+          beans: 'Roaster — Bean',
+          roast_level: 'Light',
+          status: 'Active',
+          storage_method: 'Frozen',
+        }],
+        recent_shots: [{
+          date: '2026-06-01',
+          bag_display: 'Roaster — Bean',
+          roast_level: 'Light',
+          machine_name: 'Bambino Plus',
+          grinder_name: 'Niche Zero',
+          basket_name: 'IMS 18g',
+          storage_method: 'Frozen',
+          dose_in_g: 18,
+          yield_out_g: 36,
+          time_sec: 28,
+          shot_eligibility: 'Dialing In',
+          taste_summary: 'Bright citrus',
+        }],
         stats: { active_bags: 1 },
       },
       brew_log: { entries: [], pagination: { page: 1, per_page: 25, total: 0 } },
-      catalog: { beans: [], compass_summary: {} },
+      catalog: {
+        beans: [{
+          roaster: 'Sample Roaster',
+          bean_name: 'House Blend',
+          roast_level: 'Medium',
+          image_path: null,
+        }],
+        compass_summary: {},
+      },
       capabilities: { can_write: false },
     })
   })
@@ -40,5 +67,8 @@ describe('HouseholdGuestView', () => {
     expect(screen.queryByText(/11111111-1111-4111-8111-111111111111/i)).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /add shot/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /settings/i })).not.toBeInTheDocument()
+    expect(screen.getAllByText('Roaster — Bean')).toHaveLength(2)
+    expect(screen.getByText('Bright citrus')).toBeInTheDocument()
+    expect(screen.getByText('Sample Roaster')).toBeInTheDocument()
   })
 })

@@ -8,11 +8,13 @@ from __future__ import annotations
 
 import datetime
 import uuid
+from unittest.mock import AsyncMock
 
 import pytest
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.household import GuestToken
 from app.repos.sql.household import HouseholdRepo
 from app.repos.sql.user import UserRepo
 
@@ -53,6 +55,79 @@ async def test_count_admins(db_session: AsyncSession) -> None:
 
     count = await repo.count_admins(db_session, household.id)
     assert count == 1
+
+
+@pytest.mark.asyncio(loop_scope="function")
+async def test_get_memberships_with_households_for_user_batches_member_counts(
+    db_session: AsyncSession,
+) -> None:
+    admin_id = await _make_user(db_session, "membership_admin")
+    member_id = await _make_user(db_session, "membership_user")
+    extra_member_id = await _make_user(db_session, "membership_extra")
+    repo = HouseholdRepo()
+
+    alpha = await repo.create_household(db_session, name="Alpha House", created_by=admin_id)
+    beta = await repo.create_household(db_session, name="Beta House", created_by=admin_id)
+    await repo.add_member(
+        db_session,
+        household_id=alpha.id,
+        user_id=member_id,
+        role="member",
+        invited_by=admin_id,
+    )
+    await repo.add_member(
+        db_session,
+        household_id=beta.id,
+        user_id=member_id,
+        role="member",
+        invited_by=admin_id,
+    )
+    await repo.add_member(
+        db_session,
+        household_id=alpha.id,
+        user_id=extra_member_id,
+        role="member",
+        invited_by=admin_id,
+    )
+    await db_session.commit()
+
+    repo.count_members = AsyncMock(side_effect=AssertionError("count_members should not be used"))  # type: ignore[method-assign]
+
+    memberships = await repo.get_memberships_with_households_for_user(db_session, member_id)
+
+    assert [(row.household_name, row.member_count) for row in memberships] == [
+        ("Alpha House", 3),
+        ("Beta House", 2),
+    ]
+
+
+@pytest.mark.asyncio(loop_scope="function")
+async def test_get_guest_token_by_hash_include_expired_returns_expired_token(
+    db_session: AsyncSession,
+) -> None:
+    user_id = await _make_user(db_session, "expired_guest_admin")
+    repo = HouseholdRepo()
+    household = await repo.create_household(db_session, name="GuestExpiryHH", created_by=user_id)
+    token = await repo.create_guest_token(
+        db_session,
+        household_id=household.id,
+        created_by=user_id,
+        token_hash="expired_guest_hash",
+    )
+    await db_session.execute(
+        sa.update(GuestToken)
+        .where(GuestToken.id == token.id)
+        .values(
+            expires_at=datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=5)
+        )
+    )
+    await db_session.commit()
+
+    assert await repo.get_guest_token_by_hash(db_session, "expired_guest_hash") is None
+    expired = await repo.get_guest_token_by_hash_include_expired(db_session, "expired_guest_hash")
+
+    assert expired is not None
+    assert expired.id == token.id
 
 
 @pytest.mark.asyncio(loop_scope="function")

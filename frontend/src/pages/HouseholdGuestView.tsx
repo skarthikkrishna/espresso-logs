@@ -128,8 +128,8 @@ export default function HouseholdGuestView() {
               <p className="mt-3 text-sm text-base-content/60">No active bags are shared yet.</p>
             ) : (
               <ul className="mt-3 space-y-3">
-                {activeBags.slice(0, 6).map((bag) => (
-                  <li key={bag.bag_id} className="rounded-xl border border-amber-900/30 p-3">
+                {activeBags.slice(0, 6).map((bag, index) => (
+                  <li key={bag.display_name || `bag-${index}`} className="rounded-xl border border-amber-900/30 p-3">
                     <p className="text-sm font-medium text-amber-100">{bag.display_name}</p>
                     <Chip label={bag.roast_level} className="mt-2" />
                   </li>
@@ -144,8 +144,8 @@ export default function HouseholdGuestView() {
               <p className="mt-3 text-sm text-base-content/60">No shots are shared yet.</p>
             ) : (
               <ul className="mt-3 space-y-3">
-                {recentShots.slice(0, 6).map((shot) => (
-                  <li key={shot.shot_id} className="rounded-xl border border-amber-900/30 p-3">
+                {recentShots.slice(0, 6).map((shot, index) => (
+                  <li key={`shot-${shot.date}-${index}`} className="rounded-xl border border-amber-900/30 p-3">
                     <p className="text-sm font-medium text-amber-100">{shot.bag_display}</p>
                     <p className="text-xs text-base-content/55">{shot.date}</p>
                     {shot.taste_summary ? <p className="mt-2 text-sm text-base-content/70">{shot.taste_summary}</p> : null}
@@ -161,8 +161,8 @@ export default function HouseholdGuestView() {
               <p className="mt-3 text-sm text-base-content/60">No beans are shared yet.</p>
             ) : (
               <ul className="mt-3 space-y-3">
-                {beans.slice(0, 6).map((bean) => (
-                  <li key={bean.catalog_id} className="rounded-xl border border-amber-900/30 p-3">
+                {beans.slice(0, 6).map((bean, index) => (
+                  <li key={`bean-${bean.roaster}-${bean.bean_name}-${index}`} className="rounded-xl border border-amber-900/30 p-3">
                     <p className="text-sm font-medium text-amber-100">{bean.roaster}</p>
                     <p className="text-xs text-base-content/60">{bean.bean_name}</p>
                     <Chip label={bean.roast_level} className="mt-2" />

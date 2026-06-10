@@ -45,7 +45,7 @@ function HouseholdRow({
           disabled={isActive || busy}
           onClick={() => { void onOpen(membership.household_id, membership.household_name) }}
         >
-          {isActive ? 'Open' : 'Open'}
+          {isActive ? 'Current' : 'Open'}
         </button>
         {membership.can_manage ?? membership.role === 'admin' ? (
           <Link to="/household/settings" className="btn btn-sm btn-ghost no-underline">

@@ -38,6 +38,7 @@ describe('Profile', () => {
     expect(screen.getByText(/Password resets are admin-assisted/i)).toBeInTheDocument()
     expect(screen.queryByLabelText(/current password/i)).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: /create household/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /current/i })).toBeDisabled()
     expect(screen.getByRole('button', { name: /sign out/i })).toBeInTheDocument()
   })
 })

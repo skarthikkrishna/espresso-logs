@@ -164,16 +164,27 @@ class HouseholdRepo:
             )
             .order_by(sa.func.lower(Household.name).asc(), Household.id.asc())
         )
-        memberships: list[HouseholdMembershipWithName] = []
-        for membership, household_name in result.all():
-            memberships.append(
-                HouseholdMembershipWithName(
-                    membership=membership,
-                    household_name=household_name,
-                    member_count=await self.count_members(db, membership.household_id),
-                )
+        membership_rows = result.all()
+        if not membership_rows:
+            return []
+
+        household_ids = [membership.household_id for membership, _ in membership_rows]
+        counts_result = await db.execute(
+            sa.select(HouseholdMember.household_id, sa.func.count())
+            .where(HouseholdMember.household_id.in_(household_ids))
+            .group_by(HouseholdMember.household_id)
+        )
+        member_counts = {
+            household_id: int(member_count) for household_id, member_count in counts_result.all()
+        }
+        return [
+            HouseholdMembershipWithName(
+                membership=membership,
+                household_name=household_name,
+                member_count=member_counts.get(membership.household_id, 0),
             )
-        return memberships
+            for membership, household_name in membership_rows
+        ]
 
     async def add_member(
         self,
@@ -537,13 +548,25 @@ class HouseholdRepo:
         return token
 
     async def get_guest_token_by_hash(self, db: AsyncSession, token_hash: str) -> GuestToken | None:
-        """Return None if not found or revoked."""
+        """Return None if not found, revoked, or expired."""
         now = datetime.datetime.now(tz=datetime.timezone.utc)
         result = await db.execute(
             sa.select(GuestToken).where(
                 GuestToken.token_hash == token_hash,
                 GuestToken.revoked_at.is_(None),
                 sa.or_(GuestToken.expires_at.is_(None), GuestToken.expires_at > now),
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def get_guest_token_by_hash_include_expired(
+        self, db: AsyncSession, token_hash: str
+    ) -> GuestToken | None:
+        """Return None if not found or revoked; expired tokens are included."""
+        result = await db.execute(
+            sa.select(GuestToken).where(
+                GuestToken.token_hash == token_hash,
+                GuestToken.revoked_at.is_(None),
             )
         )
         return result.scalar_one_or_none()
