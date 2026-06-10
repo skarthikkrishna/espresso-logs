@@ -4,6 +4,7 @@
 
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import StandaloneHouseholdShell from './StandaloneHouseholdShell'
 
 interface ProtectedRouteProps {
   requiredRole?: 'admin' | 'member'
@@ -17,9 +18,12 @@ export default function ProtectedRoute({ requiredRole }: ProtectedRouteProps) {
 
   if (isRouteLoading) {
     return (
-      <div className="min-h-screen bg-base-100 flex items-center justify-center">
-        <span className="loading loading-spinner loading-lg text-primary" aria-label="Loading" />
-      </div>
+      <StandaloneHouseholdShell background="bg-household-transition" align="center">
+        <div className="glass-card card-bevel p-6 text-center" role="status" aria-live="polite">
+          <span className="loading loading-spinner loading-lg text-primary" aria-label="Loading" />
+          <p className="mt-3 text-sm text-base-content/70">Loading household context…</p>
+        </div>
+      </StandaloneHouseholdShell>
     )
   }
 

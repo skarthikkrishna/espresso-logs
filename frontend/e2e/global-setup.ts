@@ -39,13 +39,13 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
       const status = seedRes.status();
       const body = await seedRes.text();
 
-      if (status === 404) {
+      if (status === 404 || status === 502) {
         // Alex's endpoint not yet implemented — write empty state and warn.
         // auth-refresh-* tests (which mock all routes) will still pass.
         // Smoke and catalog tests will fail until the endpoint is available.
         console.warn(
-          '\n[global-setup] WARNING: POST /api/e2e/seed-user returned 404.\n' +
-            'Alex must implement this endpoint before smoke/catalog E2E tests can run.\n' +
+          `\n[global-setup] WARNING: POST /api/e2e/seed-user returned ${status}.\n` +
+            'Backend-backed E2E tests require the FastAPI test server; mocked specs can still run.\n' +
             'Writing empty storageState — auth-refresh-* tests will still pass.\n',
         );
         await writeFile(AUTH_STATE_PATH, EMPTY_STATE, 'utf8');

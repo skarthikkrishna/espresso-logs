@@ -214,7 +214,7 @@ async def test_register_duplicate_username_returns_409(auth_client: AsyncMock) -
 
 
 async def test_register_invalid_username_format_returns_422(auth_client: AsyncMock) -> None:
-    bad_usernames = ["ab", "-alice", "alice!"]
+    bad_usernames = ["ab", "alice-smith", "alice!", "a" * 31]
     for username in bad_usernames:
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp = await client.post(

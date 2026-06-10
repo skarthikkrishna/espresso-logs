@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import builtins
+import inspect
 import logging
 import os
 import threading
@@ -80,6 +81,12 @@ async def _set_current_household_context(db: AsyncSession | None, household_id: 
     )
 
 
+async def _await_if_needed(value: Any) -> Any:
+    if inspect.isawaitable(value):
+        return await value
+    return value
+
+
 # ---------------------------------------------------------------------------
 # JWT auth dependency injection (M5)
 # ---------------------------------------------------------------------------
@@ -127,13 +134,18 @@ async def _resolve_membership_for_user(
         household = await household_repo.get_by_id(db, active_household_id)
         if membership is not None and household is not None:
             return membership
-        await user_repo.clear_active_household(db, user.id)
+        await _await_if_needed(user_repo.clear_active_household(db, user.id))
         user.active_household_id = None
 
     memberships = await household_repo.get_memberships_for_user(db, user.id)
     if not memberships:
         raise HTTPException(status_code=403, detail="User has no household memberships")
-    return memberships[0]
+    fallback_membership = memberships[0]
+    await _await_if_needed(
+        user_repo.set_active_household(db, user.id, fallback_membership.household_id)
+    )
+    user.active_household_id = fallback_membership.household_id
+    return fallback_membership
 
 
 async def current_household_membership(
@@ -180,7 +192,7 @@ async def resolve_guest_or_member(
     If no guest param is present, falls through to JWT-based membership
     resolution (same as ``current_household_membership``).
     """
-    guest_raw = request.query_params.get("guest")
+    guest_raw = request.query_params.get("guest") or request.query_params.get("key")
     if guest_raw is not None:
         if db is None:
             raise HTTPException(status_code=401, detail="Database unavailable")

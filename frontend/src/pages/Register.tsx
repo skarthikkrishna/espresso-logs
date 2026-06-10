@@ -15,6 +15,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import { register, getMe } from '../api/auth'
 import { useAuth } from '../contexts/AuthContext'
+import StandaloneHouseholdShell from '../components/StandaloneHouseholdShell'
 
 // ---------------------------------------------------------------------------
 // Validation helpers — aligned with spec: 3–30 chars, alphanumeric + undersscores only
@@ -195,12 +196,18 @@ export default function Register() {
   // -------------------------------------------------------------------------
 
   return (
-    <div className="min-h-screen bg-base-100 flex items-start justify-center pt-20 px-4">
+    <StandaloneHouseholdShell background="bg-auth-register" align="left" labelledBy="register-heading">
       <div className="w-full max-w-sm">
         <div className="glass-card card-bevel p-6">
-          <h1 className="font-display text-2xl text-base-content text-center mb-6">
+          <h1 id="register-heading" className="font-display text-2xl text-base-content text-center mb-6">
             Create account
           </h1>
+
+          {inviteToken ? (
+            <div className="alert alert-info card-bevel mb-4 text-sm">
+              <span>Create your account, then we&apos;ll return you to the household invitation.</span>
+            </div>
+          ) : null}
 
           <form
             onSubmit={(e) => {
@@ -322,6 +329,6 @@ export default function Register() {
           </p>
         </div>
       </div>
-    </div>
+    </StandaloneHouseholdShell>
   )
 }

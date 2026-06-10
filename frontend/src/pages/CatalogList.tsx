@@ -8,14 +8,16 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import AddBeanModal from '../components/AddBeanModal'
 import Chip from '../components/Chip'
 import type { CatalogItem } from '../types/entities'
+import { useHouseholdQueryScope } from '../contexts/AuthContext'
 
 export default function CatalogList() {
   const [search, setSearch] = useState('')
   const queryClient = useQueryClient()
   const [modalOpen, setModalOpen] = useState(false)
+  const activeHouseholdId = useHouseholdQueryScope()
 
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: catalogListQueryKey(),
+    queryKey: catalogListQueryKey(activeHouseholdId),
     queryFn: listCatalog,
   })
 
@@ -138,15 +140,15 @@ export default function CatalogList() {
           onClose={() => setModalOpen(false)}
           onSaved={(savedItem?: CatalogItem) => {
             if (savedItem) {
-              queryClient.setQueryData<CatalogItem[]>(catalogListQueryKey(), (old) => {
+              queryClient.setQueryData<CatalogItem[]>(catalogListQueryKey(activeHouseholdId), (old) => {
                 if (!old) return [savedItem]
                 return old.some((item) => item.catalog_id === savedItem.catalog_id)
                   ? old.map((item) => item.catalog_id === savedItem.catalog_id ? { ...item, ...savedItem } : item)
                   : [savedItem, ...old]
               })
-              queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(savedItem.catalog_id) })
+              queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(savedItem.catalog_id, activeHouseholdId) })
             }
-            queryClient.invalidateQueries({ queryKey: catalogListQueryKey() })
+            queryClient.invalidateQueries({ queryKey: catalogListQueryKey(activeHouseholdId) })
           }}
         />
       )}

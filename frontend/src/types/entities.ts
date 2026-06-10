@@ -84,6 +84,9 @@ export interface Membership {
   household_name: string;
   role: 'admin' | 'member';
   joined_at: string;
+  member_count?: number;
+  is_active?: boolean;
+  can_manage?: boolean;
 }
 
 export type HouseholdMembership = Membership;

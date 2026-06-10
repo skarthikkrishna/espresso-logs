@@ -5,9 +5,10 @@
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { apiClient } from '../api/client'
 import { getMe } from '../api/auth'
+import { createHousehold } from '../api/households'
 import { useAuth } from '../contexts/AuthContext'
+import StandaloneHouseholdShell from '../components/StandaloneHouseholdShell'
 
 type WizardStep = 'choose' | 'create' | 'invite-instructions'
 
@@ -37,7 +38,7 @@ export default function Welcome() {
     setIsSubmitting(true)
 
     try {
-      await apiClient.post('/households', { name: name.trim() })
+      await createHousehold(name.trim())
       const userData = await getMe()
       setUser(userData)
       navigate('/', { replace: true })
@@ -63,9 +64,12 @@ export default function Welcome() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-base-100 flex items-center justify-center">
-        <span className="loading loading-spinner loading-lg text-primary" aria-label="Loading welcome" />
-      </div>
+      <StandaloneHouseholdShell background="bg-household-transition" align="center">
+        <div className="glass-card card-bevel p-6 text-center" role="status" aria-live="polite">
+          <span className="loading loading-spinner loading-lg text-primary" aria-label="Loading welcome" />
+          <p className="mt-3 text-sm text-base-content/70">Preparing household setup…</p>
+        </div>
+      </StandaloneHouseholdShell>
     )
   }
 
@@ -78,14 +82,14 @@ export default function Welcome() {
   }
 
   return (
-    <div className="min-h-screen bg-base-100 flex items-start justify-center pt-16 px-4">
+    <StandaloneHouseholdShell background="bg-household-onboarding" align="center" labelledBy="welcome-heading">
       <div className="w-full max-w-md space-y-6">
         <div className="glass-card card-bevel p-6 space-y-5">
           {step === 'choose' ? (
             <>
               <div className="text-center space-y-3">
-                <p className="text-5xl" aria-hidden="true">☕</p>
-                <h1 className="text-2xl font-display text-base-content">Welcome to Coffee Tracker</h1>
+                <p className="text-xs uppercase tracking-[0.22em] text-amber-300/70">Household setup</p>
+                <h1 id="welcome-heading" className="text-2xl font-display text-base-content">Welcome to Coffee Tracker</h1>
                 <p className="text-base-content/80 text-sm">
                   Coffee Tracker is a household app. You&apos;ll need to either create a new household or accept an invitation from a friend.
                 </p>
@@ -214,6 +218,6 @@ export default function Welcome() {
           </button>
         </p>
       </div>
-    </div>
+    </StandaloneHouseholdShell>
   )
 }

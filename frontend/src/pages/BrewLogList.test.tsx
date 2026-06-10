@@ -10,6 +10,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
+import { brewLogListQueryKey } from '../api/queryKeys'
 
 // ---------------------------------------------------------------------------
 // Module mocks — hoisted before any import of the mocked module
@@ -98,7 +99,7 @@ describe('BrewLogList — detail prefetch cache key', () => {
       expect(queryClient.getQueryState(['brew-log-detail', 'shot-1'])).toBeDefined()
     })
     expect(queryClient.getQueryState(['brew-log', 'shot-1'])).toBeUndefined()
-    expect(queryClient.getQueryState(['brew-log', 1, 100])).toBeDefined()
+    expect(queryClient.getQueryState(brewLogListQueryKey(undefined, 1, 100))).toBeDefined()
   })
 })
 

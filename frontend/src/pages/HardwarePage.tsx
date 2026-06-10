@@ -7,6 +7,8 @@ import LogMaintenanceModal from '../components/LogMaintenanceModal'
 import EditHardwareModal from '../components/EditHardwareModal'
 import Chip from '../components/Chip'
 import type { HardwareItem } from '../types/entities'
+import { useHouseholdQueryScope } from '../contexts/AuthContext'
+import { householdKeys } from '../api/queryKeys'
 
 function HardwareIcon({ category }: { category: string }) {
   if (category === 'Machine') return (
@@ -34,18 +36,19 @@ function HardwareIcon({ category }: { category: string }) {
 const CATEGORY_ORDER: HardwareItem['category'][] = ['Machine', 'Grinder', 'Basket', 'Storage']
 
 export default function HardwarePage() {
+  const activeHouseholdId = useHouseholdQueryScope()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [addModal, setAddModal] = useState<{ open: boolean; initialCategory?: HardwareItem['category'] }>({ open: false })
   const [logModal, setLogModal] = useState<{ open: boolean; hardware?: HardwareItem }>({ open: false })
   const [editModal, setEditModal] = useState<{ open: boolean; hardware?: HardwareItem }>({ open: false })
 
   const { data: hardware, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['hardware'],
+    queryKey: householdKeys.hardware(activeHouseholdId),
     queryFn: listHardware,
   })
 
   const { data: detail, isLoading: detailLoading } = useQuery({
-    queryKey: ['hardware', selectedId],
+    queryKey: householdKeys.hardwareDetail(activeHouseholdId, selectedId),
     queryFn: () => getHardwareDetail(selectedId!),
     enabled: !!selectedId,
   })
@@ -256,4 +259,3 @@ export default function HardwarePage() {
     </div>
   )
 }
-

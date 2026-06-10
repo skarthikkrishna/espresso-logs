@@ -4,6 +4,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import AddHardwareModal from './AddHardwareModal'
 import * as hardwareApi from '../api/hardware'
 
+vi.mock('../contexts/AuthContext', () => ({
+  useAuth: () => ({ activeHouseholdId: 'hh-1' }),
+  useHouseholdQueryScope: () => 'hh-1',
+}))
+
 function renderModal(ui: React.ReactElement) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const result = render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>)
@@ -66,7 +71,7 @@ describe('AddHardwareModal', () => {
         name: 'Niche Zero',
         product_url: 'https://nichecoffee.co.uk',
       })
-      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['hardware'], refetchType: 'inactive' })
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['households', 'hh-1', 'hardware'], refetchType: 'inactive' })
     })
 
     expect(defaultProps.onSaved).toHaveBeenCalledWith('G01')

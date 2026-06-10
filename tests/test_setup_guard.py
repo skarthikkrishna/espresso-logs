@@ -36,7 +36,7 @@ def mock_db() -> AsyncMock:
 def _fake_user() -> MagicMock:
     user = MagicMock()
     user.id = uuid.uuid4()
-    user.username = "setup-user"
+    user.username = "setup_user"
     user.display_name = "Setup User"
     user.email = None
     user.picture_url = None
@@ -76,7 +76,7 @@ async def test_setup_guard_allows_register_when_active(mock_db: AsyncMock) -> No
             ) as client:
                 response = await client.post(
                     "/auth/register",
-                    json={"username": "setup-user", "password": "ValidPass!234"},
+                    json={"username": "setup_user", "password": "ValidPass!234"},
                     headers={"X-Forwarded-For": "10.0.8.1"},
                 )
     finally:
@@ -121,7 +121,7 @@ async def test_setup_guard_clears_after_register(mock_db: AsyncMock) -> None:
             ) as client:
                 response = await client.post(
                     "/auth/register",
-                    json={"username": "setup-user", "password": "ValidPass!234"},
+                    json={"username": "setup_user", "password": "ValidPass!234"},
                     headers={"X-Forwarded-For": "10.0.8.2"},
                 )
     finally:

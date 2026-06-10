@@ -1,9 +1,7 @@
-/**
- * Profile page — signed-in user account details and household switcher.
- */
-
 import { Link } from 'react-router-dom'
+import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import type { Membership } from '../types/entities'
 
 function formatDate(value: string | null | undefined): string {
   if (!value) return 'Unavailable'
@@ -12,130 +10,155 @@ function formatDate(value: string | null | undefined): string {
   return date.toLocaleDateString()
 }
 
+const monogramFor = (name: string): string =>
+  name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'CT'
+
+function HouseholdRow({
+  membership,
+  activeHouseholdId,
+  onOpen,
+  busy,
+}: {
+  membership: Membership
+  activeHouseholdId: string | null
+  onOpen: (householdId: string, name: string) => Promise<void>
+  busy: boolean
+}) {
+  const isActive = membership.household_id === activeHouseholdId || membership.is_active
+  return (
+    <li className="glass-card card-bevel flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
+      <div className="min-w-0 space-y-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="truncate font-medium text-base-content" title={membership.household_name}>{membership.household_name}</span>
+          <span className="badge badge-outline badge-sm capitalize">{membership.role}</span>
+          {isActive ? <span className="badge badge-primary badge-sm">Active</span> : null}
+        </div>
+        <p className="text-xs text-base-content/55">
+          {membership.member_count != null ? `${membership.member_count} member${membership.member_count === 1 ? '' : 's'} • ` : ''}
+          Joined {formatDate(membership.joined_at)}
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          className="btn btn-sm btn-outline btn-bevel"
+          disabled={isActive || busy}
+          onClick={() => { void onOpen(membership.household_id, membership.household_name) }}
+        >
+          {isActive ? 'Open' : 'Open'}
+        </button>
+        {membership.can_manage ?? membership.role === 'admin' ? (
+          <Link to="/household/settings" className="btn btn-sm btn-ghost no-underline">
+            Manage
+          </Link>
+        ) : null}
+      </div>
+    </li>
+  )
+}
+
 export default function Profile() {
   const { user, memberships, activeHouseholdId, switchHousehold, logout } = useAuth()
+  const [status, setStatus] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [switching, setSwitching] = useState(false)
 
   if (!user) return null
 
   const joinedAt = user.created_at ?? memberships[0]?.joined_at ?? null
   const authMethod = user.email ? 'Google' : 'Username + password'
+  const displayName = user.display_name || user.username || 'Coffee Tracker user'
+
+  const handleOpen = async (householdId: string, householdName: string) => {
+    if (householdId === activeHouseholdId) return
+    setSwitching(true)
+    setStatus(`Opening ${householdName}…`)
+    setError(null)
+    try {
+      await switchHousehold(householdId)
+      setStatus(`${householdName} is now active.`)
+    } catch {
+      setError('Could not switch households. Please try again.')
+      setStatus(null)
+    } finally {
+      setSwitching(false)
+    }
+  }
 
   return (
-    <div className="p-4 max-w-2xl mx-auto space-y-4">
-      <h1 className="text-xl font-display text-amber-100 pt-2">Profile</h1>
+    <div className="mx-auto max-w-3xl space-y-4 p-4 pb-32 md:p-6 lg:pb-6">
+      <div className="flex flex-col gap-2 pt-2 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.22em] text-amber-300/60">Account</p>
+          <h1 className="font-display text-3xl text-amber-100">Profile</h1>
+        </div>
+        <Link to="/household/new" className="btn btn-outline btn-bevel no-underline">
+          Create household
+        </Link>
+      </div>
 
-      <section className="glass-card card-bevel p-5 space-y-4">
-        <h2 className="text-sm font-medium text-amber-200/80 uppercase tracking-wide">Account details</h2>
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="form-control">
-            <span className="label-text text-sm text-base-content/60">Username</span>
-            <input className="input input-bordered input-styled" value={user.username} readOnly />
-          </label>
-          <label className="form-control">
-            <span className="label-text text-sm text-base-content/60">Display name</span>
-            <input className="input input-bordered input-styled" value={user.display_name} readOnly />
-          </label>
-          {user.email ? (
-            <label className="form-control md:col-span-2">
-              <span className="label-text text-sm text-base-content/60">Email</span>
-              <input className="input input-bordered input-styled" value={user.email} readOnly />
-            </label>
-          ) : null}
-          <label className="form-control">
-            <span className="label-text text-sm text-base-content/60">Joined date</span>
-            <input className="input input-bordered input-styled" value={formatDate(joinedAt)} readOnly />
-          </label>
-          <div className="space-y-2">
-            <span className="label-text text-sm text-base-content/60">Auth method</span>
-            <div className="flex items-center gap-3">
+      <p className="sr-only" aria-live="polite">{status}</p>
+      {error ? <div className="alert alert-error card-bevel" role="alert"><span>{error}</span></div> : null}
+
+      <section className="glass-card card-bevel p-5 md:p-6">
+        <div className="flex flex-col gap-5 md:flex-row md:items-center">
+          {user.picture_url ? (
+            <img src={user.picture_url} alt="" className="h-20 w-20 rounded-full object-cover" />
+          ) : (
+            <div className="grid h-20 w-20 place-items-center rounded-full border border-amber-500/30 bg-amber-500/15 text-2xl font-semibold text-amber-200" aria-hidden="true">
+              {monogramFor(displayName)}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-xl font-semibold text-base-content">{displayName}</h2>
+            <p className="text-sm text-base-content/60">@{user.username}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
               <span className="badge badge-outline">{authMethod}</span>
-              {user.picture_url ? (
-                <img
-                  src={user.picture_url}
-                  alt={`${user.display_name} profile`}
-                  className="h-10 w-10 object-cover card-bevel"
-                />
-              ) : null}
+              <span className="badge badge-outline">Joined {formatDate(joinedAt)}</span>
+              {user.email ? <span className="badge badge-outline">{user.email}</span> : null}
             </div>
           </div>
         </div>
       </section>
 
-      <section className="glass-card card-bevel p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium text-amber-200/80 uppercase tracking-wide">My households</h2>
-          <Link to="/household/new" className="btn btn-xs btn-outline btn-bevel no-underline">
-            Create household
-          </Link>
-        </div>
-        <ul className="space-y-3">
-          {memberships.map((membership) => {
-            const isActive = membership.household_id === activeHouseholdId
-            return (
-              <li
-                key={membership.household_id}
-                className="glass-card card-bevel flex flex-col gap-3 p-3 md:flex-row md:items-center md:justify-between"
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-base-content">{membership.household_name}</span>
-                    <span className="badge badge-outline badge-sm">{membership.role}</span>
-                    {isActive ? <span className="badge badge-primary badge-sm">Active</span> : null}
-                  </div>
-                  <p className="text-xs text-base-content/50">
-                    Joined {formatDate(membership.joined_at)}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {!isActive ? (
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline btn-bevel"
-                      onClick={() => {
-                        void switchHousehold(membership.household_id)
-                      }}
-                    >
-                      Open
-                    </button>
-                  ) : null}
-                  {membership.role === 'admin' ? (
-                    <Link to="/household/settings" className="btn btn-sm btn-ghost no-underline">
-                      Manage
-                    </Link>
-                  ) : null}
-                </div>
-              </li>
-            )
-          })}
-        </ul>
+      <section className="glass-card card-bevel p-5 space-y-3 md:p-6">
+        <h2 className="text-sm font-medium uppercase tracking-wide text-amber-200/80">Password reset</h2>
+        <p className="text-sm text-base-content/70">
+          Password resets are admin-assisted for household safety. Ask a household admin to reset your password if you lose access.
+        </p>
       </section>
 
-      <section className="glass-card card-bevel p-5 space-y-3">
-        <h2 className="text-sm font-medium text-amber-200/80 uppercase tracking-wide">Change password</h2>
-        <form className="grid gap-3 md:grid-cols-2" onSubmit={(event) => event.preventDefault()}>
-          <label className="form-control md:col-span-2">
-            <span className="label-text text-sm text-base-content/60">Current password</span>
-            <input className="input input-bordered input-styled" type="password" placeholder="Current password" />
-          </label>
-          <label className="form-control">
-            <span className="label-text text-sm text-base-content/60">New password</span>
-            <input className="input input-bordered input-styled" type="password" placeholder="New password" />
-          </label>
-          <label className="form-control">
-            <span className="label-text text-sm text-base-content/60">Confirm new password</span>
-            <input className="input input-bordered input-styled" type="password" placeholder="Confirm new password" />
-          </label>
-          <div className="md:col-span-2 glass-card card-bevel p-3 text-sm text-base-content/60">
-            TODO: wire this form to the password-change API when the backend endpoint is available.
+      <section className="glass-card card-bevel p-5 space-y-4 md:p-6">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-medium uppercase tracking-wide text-amber-200/80">My households</h2>
+            <p className="text-sm text-base-content/60">Open a household, manage admin settings, or create another workspace.</p>
           </div>
-        </form>
+        </div>
+        {memberships.length === 0 ? (
+          <div className="rounded-xl border border-amber-900/30 p-4 text-sm text-base-content/70">
+            You are not a member of a household yet. Create one or ask an admin for an invitation link.
+          </div>
+        ) : (
+          <ul className="space-y-3">
+            {memberships.map((membership) => (
+              <HouseholdRow
+                key={membership.household_id}
+                membership={membership}
+                activeHouseholdId={activeHouseholdId}
+                busy={switching}
+                onOpen={handleOpen}
+              />
+            ))}
+          </ul>
+        )}
       </section>
 
-      <section className="glass-card card-bevel p-5 space-y-3">
+      <section className="glass-card card-bevel p-5 md:p-6">
         <button
           type="button"
           onClick={logout}
-          className="btn btn-ghost btn-sm w-full text-error"
+          className="btn btn-ghost w-full text-error"
         >
           Sign out
         </button>

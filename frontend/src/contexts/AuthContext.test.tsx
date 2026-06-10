@@ -19,6 +19,9 @@ const mockGetStoredActiveHouseholdId = vi.hoisted(() => vi.fn())
 const mockSetStoredActiveHouseholdId = vi.hoisted(() => vi.fn())
 const mockQueryClientClear = vi.hoisted(() => vi.fn())
 const mockQueryClientPrefetchQuery = vi.hoisted(() => vi.fn())
+const mockQueryClientCancelQueries = vi.hoisted(() => vi.fn())
+const mockQueryClientRemoveQueries = vi.hoisted(() => vi.fn())
+const mockQueryClientInvalidateQueries = vi.hoisted(() => vi.fn())
 
 vi.mock('../api/auth', () => ({
   refresh: mockRefresh,
@@ -41,6 +44,9 @@ vi.mock('../queryClient', () => ({
   queryClient: {
     clear: mockQueryClientClear,
     prefetchQuery: mockQueryClientPrefetchQuery,
+    cancelQueries: mockQueryClientCancelQueries,
+    removeQueries: mockQueryClientRemoveQueries,
+    invalidateQueries: mockQueryClientInvalidateQueries,
   },
 }))
 
@@ -155,6 +161,9 @@ beforeEach(() => {
   mockGetStoredActiveHouseholdId.mockReturnValue(null)
   mockListHardware.mockResolvedValue([])
   mockQueryClientPrefetchQuery.mockResolvedValue(undefined)
+  mockQueryClientCancelQueries.mockResolvedValue(undefined)
+  mockQueryClientRemoveQueries.mockReturnValue(undefined)
+  mockQueryClientInvalidateQueries.mockResolvedValue(undefined)
 })
 
 describe('AuthContext', () => {

@@ -29,6 +29,7 @@ import {
   refresh as refreshApi,
   switchHousehold as switchHouseholdApi,
 } from '../api/auth'
+import { householdKeys, isHouseholdScopedQueryKey } from '../api/queryKeys'
 import { queryClient } from '../queryClient'
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -271,13 +272,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [runRefresh])
 
   useEffect(() => {
-    if (isLoading || !isAuthenticated) return
+    if (isLoading || !isAuthenticated || !activeHouseholdId) return
 
     void queryClient.prefetchQuery({
-      queryKey: ['hardware'],
+      queryKey: householdKeys.hardware(activeHouseholdId),
       queryFn: listHardware,
     })
-  }, [isAuthenticated, isLoading])
+  }, [activeHouseholdId, isAuthenticated, isLoading])
 
   const setAccessToken = useCallback(
     (token: string | null) => {
@@ -301,6 +302,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const switchHousehold = useCallback(
     async (householdId: string) => {
+      const previousHouseholdId = activeHouseholdId
+      await queryClient.cancelQueries({
+        predicate: (query) => isHouseholdScopedQueryKey(query.queryKey),
+      })
       const nextSelection = await switchHouseholdApi(householdId)
       const nextMemberships = upsertMembership(memberships, nextSelection)
 
@@ -318,8 +323,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
           role: nextSelection.role,
         })
       })
+
+      if (previousHouseholdId && previousHouseholdId !== nextSelection.household_id) {
+        queryClient.removeQueries({
+          predicate: (query) => isHouseholdScopedQueryKey(query.queryKey, previousHouseholdId),
+        })
+      }
+      await queryClient.invalidateQueries({
+        predicate: (query) => isHouseholdScopedQueryKey(query.queryKey, nextSelection.household_id),
+      })
     },
-    [memberships],
+    [activeHouseholdId, memberships],
   )
 
   const logout = useCallback(() => {
@@ -354,4 +368,11 @@ export function useAuth(): AuthContextValue {
     throw new Error('useAuth must be used within an AuthProvider')
   }
   return ctx
+}
+
+// Query-only components can be rendered in isolated tests without the full auth
+// provider; production routes still receive the active household from AuthContext.
+// eslint-disable-next-line react-refresh/only-export-components
+export function useHouseholdQueryScope(): string | undefined {
+  return useContext(AuthContext)?.activeHouseholdId ?? undefined
 }

@@ -1,182 +1,172 @@
-/**
- * InviteAccept page — handles /invite/accept?token=<tok> URLs.
- *
- * Reads the invite token from the query string, shows a confirmation screen,
- * then calls POST /households/accept-invite on confirmation. On success,
- * refreshes auth state and navigates to the home dashboard.
- *
- * Handles error states:
- *   - Missing token → redirect to /invite/invalid
- *   - 404/410 expired → redirect to /invite/expired
- *   - Other errors → inline error with retry
- *
- * Spec: functional-spec-v2.md §690-726
- */
-
 import { useEffect, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
-import { apiClient } from '../api/client'
 import { getMe } from '../api/auth'
+import { acceptInvitation, declineInvitation, getInvitationPreview, type InvitationPreview } from '../api/invitations'
 import { useAuth } from '../contexts/AuthContext'
+import StandaloneHouseholdShell from '../components/StandaloneHouseholdShell'
 
-interface InviteInfo {
-  household_name: string
-  inviter_display_name: string
-  role: 'admin' | 'member'
+function formatExpiry(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'soon'
+  return date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+}
+
+function routeForInviteError(error: unknown): '/invite/expired' | '/invite/invalid' | null {
+  if (!axios.isAxiosError(error)) return null
+  if (error.response?.status === 410) return '/invite/expired'
+  if (error.response?.status === 404 || error.response?.status === 422) return '/invite/invalid'
+  return null
 }
 
 export default function InviteAccept() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { setUser, isAuthenticated, isLoading: authLoading } = useAuth()
-
   const token = searchParams.get('token')
 
-  const [inviteInfo, setInviteInfo] = useState<InviteInfo | null>(null)
-  const [isLoadingInfo, setIsLoadingInfo] = useState(true)
+  const [preview, setPreview] = useState<InvitationPreview | null>(null)
+  const [isLoadingPreview, setIsLoadingPreview] = useState(true)
   const [isAccepting, setIsAccepting] = useState(false)
+  const [isDeclining, setIsDeclining] = useState(false)
+  const [declined, setDeclined] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Redirect to invalid page immediately if no token present
   useEffect(() => {
     if (!token) {
       navigate('/invite/invalid', { replace: true })
+      return
     }
-  }, [token, navigate])
 
-  // Redirect unauthenticated users to login, preserving the invite token
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated && token) {
-      navigate(`/login?invite=${encodeURIComponent(token)}&from=${encodeURIComponent('/invite/accept')}`, { replace: true })
-    }
-  }, [authLoading, isAuthenticated, token, navigate])
-
-  // Fetch invite preview info
-  useEffect(() => {
-    if (!token || !isAuthenticated) return
-
-    void (async () => {
-      setIsLoadingInfo(true)
-      try {
-        const { data } = await apiClient.get<InviteInfo>(`/households/invite-info?token=${encodeURIComponent(token)}`)
-        setInviteInfo(data)
-      } catch (err) {
-        if (axios.isAxiosError(err)) {
-          if (err.response?.status === 410) {
-            navigate('/invite/expired', { replace: true })
-            return
-          }
-          if (err.response?.status === 404) {
-            navigate('/invite/invalid', { replace: true })
-            return
-          }
+    let cancelled = false
+    void getInvitationPreview(token)
+      .then((data) => {
+        if (!cancelled) setPreview(data)
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        const route = routeForInviteError(err)
+        if (route) {
+          navigate(route, { replace: true })
+          return
         }
-        // If the endpoint doesn't exist yet, show a generic accept confirmation
-        setInviteInfo(null)
-      } finally {
-        setIsLoadingInfo(false)
-      }
-    })()
-  }, [token, isAuthenticated, navigate])
+        setError('Could not load this invitation. Please retry or ask the household admin for a new link.')
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingPreview(false)
+      })
+
+    return () => { cancelled = true }
+  }, [navigate, token])
+
+  useEffect(() => {
+    if (!token || authLoading || isLoadingPreview || !preview || isAuthenticated) return
+    navigate(`/login?invite=${encodeURIComponent(token)}&from=${encodeURIComponent('/invite/accept')}`, { replace: true })
+  }, [authLoading, isAuthenticated, isLoadingPreview, navigate, preview, token])
 
   const handleAccept = async () => {
     if (!token) return
     setError(null)
     setIsAccepting(true)
-
     try {
-      await apiClient.post('/households/accept-invite', { token })
+      await acceptInvitation(token)
       const userData = await getMe()
       setUser(userData)
       navigate('/', { replace: true })
     } catch (err) {
-      if (axios.isAxiosError(err)) {
-        if (err.response?.status === 410) {
-          navigate('/invite/expired', { replace: true })
-          return
-        }
-        if (err.response?.status === 404) {
-          navigate('/invite/invalid', { replace: true })
-          return
-        }
-        if (err.response?.status === 409) {
-          setError('You are already a member of this household.')
-        } else {
-          setError('Failed to accept the invitation. Please try again.')
-        }
-      } else {
-        setError('Unable to connect. Please check your connection.')
+      const route = routeForInviteError(err)
+      if (route) {
+        navigate(route, { replace: true })
+        return
       }
+      if (axios.isAxiosError(err) && err.response?.status === 409) {
+        const userData = await getMe().catch(() => null)
+        if (userData) setUser(userData)
+        navigate('/', { replace: true })
+        return
+      }
+      setError('Failed to accept the invitation. Please try again.')
     } finally {
       setIsAccepting(false)
     }
   }
 
-  if (authLoading || isLoadingInfo) {
+  const handleDecline = async () => {
+    if (!token) return
+    setError(null)
+    setIsDeclining(true)
+    try {
+      await declineInvitation(token)
+      setDeclined(true)
+    } catch (err) {
+      const route = routeForInviteError(err)
+      if (route) {
+        navigate(route, { replace: true })
+        return
+      }
+      setError('Could not dismiss the invitation. You can still leave this page without accepting.')
+    } finally {
+      setIsDeclining(false)
+    }
+  }
+
+  if (authLoading || isLoadingPreview) {
     return (
-      <div className="min-h-screen bg-base-100 flex items-center justify-center">
-        <span className="loading loading-spinner loading-lg text-primary" aria-label="Loading invitation" />
-      </div>
+      <StandaloneHouseholdShell background="bg-invite-accept" align="right">
+        <div className="glass-card card-bevel w-full max-w-sm p-6 text-center" role="status" aria-live="polite">
+          <span className="loading loading-spinner loading-lg text-primary" aria-label="Loading invitation" />
+          <p className="mt-4 text-sm text-base-content/70">Loading invitation…</p>
+        </div>
+      </StandaloneHouseholdShell>
     )
   }
 
-  if (!token || !isAuthenticated) return null
+  if (!token || !preview || !isAuthenticated) return null
 
   return (
-    <div className="min-h-screen bg-base-100 flex items-start justify-center pt-16 px-4">
-      <div className="w-full max-w-sm">
+    <StandaloneHouseholdShell background="bg-invite-accept" align="right" labelledBy="invite-heading">
+      <div className="w-full max-w-md">
         <div className="glass-card card-bevel p-6 space-y-5">
-          <div className="text-center">
-            <p className="text-4xl mb-2" aria-hidden="true">🏠</p>
-            <h1 className="text-xl font-display text-amber-100">Household Invitation</h1>
+          <div className="space-y-2 text-center">
+            <p className="text-xs uppercase tracking-[0.22em] text-amber-300/70">Household invitation</p>
+            <h1 id="invite-heading" className="text-2xl font-display text-amber-100">Join {preview.household_name}</h1>
+            <p className="text-sm text-base-content/75">
+              {preview.inviter_display_name} invited you to join as a <span className="text-amber-200">{preview.invited_role}</span>.
+            </p>
+            <p className="text-xs text-base-content/55">Expires {formatExpiry(preview.expires_at)}</p>
           </div>
 
-          {inviteInfo ? (
-            <div className="space-y-2 text-sm text-center">
-              <p className="text-base-content/80">
-                <span className="text-amber-200">{inviteInfo.inviter_display_name}</span> invited you to join
-              </p>
-              <p className="text-amber-100 text-lg font-medium">{inviteInfo.household_name}</p>
-              <p className="text-base-content/60">
-                You'll join as a <span className="text-amber-200">{inviteInfo.role}</span>.
-              </p>
+          {declined ? (
+            <div className="alert alert-info card-bevel text-sm" role="status">
+              <span>Invitation dismissed. The link was not consumed; you can revisit it before expiry if you change your mind.</span>
             </div>
-          ) : (
-            <p className="text-center text-sm text-base-content/70">
-              Accept this invitation to join the household.
-            </p>
-          )}
+          ) : null}
 
-          {error && (
-            <p className="text-error text-sm text-center" role="alert">{error}</p>
-          )}
+          {error ? <p className="text-error text-sm text-center" role="alert">{error}</p> : null}
 
-          <button
-            type="button"
-            onClick={() => { void handleAccept() }}
-            disabled={isAccepting}
-            className="btn btn-primary w-full btn-bevel"
-          >
-            {isAccepting ? (
-              <>
-                <span className="loading loading-spinner loading-sm" />
-                Joining...
-              </>
-            ) : (
-              'Accept invitation'
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="btn btn-ghost btn-sm w-full"
-          >
-            Decline
-          </button>
+          <div className="grid gap-2">
+            <button
+              type="button"
+              onClick={() => { void handleAccept() }}
+              disabled={isAccepting || declined}
+              className="btn btn-primary w-full btn-bevel"
+            >
+              {isAccepting ? 'Joining…' : 'Accept invitation'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { void handleDecline() }}
+              disabled={isDeclining || declined}
+              className="btn btn-ghost btn-sm w-full"
+            >
+              {isDeclining ? 'Dismissing…' : 'Decline without accepting'}
+            </button>
+            <Link to="/" className="btn btn-outline btn-sm btn-bevel w-full no-underline">
+              Go to dashboard
+            </Link>
+          </div>
         </div>
       </div>
-    </div>
+    </StandaloneHouseholdShell>
   )
 }

@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createMaintenance } from '../api/maintenance'
 import { getActionTypes } from '../api/hardware'
 import type { HardwareItem } from '../types/entities'
+import { useHouseholdQueryScope } from '../contexts/AuthContext'
+import { householdKeys } from '../api/queryKeys'
 
 interface LogMaintenanceModalProps {
   hardware: HardwareItem
@@ -16,6 +18,7 @@ function todayISO(): string {
 
 export default function LogMaintenanceModal({ hardware, onClose, onSaved }: LogMaintenanceModalProps) {
   const queryClient = useQueryClient()
+  const activeHouseholdId = useHouseholdQueryScope()
   const today = todayISO()
 
   const [date, setDate] = useState(today)
@@ -25,7 +28,7 @@ export default function LogMaintenanceModal({ hardware, onClose, onSaved }: LogM
 
   // Load action types from API — keyed globally so result is shared/cached
   const { data: actionTypesData, isLoading: actionTypesLoading, isError: actionTypesError } = useQuery({
-    queryKey: ['actionTypes'],
+    queryKey: householdKeys.actionTypes(activeHouseholdId),
     queryFn: getActionTypes,
     staleTime: Infinity,   // action types are static — no need to re-fetch
   })
@@ -41,7 +44,7 @@ export default function LogMaintenanceModal({ hardware, onClose, onSaved }: LogM
         notes: notes.trim() || undefined,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['hardware', hardware.hardware_id] })
+      queryClient.invalidateQueries({ queryKey: householdKeys.hardwareDetail(activeHouseholdId, hardware.hardware_id) })
       onSaved()
       onClose()
     },

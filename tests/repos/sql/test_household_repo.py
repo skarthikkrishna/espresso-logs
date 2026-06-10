@@ -327,6 +327,7 @@ async def test_revoke_previous_guest_tokens(db_session: AsyncSession) -> None:
         created_by=user_id,
         token_hash="gt_hash_01",
     )
+    await repo.revoke_previous_guest_tokens(db_session, household.id)
     await repo.create_guest_token(
         db_session,
         household_id=household.id,
@@ -345,7 +346,7 @@ async def test_revoke_previous_guest_tokens(db_session: AsyncSession) -> None:
 
 
 @pytest.mark.asyncio(loop_scope="function")
-async def test_decline_and_resend_invitation_update_status(db_session: AsyncSession) -> None:
+async def test_decline_noops_and_resend_rotates_token(db_session: AsyncSession) -> None:
     user_id = await _make_user(db_session, "decline_admin")
     repo = HouseholdRepo()
     household = await repo.create_household(db_session, name="DeclineHH", created_by=user_id)
@@ -365,15 +366,23 @@ async def test_decline_and_resend_invitation_update_status(db_session: AsyncSess
     await db_session.commit()
     declined = await repo.get_invitation_by_token_hash(db_session, "decline-token-hash")
     assert declined is not None
-    assert declined.status == "declined"
+    assert declined.status == "pending"
 
-    resent = await repo.resend_invitation(db_session, invitation.id)
+    resent = await repo.resend_invitation(
+        db_session,
+        invitation.id,
+        token_hash="resent-token-hash",
+        display_token_ciphertext="encrypted-display-placeholder",
+    )
     await db_session.commit()
     assert resent.status == "pending"
+    assert resent.token_hash == "resent-token-hash"
+    assert resent.display_token_ciphertext == "encrypted-display-placeholder"
+    assert await repo.get_invitation_by_token_hash(db_session, "decline-token-hash") is None
 
     await repo.revoke_invitation(db_session, invitation.id)
     await db_session.commit()
-    revoked = await repo.get_invitation_by_token_hash(db_session, "decline-token-hash")
+    revoked = await repo.get_invitation_by_token_hash(db_session, "resent-token-hash")
     assert revoked is not None
     assert revoked.status == "revoked"
     assert revoked.revoked_at is not None
@@ -402,7 +411,12 @@ async def test_resend_invitation_rejects_accepted_tokens(db_session: AsyncSessio
     await db_session.commit()
 
     with pytest.raises(HTTPException) as exc_info:
-        await repo.resend_invitation(db_session, invitation.id)
+        await repo.resend_invitation(
+            db_session,
+            invitation.id,
+            token_hash="new-accepted-token",
+            display_token_ciphertext=None,
+        )
 
     assert exc_info.value.status_code == 409
 

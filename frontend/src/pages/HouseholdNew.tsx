@@ -11,21 +11,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { apiClient } from '../api/client'
 import { getMe } from '../api/auth'
+import { createHousehold } from '../api/households'
 import { useAuth } from '../contexts/AuthContext'
+import StandaloneHouseholdShell from '../components/StandaloneHouseholdShell'
 
 function validateName(value: string): string | null {
   if (!value.trim()) return 'Household name is required'
   if (value.trim().length > 64) return 'Name must be 64 characters or less'
   return null
-}
-
-interface CreateHouseholdResponse {
-  id: string
-  name: string
-  created_at: string
-  role: 'admin'
 }
 
 export default function HouseholdNew() {
@@ -51,9 +45,7 @@ export default function HouseholdNew() {
     setIsSubmitting(true)
 
     try {
-      await apiClient.post<CreateHouseholdResponse>('/households', {
-        name: name.trim(),
-      })
+      await createHousehold(name.trim())
       const userData = await getMe()
       setUser(userData)
       navigate('/', { replace: true })
@@ -75,12 +67,12 @@ export default function HouseholdNew() {
   }
 
   return (
-    <div className="min-h-screen bg-base-100 flex items-start justify-center pt-16 px-4">
+    <StandaloneHouseholdShell background="bg-household-onboarding" align="center" labelledBy="household-new-heading">
       <div className="w-full max-w-sm">
         <div className="glass-card card-bevel p-6 space-y-5">
           <div className="text-center">
-            <p className="text-4xl mb-2" aria-hidden="true">🏠</p>
-            <h1 className="text-xl font-display text-amber-100">Create a household</h1>
+            <p className="text-xs uppercase tracking-[0.22em] text-amber-300/70">New workspace</p>
+            <h1 id="household-new-heading" className="text-xl font-display text-amber-100">Create a household</h1>
             <p className="text-base-content/60 text-sm mt-1">
               Give your household a name to get started.
             </p>
@@ -142,6 +134,6 @@ export default function HouseholdNew() {
           </button>
         </div>
       </div>
-    </div>
+    </StandaloneHouseholdShell>
   )
 }
