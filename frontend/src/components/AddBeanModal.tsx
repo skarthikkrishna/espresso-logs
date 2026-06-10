@@ -149,7 +149,7 @@ export default function AddBeanModal({ onClose, onSaved }: AddBeanModalProps) {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://..."
-              className="input input-bordered input-sm flex-1 bg-stone-800 border-amber-900/40 text-amber-100 input-styled"
+              className="input input-bordered input-sm flex-1 input-styled"
             />
             <button
               onClick={handleInfer}
@@ -189,7 +189,7 @@ export default function AddBeanModal({ onClose, onSaved }: AddBeanModalProps) {
                 value={roaster}
                 onChange={(e) => { setRoaster(e.target.value); if (touched.roaster) setFieldErrors(prev => ({ ...prev, roaster: e.target.value.trim() ? undefined : 'Roaster is required' })) }}
                 onBlur={() => { setTouched(prev => ({ ...prev, roaster: true })); setFieldErrors(prev => ({ ...prev, roaster: roaster.trim() ? undefined : 'Roaster is required' })) }}
-                className={`input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100 input-styled${touched.roaster && fieldErrors.roaster ? ' border-error' : ''}`}
+                className={`input input-bordered input-sm w-full input-styled${touched.roaster && fieldErrors.roaster ? ' border-error' : ''}`}
               />
               {touched.roaster && fieldErrors.roaster && (
                 <p className="text-xs text-error mt-1">{fieldErrors.roaster}</p>
@@ -205,7 +205,7 @@ export default function AddBeanModal({ onClose, onSaved }: AddBeanModalProps) {
                 value={beanName}
                 onChange={(e) => { setBeanName(e.target.value); if (touched.beanName) setFieldErrors(prev => ({ ...prev, beanName: e.target.value.trim() ? undefined : 'Bean name is required' })) }}
                 onBlur={() => { setTouched(prev => ({ ...prev, beanName: true })); setFieldErrors(prev => ({ ...prev, beanName: beanName.trim() ? undefined : 'Bean name is required' })) }}
-                className={`input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100 input-styled${touched.beanName && fieldErrors.beanName ? ' border-error' : ''}`}
+                className={`input input-bordered input-sm w-full input-styled${touched.beanName && fieldErrors.beanName ? ' border-error' : ''}`}
               />
               {touched.beanName && fieldErrors.beanName && (
                 <p className="text-xs text-error mt-1">{fieldErrors.beanName}</p>
@@ -220,7 +220,7 @@ export default function AddBeanModal({ onClose, onSaved }: AddBeanModalProps) {
                 value={roastLevel}
                 onChange={(e) => { setRoastLevel(e.target.value); setTouched(prev => ({ ...prev, roastLevel: true })); setFieldErrors(prev => ({ ...prev, roastLevel: e.target.value ? undefined : 'Roast level is required' })) }}
                 onBlur={() => { setTouched(prev => ({ ...prev, roastLevel: true })); setFieldErrors(prev => ({ ...prev, roastLevel: roastLevel ? undefined : 'Roast level is required' })) }}
-                className={`select select-bordered select-sm w-full bg-stone-800 border-amber-900/40 text-amber-100 input-styled${touched.roastLevel && fieldErrors.roastLevel ? ' border-error' : ''}`}
+                className={`select select-bordered select-sm w-full input-styled${touched.roastLevel && fieldErrors.roastLevel ? ' border-error' : ''}`}
               >
                 <option value="">Select...</option>
                 {ROAST_LEVELS.map((r) => (
@@ -240,7 +240,7 @@ export default function AddBeanModal({ onClose, onSaved }: AddBeanModalProps) {
                 type="file"
                 accept="image/*"
                 disabled={saving || Boolean(createdItem)}
-                className="file-input file-input-bordered file-input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
+                className="file-input file-input-bordered file-input-sm w-full input-styled"
                 onChange={(e) => {
                   setSelectedImage(e.target.files?.[0] ?? null)
                   setImageUploadError(null)
@@ -284,7 +284,7 @@ export default function AddBeanModal({ onClose, onSaved }: AddBeanModalProps) {
             <button
               onClick={handleSave}
               disabled={saving || Boolean(createdItem)}
-              className="btn btn-sm bg-amber-600 hover:bg-amber-500 border-none text-white btn-bevel"
+              className="btn btn-sm btn-primary btn-bevel"
             >
               {saving && <span className="loading loading-spinner loading-xs mr-2" />}
               {saveButtonLabel}

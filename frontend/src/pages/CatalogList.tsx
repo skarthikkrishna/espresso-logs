@@ -42,7 +42,7 @@ export default function CatalogList() {
       <h1 className="font-display text-3xl md:text-4xl font-bold text-white/80 mb-4">Catalog</h1>
 
       {data?.length === 0 ? (
-        <div className="glass-card p-8 text-center">
+        <div className="glass-card card-bevel p-8 text-center">
           <p className="text-2xl mb-2">☕</p>
           <p className="text-amber-200 font-medium">No beans in catalog yet</p>
           <p className="text-amber-400/70 text-sm mt-1">Tap + to add your first coffee</p>
@@ -52,7 +52,7 @@ export default function CatalogList() {
           <input
             type="text"
             placeholder="Search roaster or bean…"
-            className="input input-bordered input-styled w-full max-w-sm mb-6 bg-amber-950/60 border-amber-700/40 text-amber-100 placeholder-amber-200/40"
+            className="input input-bordered input-styled w-full max-w-sm mb-6 placeholder-amber-200/40"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />

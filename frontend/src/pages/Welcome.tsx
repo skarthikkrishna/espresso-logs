@@ -89,9 +89,9 @@ export default function Welcome() {
             <>
               <div className="text-center space-y-3">
                 <p className="text-xs uppercase tracking-[0.22em] text-amber-300/70">Household setup</p>
-                <h1 id="welcome-heading" className="text-2xl font-display text-base-content">Welcome to Coffee Tracker</h1>
+                <h1 id="welcome-heading" className="text-2xl font-display text-base-content">Welcome to Kaapi Kadai</h1>
                 <p className="text-base-content/80 text-sm">
-                  Coffee Tracker is a household app. You&apos;ll need to either create a new household or accept an invitation from a friend.
+                  Kaapi Kadai is a household app. You&apos;ll need to either create a new household or accept an invitation from a friend.
                 </p>
               </div>
 

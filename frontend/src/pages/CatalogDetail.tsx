@@ -224,7 +224,7 @@ export default function CatalogDetail() {
                   type="text"
                   value={editRoaster}
                   onChange={(e) => setEditRoaster(e.target.value)}
-                  className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
+                  className="input input-bordered input-sm w-full input-styled"
                 />
               </div>
               <div>
@@ -234,7 +234,7 @@ export default function CatalogDetail() {
                   type="text"
                   value={editBeanName}
                   onChange={(e) => setEditBeanName(e.target.value)}
-                  className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
+                  className="input input-bordered input-sm w-full input-styled"
                 />
               </div>
               <div>
@@ -243,7 +243,7 @@ export default function CatalogDetail() {
                   id="catalog-edit-roast-level"
                   value={editRoastLevel}
                   onChange={(e) => setEditRoastLevel(e.target.value)}
-                  className="select select-bordered select-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
+                  className="select select-bordered select-sm w-full input-styled"
                 >
                   <option value="">Select…</option>
                   {ROAST_LEVELS.map((r) => (
@@ -259,7 +259,7 @@ export default function CatalogDetail() {
                   value={editProductUrl}
                   onChange={(e) => setEditProductUrl(e.target.value)}
                   placeholder="https://..."
-                  className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
+                  className="input input-bordered input-sm w-full input-styled"
                 />
               </div>
               {imageError && <p className="text-xs text-red-400">{imageError}</p>}
@@ -293,7 +293,7 @@ export default function CatalogDetail() {
                       setEditSaving(false)
                     }
                   }}
-                  className="btn btn-xs bg-amber-600 hover:bg-amber-500 border-none text-white btn-bevel"
+                  className="btn btn-xs btn-primary btn-bevel"
                 >
                   {editSaving ? <span className="loading loading-spinner loading-xs" /> : 'Save'}
                 </button>
@@ -341,7 +341,7 @@ export default function CatalogDetail() {
           <h2 className="text-lg font-display text-amber-200">Bags</h2>
           <button
             onClick={openAddBagForm}
-            className="btn btn-xs bg-amber-700 hover:bg-amber-600 border-none text-white overflow-hidden btn-bevel"
+            className="btn btn-xs btn-primary btn-bevel"
           >
             + Add bag
           </button>
@@ -357,7 +357,7 @@ export default function CatalogDetail() {
                   type="date"
                   value={bagRoastDate}
                   onChange={(e) => setBagRoastDate(e.target.value)}
-                  className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
+                  className="input input-bordered input-sm w-full input-styled"
                 />
               </div>
               {lockedCatalogRoast ? (
@@ -370,7 +370,7 @@ export default function CatalogDetail() {
                     readOnly
                     disabled
                     aria-describedby="add-bag-roast-level-locked-note"
-                    className="input input-bordered input-sm w-full bg-amber-950/50 border-amber-700/30 text-amber-100"
+                    className="input input-bordered input-sm w-full input-styled opacity-60"
                   />
                   <p id="add-bag-roast-level-locked-note" className="text-xs text-amber-200/60 mt-1">
                     Roast level set by catalog: {lockedCatalogRoast}
@@ -384,7 +384,7 @@ export default function CatalogDetail() {
                     value={bagRoastLevel}
                     onChange={(e) => setBagRoastLevel(e.target.value)}
                     required
-                    className="select select-bordered select-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
+                    className="select select-bordered select-sm w-full input-styled"
                   >
                     <option value="">Select…</option>
                     {ROAST_LEVELS.map((r) => (
@@ -420,7 +420,7 @@ export default function CatalogDetail() {
                     setBagSaving(false)
                   }
                 }}
-              className="btn btn-xs bg-amber-600 hover:bg-amber-500 border-none text-white btn-bevel"
+              className="btn btn-xs btn-primary btn-bevel"
               >
                 {bagSaving ? <span className="loading loading-spinner loading-xs" /> : 'Save bag'}
               </button>

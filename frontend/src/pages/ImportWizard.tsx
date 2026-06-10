@@ -1,6 +1,15 @@
 import { useState } from 'react'
 import { createCatalogItem } from '../api/catalog'
 import { submitShot } from '../api/brewLog'
+import {
+  Button,
+  EmptyState,
+  FormField,
+  GlassCard,
+  Input,
+  PageHeader,
+  SectionHeading,
+} from '../components/ui'
 
 type Step = 1 | 2 | 3
 
@@ -93,113 +102,193 @@ export default function ImportWizard() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-    <div className="p-4 md:p-6 max-w-2xl mx-auto w-full">
-      <h1 className="font-display text-3xl md:text-4xl font-bold text-white/80 mb-4">Import</h1>
+    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
+      <div className="mx-auto w-full max-w-3xl space-y-6 p-4 md:p-6">
+        <PageHeader
+          title="Import"
+          subtitle="Catalog and brew logs"
+        />
 
-      {/* Steps indicator */}
-      <ul className="steps steps-horizontal w-full mb-8 text-amber-200/60">
-        <li className={`step ${step >= 1 ? 'step-primary' : ''}`}>Upload</li>
-        <li className={`step ${step >= 2 ? 'step-primary' : ''}`}>Preview</li>
-        <li className={`step ${step >= 3 ? 'step-primary' : ''}`}>Done</li>
-      </ul>
+        <GlassCard padding="lg" className="space-y-4">
+          <SectionHeading title="What your CSV should include" />
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2 rounded-2xl border border-amber-500/15 bg-amber-950/30 p-4">
+              <h3 className="text-base font-semibold text-amber-100">Catalog CSV</h3>
+              <p className="text-sm leading-6 text-amber-100/80">
+                Include the columns <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">roaster</code>,{' '}
+                <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">bean_name</code>, and{' '}
+                <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">roast_level</code>.
+                You can also add{' '}
+                <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">product_url</code>.
+              </p>
+            </div>
+            <div className="space-y-2 rounded-2xl border border-amber-500/15 bg-amber-950/30 p-4">
+              <h3 className="text-base font-semibold text-amber-100">Brew log CSV</h3>
+              <p className="text-sm leading-6 text-amber-100/80">
+                Include <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">bag_display</code> or{' '}
+                <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">bag_id</code>, plus{' '}
+                <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">date</code>. Optional fields include{' '}
+                <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">dose_in_g</code>,{' '}
+                <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">yield_out_g</code>,{' '}
+                <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">time_sec</code>,{' '}
+                <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">grind_setting</code>, and{' '}
+                <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">shot_eligibility</code>.
+              </p>
+            </div>
+          </div>
+        </GlassCard>
 
-      {/* Step 1 — Upload */}
-      {step === 1 && (
-        <div className="glass-card p-6 space-y-4">
-          <p className="text-amber-200/70 text-sm">
-            Upload a CSV file with catalog items or brew log entries.
-          </p>
-          <input
-            type="file"
-            accept=".csv"
-            className="file-input file-input-bordered w-full bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
-            onChange={handleFile}
-          />
-          <button
-            className="btn btn-primary btn-bevel w-full"
-            disabled={rows.length === 0}
-            onClick={() => setStep(2)}
-          >
-            {rows.length > 0 ? `Preview ${rows.length} rows` : 'Preview'}
-          </button>
-        </div>
-      )}
+        <GlassCard padding="md">
+          <ul className="steps steps-horizontal w-full text-sm text-amber-200/70">
+            <li className={`step ${step >= 1 ? 'step-primary' : ''}`}>Upload</li>
+            <li className={`step ${step >= 2 ? 'step-primary' : ''}`}>Preview</li>
+            <li className={`step ${step >= 3 ? 'step-primary' : ''}`}>Done</li>
+          </ul>
+        </GlassCard>
 
-      {/* Step 2 — Preview */}
-      {step === 2 && (
-        <div className="space-y-4">
-          <div className="overflow-x-auto">
-            <table className="table table-sm text-amber-100 w-full">
-              <thead className="text-amber-300/70 text-xs">
-                <tr>
-                  <th>#</th>
-                  <th>Type</th>
-                  <th>Summary</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, i) => (
-                  <tr key={i} className="border-amber-700/20">
-                    <td className="text-xs text-amber-200/50">{i + 1}</td>
-                    <td className="text-xs">{row.type}</td>
-                    <td className="text-xs truncate max-w-xs">
-                      {row.raw.roaster
-                        ? `${row.raw.roaster} — ${row.raw.bean_name}`
-                        : row.raw.bag_display || Object.values(row.raw).slice(0, 2).join(', ')}
-                    </td>
-                    <td>
-                      {row.errors.length ? (
-                        <span className="badge badge-sm badge-error text-xs">{row.errors[0]}</span>
-                      ) : (
-                        <span className="badge badge-sm badge-success text-xs">OK</span>
-                      )}
-                    </td>
+        {step === 1 && (
+          <GlassCard padding="lg" className="space-y-6">
+            <SectionHeading title="Upload file" />
+            <p className="text-sm leading-6 text-amber-100/80">
+              Choose a CSV export for catalog items or brew log entries. Your file is parsed first so you can preview rows and spot issues before anything is imported.
+            </p>
+
+            <FormField
+              label="CSV file"
+              htmlFor="import-csv"
+              required
+              hint="Accepts .csv files"
+            >
+              <Input
+                id="import-csv"
+                type="file"
+                accept=".csv"
+                onChange={handleFile}
+                className="h-auto py-3 file:mr-4 file:cursor-pointer file:rounded-xl file:border-0 file:bg-amber-500 file:px-4 file:py-2 file:font-semibold file:text-amber-950"
+              />
+            </FormField>
+
+            {rows.length === 0 ? (
+              <EmptyState
+                icon={<span className="text-3xl">📄</span>}
+                title="Upload a CSV to unlock preview"
+                description="The Preview step becomes available after we detect a header row and at least one data row in your file."
+              />
+            ) : (
+              <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+                {rows.length} row{rows.length !== 1 ? 's' : ''} ready to review before import.
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Button
+                variant="primary"
+                fullWidth
+                disabled={rows.length === 0}
+                onClick={() => setStep(2)}
+              >
+                {rows.length > 0 ? `Preview ${rows.length} rows` : 'Preview'}
+              </Button>
+              <p className="text-center text-sm text-amber-200/70">
+                {rows.length > 0
+                  ? 'Preview each row before sending valid entries to your account.'
+                  : 'Preview stays disabled until you select a CSV with data.'}
+              </p>
+            </div>
+          </GlassCard>
+        )}
+
+        {step === 2 && (
+          <GlassCard padding="lg" className="space-y-6">
+            <SectionHeading
+              title="Preview rows"
+              actions={(
+                <p className="text-sm text-amber-200/70">
+                  {rows.filter((row) => row.errors.length === 0).length} valid • {rows.filter((row) => row.errors.length > 0).length} with issues
+                </p>
+              )}
+            />
+
+            <div className="overflow-x-auto rounded-2xl border border-amber-700/20">
+              <table className="table w-full text-sm text-amber-100">
+                <thead className="text-sm text-amber-300/80">
+                  <tr>
+                    <th>#</th>
+                    <th>Type</th>
+                    <th>Summary</th>
+                    <th>Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="flex gap-3">
-            <button
-              className="btn btn-ghost border-amber-600/40 text-amber-400 btn-bevel"
-              onClick={() => setStep(1)}
-            >
-              Back
-            </button>
-            <button
-              className="btn btn-primary btn-bevel flex-1"
-              disabled={importing || rows.filter((r) => r.errors.length === 0).length === 0}
-              onClick={handleImport}
-            >
-              {importing
-                ? 'Importing…'
-                : `Import ${rows.filter((r) => r.errors.length === 0).length} valid rows`}
-            </button>
-          </div>
-        </div>
-      )}
+                </thead>
+                <tbody>
+                  {rows.map((row, i) => (
+                    <tr key={i} className="border-amber-700/20">
+                      <td className="text-sm text-amber-200/60">{i + 1}</td>
+                      <td className="text-sm capitalize">{row.type}</td>
+                      <td className="max-w-xs truncate text-sm">
+                        {row.raw.roaster
+                          ? `${row.raw.roaster} — ${row.raw.bean_name}`
+                          : row.raw.bag_display || Object.values(row.raw).slice(0, 2).join(', ')}
+                      </td>
+                      <td>
+                        {row.errors.length ? (
+                          <span className="inline-flex rounded-full bg-red-500/15 px-3 py-1 text-sm font-medium text-red-200">
+                            {row.errors[0]}
+                          </span>
+                        ) : (
+                          <span className="inline-flex rounded-full bg-emerald-500/15 px-3 py-1 text-sm font-medium text-emerald-200">
+                            OK
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-      {/* Step 3 — Done */}
-      {step === 3 && (
-        <div className="glass-card p-6 space-y-4 text-center">
-          <p className="text-5xl">✓</p>
-          <p className="text-lg font-display text-amber-100">Import complete</p>
-          <p className="text-sm text-amber-200/70">
-            {results.success} row{results.success !== 1 ? 's' : ''} imported successfully
-            {results.errors > 0 && `, ${results.errors} failed`}.
-          </p>
-          <button
-            className="btn btn-primary btn-bevel"
-            onClick={() => { setStep(1); setRows([]) }}
-          >
-            Import more
-          </button>
-        </div>
-      )}
-    </div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button
+                variant="ghost"
+                className="w-full sm:w-auto"
+                onClick={() => setStep(1)}
+              >
+                Back
+              </Button>
+              <Button
+                variant="primary"
+                className="w-full sm:flex-1"
+                disabled={importing || rows.filter((r) => r.errors.length === 0).length === 0}
+                loading={importing}
+                loadingText="Importing…"
+                onClick={handleImport}
+              >
+                {`Import ${rows.filter((r) => r.errors.length === 0).length} valid rows`}
+              </Button>
+            </div>
+
+            <p className="text-sm leading-6 text-amber-200/70">
+              Rows with validation issues will be skipped during import.
+            </p>
+          </GlassCard>
+        )}
+
+        {step === 3 && (
+          <GlassCard padding="lg" className="space-y-4 text-center">
+            <p className="text-5xl">✓</p>
+            <p className="font-display text-2xl text-amber-100">Import complete</p>
+            <p className="text-sm leading-6 text-amber-200/80">
+              {results.success} row{results.success !== 1 ? 's' : ''} imported successfully
+              {results.errors > 0 && `, ${results.errors} failed`}.
+            </p>
+            <Button
+              variant="primary"
+              onClick={() => { setStep(1); setRows([]) }}
+            >
+              Import more
+            </Button>
+          </GlassCard>
+        )}
+      </div>
     </div>
   )
 }
-

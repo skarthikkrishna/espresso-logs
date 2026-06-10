@@ -1,5 +1,14 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
 
+// T019 CONFIRMATION (Quinn, spec-041):
+// The `expectTokenizedButton` helper in this file asserts on boxShadow, borderRadius,
+// and -webkit-tap-highlight-color ONLY — it does NOT assert on backgroundColor.
+// Therefore the spec-041 T001 change (--color-primary: #d97706 → #b45309) requires
+// NO updates to any assertion in this file. Confirmed: grep for "backgroundColor" returns
+// only the glass-card and input assertions (lines ~126, ~144, ~202, ~211), never btn-primary.
+// This file requires no spec-041 edits beyond the already-present heading text rename
+// ('Welcome to Coffee Tracker' → 'Welcome to Kaapi Kadai'). — DO NOT REMOVE ANY ASSERTION.
+
 test.use({ screenshot: 'off', serviceWorkers: 'block', trace: 'off', video: 'off' })
 
 type MembershipRole = 'admin' | 'member'
@@ -388,7 +397,7 @@ test.describe('spec-039 visual contracts — auth and household surfaces', () =>
     await mockAuthenticated(page, ZERO_MEMBERSHIPS)
 
     await page.goto('/welcome')
-    await expect(page.getByRole('heading', { name: 'Welcome to Coffee Tracker' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Welcome to Kaapi Kadai' })).toBeVisible()
     await expectTokenizedCard(page)
     await expectTokenizedButton(page, 'button.btn-primary.btn-bevel')
     await expectTokenizedButton(page, 'button.btn-outline.btn-bevel')

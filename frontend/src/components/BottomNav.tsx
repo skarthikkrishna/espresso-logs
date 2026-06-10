@@ -105,7 +105,7 @@ export default function BottomNav() {
       >
         <div className="space-y-2 household-bottom-safe">
           <div className="rounded-xl border border-amber-900/30 p-3">
-            <p className="truncate text-sm font-medium text-amber-100">{user?.display_name ?? user?.username ?? 'Coffee Tracker'}</p>
+            <p className="truncate text-sm font-medium text-amber-100">{user?.display_name ?? user?.username ?? 'Kaapi Kadai'}</p>
             <p className="text-xs text-base-content/55">{user?.email ?? 'Username/password account'}</p>
           </div>
           <Link to="/profile" className="btn btn-outline btn-bevel w-full no-underline" onClick={() => setAccountOpen(false)}>

@@ -5,6 +5,7 @@ import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-quer
 import { brewLogDetailQueryKey, listBrewLog, getBrewLogDetail } from '../api/brewLog'
 import { brewLogListQueryKey } from '../api/queryKeys'
 import LoadingSpinner from '../components/LoadingSpinner'
+import { Button, EmptyState, GlassCard, PageHeader } from '../components/ui'
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
 
 export default function BrewLogList() {
@@ -45,7 +46,7 @@ export default function BrewLogList() {
 
   return (
     <div className="p-4 md:p-6 relative">
-      <h1 className="font-display text-3xl md:text-4xl font-bold text-white/80 mb-4">Brew log</h1>
+      <PageHeader title="Brew log" />
       {toast && createPortal(
         <div
           className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-amber-700 text-white text-sm px-4 py-2 rounded-full shadow-lg z-50"
@@ -62,10 +63,14 @@ export default function BrewLogList() {
         </div>
       )}
       {!data?.items?.length ? (
-        <p className="text-amber-200/60 text-sm">No shots logged yet.</p>
+        <EmptyState
+          icon={<span aria-hidden="true" className="text-3xl">☕</span>}
+          title="No shots logged yet."
+          description="Your recent brews will appear here once you start logging shots."
+        />
       ) : (
         <>
-          <div data-testid="brew-log-list" className="space-y-2">
+          <div data-testid="brew-log-list" className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {data.items.map((entry) => (
               <Link
                 data-testid="brew-log-entry"
@@ -78,42 +83,84 @@ export default function BrewLogList() {
                     staleTime: 60_000,
                   })
                 }}
-                className="frosted-brew-card hover:border-amber-500/40 transition-colors"
+                className="block h-full"
               >
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm md:text-base text-amber-100 truncate">{entry.bag_display}</p>
-                  <p className="text-xs md:text-sm text-amber-200/50">{entry.date}</p>
-                </div>
-                {entry.dose_in_g != null && entry.yield_out_g != null && (
-                  <span className="text-xs md:text-sm text-amber-300 font-mono ml-3 shrink-0">
-                    {entry.dose_in_g}g → {entry.yield_out_g}g
-                  </span>
-                )}
+                <GlassCard
+                  padding="sm"
+                  interactive
+                  className={`frosted-brew-card !flex-col !items-start !p-3 md:!p-3 h-full gap-3 border-l-4 ${
+                    entry.shot_eligibility === 'Good Espresso' || entry.shot_eligibility === 'God Shot'
+                      ? 'border-l-amber-400/70'
+                      : 'border-l-white/10'
+                  }`}
+                >
+                  <div className="flex w-full items-start justify-between gap-3">
+                    <div className="min-w-0 space-y-1">
+                      <p className="text-xs uppercase tracking-[0.22em] text-amber-300/50">{entry.date}</p>
+                      <p className="text-sm md:text-base leading-snug text-amber-100 break-words">{entry.bag_display}</p>
+                    </div>
+                    {entry.shot_eligibility && (
+                      <span className="badge badge-sm shrink-0 border border-amber-400/30 bg-amber-400/10 text-amber-200">
+                        {entry.shot_eligibility}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex w-full flex-wrap gap-2">
+                    {entry.dose_in_g != null && entry.yield_out_g != null && (
+                      <span className="rounded-full border border-white/10 bg-black/10 px-2.5 py-1 text-xs font-mono text-amber-300">
+                        {entry.dose_in_g}g → {entry.yield_out_g}g
+                      </span>
+                    )}
+                    {entry.time_sec != null && (
+                      <span className="rounded-full border border-white/10 bg-black/10 px-2.5 py-1 text-xs text-amber-200/80">
+                        {entry.time_sec}s
+                      </span>
+                    )}
+                    {entry.grind_setting && (
+                      <span className="rounded-full border border-white/10 bg-black/10 px-2.5 py-1 text-xs text-amber-200/80">
+                        Grind {entry.grind_setting}
+                      </span>
+                    )}
+                  </div>
+
+                  {(entry.machine_name || entry.grinder_name || entry.basket_name) && (
+                    <div className="flex w-full flex-wrap gap-x-3 gap-y-1 text-xs text-amber-200/60">
+                      {entry.machine_name && <span>Machine: {entry.machine_name}</span>}
+                      {entry.grinder_name && <span>Grinder: {entry.grinder_name}</span>}
+                      {entry.basket_name && <span>Basket: {entry.basket_name}</span>}
+                    </div>
+                  )}
+                </GlassCard>
               </Link>
             ))}
           </div>
           <nav aria-label="Brew log pagination" className="flex justify-center mt-4">
             <div className="join">
-              <button
-                className="join-item btn btn-sm"
+              <Button
+                variant="ghost"
+                size="sm"
+                className="join-item"
                 disabled={page <= 1 || isPlaceholderData}
                 onClick={() => setSearchParams({ page: String(page - 1) })}
               >
                 Previous
-              </button>
+              </Button>
               <span
                 className="join-item btn btn-sm btn-active"
                 aria-current="page"
               >
                 {page}
               </span>
-              <button
-                className="join-item btn btn-sm"
+              <Button
+                variant="ghost"
+                size="sm"
+                className="join-item"
                 disabled={!data?.has_next || isPlaceholderData}
                 onClick={() => setSearchParams({ page: String(page + 1) })}
               >
                 Next
-              </button>
+              </Button>
             </div>
           </nav>
         </>
@@ -122,15 +169,20 @@ export default function BrewLogList() {
       {/* Add shot FAB — portalled to document.body so backdrop-filter on #main-content
           does not create a new containing block and break position:fixed */}
       {createPortal(
-        <button
+        <Button
           onClick={() => navigate('/brew-log/add')}
-          className="btn btn-circle btn-lg btn-primary btn-bevel fixed bottom-20 right-4 md:bottom-6 z-50"
+          className="btn-circle fixed bottom-20 right-4 md:bottom-6 z-50"
+          size="lg"
+          variant="primary"
           aria-label="Add shot"
+          icon={(
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          )}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-        </button>,
+          <span className="sr-only">Add shot</span>
+        </Button>,
         document.body
       )}
     </div>

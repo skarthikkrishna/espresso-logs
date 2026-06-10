@@ -56,7 +56,7 @@ export default function EditHardwareModal({ hardware, onClose, onSaved }: EditHa
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100 input-styled"
+              className="input input-bordered input-sm w-full input-styled"
             />
           </div>
         </div>
@@ -73,7 +73,7 @@ export default function EditHardwareModal({ hardware, onClose, onSaved }: EditHa
             <button
               onClick={() => mutate()}
               disabled={!canSave}
-              className="btn btn-sm bg-amber-600 hover:bg-amber-500 border-none text-white btn-bevel"
+              className="btn btn-sm btn-primary btn-bevel"
             >
               {isPending
                 ? <span className="loading loading-spinner loading-xs" />

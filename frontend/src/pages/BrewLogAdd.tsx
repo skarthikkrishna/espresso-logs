@@ -11,6 +11,7 @@ import CompassChart from '../components/CompassChart'
 import { getBasketDefaults } from '../utils/basketDefaults'
 import { deriveZoneBoundaries } from '../utils/zoneBoundaries'
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
+import { Button, FormField, Input, PageHeader, Select, Textarea } from '../components/ui'
 
 export default function BrewLogAdd() {
   const navigate = useNavigate()
@@ -215,29 +216,27 @@ export default function BrewLogAdd() {
       <div className="glass-card card-bevel p-6 text-center">
         <p className="text-amber-200 font-medium">Couldn't load your beans</p>
         <p className="text-amber-400/70 text-sm mt-1">Check your connection and try again.</p>
-        <button
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => refetchInventory()}
-          className="btn btn-sm btn-outline border-amber-600 text-amber-200 mt-3 btn-bevel"
+          className="mt-3 border-amber-600 text-amber-200"
         >
           Retry
-        </button>
+        </Button>
       </div>
     </div>
   )
 
   return (
     <div className="p-4 md:p-6 max-w-2xl">
-      <h1 className="text-2xl font-display text-amber-100 mb-6">Add shot</h1>
+      <PageHeader title="Add shot" />
 
       <form data-testid="brew-log-add-form" onSubmit={handleSubmit} className="space-y-4">
         {/* Bag — full width */}
-        <div className="form-control">
-          <label className="label" htmlFor="brew-log-bag">
-            <span className="label-text text-amber-200/70">Bag</span>
-          </label>
-          <select
+        <FormField label="Bag" htmlFor="brew-log-bag" required errorId="brew-log-bag-error">
+          <Select
             id="brew-log-bag"
-            className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
             value={bagId}
             onChange={(e) => {
               userSelectedBagRef.current = true
@@ -245,6 +244,7 @@ export default function BrewLogAdd() {
               setBagId(e.target.value)
             }}
             required
+            aria-describedby="brew-log-bag-error"
           >
             <option value="">Select bag…</option>
             {inventory?.map((bag) => (
@@ -252,113 +252,95 @@ export default function BrewLogAdd() {
                 {bag.display_name}
               </option>
             ))}
-          </select>
+          </Select>
           {requestedBagId && !inventory && (
             <p className="text-xs text-amber-200/60 mt-1">Checking selected bag from Home…</p>
           )}
           {bagParamNotice && (
             <p role="status" className="text-xs text-amber-300 mt-1">{bagParamNotice}</p>
           )}
-        </div>
+        </FormField>
 
         {/* Flat form fields: dose/yield/time, eligibility, basket (FR-004) */}
         <div className="space-y-4">
           {/* Dose / Yield / Time */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="form-control">
-              <label className="label" htmlFor="brew-log-dose">
-                <span className="label-text text-amber-200/70">Dose (g)</span>
-              </label>
-              <input
+            <FormField label="Dose (g)" htmlFor="brew-log-dose" errorId="brew-log-dose-error">
+              <Input
                 id="brew-log-dose"
                 type="number"
                 step="0.1"
                 min="0"
-                className="input input-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
                 value={doseG}
                 onChange={(e) => { dirtyFields.current.add('dose'); setDoseG(e.target.value) }}
+                aria-describedby="brew-log-dose-error"
               />
-            </div>
-            <div className="form-control">
-              <label className="label" htmlFor="brew-log-yield">
-                <span className="label-text text-amber-200/70">Yield (g)</span>
-              </label>
-              <input
+            </FormField>
+            <FormField label="Yield (g)" htmlFor="brew-log-yield">
+              <Input
                 id="brew-log-yield"
                 type="number"
                 step="0.1"
                 min="0"
-                className="input input-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
                 value={yieldG}
                 onChange={(e) => { dirtyFields.current.add('yield'); setYieldG(e.target.value) }}
               />
-            </div>
-            <div className="form-control">
-              <label className="label" htmlFor="brew-log-time">
-                <span className="label-text text-amber-200/70">Time (s)</span>
-              </label>
-              <input
+            </FormField>
+            <FormField label="Time (s)" htmlFor="brew-log-time">
+              <Input
                 id="brew-log-time"
                 type="number"
                 min="0"
-                className="input input-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
                 value={timeSec}
                 onChange={(e) => setTimeSec(e.target.value)}
               />
-            </div>
+            </FormField>
           </div>
 
           {/* Basket + Shot eligibility — two-col on desktop, Issue 9 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* Basket first */}
-            <div className="form-control">
-              <label className="label" htmlFor="brew-log-basket">
-                <span className="label-text text-amber-200/70">Basket</span>
-              </label>
+            <FormField label="Basket" htmlFor="brew-log-basket">
               {hardwareIsLoading && (
-                <select id="brew-log-basket" disabled className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100/50 input-styled">
+                <Select id="brew-log-basket" disabled>
                   <option>Loading baskets…</option>
-                </select>
+                </Select>
               )}
               {hardwareIsSuccess && baskets.length === 0 && (
-                <select id="brew-log-basket" disabled className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100/50 input-styled">
+                <Select id="brew-log-basket" disabled>
                   <option>No baskets found</option>
-                </select>
+                </Select>
               )}
               {hardwareIsSuccess && baskets.length > 0 && (
-                <select
+                <Select
                   id="brew-log-basket"
                   value={basketId}
                   onChange={e => { dirtyFields.current.add('basket'); setBasketId(e.target.value) }}
-                  className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
                 >
                   <option value="">Select basket…</option>
                   {baskets.map(b => (
                     <option key={b.hardware_id} value={b.hardware_id}>{b.name}</option>
                   ))}
-                </select>
+                </Select>
               )}
-            </div>
+            </FormField>
 
             {/* Shot eligibility second */}
-            <div className="form-control">
-              <label className="label" htmlFor="brew-log-shot-eligibility">
-                <span className="label-text text-amber-200/70">Shot eligibility <span aria-hidden="true" className="text-error">*</span></span>
-              </label>
-              <select
+            <FormField label="Shot eligibility" htmlFor="brew-log-shot-eligibility" required errorId="brew-log-eligibility-error">
+              <Select
                 id="brew-log-shot-eligibility"
                 value={eligibility}
                 onChange={e => setEligibility(e.target.value)}
                 required
-                className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
+                aria-describedby="brew-log-eligibility-error"
               >
                 <option value="">Select…</option>
                 <option value="Reject">Reject</option>
                 <option value="Passable">Passable</option>
                 <option value="Good Espresso">Good Espresso</option>
                 <option value="God Shot">God Shot</option>
-              </select>
-            </div>
+              </Select>
+            </FormField>
           </div>
         </div>
 
@@ -368,7 +350,7 @@ export default function BrewLogAdd() {
             <p id="extraction-compass-label" className="label">
               <span className="label-text text-amber-200/70">Extraction compass</span>
             </p>
-            <div className="glass-card p-3 w-full" role="group" aria-labelledby="extraction-compass-label">
+            <div className="glass-card card-bevel p-3 w-full" role="group" aria-labelledby="extraction-compass-label">
               <CompassChart
                 doseG={doseG ? parseFloat(doseG) : null}
                 yieldG={yieldG ? parseFloat(yieldG) : null}
@@ -387,7 +369,7 @@ export default function BrewLogAdd() {
           aria-expanded={advancedOpen}
           aria-controls="advanced-fields"
           onClick={() => setAdvancedOpen(v => !v)}
-          className="btn btn-ghost text-amber-200/70 w-full justify-between text-sm"
+          className="btn btn-ghost text-amber-200/70 w-full justify-between text-sm border border-[var(--glass-border)]"
         >
           {advancedOpen ? 'Fewer options' : 'More options'}
           <svg
@@ -403,104 +385,87 @@ export default function BrewLogAdd() {
         <div id="advanced-fields" hidden={!advancedOpen} className="space-y-4">
           {/* Machine + Grinder — two-column row */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="form-control">
-              <label className="label" htmlFor="brew-log-machine">
-                <span className="label-text text-amber-200/70">Machine</span>
-              </label>
-              <select
+            <FormField label="Machine" htmlFor="brew-log-machine">
+              <Select
                 id="brew-log-machine"
                 value={machineId}
                 onChange={e => setMachineId(e.target.value)}
                 disabled={hardwareIsLoading}
-                className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
               >
                 <option value="">Select machine…</option>
                 {machines.map(m => (
                   <option key={m.hardware_id} value={m.hardware_id}>{m.name}</option>
                 ))}
-              </select>
-            </div>
-            <div className="form-control">
-              <label className="label" htmlFor="brew-log-grinder">
-                <span className="label-text text-amber-200/70">Grinder</span>
-              </label>
-              <select
+              </Select>
+            </FormField>
+            <FormField label="Grinder" htmlFor="brew-log-grinder">
+              <Select
                 id="brew-log-grinder"
                 value={grinderId}
                 onChange={e => setGrinderId(e.target.value)}
                 disabled={hardwareIsLoading}
-                className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
               >
                 <option value="">Select grinder…</option>
                 {grinders.map(g => (
                   <option key={g.hardware_id} value={g.hardware_id}>{g.name}</option>
                 ))}
-              </select>
-            </div>
+              </Select>
+            </FormField>
           </div>
 
           {/* Grind setting + Storage method — two-col on desktop, Issue 8 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* Grind setting */}
-            <div className="form-control">
-              <label className="label" htmlFor="brew-log-grind-setting">
-                <span className="label-text text-amber-200/70">Grind setting</span>
-              </label>
-              <input
+            <FormField label="Grind setting" htmlFor="brew-log-grind-setting">
+              <Input
                 id="brew-log-grind-setting"
                 type="text"
-                className="input input-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
                 value={grindSetting}
                 onChange={(e) => { dirtyFields.current.add('grind'); setGrindSetting(e.target.value) }}
               />
-            </div>
+            </FormField>
 
             {/* Storage method */}
-            <div className="form-control">
-              <label className="label" htmlFor="brew-log-storage-method">
-                <span className="label-text text-amber-200/70">Storage method</span>
-              </label>
-              <select
+            <FormField label="Storage method" htmlFor="brew-log-storage-method">
+              <Select
                 id="brew-log-storage-method"
                 value={storageMethod}
                 onChange={e => setStorageMethod(e.target.value)}
                 disabled={hardwareIsLoading}
-                className="select select-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
               >
                 <option value="">Select storage…</option>
                 {storageItems.map(h => (
                   <option key={h.hardware_id} value={h.name}>{h.name}</option>
                 ))}
-              </select>
-            </div>
+              </Select>
+            </FormField>
           </div>
 
           {/* Notes */}
-          <div className="form-control">
-            <label className="label" htmlFor="brew-log-notes">
-              <span className="label-text text-amber-200/70">Notes</span>
-            </label>
-            <textarea
+          <FormField label="Notes" htmlFor="brew-log-notes">
+            <Textarea
               id="brew-log-notes"
               rows={3}
-              className="textarea textarea-bordered bg-amber-950/60 border-amber-700/40 text-amber-100 input-styled"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
-          </div>
+          </FormField>
         </div>
 
         {mutation.isError && (
           <p className="text-error text-sm">Failed to save shot. Please try again.</p>
         )}
 
-        <button
+        <Button
           type="submit"
+          variant="primary"
+          fullWidth
           disabled={mutation.isPending || !bagId}
-          className="btn bg-amber-600 hover:bg-amber-500 border-none text-white w-full btn-bevel"
+          loading={mutation.isPending}
+          loadingText="Saving…"
         >
-          {mutation.isPending ? 'Saving…' : 'Log shot'}
-        </button>
+          Log shot
+        </Button>
       </form>
     </div>
   )

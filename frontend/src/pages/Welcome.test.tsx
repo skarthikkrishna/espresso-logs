@@ -92,7 +92,7 @@ describe('Welcome onboarding wizard', () => {
   it('shows onboarding wizard when user has no memberships', () => {
     renderWelcome()
 
-    expect(screen.getByRole('heading', { name: 'Welcome to Coffee Tracker' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Welcome to Kaapi Kadai' })).toBeInTheDocument()
     expect(screen.queryByTestId('dashboard-page')).not.toBeInTheDocument()
   })
 
@@ -112,10 +112,10 @@ describe('Welcome onboarding wizard', () => {
   it('Step 1 shows welcome heading and create/invite options', () => {
     renderWelcome()
 
-    expect(screen.getByRole('heading', { name: 'Welcome to Coffee Tracker' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Welcome to Kaapi Kadai' })).toBeInTheDocument()
     expect(
       screen.getByText(
-        "Coffee Tracker is a household app. You'll need to either create a new household or accept an invitation from a friend.",
+        "Kaapi Kadai is a household app. You'll need to either create a new household or accept an invitation from a friend.",
       ),
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Create my household' })).toBeInTheDocument()
@@ -213,7 +213,7 @@ describe('Welcome onboarding wizard', () => {
   it('all visible text uses sentence case', () => {
     renderWelcome()
 
-    expect(screen.getByRole('heading', { name: 'Welcome to Coffee Tracker' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Welcome to Kaapi Kadai' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Create my household' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'I have an invitation' })).toBeInTheDocument()
     expect(screen.queryByText('Create My Household')).not.toBeInTheDocument()

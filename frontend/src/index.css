@@ -9,7 +9,8 @@
   name: "espresso-dark";
   default: true;
   color-scheme: dark;
-  --color-primary: #d97706;
+  /* spec-030 amendment per spec-041 D-07: darkened amber-600 → amber-700 for WCAG AA (white text ≈5.02:1 ≥4.5:1 required) */
+  --color-primary: #b45309;
   --color-primary-content: #ffffff;
   --color-secondary: #92400e;
   --color-secondary-content: #ffffff;
@@ -383,7 +384,7 @@ h1, h2, .font-display {
   align-items: center;
   width: 100%;
   padding: 0.75rem 1rem;
-  border-radius: 0.75rem;
+  border-radius: var(--bevel-radius);
   background: rgba(14, 9, 4, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.06);
   transition: background 150ms ease, border-color 150ms ease;
@@ -486,13 +487,21 @@ input[type="file"]::file-selector-button {
 }
 
 /* ── Styled form inputs ──────────────────────────────────────────────────── */
-.input-styled {
+.input-styled,
+.select.input-styled,
+select.input-styled,
+.textarea.input-styled,
+textarea.input-styled {
   background: var(--input-bg);
   border: var(--input-border);
   border-radius: var(--bevel-radius);
 }
 .input-styled:focus,
-.input-styled:focus-visible {
+.input-styled:focus-visible,
+.select.input-styled:focus,
+select.input-styled:focus,
+.textarea.input-styled:focus,
+textarea.input-styled:focus {
   outline: none;
   box-shadow: var(--input-focus-ring);
 }
