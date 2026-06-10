@@ -8,11 +8,13 @@ from __future__ import annotations
 
 import datetime
 import uuid
+from unittest.mock import AsyncMock
 
 import pytest
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.household import GuestToken
 from app.repos.sql.household import HouseholdRepo
 from app.repos.sql.user import UserRepo
 
@@ -53,6 +55,79 @@ async def test_count_admins(db_session: AsyncSession) -> None:
 
     count = await repo.count_admins(db_session, household.id)
     assert count == 1
+
+
+@pytest.mark.asyncio(loop_scope="function")
+async def test_get_memberships_with_households_for_user_batches_member_counts(
+    db_session: AsyncSession,
+) -> None:
+    admin_id = await _make_user(db_session, "membership_admin")
+    member_id = await _make_user(db_session, "membership_user")
+    extra_member_id = await _make_user(db_session, "membership_extra")
+    repo = HouseholdRepo()
+
+    alpha = await repo.create_household(db_session, name="Alpha House", created_by=admin_id)
+    beta = await repo.create_household(db_session, name="Beta House", created_by=admin_id)
+    await repo.add_member(
+        db_session,
+        household_id=alpha.id,
+        user_id=member_id,
+        role="member",
+        invited_by=admin_id,
+    )
+    await repo.add_member(
+        db_session,
+        household_id=beta.id,
+        user_id=member_id,
+        role="member",
+        invited_by=admin_id,
+    )
+    await repo.add_member(
+        db_session,
+        household_id=alpha.id,
+        user_id=extra_member_id,
+        role="member",
+        invited_by=admin_id,
+    )
+    await db_session.commit()
+
+    repo.count_members = AsyncMock(side_effect=AssertionError("count_members should not be used"))  # type: ignore[method-assign]
+
+    memberships = await repo.get_memberships_with_households_for_user(db_session, member_id)
+
+    assert [(row.household_name, row.member_count) for row in memberships] == [
+        ("Alpha House", 3),
+        ("Beta House", 2),
+    ]
+
+
+@pytest.mark.asyncio(loop_scope="function")
+async def test_get_guest_token_by_hash_include_expired_returns_expired_token(
+    db_session: AsyncSession,
+) -> None:
+    user_id = await _make_user(db_session, "expired_guest_admin")
+    repo = HouseholdRepo()
+    household = await repo.create_household(db_session, name="GuestExpiryHH", created_by=user_id)
+    token = await repo.create_guest_token(
+        db_session,
+        household_id=household.id,
+        created_by=user_id,
+        token_hash="expired_guest_hash",
+    )
+    await db_session.execute(
+        sa.update(GuestToken)
+        .where(GuestToken.id == token.id)
+        .values(
+            expires_at=datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=5)
+        )
+    )
+    await db_session.commit()
+
+    assert await repo.get_guest_token_by_hash(db_session, "expired_guest_hash") is None
+    expired = await repo.get_guest_token_by_hash_include_expired(db_session, "expired_guest_hash")
+
+    assert expired is not None
+    assert expired.id == token.id
 
 
 @pytest.mark.asyncio(loop_scope="function")
@@ -327,6 +402,7 @@ async def test_revoke_previous_guest_tokens(db_session: AsyncSession) -> None:
         created_by=user_id,
         token_hash="gt_hash_01",
     )
+    await repo.revoke_previous_guest_tokens(db_session, household.id)
     await repo.create_guest_token(
         db_session,
         household_id=household.id,
@@ -345,7 +421,7 @@ async def test_revoke_previous_guest_tokens(db_session: AsyncSession) -> None:
 
 
 @pytest.mark.asyncio(loop_scope="function")
-async def test_decline_and_resend_invitation_update_status(db_session: AsyncSession) -> None:
+async def test_decline_noops_and_resend_rotates_token(db_session: AsyncSession) -> None:
     user_id = await _make_user(db_session, "decline_admin")
     repo = HouseholdRepo()
     household = await repo.create_household(db_session, name="DeclineHH", created_by=user_id)
@@ -365,15 +441,23 @@ async def test_decline_and_resend_invitation_update_status(db_session: AsyncSess
     await db_session.commit()
     declined = await repo.get_invitation_by_token_hash(db_session, "decline-token-hash")
     assert declined is not None
-    assert declined.status == "declined"
+    assert declined.status == "pending"
 
-    resent = await repo.resend_invitation(db_session, invitation.id)
+    resent = await repo.resend_invitation(
+        db_session,
+        invitation.id,
+        token_hash="resent-token-hash",
+        display_token_ciphertext="encrypted-display-placeholder",
+    )
     await db_session.commit()
     assert resent.status == "pending"
+    assert resent.token_hash == "resent-token-hash"
+    assert resent.display_token_ciphertext == "encrypted-display-placeholder"
+    assert await repo.get_invitation_by_token_hash(db_session, "decline-token-hash") is None
 
     await repo.revoke_invitation(db_session, invitation.id)
     await db_session.commit()
-    revoked = await repo.get_invitation_by_token_hash(db_session, "decline-token-hash")
+    revoked = await repo.get_invitation_by_token_hash(db_session, "resent-token-hash")
     assert revoked is not None
     assert revoked.status == "revoked"
     assert revoked.revoked_at is not None
@@ -402,7 +486,12 @@ async def test_resend_invitation_rejects_accepted_tokens(db_session: AsyncSessio
     await db_session.commit()
 
     with pytest.raises(HTTPException) as exc_info:
-        await repo.resend_invitation(db_session, invitation.id)
+        await repo.resend_invitation(
+            db_session,
+            invitation.id,
+            token_hash="new-accepted-token",
+            display_token_ciphertext=None,
+        )
 
     assert exc_info.value.status_code == 409
 

@@ -69,6 +69,22 @@ def test_guest_token_token_hash_is_unique() -> None:
     assert col.unique
 
 
+def test_link_tokens_have_encrypted_display_columns() -> None:
+    assert "display_token_ciphertext" in PendingInvitation.__table__.columns
+    assert "display_token_ciphertext" in GuestToken.__table__.columns
+
+
+def test_guest_token_has_active_household_partial_unique_index() -> None:
+    index_names = {i.name for i in GuestToken.__table__.indexes}
+    assert "uq_guest_tokens_active_household" in index_names
+
+
+def test_pending_invitation_duplicate_lookup_indexes() -> None:
+    index_names = {i.name for i in PendingInvitation.__table__.indexes}
+    assert "ix_pending_invitations_household_status_expires" in index_names
+    assert "ix_pending_invitations_household_email_status" in index_names
+
+
 def test_pending_invitation_role_and_status_constraints() -> None:
     import sqlalchemy as sa
 

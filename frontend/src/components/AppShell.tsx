@@ -2,14 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import BottomNav from './BottomNav'
 import { useEffect, useMemo, useRef, useState } from 'react'
-
-function getBgClass(pathname: string): string {
-  if (pathname === '/') return 'bg-dashboard'
-  if (pathname.startsWith('/brew-log')) return 'bg-brew-log'
-  if (pathname.startsWith('/catalog')) return 'bg-catalog'
-  if (pathname.startsWith('/hardware')) return 'bg-hardware'
-  return ''
-}
+import { getAppShellBackgroundToken } from '../utils/householdBackgrounds'
 
 
 export default function AppShell() {
@@ -17,7 +10,7 @@ export default function AppShell() {
   const [animating, setAnimating] = useState(false)
   const prevPathname = useRef(location.pathname)
 
-  const bgClass = useMemo(() => getBgClass(location.pathname), [location.pathname])
+  const bgClass = useMemo(() => getAppShellBackgroundToken(location.pathname), [location.pathname])
 
   // Scroll content to top on route change
   useEffect(() => {
@@ -48,7 +41,7 @@ export default function AppShell() {
       {/* Main content area — frosted glass panel */}
       <main
         id="main-content"
-        className="flex-1 overflow-y-auto pb-16 lg:pb-0"
+        className="flex-1 overflow-y-auto pb-32 lg:pb-0"
       >
         {/* Page content — class-toggled animation, DOM node never unmounts */}
         <div className={`page-content min-h-full ${animating ? 'page-enter' : ''}`}>

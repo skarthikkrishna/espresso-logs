@@ -58,6 +58,11 @@ vi.mock('../api/brewLog', () => ({
   submitShot: vi.fn().mockResolvedValue({ shot_id: 'SH-TEST-001' }),
 }))
 
+vi.mock('../contexts/AuthContext', () => ({
+  useAuth: () => ({ activeHouseholdId: 'hh-1' }),
+  useHouseholdQueryScope: () => 'hh-1',
+}))
+
 // ---------------------------------------------------------------------------
 // Import after mocks are declared
 // ---------------------------------------------------------------------------
@@ -378,14 +383,14 @@ describe('BrewLogAdd', () => {
 
     // Wait for onSuccess to fire (submitShot mock resolves immediately)
     await waitFor(() => {
-      expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['brew-log'] })
-      expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['dashboard'] })
+      expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['households', 'hh-1', 'brew-log', { page: 1, perPage: 100 }] })
+      expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['households', 'hh-1', 'dashboard'] })
     })
 
     // Verify order — guard against findIndex returning -1 (silent false-positive)
     const calls = invalidateQueries.mock.calls
-    const brewLogIdx = calls.findIndex((c: any[]) => c[0]?.queryKey?.[0] === 'brew-log')
-    const dashboardIdx = calls.findIndex((c: any[]) => c[0]?.queryKey?.[0] === 'dashboard')
+    const brewLogIdx = calls.findIndex((c: any[]) => c[0]?.queryKey?.[2] === 'brew-log')
+    const dashboardIdx = calls.findIndex((c: any[]) => c[0]?.queryKey?.[2] === 'dashboard')
     expect(brewLogIdx).toBeGreaterThanOrEqual(0)
     expect(dashboardIdx).toBeGreaterThanOrEqual(0)
     expect(brewLogIdx).toBeLessThan(dashboardIdx)

@@ -18,6 +18,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import { login, getMe } from '../api/auth'
 import { useAuth } from '../contexts/AuthContext'
+import StandaloneHouseholdShell from '../components/StandaloneHouseholdShell'
 
 // ---------------------------------------------------------------------------
 // Google icon (inline SVG — no external dependency)
@@ -70,6 +71,9 @@ export default function Login() {
   const inviteToken = searchParams.get('invite')
   const returnTo = searchParams.get('from')
   const authQuery = searchParams.toString()
+  const googleHref = inviteToken
+    ? `/auth/google?invite=${encodeURIComponent(inviteToken)}${returnTo ? `&from=${encodeURIComponent(returnTo)}` : ''}`
+    : '/auth/google'
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -214,14 +218,18 @@ export default function Login() {
 
   if (isOAuthProcessing) {
     return (
-      <div className="min-h-screen bg-base-100 flex items-start justify-center pt-20 px-4">
+      <StandaloneHouseholdShell background="bg-auth-login" align="right">
         <div className="w-full max-w-sm">
           <div className="glass-card card-bevel p-6 text-center">
+            <h1 id="oauth-heading" className="sr-only">Signing in</h1>
             <span className="loading loading-spinner loading-lg text-primary" aria-label="Signing in" />
-            <p className="mt-4 text-base-content/70">Signing you in...</p>
+            <p className="mt-4 text-base-content/70">Signing you in…</p>
+            {inviteToken ? (
+              <p className="mt-2 text-sm text-amber-200/70">Your household invitation will continue after Google sign-in.</p>
+            ) : null}
           </div>
         </div>
-      </div>
+      </StandaloneHouseholdShell>
     )
   }
 
@@ -230,12 +238,18 @@ export default function Login() {
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="min-h-screen bg-base-100 flex items-start justify-center pt-20 px-4">
+    <StandaloneHouseholdShell background="bg-auth-login" align="right" labelledBy="login-heading">
       <div className="w-full max-w-sm">
         <div className="glass-card card-bevel p-6">
-          <h1 className="font-display text-2xl text-base-content text-center mb-6">
+          <h1 id="login-heading" className="font-display text-2xl text-base-content text-center mb-6">
             Sign in
           </h1>
+
+          {inviteToken ? (
+            <div className="alert alert-info card-bevel mb-4 text-sm">
+              <span>A household invitation is ready. Sign in to review and accept it.</span>
+            </div>
+          ) : null}
 
           {formError && (
             <div
@@ -323,7 +337,7 @@ export default function Login() {
           <div className="divider text-xs text-base-content/50">or</div>
 
           <a
-            href="/auth/google"
+            href={googleHref}
             className="btn btn-outline btn-bevel w-full"
             aria-label="Sign in with Google"
           >
@@ -343,6 +357,6 @@ export default function Login() {
           </p>
         </div>
       </div>
-    </div>
+    </StandaloneHouseholdShell>
   )
 }

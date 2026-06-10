@@ -68,6 +68,8 @@ class Settings(BaseSettings):
     # JWT_SECRET_PREVIOUS: set during rotation window only (≤15 minutes).
     # Must also be ≥32 characters when non-empty.
     jwt_secret_previous: Optional[str] = None
+    # Comma-separated Fernet keys for encrypted invitation/guest display tokens.
+    link_token_fernet_keys: Optional[str] = None
     access_token_expire_seconds: int = 900
 
     # Phase 7 — AI inference

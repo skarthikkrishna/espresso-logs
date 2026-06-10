@@ -151,7 +151,12 @@ async def test_current_user_e2e_bypass_no_longer_short_circuits_jwt() -> None:
 
 
 async def test_current_household_membership_sets_rls_variable() -> None:
-    """Resolving membership executes SET LOCAL app.current_household_id (US-4.3)."""
+    """Resolving membership executes SET LOCAL app.current_household_id (US-4.3).
+
+    Spec-040: when active_household_id is None, the fallback path now also
+    persists the chosen household via set_active_household before setting
+    the RLS variable — so db.execute is called more than once.
+    """
     import app.deps as deps_module
 
     hh_id = uuid.uuid4()
@@ -163,21 +168,33 @@ async def test_current_household_membership_sets_rls_variable() -> None:
     with (
         patch.object(deps_module, "_E2E_AUTH_BYPASS", False),
         patch("app.deps.HouseholdRepo") as MockHHRepo,
+        patch("app.deps.UserRepo") as MockUserRepo,
     ):
         MockHHRepo.return_value.get_memberships_for_user = AsyncMock(return_value=[fake_membership])
+        MockUserRepo.return_value.set_active_household = AsyncMock()
         result = await current_household_membership(user=fake_user, db=mock_db)
 
     assert result is fake_membership
-    mock_db.execute.assert_awaited_once()
-    call_args = mock_db.execute.call_args
-    stmt_text = str(call_args[0][0])
-    assert "app.current_household_id" in stmt_text
-    params = call_args[0][1] if len(call_args[0]) > 1 else call_args[1].get("params", {})
-    assert str(hh_id) in str(params)
+    assert fake_user.active_household_id == hh_id
+    MockUserRepo.return_value.set_active_household.assert_awaited_once_with(
+        mock_db, fake_user.id, hh_id
+    )
+    rls_calls = [
+        call
+        for call in mock_db.execute.await_args_list
+        if "app.current_household_id" in str(call.args[0])
+    ]
+    assert len(rls_calls) == 1
+    assert str(hh_id) in str(rls_calls[0].args)
 
 
 async def test_current_household_membership_e2e_bypass_uses_real_membership() -> None:
-    """E2E_AUTH_BYPASS no longer short-circuits membership resolution."""
+    """E2E_AUTH_BYPASS no longer short-circuits membership resolution.
+
+    Spec-040: fallback path persists active household before RLS set_config,
+    so db.execute is called more than once. Verify no synthetic INSERT INTO
+    households and that RLS variable is set correctly.
+    """
     import app.deps as deps_module
 
     hh_id = uuid.uuid4()
@@ -189,14 +206,19 @@ async def test_current_household_membership_e2e_bypass_uses_real_membership() ->
     with (
         patch.object(deps_module, "_E2E_AUTH_BYPASS", True),
         patch("app.deps.HouseholdRepo") as MockHHRepo,
+        patch("app.deps.UserRepo") as MockUserRepo,
     ):
         MockHHRepo.return_value.get_memberships_for_user = AsyncMock(return_value=[fake_membership])
+        MockUserRepo.return_value.set_active_household = AsyncMock()
         result = await current_household_membership(user=fake_user, db=mock_db)
 
     assert result is fake_membership
-    mock_db.execute.assert_awaited_once()
-    stmt_text = str(mock_db.execute.call_args[0][0])
-    assert "app.current_household_id" in stmt_text
+    rls_calls = [
+        call
+        for call in mock_db.execute.await_args_list
+        if "app.current_household_id" in str(call.args[0])
+    ]
+    assert len(rls_calls) == 1
     assert not any(
         "INSERT INTO households" in str(call.args[0]) for call in mock_db.execute.await_args_list
     )
@@ -248,7 +270,12 @@ async def test_current_household_membership_uses_active_household() -> None:
 
 
 async def test_current_household_membership_clears_invalid_active_household() -> None:
-    """Invalid persisted active household is cleared before falling back by join order."""
+    """Invalid persisted active household is cleared then repaired to fallback.
+
+    Spec-040: after clearing the stale active household, the fallback path
+    persists the first valid membership as the new active household. So
+    active_household_id ends up as the fallback, not None.
+    """
     import app.deps as deps_module
 
     stale_household_id = uuid.uuid4()
@@ -268,11 +295,15 @@ async def test_current_household_membership_clears_invalid_active_household() ->
             return_value=[fallback_membership]
         )
         MockUserRepo.return_value.clear_active_household = AsyncMock()
+        MockUserRepo.return_value.set_active_household = AsyncMock()
         result = await current_household_membership(user=fake_user, db=mock_db)
 
     assert result is fallback_membership
     MockUserRepo.return_value.clear_active_household.assert_awaited_once_with(mock_db, fake_user.id)
-    assert fake_user.active_household_id is None
+    MockUserRepo.return_value.set_active_household.assert_awaited_once_with(
+        mock_db, fake_user.id, fallback_membership.household_id
+    )
+    assert fake_user.active_household_id == fallback_membership.household_id
 
 
 # ---------------------------------------------------------------------------

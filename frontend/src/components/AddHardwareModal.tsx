@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createHardware } from '../api/hardware'
 import type { HardwareDetail, HardwareItem } from '../types/entities'
+import { useHouseholdQueryScope } from '../contexts/AuthContext'
+import { householdKeys } from '../api/queryKeys'
 
 interface AddHardwareModalProps {
   initialCategory?: HardwareItem['category']
@@ -13,6 +15,7 @@ const CATEGORIES: HardwareItem['category'][] = ['Machine', 'Grinder', 'Basket', 
 
 export default function AddHardwareModal({ initialCategory, onClose, onSaved }: AddHardwareModalProps) {
   const queryClient = useQueryClient()
+  const activeHouseholdId = useHouseholdQueryScope()
   const [category, setCategory] = useState<string>(initialCategory ?? '')
   const [name, setName] = useState('')
   const [productUrl, setProductUrl] = useState('')
@@ -26,16 +29,16 @@ export default function AddHardwareModal({ initialCategory, onClose, onSaved }: 
         product_url: productUrl.trim() || undefined,
       }),
     onSuccess: async (item) => {
-      queryClient.setQueryData<HardwareItem[]>(['hardware'], (existing = []) =>
+      queryClient.setQueryData<HardwareItem[]>(householdKeys.hardware(activeHouseholdId), (existing = []) =>
         existing.some((hardware) => hardware.hardware_id === item.hardware_id)
           ? existing.map((hardware) => hardware.hardware_id === item.hardware_id ? item : hardware)
           : [...existing, item]
       )
-      queryClient.setQueryData<HardwareDetail>(['hardware', item.hardware_id], {
+      queryClient.setQueryData<HardwareDetail>(householdKeys.hardwareDetail(activeHouseholdId, item.hardware_id), {
         item,
         maintenance: [],
       })
-      await queryClient.invalidateQueries({ queryKey: ['hardware'], refetchType: 'inactive' })
+      await queryClient.invalidateQueries({ queryKey: householdKeys.hardware(activeHouseholdId), refetchType: 'inactive' })
       onSaved(item.hardware_id)
     },
     onError: () => {

@@ -37,6 +37,7 @@ from app.routers import (
     api_catalog,
     api_dashboard,
     api_defaults,
+    api_guest,
     api_hardware,
     api_households,
     api_inventory,
@@ -316,6 +317,7 @@ app.include_router(auth_router)
 app.include_router(health.router)
 app.include_router(api_auth.router)
 app.include_router(api_households.router, prefix="/households")
+app.include_router(api_guest.router)
 app.include_router(api_dashboard.router)
 app.include_router(api_catalog.router)
 app.include_router(api_hardware.router)

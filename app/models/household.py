@@ -111,6 +111,19 @@ class PendingInvitation(Base):
             "status IN ('pending', 'accepted', 'declined', 'revoked')",
             name="pending_invitations_status_check",
         ),
+        sa.Index(
+            "ix_pending_invitations_household_status_expires",
+            "household_id",
+            "status",
+            "expires_at",
+        ),
+        sa.Index(
+            "ix_pending_invitations_household_email_status",
+            "household_id",
+            sa.func.lower(sa.column("invited_email")),
+            "status",
+            postgresql_where=sa.text("invited_email IS NOT NULL"),
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -135,6 +148,7 @@ class PendingInvitation(Base):
         server_default="pending",
     )
     token_hash: Mapped[str] = mapped_column(sa.Text, nullable=False, unique=True)
+    display_token_ciphertext: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     invited_by_user_id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
         sa.ForeignKey("users.id"),
@@ -162,7 +176,15 @@ class GuestToken(Base):
     """A guest access token granting read-only access to a household's data."""
 
     __tablename__ = "guest_tokens"
-    __table_args__ = (sa.Index("ix_guest_tokens_household_id", "household_id"),)
+    __table_args__ = (
+        sa.Index("ix_guest_tokens_household_id", "household_id"),
+        sa.Index(
+            "uq_guest_tokens_active_household",
+            "household_id",
+            unique=True,
+            postgresql_where=sa.text("revoked_at IS NULL"),
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
@@ -175,6 +197,7 @@ class GuestToken(Base):
         nullable=False,
     )
     token_hash: Mapped[str] = mapped_column(sa.Text, nullable=False, unique=True)
+    display_token_ciphertext: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     created_by_user_id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
         sa.ForeignKey("users.id"),

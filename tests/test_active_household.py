@@ -16,7 +16,7 @@ from app.main import app
 from app.models.base import get_db
 from app.models.household import HouseholdMember
 from app.models.user import User
-from app.routers.api_households import current_user, invite_accepting_user
+from app.routers.api_households import current_user
 from app.routers.api_auth import current_user as auth_current_user
 
 
@@ -219,21 +219,18 @@ async def test_active_household_set_on_invite_accept(db_override: AsyncMock) -> 
     household = type("Household", (), {"id": household_id, "name": "B"})()
     raw_token = "invite-token"
 
-    app.dependency_overrides[invite_accepting_user] = lambda: user
+    app.dependency_overrides[current_user] = lambda: user
     try:
-        with (
-            patch("app.routers.api_households.HouseholdRepo") as MockHouseholdRepo,
-            patch("app.routers.api_households.UserRepo") as MockUserRepo,
-        ):
+        with patch("app.routers.api_households.HouseholdRepo") as MockHouseholdRepo:
             MockHouseholdRepo.return_value.get_invitation_by_token_hash = AsyncMock(
                 return_value=invitation
             )
             MockHouseholdRepo.return_value.get_member = AsyncMock(return_value=None)
-            MockHouseholdRepo.return_value.count_for_user = AsyncMock(return_value=0)
+            MockHouseholdRepo.return_value.count_members = AsyncMock(return_value=1)
             MockHouseholdRepo.return_value.add_member = AsyncMock()
             MockHouseholdRepo.return_value.accept_invitation = AsyncMock()
             MockHouseholdRepo.return_value.get_by_id = AsyncMock(return_value=household)
-            MockUserRepo.return_value.set_active_household = AsyncMock()
+            db_override.execute = AsyncMock()
 
             async with AsyncClient(
                 transport=ASGITransport(app=app), base_url="http://test"
@@ -241,12 +238,11 @@ async def test_active_household_set_on_invite_accept(db_override: AsyncMock) -> 
                 response = await client.post(f"/households/invitations/{raw_token}/accept")
 
     finally:
-        app.dependency_overrides.pop(invite_accepting_user, None)
+        app.dependency_overrides.pop(current_user, None)
 
     assert response.status_code == 200, response.text
-    MockUserRepo.return_value.set_active_household.assert_awaited_once_with(
-        db_override, user.id, household_id
-    )
+    assert user.active_household_id == household_id
+    db_override.execute.assert_awaited()
 
 
 async def test_active_household_set_on_household_create(db_override: AsyncMock) -> None:
@@ -284,7 +280,7 @@ async def test_active_household_set_on_household_create(db_override: AsyncMock) 
     )
 
 
-async def test_active_household_not_overwritten_on_second_join(db_override: AsyncMock) -> None:
+async def test_active_household_updates_on_second_join(db_override: AsyncMock) -> None:
     household_a = uuid.uuid4()
     household_b = uuid.uuid4()
     user = _make_user(active_household_id=household_a)
@@ -305,21 +301,18 @@ async def test_active_household_not_overwritten_on_second_join(db_override: Asyn
     )()
     household = type("Household", (), {"id": household_b, "name": "B"})()
 
-    app.dependency_overrides[invite_accepting_user] = lambda: user
+    app.dependency_overrides[current_user] = lambda: user
     try:
-        with (
-            patch("app.routers.api_households.HouseholdRepo") as MockHouseholdRepo,
-            patch("app.routers.api_households.UserRepo") as MockUserRepo,
-        ):
+        with patch("app.routers.api_households.HouseholdRepo") as MockHouseholdRepo:
             MockHouseholdRepo.return_value.get_invitation_by_token_hash = AsyncMock(
                 return_value=invitation
             )
             MockHouseholdRepo.return_value.get_member = AsyncMock(return_value=None)
-            MockHouseholdRepo.return_value.count_for_user = AsyncMock(return_value=1)
+            MockHouseholdRepo.return_value.count_members = AsyncMock(return_value=2)
             MockHouseholdRepo.return_value.add_member = AsyncMock()
             MockHouseholdRepo.return_value.accept_invitation = AsyncMock()
             MockHouseholdRepo.return_value.get_by_id = AsyncMock(return_value=household)
-            MockUserRepo.return_value.set_active_household = AsyncMock()
+            db_override.execute = AsyncMock()
 
             async with AsyncClient(
                 transport=ASGITransport(app=app), base_url="http://test"
@@ -327,11 +320,11 @@ async def test_active_household_not_overwritten_on_second_join(db_override: Asyn
                 response = await client.post("/households/invitations/another-token/accept")
 
     finally:
-        app.dependency_overrides.pop(invite_accepting_user, None)
+        app.dependency_overrides.pop(current_user, None)
 
     assert response.status_code == 200, response.text
-    assert user.active_household_id == household_a
-    MockUserRepo.return_value.set_active_household.assert_not_called()
+    assert user.active_household_id == household_b
+    db_override.execute.assert_awaited()
 
 
 async def test_switch_to_non_member_household_rejected(db_override: AsyncMock) -> None:
@@ -383,10 +376,15 @@ async def test_active_household_fallback_when_null(db_override: AsyncMock) -> No
             return_value=[membership_a, membership_b]
         )
         MockUserRepo.return_value.clear_active_household = AsyncMock()
+        MockUserRepo.return_value.set_active_household = AsyncMock()
         membership = await current_household_membership(user=user, db=db_override)
 
     assert membership.household_id == household_a
+    assert user.active_household_id == household_a
     MockUserRepo.return_value.clear_active_household.assert_not_called()
+    MockUserRepo.return_value.set_active_household.assert_awaited_once_with(
+        db_override, user.id, household_a
+    )
 
 
 async def test_active_household_cleared_when_removed_from_household(db_override: AsyncMock) -> None:
@@ -407,12 +405,16 @@ async def test_active_household_cleared_when_removed_from_household(db_override:
             return_value=[fallback_membership]
         )
         MockUserRepo.return_value.clear_active_household = AsyncMock()
+        MockUserRepo.return_value.set_active_household = AsyncMock()
 
         membership = await current_household_membership(user=user, db=db_override)
 
     assert membership.household_id == fallback_household
-    assert user.active_household_id is None
+    assert user.active_household_id == fallback_household
     MockUserRepo.return_value.clear_active_household.assert_awaited_once_with(db_override, user.id)
+    MockUserRepo.return_value.set_active_household.assert_awaited_once_with(
+        db_override, user.id, fallback_household
+    )
 
 
 async def test_soft_deleted_active_household_triggers_fallback(db_override: AsyncMock) -> None:
@@ -432,12 +434,16 @@ async def test_soft_deleted_active_household_triggers_fallback(db_override: Asyn
             return_value=[fallback_membership]
         )
         MockUserRepo.return_value.clear_active_household = AsyncMock()
+        MockUserRepo.return_value.set_active_household = AsyncMock()
 
         membership = await current_household_membership(user=user, db=db_override)
 
     assert membership.household_id == fallback_household
-    assert user.active_household_id is None
+    assert user.active_household_id == fallback_household
     MockUserRepo.return_value.clear_active_household.assert_awaited_once_with(db_override, user.id)
+    MockUserRepo.return_value.set_active_household.assert_awaited_once_with(
+        db_override, user.id, fallback_household
+    )
 
 
 async def test_soft_deleted_last_active_household_clears_active_household(

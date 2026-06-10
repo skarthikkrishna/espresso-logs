@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import type { BrewLogPage } from '../api/brewLog'
+import { brewLogListQueryKey } from '../api/queryKeys'
 import type { BrewLogEntry } from '../types/entities'
 
 vi.mock('react-router-dom', async () => {
@@ -90,7 +91,7 @@ function renderInContext(queryClient = makeQueryClient()) {
 
 function renderWithPaginatedCache(shot: BrewLogEntry = baseShot) {
   const queryClient = makeQueryClient()
-  queryClient.setQueryData(['brew-log', 1, 100], brewLogPage([shot]))
+  queryClient.setQueryData(brewLogListQueryKey(undefined, 1, 100), brewLogPage([shot]))
   return renderInContext(queryClient)
 }
 
@@ -135,7 +136,7 @@ describe('BrewLogDetail — cache contract and fallback', () => {
 
   it('calls the detail API fallback when paginated cache misses the route shot_id', async () => {
     const queryClient = makeQueryClient()
-    queryClient.setQueryData(['brew-log', 1, 100], brewLogPage([otherShot]))
+    queryClient.setQueryData(brewLogListQueryKey(undefined, 1, 100), brewLogPage([otherShot]))
     vi.mocked(getBrewLogDetail).mockResolvedValue({ ...baseShot, bag_display: 'API Detail — Cache Miss' })
 
     renderInContext(queryClient)
@@ -146,7 +147,7 @@ describe('BrewLogDetail — cache contract and fallback', () => {
 
   it('calls the detail API fallback when a brew-log cache entry is malformed', async () => {
     const queryClient = makeQueryClient()
-    queryClient.setQueryData(['brew-log', 1, 100], { items: 'not-an-array' })
+    queryClient.setQueryData(brewLogListQueryKey(undefined, 1, 100), { items: 'not-an-array' })
     vi.mocked(getBrewLogDetail).mockResolvedValue({ ...baseShot, bag_display: 'API Detail — Malformed Cache' })
 
     renderInContext(queryClient)

@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { updateHardware } from '../api/hardware'
 import type { HardwareDetail, HardwareItem } from '../types/entities'
+import { useHouseholdQueryScope } from '../contexts/AuthContext'
+import { householdKeys } from '../api/queryKeys'
 
 interface EditHardwareModalProps {
   hardware: HardwareItem
@@ -11,6 +13,7 @@ interface EditHardwareModalProps {
 
 export default function EditHardwareModal({ hardware, onClose, onSaved }: EditHardwareModalProps) {
   const queryClient = useQueryClient()
+  const activeHouseholdId = useHouseholdQueryScope()
   const [name, setName] = useState(hardware.name)
   const [saveError, setSaveError] = useState<string | null>(null)
 
@@ -18,18 +21,18 @@ export default function EditHardwareModal({ hardware, onClose, onSaved }: EditHa
     mutationFn: () =>
       updateHardware(hardware.hardware_id, { name, category: hardware.category }),
     onSuccess: async (updatedHardware) => {
-      queryClient.setQueryData<HardwareItem[]>(['hardware'], (existing = []) =>
+      queryClient.setQueryData<HardwareItem[]>(householdKeys.hardware(activeHouseholdId), (existing = []) =>
         existing.map((item) => item.hardware_id === updatedHardware.hardware_id ? updatedHardware : item)
       )
       queryClient.setQueryData<HardwareDetail>(
-        ['hardware', hardware.hardware_id],
+        householdKeys.hardwareDetail(activeHouseholdId, hardware.hardware_id),
         (existing) => existing
           ? { ...existing, item: updatedHardware }
           : { item: updatedHardware, maintenance: [] }
       )
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['hardware'], refetchType: 'inactive' }),
-        queryClient.invalidateQueries({ queryKey: ['hardware', hardware.hardware_id], refetchType: 'inactive' }),
+        queryClient.invalidateQueries({ queryKey: householdKeys.hardware(activeHouseholdId), refetchType: 'inactive' }),
+        queryClient.invalidateQueries({ queryKey: householdKeys.hardwareDetail(activeHouseholdId, hardware.hardware_id), refetchType: 'inactive' }),
       ])
       onSaved()
       onClose()

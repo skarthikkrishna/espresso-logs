@@ -1,5 +1,6 @@
 import { apiClient } from './client'
 import type { BrewLogEntry } from '../types/entities'
+import { householdKeys } from './queryKeys'
 
 export interface BrewLogPage {
   items: BrewLogEntry[]
@@ -33,9 +34,11 @@ export interface BrewLogCorrectionPayload {
   shot_eligibility?: string
 }
 
-export const brewLogDetailQueryKey = (id: string) => ['brew-log-detail', id] as const
+export const brewLogDetailQueryKey = (id: string, householdId?: string | null) =>
+  householdKeys.brewLogDetail(householdId, id)
 
-export const brewLogFeedbackQueryKey = (id: string) => ['brew-log-detail', id, 'feedback'] as const
+export const brewLogFeedbackQueryKey = (id: string, householdId?: string | null) =>
+  householdKeys.brewLogFeedback(householdId, id)
 
 export const listBrewLog = (page = 1, perPage = 100) =>
   apiClient

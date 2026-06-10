@@ -7,16 +7,18 @@ import { brewLogListQueryKey, dashboardQueryKey } from '../api/queryKeys'
 import type { BrewLogPage } from '../api/brewLog'
 import Chip from '../components/Chip'
 import type { DashboardBag, BrewLogEntry } from '../types/entities'
+import { useHouseholdQueryScope } from '../contexts/AuthContext'
 
 export default function Dashboard() {
   const navigate = useNavigate()
+  const activeHouseholdId = useHouseholdQueryScope()
   const { data: bags, isLoading, isError, error, refetch } = useQuery({
-    queryKey: dashboardQueryKey(),
+    queryKey: dashboardQueryKey(activeHouseholdId),
     queryFn: getDashboard,
   })
 
   const { data: recentShots = [] } = useQuery({
-    queryKey: brewLogListQueryKey(),
+    queryKey: brewLogListQueryKey(activeHouseholdId, 1, 5),
     queryFn: () => listBrewLog(1, 5),
     select: (page: BrewLogPage) => page.items.slice(0, 5),
   })

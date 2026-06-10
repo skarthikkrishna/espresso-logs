@@ -5,6 +5,11 @@ import EditHardwareModal from './EditHardwareModal'
 import * as hardwareApi from '../api/hardware'
 import type { HardwareItem } from '../types/entities'
 
+vi.mock('../contexts/AuthContext', () => ({
+  useAuth: () => ({ activeHouseholdId: 'hh-1' }),
+  useHouseholdQueryScope: () => 'hh-1',
+}))
+
 function renderModal(ui: React.ReactElement) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const result = render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>)
@@ -61,8 +66,8 @@ describe('EditHardwareModal', () => {
         name: 'Breville Barista Express',
         category: 'Machine',
       })
-      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['hardware'], refetchType: 'inactive' })
-      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['hardware', 'M01'], refetchType: 'inactive' })
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['households', 'hh-1', 'hardware'], refetchType: 'inactive' })
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['households', 'hh-1', 'hardware', 'M01'], refetchType: 'inactive' })
     })
 
     expect(defaultProps.onSaved).toHaveBeenCalled()

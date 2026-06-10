@@ -16,11 +16,13 @@ import type { CatalogDetail as CatalogDetailData, CatalogItem, InventoryBag } fr
 import LoadingSpinner from '../components/LoadingSpinner'
 import Chip from '../components/Chip'
 import { ROAST_LEVELS } from '../utils/roastLevels'
+import { useHouseholdQueryScope } from '../contexts/AuthContext'
 
 export default function CatalogDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const activeHouseholdId = useHouseholdQueryScope()
 
   const [addingBag, setAddingBag] = useState(false)
   const [bagRoastDate, setBagRoastDate] = useState('')
@@ -51,15 +53,15 @@ export default function CatalogDetail() {
    */
   const invalidateAllCatalogConsumers = () => {
     if (!id) return
-    queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(id) })
-    queryClient.invalidateQueries({ queryKey: catalogListQueryKey() })
-    queryClient.invalidateQueries({ queryKey: inventoryQueryKey() })
-    queryClient.invalidateQueries({ queryKey: dashboardQueryKey() })
-    queryClient.invalidateQueries({ queryKey: brewLogListQueryKey() })
+    queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(id, activeHouseholdId) })
+    queryClient.invalidateQueries({ queryKey: catalogListQueryKey(activeHouseholdId) })
+    queryClient.invalidateQueries({ queryKey: inventoryQueryKey(activeHouseholdId) })
+    queryClient.invalidateQueries({ queryKey: dashboardQueryKey(activeHouseholdId) })
+    queryClient.invalidateQueries({ queryKey: brewLogListQueryKey(activeHouseholdId) })
   }
 
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: catalogDetailQueryKey(id ?? ''),
+    queryKey: catalogDetailQueryKey(id ?? '', activeHouseholdId),
     queryFn: () => getCatalogDetail(id!),
     enabled: !!id,
   })
@@ -73,16 +75,16 @@ export default function CatalogDetail() {
     onSuccess: (updatedBag) => {
       if (!id) return
       queryClient.setQueryData<CatalogDetailData>(
-        catalogDetailQueryKey(id),
+        catalogDetailQueryKey(id, activeHouseholdId),
         (old) => old
           ? { ...old, bags: old.bags.map((bag) => bag.bag_id === updatedBag.bag_id ? { ...bag, ...updatedBag } : bag) }
           : old,
       )
-      queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(id) })
-      queryClient.invalidateQueries({ queryKey: inventoryQueryKey() })
-      queryClient.invalidateQueries({ queryKey: dashboardQueryKey() })
-      queryClient.invalidateQueries({ queryKey: defaultsBagQueryKey(updatedBag.bag_id) })
-      queryClient.invalidateQueries({ queryKey: brewLogListQueryKey() })
+      queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(id, activeHouseholdId) })
+      queryClient.invalidateQueries({ queryKey: inventoryQueryKey(activeHouseholdId) })
+      queryClient.invalidateQueries({ queryKey: dashboardQueryKey(activeHouseholdId) })
+      queryClient.invalidateQueries({ queryKey: defaultsBagQueryKey(updatedBag.bag_id, activeHouseholdId) })
+      queryClient.invalidateQueries({ queryKey: brewLogListQueryKey(activeHouseholdId) })
     },
     onError: (_error, variables) => {
       setStatusErrors((prev) => ({
@@ -183,24 +185,24 @@ export default function CatalogDetail() {
                     // detail preview and the catalog-list thumbnail update immediately
                     // without waiting for a background refetch to complete.
                     queryClient.setQueryData<Awaited<ReturnType<typeof getCatalogDetail>>>(
-                      catalogDetailQueryKey(id),
+                      catalogDetailQueryKey(id, activeHouseholdId),
                       (old) => old ? { ...old, item: { ...old.item, image_path } } : old
                     )
                     // Use the exact list key (not a prefix match) to avoid invoking
                     // the updater with CatalogDetail objects from ['catalog', id] queries.
                     queryClient.setQueryData<CatalogItem[]>(
-                      catalogListQueryKey(),
+                      catalogListQueryKey(activeHouseholdId),
                       (old) => old?.map((c) => c.catalog_id === id ? { ...c, image_path } : c)
                     )
                     // Invalidate non-catalog consumers immediately; for catalog queries
                     // use refetchType:'inactive' so they only refetch on next mount —
                     // this prevents a stale Cloud Run instance from returning old data
                     // and overwriting the optimistic cache entries above.
-                    queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(id), refetchType: 'inactive' })
-                    queryClient.invalidateQueries({ queryKey: catalogListQueryKey(), refetchType: 'inactive' })
-                    queryClient.invalidateQueries({ queryKey: inventoryQueryKey() })
-                    queryClient.invalidateQueries({ queryKey: dashboardQueryKey() })
-                    queryClient.invalidateQueries({ queryKey: brewLogListQueryKey() })
+                    queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(id, activeHouseholdId), refetchType: 'inactive' })
+                    queryClient.invalidateQueries({ queryKey: catalogListQueryKey(activeHouseholdId), refetchType: 'inactive' })
+                    queryClient.invalidateQueries({ queryKey: inventoryQueryKey(activeHouseholdId) })
+                    queryClient.invalidateQueries({ queryKey: dashboardQueryKey(activeHouseholdId) })
+                    queryClient.invalidateQueries({ queryKey: brewLogListQueryKey(activeHouseholdId) })
                   } catch {
                     setImageError('Failed to upload image. Please try again.')
                   } finally {
@@ -283,7 +285,7 @@ export default function CatalogDetail() {
                         product_url: editProductUrl.trim() || null,
                       })
                       setEditing(false)
-                      await queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(id) })
+                      await queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(id, activeHouseholdId) })
                       invalidateAllCatalogConsumers()
                     } catch {
                       setEditError('Failed to save. Please try again.')
@@ -408,10 +410,10 @@ export default function CatalogDetail() {
                   try {
                     await createInventoryBag(id!, { roast_date: bagRoastDate, roast_level: addBagRoastLevel })
                     resetAddBagForm()
-                    queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(id!) })
-                    queryClient.invalidateQueries({ queryKey: inventoryQueryKey() })
-                    queryClient.invalidateQueries({ queryKey: dashboardQueryKey() })
-                    queryClient.invalidateQueries({ queryKey: brewLogListQueryKey() })
+                    queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(id!, activeHouseholdId) })
+                    queryClient.invalidateQueries({ queryKey: inventoryQueryKey(activeHouseholdId) })
+                    queryClient.invalidateQueries({ queryKey: dashboardQueryKey(activeHouseholdId) })
+                    queryClient.invalidateQueries({ queryKey: brewLogListQueryKey(activeHouseholdId) })
                   } catch (err) {
                     setBagError(errorMessage(err, 'Failed to add bag. Please try again.'))
                   } finally {

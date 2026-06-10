@@ -17,6 +17,7 @@ import type { BrewLogPage } from '../api/brewLog'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Chip from '../components/Chip'
 import type { BrewLogEntry } from '../types/entities'
+import { useHouseholdQueryScope } from '../contexts/AuthContext'
 
 function eligibilityBadgeClasses(eligibility: string): string {
   switch (eligibility) {
@@ -53,10 +54,10 @@ function isBrewLogPage(value: unknown): value is BrewLogPage {
   return Array.isArray(items) && items.every(isBrewLogEntry)
 }
 
-function findCachedBrewLogShot(queryClient: QueryClient, shotId: string): CachedBrewLogShot | undefined {
+function findCachedBrewLogShot(queryClient: QueryClient, shotId: string, householdId?: string | null): CachedBrewLogShot | undefined {
   if (!shotId) return undefined
 
-  for (const [queryKey, page] of queryClient.getQueriesData<unknown>({ queryKey: ['brew-log'] })) {
+  for (const [queryKey, page] of queryClient.getQueriesData<unknown>({ queryKey: ['households', householdId ?? 'no-household', 'brew-log'] })) {
     if (!isBrewLogPage(page)) continue
 
     const shot = page.items.find((entry) => entry.shot_id === shotId)
@@ -97,10 +98,11 @@ export default function BrewLogDetail() {
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
   const feedbackInFlightRef = useRef(false)
   const queryClient = useQueryClient()
-  const cachedShot = findCachedBrewLogShot(queryClient, shotId)
+  const activeHouseholdId = useHouseholdQueryScope()
+  const cachedShot = findCachedBrewLogShot(queryClient, shotId, activeHouseholdId)
 
   const { data: shot, isLoading, error } = useQuery({
-    queryKey: brewLogDetailQueryKey(shotId),
+    queryKey: brewLogDetailQueryKey(shotId, activeHouseholdId),
     queryFn: () => getBrewLogDetail(shotId),
     enabled: !!id,
     initialData: () => cachedShot?.shot,
@@ -108,7 +110,7 @@ export default function BrewLogDetail() {
   })
 
   const { data: feedbackData } = useQuery({
-    queryKey: brewLogFeedbackQueryKey(shotId),
+    queryKey: brewLogFeedbackQueryKey(shotId, activeHouseholdId),
     queryFn: () => getBrewLogFeedback(shotId),
     enabled: !!id,
   })
@@ -116,15 +118,15 @@ export default function BrewLogDetail() {
   const correctionMutation = useMutation({
     mutationFn: (payload: BrewLogCorrectionPayload) => updateBrewLogEntry(shotId, payload),
     onSuccess: (updatedShot) => {
-      const previous = queryClient.getQueryData<BrewLogEntry>(brewLogDetailQueryKey(shotId))
+      const previous = queryClient.getQueryData<BrewLogEntry>(brewLogDetailQueryKey(shotId, activeHouseholdId))
       const mergedShot = {
         ...updatedShot,
         ai_feedback: updatedShot.ai_feedback ?? previous?.ai_feedback ?? shot?.ai_feedback,
       }
-      queryClient.setQueryData<BrewLogEntry>(brewLogDetailQueryKey(shotId), mergedShot)
-      queryClient.invalidateQueries({ queryKey: brewLogListQueryKey() })
-      queryClient.invalidateQueries({ queryKey: dashboardQueryKey() })
-      queryClient.invalidateQueries({ queryKey: brewLogDetailQueryKey(shotId), refetchType: 'inactive' })
+      queryClient.setQueryData<BrewLogEntry>(brewLogDetailQueryKey(shotId, activeHouseholdId), mergedShot)
+      queryClient.invalidateQueries({ queryKey: brewLogListQueryKey(activeHouseholdId) })
+      queryClient.invalidateQueries({ queryKey: dashboardQueryKey(activeHouseholdId) })
+      queryClient.invalidateQueries({ queryKey: brewLogDetailQueryKey(shotId, activeHouseholdId), refetchType: 'inactive' })
       setCorrectionOpen(false)
       setCorrectionFieldError(null)
     },
@@ -139,14 +141,14 @@ export default function BrewLogDetail() {
       setFeedbackMessage(null)
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(brewLogFeedbackQueryKey(shotId), data)
+      queryClient.setQueryData(brewLogFeedbackQueryKey(shotId, activeHouseholdId), data)
       queryClient.setQueryData<BrewLogEntry>(
-        brewLogDetailQueryKey(shotId),
+        brewLogDetailQueryKey(shotId, activeHouseholdId),
         (old) => old ? { ...old, ai_feedback: data.ai_feedback ?? old.ai_feedback } : old,
       )
-      queryClient.invalidateQueries({ queryKey: brewLogDetailQueryKey(shotId), refetchType: 'inactive' })
-      queryClient.invalidateQueries({ queryKey: brewLogListQueryKey() })
-      queryClient.invalidateQueries({ queryKey: dashboardQueryKey() })
+      queryClient.invalidateQueries({ queryKey: brewLogDetailQueryKey(shotId, activeHouseholdId), refetchType: 'inactive' })
+      queryClient.invalidateQueries({ queryKey: brewLogListQueryKey(activeHouseholdId) })
+      queryClient.invalidateQueries({ queryKey: dashboardQueryKey(activeHouseholdId) })
       setFeedbackMessage('AI feedback updated.')
     },
     onSettled: () => {

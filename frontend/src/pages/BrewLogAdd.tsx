@@ -5,16 +5,18 @@ import { listInventory } from '../api/inventory'
 import { listHardware } from '../api/hardware'
 import { getDefaults } from '../api/defaults'
 import { submitShot } from '../api/brewLog'
-import { brewLogListQueryKey, dashboardQueryKey, defaultsQueryKey, inventoryQueryKey } from '../api/queryKeys'
+import { brewLogListQueryKey, dashboardQueryKey, defaultsQueryKey, householdKeys, inventoryQueryKey } from '../api/queryKeys'
 import LoadingSpinner from '../components/LoadingSpinner'
 import CompassChart from '../components/CompassChart'
 import { getBasketDefaults } from '../utils/basketDefaults'
 import { deriveZoneBoundaries } from '../utils/zoneBoundaries'
+import { useHouseholdQueryScope } from '../contexts/AuthContext'
 
 export default function BrewLogAdd() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const queryClient = useQueryClient()
+  const activeHouseholdId = useHouseholdQueryScope()
   const requestedBagId = searchParams.get('bag_id')?.trim() ?? ''
   const [bagId, setBagId] = useState('')
   const [bagParamNotice, setBagParamNotice] = useState<string | null>(null)
@@ -48,7 +50,7 @@ export default function BrewLogAdd() {
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID())
 
   const { data: inventory, isLoading: invLoading, isError: invError, refetch: refetchInventory } = useQuery({
-    queryKey: inventoryQueryKey(),
+    queryKey: inventoryQueryKey(activeHouseholdId),
     queryFn: () => listInventory('Active'),
   })
 
@@ -57,7 +59,7 @@ export default function BrewLogAdd() {
     isLoading: hardwareIsLoading,
     isSuccess: hardwareIsSuccess,
   } = useQuery({
-    queryKey: ['hardware'],
+    queryKey: householdKeys.hardware(activeHouseholdId),
     queryFn: listHardware,
   })
 
@@ -72,7 +74,7 @@ export default function BrewLogAdd() {
   const zoneBoundaries = deriveZoneBoundaries(machineName, roastLevel)
 
   const { data: defaults, isSuccess: defaultsIsSuccess } = useQuery({
-    queryKey: defaultsQueryKey(bagId, basketId),
+    queryKey: defaultsQueryKey(bagId, basketId, activeHouseholdId),
     queryFn: () => getDefaults(bagId, basketId || undefined),
     enabled: !!bagId,
   })
@@ -178,8 +180,8 @@ export default function BrewLogAdd() {
     mutationFn: submitShot,
     onSuccess: async () => {
       setIdempotencyKey(crypto.randomUUID())
-      await queryClient.invalidateQueries({ queryKey: brewLogListQueryKey() })
-      await queryClient.invalidateQueries({ queryKey: dashboardQueryKey() })
+      await queryClient.invalidateQueries({ queryKey: brewLogListQueryKey(activeHouseholdId) })
+      await queryClient.invalidateQueries({ queryKey: dashboardQueryKey(activeHouseholdId) })
       navigate('/brew-log?toast=shot-saved')
     },
     onSettled: () => { isSubmittingRef.current = false },

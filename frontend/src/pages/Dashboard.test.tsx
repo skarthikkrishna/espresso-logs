@@ -33,6 +33,11 @@ vi.mock('../api/brewLog', () => ({
   listBrewLog: vi.fn(),
 }))
 
+vi.mock('../contexts/AuthContext', () => ({
+  useAuth: () => ({ activeHouseholdId: 'hh-1' }),
+  useHouseholdQueryScope: () => 'hh-1',
+}))
+
 import { getDashboard } from '../api/dashboard'
 import { listBrewLog } from '../api/brewLog'
 import Dashboard from './Dashboard'

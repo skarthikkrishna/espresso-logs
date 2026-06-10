@@ -41,7 +41,7 @@ from app.services.auth import (
 router = APIRouter(prefix="/auth", tags=["auth"])
 logger = logging.getLogger(__name__)
 
-_USERNAME_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
+_USERNAME_RE = re.compile(r"^[A-Za-z0-9_]+$")
 _REFRESH_REPLAY_GRACE_SECONDS = 5.0
 
 
@@ -58,12 +58,10 @@ class RegisterRequest(BaseModel):
     @field_validator("username")
     @classmethod
     def _validate_username(cls, v: str) -> str:
-        if not (3 <= len(v) <= 32):
-            raise ValueError("Username must be 3–32 characters")
+        if not (3 <= len(v) <= 30):
+            raise ValueError("Username must be 3–30 characters")
         if not _USERNAME_RE.match(v):
-            raise ValueError("Username may only contain letters, digits, _ and -")
-        if v[0] in "-_" or v[-1] in "-_":
-            raise ValueError("Username must not start or end with - or _")
+            raise ValueError("Username may only contain letters, numbers, and underscores")
         return v
 
     @field_validator("password")
@@ -112,6 +110,9 @@ class MembershipSchema(BaseModel):
     household_name: str
     role: str
     joined_at: datetime.datetime
+    member_count: int = 0
+    is_active: bool = False
+    can_manage: bool = False
 
 
 class MeOut(BaseModel):
@@ -316,25 +317,35 @@ async def get_me(
         memberships: list[
             HouseholdMembershipWithName
         ] = await HouseholdRepo().get_memberships_with_households_for_user(db, user.id)
+        if not memberships and user.active_household_id is not None:
+            await UserRepo().clear_active_household(db, user.id)
+            user.active_household_id = None
         for membership_with_household in memberships:
             membership = membership_with_household.membership
+            is_active = membership.household_id == user.active_household_id
             memberships_out.append(
                 MembershipSchema(
                     household_id=membership.household_id,
                     household_name=membership_with_household.household_name,
                     role=membership.role,
                     joined_at=membership.joined_at,
+                    member_count=getattr(membership_with_household, "member_count", 0),
+                    is_active=is_active,
+                    can_manage=membership.role == "admin",
                 )
             )
-            if membership.household_id == user.active_household_id:
+            if is_active:
                 active_membership = membership_with_household
 
         if active_membership is None and memberships:
             active_membership = memberships[0]
-            if user.active_household_id is not None:
-                await UserRepo().clear_active_household(db, user.id)
-                await db.commit()
-                user.active_household_id = None
+            fallback_household_id = active_membership.membership.household_id
+            await UserRepo().set_active_household(db, user.id, fallback_household_id)
+            user.active_household_id = fallback_household_id
+            memberships_out = [
+                item.model_copy(update={"is_active": item.household_id == fallback_household_id})
+                for item in memberships_out
+            ]
 
         if active_membership is not None:
             household_id = active_membership.membership.household_id

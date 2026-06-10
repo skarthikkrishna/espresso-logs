@@ -3,7 +3,9 @@ import { createPortal } from 'react-dom'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { brewLogDetailQueryKey, listBrewLog, getBrewLogDetail } from '../api/brewLog'
+import { brewLogListQueryKey } from '../api/queryKeys'
 import LoadingSpinner from '../components/LoadingSpinner'
+import { useHouseholdQueryScope } from '../contexts/AuthContext'
 
 export default function BrewLogList() {
   const navigate = useNavigate()
@@ -15,9 +17,10 @@ export default function BrewLogList() {
   const [toast, setToast] = useState<string | null>(null)
   const [syncAlertDismissed, setSyncAlertDismissed] = useState(false)
   const queryClient = useQueryClient()
+  const activeHouseholdId = useHouseholdQueryScope()
 
   const { data, isLoading, isPlaceholderData, error } = useQuery({
-    queryKey: ['brew-log', page, 100],
+    queryKey: brewLogListQueryKey(activeHouseholdId, page, 100),
     queryFn: () => listBrewLog(page, 100),
     placeholderData: keepPreviousData,
   })
@@ -70,7 +73,7 @@ export default function BrewLogList() {
                 to={`/brew-log/${entry.shot_id}`}
                 onMouseEnter={() => {
                   queryClient.prefetchQuery({
-                    queryKey: brewLogDetailQueryKey(entry.shot_id),
+                    queryKey: brewLogDetailQueryKey(entry.shot_id, activeHouseholdId),
                     queryFn: () => getBrewLogDetail(entry.shot_id),
                     staleTime: 60_000,
                   })
