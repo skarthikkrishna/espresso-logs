@@ -234,7 +234,7 @@ export default function BrewLogAdd() {
 
       <form data-testid="brew-log-add-form" onSubmit={handleSubmit} className="space-y-4">
         {/* Bag — full width */}
-        <FormField label="Bag" htmlFor="brew-log-bag" required errorId="brew-log-bag-error">
+        <FormField label="Bag" htmlFor="brew-log-bag" required>
           <Select
             id="brew-log-bag"
             value={bagId}
@@ -244,7 +244,6 @@ export default function BrewLogAdd() {
               setBagId(e.target.value)
             }}
             required
-            aria-describedby="brew-log-bag-error"
           >
             <option value="">Select bag…</option>
             {inventory?.map((bag) => (
@@ -265,7 +264,7 @@ export default function BrewLogAdd() {
         <div className="space-y-4">
           {/* Dose / Yield / Time */}
           <div className="grid grid-cols-3 gap-3">
-            <FormField label="Dose (g)" htmlFor="brew-log-dose" errorId="brew-log-dose-error">
+            <FormField label="Dose (g)" htmlFor="brew-log-dose">
               <Input
                 id="brew-log-dose"
                 type="number"
@@ -273,7 +272,6 @@ export default function BrewLogAdd() {
                 min="0"
                 value={doseG}
                 onChange={(e) => { dirtyFields.current.add('dose'); setDoseG(e.target.value) }}
-                aria-describedby="brew-log-dose-error"
               />
             </FormField>
             <FormField label="Yield (g)" htmlFor="brew-log-yield">
@@ -326,13 +324,12 @@ export default function BrewLogAdd() {
             </FormField>
 
             {/* Shot eligibility second */}
-            <FormField label="Shot eligibility" htmlFor="brew-log-shot-eligibility" required errorId="brew-log-eligibility-error">
+            <FormField label="Shot eligibility" htmlFor="brew-log-shot-eligibility" required>
               <Select
                 id="brew-log-shot-eligibility"
                 value={eligibility}
                 onChange={e => setEligibility(e.target.value)}
                 required
-                aria-describedby="brew-log-eligibility-error"
               >
                 <option value="">Select…</option>
                 <option value="Reject">Reject</option>
