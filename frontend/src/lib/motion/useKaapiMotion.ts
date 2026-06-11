@@ -32,7 +32,7 @@ export function useKaapiMotion(options: UseKaapiMotionOptions = {}) {
     )
   })
 
-  const staggerCards = contextSafe((target: MotionTarget, stagger = kaapiMotionTokens.staggerCard) => {
+  const staggerCards = contextSafe((target: MotionTarget, stagger: number = kaapiMotionTokens.staggerCard) => {
     if (prefersReducedMotion) {
       return setFinal(target, { opacity: 1, y: 0, scale: 1, clearProps: 'transform' })
     }
