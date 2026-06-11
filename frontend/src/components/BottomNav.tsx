@@ -59,7 +59,7 @@ export default function BottomNav() {
   return (
     <>
       {activeMembership ? (
-        <div className="mobile-household-strip nav-shell fixed bottom-[4.25rem] left-0 right-0 z-50 border-t px-2 py-1 lg:hidden">
+        <div data-testid="mobile-household-strip" className="mobile-household-strip nav-shell fixed bottom-[var(--mobile-bottom-nav-height)] left-0 right-0 z-50 border-t px-2 py-1 lg:hidden">
           <div className="flex min-h-12 items-center gap-2">
             <HouseholdSwitcher variant="mobile" />
             <button
@@ -76,6 +76,7 @@ export default function BottomNav() {
       ) : null}
 
       <nav
+        data-testid="bottom-nav"
         className="nav-shell household-bottom-safe fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t px-1 pt-2 lg:hidden"
         aria-label="Primary"
       >

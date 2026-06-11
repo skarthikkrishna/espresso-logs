@@ -157,14 +157,15 @@ export default function ImportWizard() {
               label="CSV file"
               htmlFor="import-csv"
               required
-              hint="Accepts .csv files"
+              hint="Upload a .csv exported from your spreadsheet. You can preview before anything is saved."
             >
               <Input
                 id="import-csv"
                 type="file"
                 accept=".csv"
                 onChange={handleFile}
-                className="h-auto py-3 file:mr-4 file:cursor-pointer file:rounded-xl file:border-0 file:bg-amber-500 file:px-4 file:py-2 file:font-semibold file:text-amber-950"
+                data-testid="import-file-input"
+                className="h-auto py-3 file:mr-4 file:cursor-pointer file:rounded-[var(--bevel-radius)] file:border-0 file:bg-primary file:px-4 file:py-2 file:font-semibold file:text-primary-content hover:file:bg-primary/90"
               />
             </FormField>
 
