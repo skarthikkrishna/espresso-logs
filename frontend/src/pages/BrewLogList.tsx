@@ -63,11 +63,13 @@ export default function BrewLogList() {
         </div>
       )}
       {!data?.items?.length ? (
-        <EmptyState
-          icon={<span aria-hidden="true" className="text-3xl">☕</span>}
-          title="No shots logged yet."
-          description="Your recent brews will appear here once you start logging shots."
-        />
+        <div data-testid="fresh-household-empty-brew-log">
+          <EmptyState
+            icon={<span aria-hidden="true" className="text-3xl">☕</span>}
+            title="No shots logged yet."
+            description="Your recent brews will appear here once you start logging shots. Fresh households start empty."
+          />
+        </div>
       ) : (
         <>
           <div data-testid="brew-log-list" className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -171,7 +173,7 @@ export default function BrewLogList() {
       {createPortal(
         <Button
           onClick={() => navigate('/brew-log/add')}
-          className="btn-circle fixed bottom-20 right-4 md:bottom-6 z-50"
+          className="btn-circle fixed right-[max(1rem,env(safe-area-inset-right))] bottom-[var(--mobile-fab-offset)] md:bottom-6 z-50"
           size="lg"
           variant="primary"
           aria-label="Add shot"
