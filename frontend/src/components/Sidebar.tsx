@@ -1,6 +1,5 @@
 import { NavLink } from 'react-router-dom'
 import HouseholdSwitcher from './HouseholdSwitcher'
-import Attribution from './ui/Attribution'
 import { useAuth } from '../contexts/AuthContext'
 
 interface NavItem {
@@ -64,10 +63,11 @@ export default function Sidebar() {
     >
       <div className="flex items-center gap-3 px-6 py-6">
         <img
-          src="/static/img/coffee-shop.png"
+          src="/static/img/kaapi-kadai-mark.svg"
           alt=""
-          className="h-7 w-7 shrink-0"
+          className="h-8 w-8 shrink-0"
           aria-hidden="true"
+          data-testid="brand-mark"
         />
         <span className="text-xl font-display font-bold text-amber-400">Kaapi Kadai</span>
       </div>
@@ -115,9 +115,6 @@ export default function Sidebar() {
         </span>
       </NavLink>
 
-      <div className="px-6 pb-4">
-        <Attribution />
-      </div>
     </aside>
   )
 }
