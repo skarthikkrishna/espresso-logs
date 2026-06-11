@@ -16,7 +16,8 @@ import { brewLogListQueryKey, dashboardQueryKey } from '../api/queryKeys'
 import type { BrewLogPage } from '../api/brewLog'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Chip from '../components/Chip'
-import { Button, GlassCard, FormField, Input, PageHeader, Select, Textarea } from '../components/ui'
+import ExtractionBrewVizMotion from '../components/motion/ExtractionBrewVizMotion'
+import { Button, GlassCard, FormField, Input, PageHeader, SectionHeading, Select, Textarea } from '../components/ui'
 import type { BrewLogEntry } from '../types/entities'
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
 
@@ -357,6 +358,17 @@ export default function BrewLogDetail() {
           )}
         </dl>
       </GlassCard>
+
+      {shot.dose_in_g != null && shot.yield_out_g != null && shot.time_sec != null && (
+        <GlassCard>
+          <SectionHeading title="Extraction shape" />
+          <ExtractionBrewVizMotion
+            doseGrams={shot.dose_in_g}
+            yieldGrams={shot.yield_out_g}
+            timeSeconds={shot.time_sec}
+          />
+        </GlassCard>
+      )}
 
       {/* Hardware */}
       {(shot.machine_name || shot.grinder_name || shot.basket_name) && (
