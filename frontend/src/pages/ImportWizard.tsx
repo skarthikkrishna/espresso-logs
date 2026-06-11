@@ -1,15 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createCatalogItem } from '../api/catalog'
 import { submitShot } from '../api/brewLog'
-import {
-  Button,
-  EmptyState,
-  FormField,
-  GlassCard,
-  Input,
-  PageHeader,
-  SectionHeading,
-} from '../components/ui'
+import { Button, EmptyState, FormField, GlassCard, PageHeader, SectionHeading } from '../components/ui'
+import { useAuth } from '../contexts/AuthContext'
+import { useKaapiMotion } from '../lib/motion'
 
 type Step = 1 | 2 | 3
 
@@ -18,6 +12,26 @@ interface ParsedRow {
   errors: string[]
   type: 'catalog' | 'brew-log' | 'unknown'
 }
+
+const FIELD_GUIDANCE = [
+  {
+    group: 'Beans / catalog',
+    items: [
+      ['Roaster', 'who roasted the beans', 'Kaapi Kadai uses this to group catalog entries and shot history', 'the bag label or your old roaster column', 'roaster', 'Blue Tokai'],
+      ['Bean name', 'the coffee name', 'this becomes the name people search for later', 'the bag label or product page', 'bean_name', 'Attikan Estate'],
+      ['Roast level', 'how light or dark the coffee is', 'used to keep recipes and active bags consistent', 'your notes or the bag label', 'roast_level', 'Medium'],
+    ],
+  },
+  {
+    group: 'Shots / brew log',
+    items: [
+      ['Dose', 'espresso grounds in grams', 'used with yield and time to explain extraction', 'your shot notes', 'dose_in_g', '18'],
+      ['Yield', 'espresso out in grams', 'used with dose to show brew ratio', 'your shot notes or scale reading', 'yield_out_g', '38'],
+      ['Time', 'how long the shot ran in seconds', 'helps explain fast or slow extractions', 'your timer notes', 'time_sec', '29'],
+      ['Grinder', 'equipment or setting used for the shot', 'keeps brew history searchable', 'your recipe notebook', 'grind_setting', '14'],
+    ],
+  },
+]
 
 function detectType(row: Record<string, string>): ParsedRow['type'] {
   if (row.roaster && row.bean_name) return 'catalog'
@@ -29,14 +43,14 @@ function validateRow(row: Record<string, string>): string[] {
   const errors: string[] = []
   const type = detectType(row)
   if (type === 'catalog') {
-    if (!row.roaster) errors.push('Missing: roaster')
-    if (!row.bean_name) errors.push('Missing: bean name')
-    if (!row.roast_level) errors.push('Missing: roast level')
+    if (!row.roaster) errors.push('Add a roaster so this bean can be grouped in the catalog.')
+    if (!row.bean_name) errors.push('Add a bean name so people can recognize this coffee.')
+    if (!row.roast_level) errors.push('Add a roast level such as Light, Medium, or Dark.')
   } else if (type === 'brew-log') {
-    if (!row.bag_display) errors.push('Missing: bag display')
-    if (!row.date) errors.push('Missing: date')
+    if (!row.bag_display) errors.push('Add the bag name this shot belongs to, for example Blue Tokai — Attikan Estate.')
+    if (!row.date) errors.push('Add the shot date so the brew appears in history.')
   } else {
-    errors.push('Cannot determine row type')
+    errors.push('Add either roaster + bean name for catalog rows, or bag name + date for shot rows.')
   }
   return errors
 }
@@ -46,15 +60,36 @@ export default function ImportWizard() {
   const [rows, setRows] = useState<ParsedRow[]>([])
   const [results, setResults] = useState({ success: 0, errors: 0 })
   const [importing, setImporting] = useState(false)
+  const [selectedFileName, setSelectedFileName] = useState('No file selected')
+  const [validationMessage, setValidationMessage] = useState('Choose a CSV to preview rows before anything is saved.')
+  const { activeMembership } = useAuth()
+  const routeRef = useRef<HTMLDivElement>(null)
+  const guidanceRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { routeEnter, staggerCards, pressFeedback } = useKaapiMotion({ scope: routeRef })
+
+  useEffect(() => {
+    if (routeRef.current) routeEnter(routeRef.current)
+  }, [routeEnter])
+
+  useEffect(() => {
+    const rows = guidanceRef.current?.querySelectorAll('[data-testid="import-field-guidance"]')
+    if (rows?.length) staggerCards(rows, 0.035)
+  }, [staggerCards])
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    setSelectedFileName(file.name)
     const reader = new FileReader()
     reader.onload = (evt) => {
       const text = evt.target?.result as string
       const lines = text.split('\n').filter(Boolean)
-      if (lines.length < 2) return
+      if (lines.length < 2) {
+        setRows([])
+        setValidationMessage('This CSV needs a header row and at least one data row before preview can start.')
+        return
+      }
       const headers = lines[0].split(',').map((h) => h.trim().toLowerCase())
       const parsed: ParsedRow[] = lines.slice(1).map((line) => {
         const values = line.split(',').map((v) => v.trim())
@@ -63,6 +98,7 @@ export default function ImportWizard() {
         return { raw, type: detectType(raw), errors: validateRow(raw) }
       })
       setRows(parsed)
+      setValidationMessage(`${parsed.length} row${parsed.length !== 1 ? 's' : ''} ready to preview. Rows with issues will be explained before import.`)
     }
     reader.readAsText(file)
   }
@@ -101,42 +137,16 @@ export default function ImportWizard() {
     setStep(3)
   }
 
-  return (
-    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
-      <div className="mx-auto w-full max-w-3xl space-y-6 p-4 md:p-6">
-        <PageHeader
-          title="Import"
-          subtitle="Catalog and brew logs"
-        />
+  const validRows = rows.filter((row) => row.errors.length === 0).length
+  const invalidRows = rows.length - validRows
 
-        <GlassCard padding="lg" className="space-y-4">
-          <SectionHeading title="What your CSV should include" />
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2 rounded-2xl border border-amber-500/15 bg-amber-950/30 p-4">
-              <h3 className="text-base font-semibold text-amber-100">Catalog CSV</h3>
-              <p className="text-sm leading-6 text-amber-100/80">
-                Include the columns <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">roaster</code>,{' '}
-                <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">bean_name</code>, and{' '}
-                <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">roast_level</code>.
-                You can also add{' '}
-                <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">product_url</code>.
-              </p>
-            </div>
-            <div className="space-y-2 rounded-2xl border border-amber-500/15 bg-amber-950/30 p-4">
-              <h3 className="text-base font-semibold text-amber-100">Brew log CSV</h3>
-              <p className="text-sm leading-6 text-amber-100/80">
-                Include <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">bag_display</code> or{' '}
-                <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">bag_id</code>, plus{' '}
-                <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">date</code>. Optional fields include{' '}
-                <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">dose_in_g</code>,{' '}
-                <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">yield_out_g</code>,{' '}
-                <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">time_sec</code>,{' '}
-                <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">grind_setting</code>, and{' '}
-                <code className="rounded bg-black/20 px-1 py-0.5 text-amber-100">shot_eligibility</code>.
-              </p>
-            </div>
-          </div>
-        </GlassCard>
+  return (
+    <div ref={routeRef} data-testid="motion-route-boundary" className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
+      <div className="mx-auto w-full max-w-5xl space-y-6 p-4 md:p-6">
+        <div data-testid="import-household-header">
+          <PageHeader subtitle="IMPORT" title="Bring in your coffee data" />
+          <p className="mt-2 text-sm text-amber-200/70">Importing into: <span className="font-medium text-amber-100">{activeMembership?.household_name ?? 'Current household'}</span></p>
+        </div>
 
         <GlassCard padding="md">
           <ul className="steps steps-horizontal w-full text-sm text-amber-200/70">
@@ -146,149 +156,152 @@ export default function ImportWizard() {
           </ul>
         </GlassCard>
 
-        {step === 1 && (
-          <GlassCard padding="lg" className="space-y-6">
-            <SectionHeading title="Upload file" />
-            <p className="text-sm leading-6 text-amber-100/80">
-              Choose a CSV export for catalog items or brew log entries. Your file is parsed first so you can preview rows and spot issues before anything is imported.
-            </p>
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.8fr)]">
+          <GlassCard padding="lg" className="space-y-4">
+            <SectionHeading title="What each column means" />
+            <div ref={guidanceRef} className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
+              {FIELD_GUIDANCE.map((group) => (
+                <div key={group.group} className="space-y-3">
+                  <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-300/70">{group.group}</h3>
+                  {group.items.map(([label, what, why, where, raw, example]) => (
+                    <div key={raw} data-testid="import-field-guidance" className="rounded-[var(--bevel-radius)] border border-amber-500/15 bg-amber-950/25 p-4">
+                      <p className="font-medium text-amber-100">{label} <span className="font-normal text-amber-200/70">— {what}.</span></p>
+                      <p className="mt-1 text-sm leading-6 text-amber-100/76">{why}. Find it in {where}.</p>
+                      <p className="mt-2 text-xs text-amber-200/55"><code className="rounded bg-black/25 px-1.5 py-0.5 font-mono text-amber-100/80">{raw}</code> Example: <span className="text-amber-100">{example}</span></p>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </GlassCard>
 
-            <FormField
-              label="CSV file"
-              htmlFor="import-csv"
-              required
-              hint="Upload a .csv exported from your spreadsheet. You can preview before anything is saved."
-            >
-              <Input
-                id="import-csv"
-                type="file"
-                accept=".csv"
-                onChange={handleFile}
-                data-testid="import-file-input"
-                className="h-auto py-3 file:mr-4 file:cursor-pointer file:rounded-[var(--bevel-radius)] file:border-0 file:bg-primary file:px-4 file:py-2 file:font-semibold file:text-primary-content hover:file:bg-primary/90"
-              />
-            </FormField>
+          <div className="space-y-6">
+            {step === 1 && (
+              <GlassCard padding="lg" className="space-y-6">
+                <SectionHeading title="Upload file" />
+                <p className="text-sm leading-6 text-amber-100/80">
+                  Choose a CSV exported from your spreadsheet. Kaapi Kadai previews the file first, so you can fix rows before saving anything.
+                </p>
 
-            {rows.length === 0 ? (
-              <EmptyState
-                icon={<span className="text-3xl">📄</span>}
-                title="Upload a CSV to unlock preview"
-                description="The Preview step becomes available after we detect a header row and at least one data row in your file."
-              />
-            ) : (
-              <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
-                {rows.length} row{rows.length !== 1 ? 's' : ''} ready to review before import.
-              </div>
+                <a
+                  data-testid="import-example-csv-link"
+                  href="/templates/kaapi-kadai-import-example.csv"
+                  download
+                  className="btn btn-outline btn-sm btn-bevel w-full text-amber-100 sm:w-auto"
+                >
+                  Download example CSV
+                </a>
+                <p className="text-xs text-amber-200/60">Use this as a starting point; it contains fake sample data only.</p>
+
+                <FormField
+                  label="CSV file"
+                  htmlFor="import-csv"
+                  required
+                  hint="Upload a .csv exported from your spreadsheet. You can preview before anything is saved."
+                >
+                  <input
+                    ref={fileInputRef}
+                    id="import-csv"
+                    type="file"
+                    accept=".csv"
+                    className="sr-only"
+                    onChange={handleFile}
+                    aria-describedby="import-validation-message"
+                  />
+                  <div className="input-styled flex flex-col gap-3 rounded-[var(--bevel-radius)] p-3 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="truncate text-sm text-amber-100/80">{selectedFileName}</span>
+                    <Button
+                      data-testid="import-file-input"
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onMouseDown={(event) => pressFeedback(event.currentTarget)}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      Choose CSV
+                    </Button>
+                  </div>
+                </FormField>
+
+                <p id="import-validation-message" data-testid="import-validation-message" className="rounded-[var(--bevel-radius)] border border-amber-500/20 bg-amber-950/25 px-4 py-3 text-sm text-amber-100/80">
+                  {validationMessage}
+                </p>
+
+                {rows.length === 0 ? (
+                  <EmptyState
+                    icon={<span className="text-3xl">📄</span>}
+                    title="Upload a CSV to unlock preview"
+                    description="The Preview step becomes available after we detect a header row and at least one data row."
+                  />
+                ) : (
+                  <div className="rounded-[var(--bevel-radius)] border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+                    {rows.length} row{rows.length !== 1 ? 's' : ''} ready to review before import.
+                  </div>
+                )}
+
+                <Button variant="primary" fullWidth disabled={rows.length === 0} onClick={() => setStep(2)}>
+                  {rows.length > 0 ? `Preview ${rows.length} rows` : 'Preview'}
+                </Button>
+              </GlassCard>
             )}
 
-            <div className="space-y-2">
-              <Button
-                variant="primary"
-                fullWidth
-                disabled={rows.length === 0}
-                onClick={() => setStep(2)}
-              >
-                {rows.length > 0 ? `Preview ${rows.length} rows` : 'Preview'}
-              </Button>
-              <p className="text-center text-sm text-amber-200/70">
-                {rows.length > 0
-                  ? 'Preview each row before sending valid entries to your account.'
-                  : 'Preview stays disabled until you select a CSV with data.'}
-              </p>
-            </div>
-          </GlassCard>
-        )}
+            {step === 2 && (
+              <GlassCard padding="lg" className="space-y-6">
+                <SectionHeading
+                  title="Preview rows"
+                  actions={<p className="text-sm text-amber-200/70">{validRows} valid • {invalidRows} with issues</p>}
+                />
 
-        {step === 2 && (
-          <GlassCard padding="lg" className="space-y-6">
-            <SectionHeading
-              title="Preview rows"
-              actions={(
-                <p className="text-sm text-amber-200/70">
-                  {rows.filter((row) => row.errors.length === 0).length} valid • {rows.filter((row) => row.errors.length > 0).length} with issues
+                <div className="overflow-x-auto rounded-[var(--bevel-radius)] border border-amber-700/20">
+                  <table className="table w-full text-sm text-amber-100">
+                    <thead className="text-sm text-amber-300/80">
+                      <tr><th>#</th><th>Type</th><th>Summary</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((row, i) => (
+                        <tr key={i} className="border-amber-700/20">
+                          <td className="text-sm text-amber-200/60">{i + 1}</td>
+                          <td className="text-sm capitalize">{row.type}</td>
+                          <td className="max-w-xs truncate text-sm">
+                            {row.raw.roaster ? `${row.raw.roaster} — ${row.raw.bean_name}` : row.raw.bag_display || Object.values(row.raw).slice(0, 2).join(', ')}
+                          </td>
+                          <td>
+                            {row.errors.length ? (
+                              <span data-testid="import-validation-message" className="inline-flex rounded-[var(--bevel-radius)] bg-red-500/15 px-3 py-1 text-sm font-medium text-red-200">
+                                {row.errors[0]}
+                              </span>
+                            ) : (
+                              <span className="inline-flex rounded-[var(--bevel-radius)] bg-emerald-500/15 px-3 py-1 text-sm font-medium text-emerald-200">OK</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Button variant="ghost" className="w-full sm:w-auto" onClick={() => setStep(1)}>Back</Button>
+                  <Button variant="primary" className="w-full sm:flex-1" disabled={importing || validRows === 0} loading={importing} loadingText="Importing…" onClick={handleImport}>
+                    {`Import ${validRows} valid rows`}
+                  </Button>
+                </div>
+                <p className="text-sm leading-6 text-amber-200/70">Rows with issues are skipped so you can fix them in your CSV and try again.</p>
+              </GlassCard>
+            )}
+
+            {step === 3 && (
+              <GlassCard padding="lg" className="space-y-4 text-center">
+                <p className="text-5xl">✓</p>
+                <p className="font-display text-2xl text-amber-100">Import complete</p>
+                <p className="text-sm leading-6 text-amber-200/80">
+                  {results.success} row{results.success !== 1 ? 's' : ''} imported successfully{results.errors > 0 && `, ${results.errors} failed`}.
                 </p>
-              )}
-            />
-
-            <div className="overflow-x-auto rounded-2xl border border-amber-700/20">
-              <table className="table w-full text-sm text-amber-100">
-                <thead className="text-sm text-amber-300/80">
-                  <tr>
-                    <th>#</th>
-                    <th>Type</th>
-                    <th>Summary</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row, i) => (
-                    <tr key={i} className="border-amber-700/20">
-                      <td className="text-sm text-amber-200/60">{i + 1}</td>
-                      <td className="text-sm capitalize">{row.type}</td>
-                      <td className="max-w-xs truncate text-sm">
-                        {row.raw.roaster
-                          ? `${row.raw.roaster} — ${row.raw.bean_name}`
-                          : row.raw.bag_display || Object.values(row.raw).slice(0, 2).join(', ')}
-                      </td>
-                      <td>
-                        {row.errors.length ? (
-                          <span className="inline-flex rounded-full bg-red-500/15 px-3 py-1 text-sm font-medium text-red-200">
-                            {row.errors[0]}
-                          </span>
-                        ) : (
-                          <span className="inline-flex rounded-full bg-emerald-500/15 px-3 py-1 text-sm font-medium text-emerald-200">
-                            OK
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button
-                variant="ghost"
-                className="w-full sm:w-auto"
-                onClick={() => setStep(1)}
-              >
-                Back
-              </Button>
-              <Button
-                variant="primary"
-                className="w-full sm:flex-1"
-                disabled={importing || rows.filter((r) => r.errors.length === 0).length === 0}
-                loading={importing}
-                loadingText="Importing…"
-                onClick={handleImport}
-              >
-                {`Import ${rows.filter((r) => r.errors.length === 0).length} valid rows`}
-              </Button>
-            </div>
-
-            <p className="text-sm leading-6 text-amber-200/70">
-              Rows with validation issues will be skipped during import.
-            </p>
-          </GlassCard>
-        )}
-
-        {step === 3 && (
-          <GlassCard padding="lg" className="space-y-4 text-center">
-            <p className="text-5xl">✓</p>
-            <p className="font-display text-2xl text-amber-100">Import complete</p>
-            <p className="text-sm leading-6 text-amber-200/80">
-              {results.success} row{results.success !== 1 ? 's' : ''} imported successfully
-              {results.errors > 0 && `, ${results.errors} failed`}.
-            </p>
-            <Button
-              variant="primary"
-              onClick={() => { setStep(1); setRows([]) }}
-            >
-              Import more
-            </Button>
-          </GlassCard>
-        )}
+                <Button variant="primary" onClick={() => { setStep(1); setRows([]); setSelectedFileName('No file selected') }}>Import more</Button>
+              </GlassCard>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )
