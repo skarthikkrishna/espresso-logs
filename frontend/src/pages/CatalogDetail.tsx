@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import axios from 'axios'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -14,9 +14,10 @@ import {
 } from '../api/queryKeys'
 import type { CatalogDetail as CatalogDetailData, CatalogItem, InventoryBag } from '../types/entities'
 import LoadingSpinner from '../components/LoadingSpinner'
-import Chip from '../components/Chip'
+import { Badge, Button, FormField, GlassCard, Input, PageHeader, SectionHeading, Select } from '../components/ui'
 import { ROAST_LEVELS } from '../utils/roastLevels'
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
+import { useKaapiMotion } from '../lib/motion'
 
 export default function CatalogDetail() {
   const { id } = useParams<{ id: string }>()
@@ -44,6 +45,9 @@ export default function CatalogDetail() {
   // that swapping `src` after a Replace upload re-attempts to load.
   const [brokenImageSrc, setBrokenImageSrc] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const routeRef = useRef<HTMLDivElement>(null)
+  const cardListRef = useRef<HTMLDivElement>(null)
+  const { routeEnter, staggerCards } = useKaapiMotion({ scope: routeRef })
 
   /**
    * Invalidate every query whose data could embed the catalog entry's
@@ -65,6 +69,15 @@ export default function CatalogDetail() {
     queryFn: () => getCatalogDetail(id!),
     enabled: !!id,
   })
+
+  useEffect(() => {
+    if (routeRef.current) routeEnter(routeRef.current)
+  }, [routeEnter])
+
+  useEffect(() => {
+    const cards = cardListRef.current?.querySelectorAll('.kaapi-motion-card')
+    if (cards?.length) staggerCards(cards)
+  }, [data?.bags.length, data?.recent_shots.length, staggerCards])
 
   const bagStatusMutation = useMutation({
     mutationFn: ({ bagId, status }: { bagId: string; status: InventoryBag['status'] }) =>
@@ -97,10 +110,10 @@ export default function CatalogDetail() {
   if (isLoading) return <LoadingSpinner />
   if (isError) return (
     <div className="p-4">
-      <div className="glass-card card-bevel p-6 text-center">
+      <GlassCard padding="lg" className="text-center">
         <p className="text-amber-200 font-medium">Couldn't load coffee details</p>
-        <button onClick={() => refetch()} className="btn btn-sm btn-outline border-amber-600 text-amber-200 mt-3">Retry</button>
-      </div>
+        <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-3 border-amber-600 text-amber-200">Retry</Button>
+      </GlassCard>
     </div>
   )
   if (!data) return null
@@ -132,13 +145,13 @@ export default function CatalogDetail() {
   }
 
   return (
-    <div data-testid="catalog-detail" className="p-4 md:p-6 space-y-8 max-w-3xl">
+    <div ref={routeRef} data-testid="catalog-detail" className="p-4 md:p-6 space-y-8 max-w-3xl">
       <Link to="/catalog" className="text-sm text-amber-400 hover:text-amber-300 inline-block">
         ← Back
       </Link>
 
       {/* Header */}
-      <div className="flex gap-4 items-start">
+      <GlassCard padding="lg" className="flex gap-4 items-start">
         <div className="relative shrink-0">
           {item.image_path && item.image_path !== brokenImageSrc ? (
             <img
@@ -157,15 +170,16 @@ export default function CatalogDetail() {
           )}
           {editing && (
             <>
-              <button
+              <Button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={imageUploading || editSaving}
-                className="btn btn-xs btn-primary btn-bevel absolute -bottom-2 -right-2"
+                size="xs"
+                className="absolute -bottom-2 -right-2"
                 aria-label="Replace image"
               >
                 {imageUploading ? <span className="loading loading-spinner loading-xs" /> : 'Replace'}
-              </button>
+              </Button>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -218,60 +232,66 @@ export default function CatalogDetail() {
           {editing ? (
             <div className="space-y-2">
               <div>
-                <label className="label text-xs text-amber-200/70 pb-1" htmlFor="catalog-edit-roaster">Roaster</label>
-                <input
+                <FormField label="Roaster" htmlFor="catalog-edit-roaster">
+                <Input
                   id="catalog-edit-roaster"
                   type="text"
+                  inputSize="sm"
                   value={editRoaster}
                   onChange={(e) => setEditRoaster(e.target.value)}
-                  className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
                 />
+                </FormField>
               </div>
               <div>
-                <label className="label text-xs text-amber-200/70 pb-1" htmlFor="catalog-edit-bean-name">Bean name</label>
-                <input
+                <FormField label="Bean name" htmlFor="catalog-edit-bean-name">
+                <Input
                   id="catalog-edit-bean-name"
                   type="text"
+                  inputSize="sm"
                   value={editBeanName}
                   onChange={(e) => setEditBeanName(e.target.value)}
-                  className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
                 />
+                </FormField>
               </div>
               <div>
-                <label className="label text-xs text-amber-200/70 pb-1" htmlFor="catalog-edit-roast-level">Roast level</label>
-                <select
+                <FormField label="Roast level" htmlFor="catalog-edit-roast-level">
+                <Select
                   id="catalog-edit-roast-level"
+                  selectSize="sm"
                   value={editRoastLevel}
                   onChange={(e) => setEditRoastLevel(e.target.value)}
-                  className="select select-bordered select-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
                 >
                   <option value="">Select…</option>
                   {ROAST_LEVELS.map((r) => (
                     <option key={r} value={r}>{r}</option>
                   ))}
-                </select>
+                </Select>
+                </FormField>
               </div>
               <div>
-                <label className="label text-xs text-amber-200/70 pb-1" htmlFor="catalog-edit-product-url">Product URL (optional)</label>
-                <input
+                <FormField label="Product URL (optional)" htmlFor="catalog-edit-product-url">
+                <Input
                   id="catalog-edit-product-url"
                   type="url"
+                  inputSize="sm"
                   value={editProductUrl}
                   onChange={(e) => setEditProductUrl(e.target.value)}
                   placeholder="https://..."
-                  className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
                 />
+                </FormField>
               </div>
               {imageError && <p className="text-xs text-red-400">{imageError}</p>}
               {editError && <p className="text-xs text-red-400">{editError}</p>}
               <div className="flex gap-2 justify-end pt-1">
-                <button
+                <Button
                   onClick={() => { setEditing(false); setEditError(null); setImageError(null) }}
-                  className="btn btn-xs btn-ghost text-amber-300/70"
+                  variant="ghost"
+                  size="xs"
+                  className="text-amber-300/70"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   disabled={editSaving || imageUploading || !editRoaster.trim() || !editBeanName.trim() || !editRoastLevel}
                   onClick={async () => {
                     if (!id) return
@@ -293,19 +313,20 @@ export default function CatalogDetail() {
                       setEditSaving(false)
                     }
                   }}
-                  className="btn btn-xs bg-amber-600 hover:bg-amber-500 border-none text-white btn-bevel"
+                  size="xs"
                 >
                   {editSaving ? <span className="loading loading-spinner loading-xs" /> : 'Save'}
-                </button>
+                </Button>
               </div>
             </div>
           ) : (
             <>
-              <h1 className="text-2xl font-display text-amber-100">{item.bean_name}</h1>
-              <p className="text-amber-200/70">{item.roaster}</p>
-              <Chip label={item.roast_level} className="mt-2" />
+              <PageHeader title={item.bean_name} subtitle={item.roaster} />
+              <Badge className="mt-2">{item.roast_level}</Badge>
               <div className="mt-2">
-                <button
+                <Button
+                  variant="outline"
+                  size="xs"
                   onClick={() => {
                     setEditRoaster(item.roaster)
                     setEditBeanName(item.bean_name)
@@ -315,15 +336,15 @@ export default function CatalogDetail() {
                     setImageError(null)
                     setEditing(true)
                   }}
-                  className="btn btn-xs btn-outline border border-amber-600/40 text-amber-300 hover:bg-amber-800/40 appearance-none btn-bevel"
+                  className="border border-amber-600/40 text-amber-300 hover:bg-amber-800/40 appearance-none"
                 >
                   Edit
-                </button>
+                </Button>
               </div>
             </>
           )}
         </div>
-      </div>
+      </GlassCard>
       {!editing && item.product_url && (
         <a
           href={item.product_url}
@@ -337,72 +358,81 @@ export default function CatalogDetail() {
 
       {/* Bags */}
       <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-display text-amber-200">Bags</h2>
-          <button
+        <SectionHeading
+          title="Bags"
+          testId="catalog-section-heading"
+          actions={(
+          <Button
             onClick={openAddBagForm}
-            className="btn btn-xs bg-amber-700 hover:bg-amber-600 border-none text-white overflow-hidden btn-bevel"
+            size="xs"
           >
             + Add bag
-          </button>
-        </div>
+          </Button>
+          )}
+        />
 
         {addingBag && (
-          <div className="glass-card card-bevel p-4 mb-3 space-y-3">
+          <GlassCard className="mb-3 space-y-3">
             <div className="flex gap-3 flex-wrap">
               <div className="flex-1 min-w-[140px]">
-                <label className="label text-xs text-amber-200/70 pb-1" htmlFor="add-bag-roast-date">Roast date</label>
-                <input
+                <FormField label="Roast date" htmlFor="add-bag-roast-date">
+                <Input
                   id="add-bag-roast-date"
                   type="date"
+                  inputSize="sm"
                   value={bagRoastDate}
                   onChange={(e) => setBagRoastDate(e.target.value)}
-                  className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
                 />
+                </FormField>
               </div>
               {lockedCatalogRoast ? (
                 <div className="flex-1 min-w-[140px]">
-                  <label className="label text-xs text-amber-200/70 pb-1" htmlFor="add-bag-roast-level-locked">Roast level</label>
-                  <input
+                  <FormField label="Roast level" htmlFor="add-bag-roast-level-locked">
+                  <Input
                     id="add-bag-roast-level-locked"
                     type="text"
+                    inputSize="sm"
                     value={lockedCatalogRoast}
                     readOnly
                     disabled
                     aria-describedby="add-bag-roast-level-locked-note"
-                    className="input input-bordered input-sm w-full bg-amber-950/50 border-amber-700/30 text-amber-100"
+                    className="opacity-60"
                   />
+                  </FormField>
                   <p id="add-bag-roast-level-locked-note" className="text-xs text-amber-200/60 mt-1">
                     Roast level set by catalog: {lockedCatalogRoast}
                   </p>
                 </div>
               ) : (
                 <div className="flex-1 min-w-[140px]">
-                  <label className="label text-xs text-amber-200/70 pb-1" htmlFor="add-bag-roast-level">Roast level</label>
-                  <select
+                  <FormField label="Roast level" htmlFor="add-bag-roast-level">
+                  <Select
                     id="add-bag-roast-level"
+                    selectSize="sm"
                     value={bagRoastLevel}
                     onChange={(e) => setBagRoastLevel(e.target.value)}
                     required
-                    className="select select-bordered select-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
                   >
                     <option value="">Select…</option>
                     {ROAST_LEVELS.map((r) => (
                       <option key={r} value={r}>{r}</option>
                     ))}
-                  </select>
+                  </Select>
+                  </FormField>
                 </div>
               )}
             </div>
             {bagError && <p className="text-xs text-red-400">{bagError}</p>}
             <div className="flex gap-2 justify-end">
-              <button
+              <Button
                 onClick={resetAddBagForm}
-                className="btn btn-xs btn-ghost text-amber-300/70"
+                variant="ghost"
+                size="xs"
+                className="text-amber-300/70"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 disabled={bagSaving || !bagRoastDate || !addBagRoastLevel}
                 onClick={async () => {
                   setBagSaving(true)
@@ -420,24 +450,24 @@ export default function CatalogDetail() {
                     setBagSaving(false)
                   }
                 }}
-              className="btn btn-xs bg-amber-600 hover:bg-amber-500 border-none text-white btn-bevel"
+                size="xs"
               >
                 {bagSaving ? <span className="loading loading-spinner loading-xs" /> : 'Save bag'}
-              </button>
+              </Button>
             </div>
-          </div>
+          </GlassCard>
         )}
 
         {bags.length === 0 ? (
           <p className="text-amber-200/60 text-sm">No bags in inventory.</p>
         ) : (
-          <div className="space-y-2">
+          <div ref={cardListRef} data-testid="motion-card-list" className="space-y-2">
             {bags.map((bag) => {
               const nextStatus = bag.status === 'Active' ? 'Finished' : 'Active'
               const pending = bagStatusMutation.isPending && bagStatusMutation.variables?.bagId === bag.bag_id
               const actionLabel = bag.status === 'Active' ? 'Finish bag' : 'Reactivate'
               return (
-              <div key={bag.bag_id} className="glass-card card-bevel px-4 py-3 flex items-center justify-between gap-3">
+              <GlassCard key={bag.bag_id} padding="sm" className="kaapi-motion-card flex items-center justify-between gap-3">
                 <div>
                   {bag.roast_date && (
                     <p data-testid="bag-roast-date" className="text-sm text-amber-300 mt-0.5">{bag.roast_date}</p>
@@ -447,15 +477,17 @@ export default function CatalogDetail() {
                     <p className="text-xs text-red-400 mt-1">{statusErrors[bag.bag_id]}</p>
                   )}
                 </div>
-                <button
+                <Button
                   type="button"
                   disabled={pending}
                   onClick={() => bagStatusMutation.mutate({ bagId: bag.bag_id, status: nextStatus })}
-                  className="btn btn-xs btn-outline border-amber-600/40 text-amber-300 hover:bg-amber-800/40 btn-bevel"
+                  variant="outline"
+                  size="xs"
+                  className="border-amber-600/40 text-amber-300 hover:bg-amber-800/40"
                 >
                   {pending ? 'Saving…' : actionLabel}
-                </button>
-              </div>
+                </Button>
+              </GlassCard>
               )
             })}
           </div>
@@ -464,7 +496,7 @@ export default function CatalogDetail() {
 
       {/* Brew history */}
       <section>
-        <h2 className="text-lg font-display text-amber-200 mb-3">Brew history</h2>
+        <SectionHeading title="Brew history" testId="catalog-section-heading" />
         {recent_shots.length === 0 ? (
           <p className="text-amber-200/60 text-sm">No shots logged yet.</p>
         ) : (

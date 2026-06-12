@@ -41,7 +41,7 @@ export default function AppShell() {
       {/* Main content area — frosted glass panel */}
       <main
         id="main-content"
-        className="flex-1 overflow-y-auto pb-32 lg:pb-0"
+        className="flex-1 overflow-y-auto pb-[var(--mobile-content-bottom-padding)] lg:pb-0"
       >
         {/* Page content — class-toggled animation, DOM node never unmounts */}
         <div className={`page-content min-h-full ${animating ? 'page-enter' : ''}`}>

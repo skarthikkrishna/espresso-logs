@@ -86,8 +86,9 @@ describe('Dashboard — portal regression', () => {
   it('FAB renders in document.body, not inside component container', async () => {
     const { container } = renderWithQuery(<Dashboard />)
 
-    const fab = await screen.findByRole('button', { name: /log a shot/i })
+    const fab = await screen.findByTestId('dashboard-fab')
 
+    expect(fab).toHaveAccessibleName(/log a shot/i) // contract hook targets the mobile FAB, not in-flow CTAs
     expect(fab).toBeInTheDocument()             // sanity: element exists
     expect(container).not.toContainElement(fab) // NOT inside component root
     expect(document.body).toContainElement(fab) // IS portalled to body

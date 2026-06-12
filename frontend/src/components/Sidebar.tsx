@@ -62,14 +62,14 @@ export default function Sidebar() {
       className="nav-shell hidden h-full w-64 shrink-0 flex-col border-r lg:flex"
     >
       <div className="flex items-center gap-3 px-6 py-6">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 shrink-0 text-amber-400" aria-hidden="true">
-          <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
-          <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
-          <line x1="6" y1="1" x2="6" y2="4" />
-          <line x1="10" y1="1" x2="10" y2="4" />
-          <line x1="14" y1="1" x2="14" y2="4" />
-        </svg>
-        <span className="text-xl font-display font-bold text-amber-400">Coffee Tracker</span>
+        <img
+          src="/static/img/kaapi-kadai-mark.svg"
+          alt=""
+          className="h-8 w-8 shrink-0"
+          aria-hidden="true"
+          data-testid="brand-mark"
+        />
+        <span className="text-xl font-display font-bold text-amber-400">Kaapi Kadai</span>
       </div>
 
       <HouseholdSwitcher variant="desktop" />
@@ -114,6 +114,7 @@ export default function Sidebar() {
           <span className="block text-xs text-base-content/50">Profile</span>
         </span>
       </NavLink>
+
     </aside>
   )
 }

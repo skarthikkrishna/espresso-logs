@@ -1,0 +1,3 @@
+roaster,bean_name,roast_level,product_url,bag_display,date,dose_in_g,yield_out_g,time_sec,grind_setting,shot_eligibility
+Blue Tokai,Attikan Estate,Medium,https://example.com/attikan,Blue Tokai — Attikan Estate,2026-06-01,18,38,29,14,Good Espresso
+Kapi Kottai,Curveball,Light,,Kapi Kottai — Curveball,2026-06-02,17,42,31,13,Passable

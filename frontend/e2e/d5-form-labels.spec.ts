@@ -22,7 +22,7 @@ test.describe('D5 — Add Shot form label alignment', () => {
   test('Bag label is above Bag select', async ({ page }) => {
     const formControl = page
       .locator('.form-control')
-      .filter({ has: page.locator('span.label-text', { hasText: /^Bag$/ }) })
+      .filter({ has: page.locator('span.label-text', { hasText: /^Bag\s*\*?$/ }) })
       .first();
 
     const label = formControl.locator('label.label');

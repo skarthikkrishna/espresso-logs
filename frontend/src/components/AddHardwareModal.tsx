@@ -60,7 +60,7 @@ export default function AddHardwareModal({ initialCategory, onClose, onSaved }: 
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="select select-bordered select-sm w-full bg-stone-800 border-amber-900/40 text-amber-100 input-styled"
+              className="select select-bordered select-sm w-full input-styled"
             >
               <option value="">Select category…</option>
               {CATEGORIES.map((c) => (
@@ -77,7 +77,7 @@ export default function AddHardwareModal({ initialCategory, onClose, onSaved }: 
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Breville Barista Express"
-              className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100 input-styled"
+              className="input input-bordered input-sm w-full input-styled"
             />
           </div>
 
@@ -91,7 +91,7 @@ export default function AddHardwareModal({ initialCategory, onClose, onSaved }: 
               value={productUrl}
               onChange={(e) => setProductUrl(e.target.value)}
               placeholder="https://…"
-              className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100 input-styled"
+              className="input input-bordered input-sm w-full input-styled"
             />
           </div>
         </div>
@@ -108,7 +108,7 @@ export default function AddHardwareModal({ initialCategory, onClose, onSaved }: 
             <button
               onClick={() => mutate()}
               disabled={!canSave}
-              className="btn btn-sm bg-amber-600 hover:bg-amber-500 border-none text-white btn-bevel"
+              className="btn btn-sm btn-primary btn-bevel"
             >
               {isPending
                 ? <span className="loading loading-spinner loading-xs" />

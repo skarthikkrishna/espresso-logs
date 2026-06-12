@@ -67,7 +67,7 @@ export default function Profile() {
 
   const joinedAt = user.created_at ?? memberships[0]?.joined_at ?? null
   const authMethod = user.email ? 'Google' : 'Username + password'
-  const displayName = user.display_name || user.username || 'Coffee Tracker user'
+  const displayName = user.display_name || user.username || 'Kaapi Kadai user'
 
   const handleOpen = async (householdId: string, householdName: string) => {
     if (householdId === activeHouseholdId) return

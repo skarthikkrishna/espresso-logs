@@ -120,7 +120,7 @@ test.describe('spec-035 service worker auth refresh regression', () => {
 
       await expect(page).not.toHaveURL(/oauth_success=1/);
       await expect(page).not.toHaveURL(/\/login/);
-      await expect(page.getByRole('heading', { name: /Espresso Logs/i })).toBeVisible();
+      await expect(page.getByRole('heading', { name: /Kaapi Kadai/i })).toBeVisible();
       expect(
         refreshCount,
         'OAuth callback should issue at most one refresh POST; zero is valid when /auth/me authenticates first.',

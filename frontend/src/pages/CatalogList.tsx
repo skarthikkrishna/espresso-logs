@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -6,30 +6,25 @@ import { listCatalog } from '../api/catalog'
 import { catalogDetailQueryKey, catalogListQueryKey } from '../api/queryKeys'
 import LoadingSpinner from '../components/LoadingSpinner'
 import AddBeanModal from '../components/AddBeanModal'
-import Chip from '../components/Chip'
 import type { CatalogItem } from '../types/entities'
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
+import { Badge, Button, EmptyState, GlassCard, Input, PageHeader, SectionHeading } from '../components/ui'
+import { useKaapiMotion } from '../lib/motion'
 
 export default function CatalogList() {
   const [search, setSearch] = useState('')
   const queryClient = useQueryClient()
   const [modalOpen, setModalOpen] = useState(false)
   const activeHouseholdId = useHouseholdQueryScope()
+  const routeRef = useRef<HTMLDivElement>(null)
+  const cardListRef = useRef<HTMLDivElement>(null)
+  const fabRef = useRef<HTMLButtonElement>(null)
+  const { routeEnter, staggerCards, fabMount, pressFeedback } = useKaapiMotion({ scope: routeRef })
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: catalogListQueryKey(activeHouseholdId),
     queryFn: listCatalog,
   })
-
-  if (isLoading) return <LoadingSpinner />
-  if (isError) return (
-    <div className="p-4">
-      <div className="glass-card card-bevel p-6 text-center">
-        <p className="text-amber-200 font-medium">Couldn't load catalog</p>
-        <button onClick={() => refetch()} className="btn btn-sm btn-outline border-amber-600 text-amber-200 mt-3 btn-bevel">Retry</button>
-      </div>
-    </div>
-  )
 
   const filtered = (data ?? []).filter(
     (item) =>
@@ -37,43 +32,78 @@ export default function CatalogList() {
       item.bean_name.toLowerCase().includes(search.toLowerCase()),
   )
 
-  return (
+  useEffect(() => {
+    if (routeRef.current) routeEnter(routeRef.current)
+  }, [routeEnter])
+
+  useEffect(() => {
+    const cards = cardListRef.current?.querySelectorAll('.kaapi-motion-card')
+    if (cards?.length) staggerCards(cards)
+  }, [filtered.length, staggerCards])
+
+  useEffect(() => {
+    if (fabRef.current) fabMount(fabRef.current)
+  }, [fabMount])
+
+  if (isLoading) return <LoadingSpinner />
+  if (isError) return (
     <div className="p-4 md:p-6">
-      <h1 className="font-display text-3xl md:text-4xl font-bold text-white/80 mb-4">Catalog</h1>
+      <GlassCard padding="lg" className="text-center">
+        <p className="font-medium text-amber-200">Couldn't load catalog</p>
+        <p className="mt-1 text-sm text-amber-400/70">{(error as Error)?.message}</p>
+        <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-3 border-amber-600 text-amber-200">
+          Retry
+        </Button>
+      </GlassCard>
+    </div>
+  )
+
+  return (
+    <div ref={routeRef} data-testid="motion-route-boundary" className="p-4 md:p-6 space-y-6">
+      <PageHeader title="Catalog" subtitle="BEANS / INVENTORY" />
+      <SectionHeading title="Coffee library" testId="catalog-section-heading" />
 
       {data?.length === 0 ? (
-        <div className="glass-card p-8 text-center">
-          <p className="text-2xl mb-2">☕</p>
-          <p className="text-amber-200 font-medium">No beans in catalog yet</p>
-          <p className="text-amber-400/70 text-sm mt-1">Tap + to add your first coffee</p>
+        <div data-testid="fresh-household-empty-catalog">
+          <EmptyState
+            icon={<span aria-hidden="true" className="text-3xl">☕</span>}
+            title="No beans in catalog yet"
+            description="Add the first coffee this household brews. Fresh households start empty."
+            action={<Button variant="primary" size="sm" onClick={() => setModalOpen(true)}>Add coffee</Button>}
+          />
         </div>
       ) : (
         <>
-          <input
-            type="text"
-            placeholder="Search roaster or bean…"
-            className="input input-bordered input-styled w-full max-w-sm mb-6 bg-amber-950/60 border-amber-700/40 text-amber-100 placeholder-amber-200/40"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <GlassCard padding="sm" className="max-w-md">
+            <Input
+              type="text"
+              placeholder="Search roaster or bean…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Search catalog"
+              className="placeholder-amber-200/40"
+            />
+          </GlassCard>
           {!filtered.length ? (
-            <p className="text-amber-200/60 text-sm">No results found.</p>
+            <GlassCard>
+              <p className="text-sm text-amber-200/70">No results found.</p>
+            </GlassCard>
           ) : (
-            <div data-testid="catalog-grid" className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div ref={cardListRef} data-testid="catalog-grid" className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
               {filtered.map((item) => (
                 <Link
                   key={item.catalog_id}
                   to={`/catalog/${item.catalog_id}`}
-                  className="liquid-card"
+                  data-testid="catalog-card"
+                  className="kaapi-motion-card liquid-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
                 >
-                  {/* Figure area */}
                   <div className="liquid-card-figure">
                     {item.image_path ? (
                       <>
                         <img
                           src={item.image_path}
                           alt={item.bean_name}
-                          className="w-full h-full object-cover"
+                          className="h-full w-full object-cover"
                           onError={(e) => {
                             const img = e.currentTarget
                             img.style.display = 'none'
@@ -91,28 +121,20 @@ export default function CatalogList() {
                         </span>
                       </>
                     ) : (
-                      <span
-                        data-monogram="true"
-                        aria-hidden="true"
-                        className="liquid-card-monogram"
-                      >
+                      <span data-monogram="true" aria-hidden="true" className="liquid-card-monogram">
                         {((item.roaster || item.bean_name || '?').slice(0, 2)).toUpperCase()}
                       </span>
                     )}
                   </div>
-                  {/* Card body */}
                   <div className="liquid-card-body">
-                    <h3 className="font-display text-base font-bold leading-snug text-amber-100 truncate">
+                    <p className="text-xs uppercase tracking-[0.16em] text-amber-300/50">Roaster</p>
+                    <h3 className="truncate font-display text-base font-bold leading-snug text-amber-100">
                       {item.roaster}
                     </h3>
-                    <p className="text-sm text-amber-200/60 leading-snug truncate">
+                    <p className="truncate text-sm leading-snug text-amber-200/60">
                       {item.bean_name}
                     </p>
-                    {item.roast_level && (
-                      <div className="flex items-center mt-3">
-                        <Chip label={item.roast_level} />
-                      </div>
-                    )}
+                    {item.roast_level && <Badge className="mt-3">{item.roast_level}</Badge>}
                   </div>
                 </Link>
               ))}
@@ -121,18 +143,23 @@ export default function CatalogList() {
         </>
       )}
 
-      {/* Add bean FAB — portalled to document.body so backdrop-filter on #main-content does not create a new containing block and break position:fixed */}
       {createPortal(
-        <button
+        <Button
+          ref={fabRef}
           onClick={() => setModalOpen(true)}
-          className="btn btn-circle btn-lg btn-primary btn-bevel fixed bottom-20 right-4 md:bottom-6 z-50"
+          onMouseDown={() => fabRef.current && pressFeedback(fabRef.current)}
+          className="btn-circle fixed right-[max(1rem,env(safe-area-inset-right))] bottom-[var(--mobile-fab-offset)] md:bottom-6 z-50"
           aria-label="Add bean"
+          size="lg"
+          icon={(
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          )}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-        </button>,
-        document.body
+          <span className="sr-only">Add bean</span>
+        </Button>,
+        document.body,
       )}
 
       {modalOpen && (

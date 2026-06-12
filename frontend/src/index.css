@@ -9,7 +9,8 @@
   name: "espresso-dark";
   default: true;
   color-scheme: dark;
-  --color-primary: #d97706;
+  /* spec-030 amendment per spec-041 D-07: darkened amber-600 → amber-700 for WCAG AA (white text ≈5.02:1 ≥4.5:1 required) */
+  --color-primary: #b45309;
   --color-primary-content: #ffffff;
   --color-secondary: #92400e;
   --color-secondary-content: #ffffff;
@@ -57,6 +58,20 @@
   --input-border: 1px solid rgba(217, 119, 6, 0.2);
   --input-focus-ring: 0 0 0 2px rgba(217, 119, 6, 0.6);
   --input-label-gap: 0.375rem;
+
+  /* Mobile bottom stack */
+  --mobile-bottom-nav-height: 4.25rem;
+  --mobile-household-strip-height: 3.25rem;
+  --mobile-bottom-stack-height: calc(var(--mobile-bottom-nav-height) + var(--mobile-household-strip-height) + env(safe-area-inset-bottom));
+  --mobile-fab-offset: calc(var(--mobile-bottom-stack-height) + 1rem);
+  --mobile-content-bottom-padding: calc(var(--mobile-bottom-stack-height) + 5.5rem);
+
+  /* Kaapi Kadai section/glow accents */
+  --kaapi-section-accent-width: 0.1875rem;
+  --kaapi-section-accent-height: 1rem;
+  --kaapi-glow-amber: 0 0 28px rgba(245,158,11,0.22);
+  --kaapi-glow-coral: 0 0 28px rgba(180,83,9,0.20);
+  --kaapi-gradient-warm: linear-gradient(135deg, #b45309 0%, #f59e0b 52%, #f5e6d3 100%);
 }
 
 /* ── Custom font families (Tailwind v4 @theme creates utility classes) ─── */
@@ -306,7 +321,7 @@ h1, h2, .font-display {
   position: relative;
   background: rgba(14, 9, 5, 0.50);
   border: 1px solid rgba(200, 134, 10, 0.10);
-  border-radius: 1rem;
+  border-radius: var(--bevel-radius);
   box-shadow: var(--bevel-shadow-raised);
   overflow: hidden;
   cursor: pointer;
@@ -326,7 +341,7 @@ h1, h2, .font-display {
 .liquid-card-figure {
   height: 11rem;
   overflow: hidden;
-  border-radius: 1rem 1rem 0 0;
+  border-radius: var(--bevel-radius) var(--bevel-radius) 0 0;
   background: linear-gradient(
     180deg,
     rgba(28, 20, 12, 0.92) 0%,
@@ -383,7 +398,7 @@ h1, h2, .font-display {
   align-items: center;
   width: 100%;
   padding: 0.75rem 1rem;
-  border-radius: 0.75rem;
+  border-radius: var(--bevel-radius);
   background: rgba(14, 9, 4, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.06);
   transition: background 150ms ease, border-color 150ms ease;
@@ -486,13 +501,21 @@ input[type="file"]::file-selector-button {
 }
 
 /* ── Styled form inputs ──────────────────────────────────────────────────── */
-.input-styled {
+.input-styled,
+.select.input-styled,
+select.input-styled,
+.textarea.input-styled,
+textarea.input-styled {
   background: var(--input-bg);
   border: var(--input-border);
   border-radius: var(--bevel-radius);
 }
 .input-styled:focus,
-.input-styled:focus-visible {
+.input-styled:focus-visible,
+.select.input-styled:focus,
+select.input-styled:focus,
+.textarea.input-styled:focus,
+textarea.input-styled:focus {
   outline: none;
   box-shadow: var(--input-focus-ring);
 }

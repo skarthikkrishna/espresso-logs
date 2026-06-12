@@ -82,7 +82,7 @@ export default function LogMaintenanceModal({ hardware, onClose, onSaved }: LogM
               value={date}
               max={today}
               onChange={(e) => setDate(e.target.value)}
-              className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100 input-styled"
+              className="input input-bordered input-sm w-full input-styled"
             />
             {isFutureDate && (
               <p className="text-xs text-amber-400/80 mt-1">Date cannot be in the future.</p>
@@ -105,7 +105,7 @@ export default function LogMaintenanceModal({ hardware, onClose, onSaved }: LogM
               <select
                 value={actionType}
                 onChange={(e) => setActionType(e.target.value)}
-                className="select select-bordered select-sm w-full bg-stone-800 border-amber-900/40 text-amber-100 input-styled"
+                className="select select-bordered select-sm w-full input-styled"
               >
                 <option value="">Select action…</option>
                 {validActionTypes.map((a) => (
@@ -124,7 +124,7 @@ export default function LogMaintenanceModal({ hardware, onClose, onSaved }: LogM
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              className="textarea textarea-bordered textarea-sm w-full bg-stone-800 border-amber-900/40 text-amber-100 input-styled"
+              className="textarea textarea-bordered textarea-sm w-full input-styled"
             />
           </div>
         </div>
@@ -141,7 +141,7 @@ export default function LogMaintenanceModal({ hardware, onClose, onSaved }: LogM
             <button
               onClick={() => mutate()}
               disabled={!canSave}
-              className="btn btn-sm bg-amber-600 hover:bg-amber-500 border-none text-white btn-bevel"
+              className="btn btn-sm btn-primary btn-bevel"
             >
               {isPending
                 ? <span className="loading loading-spinner loading-xs" />

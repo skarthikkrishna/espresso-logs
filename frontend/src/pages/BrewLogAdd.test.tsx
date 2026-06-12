@@ -141,7 +141,7 @@ describe('BrewLogAdd', () => {
   it('associates user-visible field labels with their controls', async () => {
     renderWithQuery(<BrewLogAdd />)
 
-    expect(await screen.findByLabelText('Bag')).toBeInTheDocument()
+    expect(await screen.findByRole('combobox', { name: 'Bag' })).toBeInTheDocument()
     expect(screen.getByLabelText('Dose (g)')).toBeInTheDocument()
     expect(screen.getByLabelText('Yield (g)')).toBeInTheDocument()
     expect(screen.getByLabelText('Time (s)')).toBeInTheDocument()
@@ -200,7 +200,7 @@ describe('BrewLogAdd', () => {
 
     renderWithQuery(<BrewLogAdd />)
 
-    const bagSelect = await screen.findByLabelText('Bag')
+    const bagSelect = await screen.findByRole('combobox', { name: 'Bag' })
 
     // Select the bag to enable the defaults query
     fireEvent.change(bagSelect, { target: { value: 'BB-2024-01-L-001' } })
@@ -221,7 +221,7 @@ describe('BrewLogAdd', () => {
 
     renderWithQuery(<BrewLogAdd />)
 
-    const bagSelect = await screen.findByLabelText('Bag') as HTMLSelectElement
+    const bagSelect = await screen.findByRole('combobox', { name: 'Bag' }) as HTMLSelectElement
     expect(bagSelect.value).toBe('BB-2024-01-L-001')
 
     await waitFor(() => {
@@ -233,7 +233,7 @@ describe('BrewLogAdd', () => {
     vi.mocked(listInventory).mockResolvedValue([FAKE_BAG, SECOND_FAKE_BAG])
 
     const { rerender } = renderWithQuery(<BrewLogAdd />)
-    const bagSelect = await screen.findByLabelText('Bag') as HTMLSelectElement
+    const bagSelect = await screen.findByRole('combobox', { name: 'Bag' }) as HTMLSelectElement
     fireEvent.change(bagSelect, { target: { value: 'BB-2024-02-M-002' } })
 
     searchParamsMock.value = new URLSearchParams('bag_id=BB-2024-01-L-001')
@@ -250,7 +250,7 @@ describe('BrewLogAdd', () => {
     renderWithQuery(<BrewLogAdd />)
 
     expect(await screen.findByText(/finished or unavailable/i)).toBeInTheDocument()
-    expect(screen.getByLabelText('Bag')).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Bag' })).toBeInTheDocument()
   })
 
   // ── Test 4: Dirty dose field is protected after bag is already selected ─────
@@ -263,7 +263,7 @@ describe('BrewLogAdd', () => {
 
     renderWithQuery(<BrewLogAdd />)
 
-    const bagSelect = await screen.findByLabelText('Bag')
+    const bagSelect = await screen.findByRole('combobox', { name: 'Bag' })
 
     // Select the bag first (triggers reset + defaults)
     fireEvent.change(bagSelect, { target: { value: 'BB-2024-01-L-001' } })
@@ -298,7 +298,7 @@ describe('BrewLogAdd', () => {
     renderWithQuery(<BrewLogAdd />)
 
     // Select the bag — triggers defaults query → basket becomes 'B01'
-    const bagSelect = await screen.findByLabelText('Bag')
+    const bagSelect = await screen.findByRole('combobox', { name: 'Bag' })
     fireEvent.change(bagSelect, { target: { value: 'BB-2024-01-L-001' } })
 
     // Wait for defaults to set basket to B01
@@ -347,7 +347,7 @@ describe('BrewLogAdd', () => {
 
     renderWithQuery(<BrewLogAdd />)
 
-    const bagSelect = await screen.findByLabelText('Bag')
+    const bagSelect = await screen.findByRole('combobox', { name: 'Bag' })
 
     // Select a bag to trigger defaults query
     fireEvent.change(bagSelect, { target: { value: 'BB-2024-01-L-001' } })
@@ -371,7 +371,7 @@ describe('BrewLogAdd', () => {
     renderWithQuery(<BrewLogAdd />)
 
     // Select a bag — enables the submit button (disabled when !bagId)
-    const bagSelect = await screen.findByLabelText('Bag')
+    const bagSelect = await screen.findByRole('combobox', { name: 'Bag' })
     fireEvent.change(bagSelect, { target: { value: 'BB-2024-01-L-001' } })
 
     // Submit — use fireEvent.submit on the form so jsdom fires onSubmit
@@ -403,7 +403,7 @@ describe('BrewLogAdd', () => {
 
     renderWithQuery(<BrewLogAdd />)
 
-    const bagSelect = await screen.findByLabelText('Bag')
+    const bagSelect = await screen.findByRole('combobox', { name: 'Bag' })
     fireEvent.change(bagSelect, { target: { value: 'BB-2024-01-L-001' } })
 
     const form = document.querySelector('form')!
@@ -430,7 +430,7 @@ describe('BrewLogAdd', () => {
 
     renderWithQuery(<BrewLogAdd />)
 
-    const bagSelect = await screen.findByLabelText('Bag')
+    const bagSelect = await screen.findByRole('combobox', { name: 'Bag' })
     fireEvent.change(bagSelect, { target: { value: 'BB-2024-01-L-001' } })
 
     const form = document.querySelector('form')!
@@ -468,7 +468,7 @@ describe('BrewLogAdd', () => {
 
     renderWithQuery(<BrewLogAdd />)
 
-    const bagSelect = await screen.findByLabelText('Bag')
+    const bagSelect = await screen.findByRole('combobox', { name: 'Bag' })
     fireEvent.change(bagSelect, { target: { value: 'BB-2024-01-L-001' } })
 
     const form = document.querySelector('form')!
@@ -515,7 +515,7 @@ describe('BrewLogAdd', () => {
     // ── Mount 1 ──
     const { unmount } = renderWithQuery(<BrewLogAdd />)
 
-    const bagSelect1 = await screen.findByLabelText('Bag')
+    const bagSelect1 = await screen.findByRole('combobox', { name: 'Bag' })
     fireEvent.change(bagSelect1, { target: { value: 'BB-2024-01-L-001' } })
 
     const form1 = document.querySelector('form')!
@@ -535,7 +535,7 @@ describe('BrewLogAdd', () => {
     vi.mocked(submitShot).mockResolvedValueOnce({ shot_id: 'SH-TEST-001' } as any)
     renderWithQuery(<BrewLogAdd />)
 
-    const bagSelect2 = await screen.findByLabelText('Bag')
+    const bagSelect2 = await screen.findByRole('combobox', { name: 'Bag' })
     fireEvent.change(bagSelect2, { target: { value: 'BB-2024-01-L-001' } })
 
     const form2 = document.querySelector('form')!

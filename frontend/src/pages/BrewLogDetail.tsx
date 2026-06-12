@@ -16,6 +16,8 @@ import { brewLogListQueryKey, dashboardQueryKey } from '../api/queryKeys'
 import type { BrewLogPage } from '../api/brewLog'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Chip from '../components/Chip'
+import ExtractionBrewVizMotion from '../components/motion/ExtractionBrewVizMotion'
+import { Button, GlassCard, FormField, Input, PageHeader, SectionHeading, Select, Textarea } from '../components/ui'
 import type { BrewLogEntry } from '../types/entities'
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
 
@@ -204,8 +206,7 @@ export default function BrewLogDetail() {
       </Link>
 
       <div>
-        <h1 className="text-xl font-display text-amber-100">{shot.bag_display}</h1>
-        <p className="text-amber-200/60 text-sm">{shot.date}</p>
+        <PageHeader title={shot.bag_display} subtitle={shot.date} />
         <Chip label={shot.roast_level} />
         {shot.shot_eligibility && (
           <span
@@ -216,104 +217,107 @@ export default function BrewLogDetail() {
           </span>
         )}
         {!correctionOpen && (
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="xs"
             onClick={openCorrectionForm}
-            className="btn btn-xs btn-outline border-amber-600/40 text-amber-300 hover:bg-amber-800/40 mt-3 block btn-bevel"
+            className="mt-3 block"
           >
             Correct shot details
-          </button>
+          </Button>
         )}
       </div>
 
       {correctionOpen && (
-        <section className="glass-card p-4">
+        <GlassCard>
           <h2 className="text-sm font-semibold text-amber-300 mb-1">Correct typo-safe fields</h2>
           <p className="text-xs text-amber-200/60 mb-3">
             Only notes, taste, grind setting, and shot eligibility can be corrected here.
           </p>
           <div className="space-y-3">
-            <div>
-              <label className="label text-xs text-amber-200/70 pb-1" htmlFor="correction-taste-summary">Taste summary</label>
-              <input
+            <FormField label="Taste summary" htmlFor="correction-taste-summary">
+              <Input
                 id="correction-taste-summary"
                 type="text"
+                inputSize="sm"
                 value={correctionForm.taste_summary}
                 onChange={(e) => setCorrectionForm((prev) => ({ ...prev, taste_summary: e.target.value }))}
-                className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
               />
-            </div>
-            <div>
-              <label className="label text-xs text-amber-200/70 pb-1" htmlFor="correction-grind-setting">Grind setting</label>
-              <input
+            </FormField>
+            <FormField label="Grind setting" htmlFor="correction-grind-setting">
+              <Input
                 id="correction-grind-setting"
                 type="text"
+                inputSize="sm"
                 value={correctionForm.grind_setting}
                 onChange={(e) => setCorrectionForm((prev) => ({ ...prev, grind_setting: e.target.value }))}
-                className="input input-bordered input-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
               />
-            </div>
-            <div>
-              <label className="label text-xs text-amber-200/70 pb-1" htmlFor="correction-shot-eligibility">Shot eligibility</label>
-              <select
+            </FormField>
+            <FormField
+              label="Shot eligibility"
+              htmlFor="correction-shot-eligibility"
+              error={!correctionEligibilityValid ? 'Choose a listed eligibility value.' : null}
+              errorId="correction-eligibility-error"
+            >
+              <Select
                 id="correction-shot-eligibility"
+                selectSize="sm"
                 value={correctionForm.shot_eligibility}
                 onChange={(e) => {
                   setCorrectionForm((prev) => ({ ...prev, shot_eligibility: e.target.value }))
                   setCorrectionFieldError(null)
                 }}
                 aria-invalid={!correctionEligibilityValid}
-                className="select select-bordered select-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
+                aria-describedby={!correctionEligibilityValid ? 'correction-eligibility-error' : undefined}
+                error={!correctionEligibilityValid}
               >
                 <option value="">No eligibility</option>
                 {ELIGIBILITY_OPTIONS.map((option) => (
                   <option key={option} value={option}>{option}</option>
                 ))}
-              </select>
-              {!correctionEligibilityValid && (
-                <p className="text-xs text-error mt-1">Choose a listed eligibility value.</p>
-              )}
-            </div>
-            <div>
-              <label className="label text-xs text-amber-200/70 pb-1" htmlFor="correction-user-notes">Notes</label>
-              <textarea
+              </Select>
+            </FormField>
+            <FormField label="Notes" htmlFor="correction-user-notes">
+              <Textarea
                 id="correction-user-notes"
                 rows={3}
+                textareaSize="sm"
                 value={correctionForm.user_notes}
                 onChange={(e) => setCorrectionForm((prev) => ({ ...prev, user_notes: e.target.value }))}
-                className="textarea textarea-bordered textarea-sm w-full bg-stone-800 border-amber-900/40 text-amber-100"
               />
-            </div>
+            </FormField>
           </div>
           {correctionFieldError && (
             <p role="alert" className="text-xs text-red-400 mt-3">{correctionFieldError}</p>
           )}
           <div className="flex justify-end gap-2 mt-4">
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="xs"
               onClick={() => {
                 setCorrectionOpen(false)
                 setCorrectionFieldError(null)
               }}
               disabled={correctionMutation.isPending}
-              className="btn btn-xs btn-ghost text-amber-300/70"
             >
               Cancel
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="primary"
+              size="xs"
               onClick={submitCorrections}
               disabled={!hasCorrectionChanges || !correctionEligibilityValid || correctionMutation.isPending}
-              className="btn btn-xs bg-amber-600 hover:bg-amber-500 border-none text-white btn-bevel"
+              loading={correctionMutation.isPending}
+              loadingText="Saving…"
             >
-              {correctionMutation.isPending ? 'Saving…' : 'Save corrections'}
-            </button>
+              Save corrections
+            </Button>
           </div>
-        </section>
+        </GlassCard>
       )}
 
       {/* Shot parameters */}
-      <section className="glass-card p-4">
+      <GlassCard>
         <h2 className="text-sm font-semibold text-amber-300 mb-3">Shot parameters</h2>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
           {shot.dose_in_g != null && (
@@ -353,11 +357,22 @@ export default function BrewLogDetail() {
             </>
           )}
         </dl>
-      </section>
+      </GlassCard>
+
+      {shot.dose_in_g != null && shot.yield_out_g != null && shot.time_sec != null && (
+        <GlassCard>
+          <SectionHeading title="Extraction shape" />
+          <ExtractionBrewVizMotion
+            doseGrams={shot.dose_in_g}
+            yieldGrams={shot.yield_out_g}
+            timeSeconds={shot.time_sec}
+          />
+        </GlassCard>
+      )}
 
       {/* Hardware */}
       {(shot.machine_name || shot.grinder_name || shot.basket_name) && (
-        <section className="glass-card p-4">
+        <GlassCard>
           <h2 className="text-sm font-semibold text-amber-300 mb-3">Hardware</h2>
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             {shot.machine_name && (
@@ -379,19 +394,19 @@ export default function BrewLogDetail() {
               </>
             )}
           </dl>
-        </section>
+        </GlassCard>
       )}
 
       {/* Notes */}
       {shot.user_notes && (
-        <section data-testid="notes-section" className="glass-card p-4">
+        <GlassCard data-testid="notes-section">
           <h2 className="text-sm font-semibold text-amber-300 mb-2">Notes</h2>
           <p className="text-sm text-amber-100">{shot.user_notes}</p>
-        </section>
+        </GlassCard>
       )}
 
       {/* AI feedback */}
-      <section className="glass-card p-4">
+      <GlassCard>
         <h2 className="text-sm font-semibold text-amber-300 mb-3">AI feedback</h2>
         {visibleFeedback ? (
           <p className="text-sm text-amber-100">{visibleFeedback}</p>
@@ -405,24 +420,22 @@ export default function BrewLogDetail() {
           <p role="status" className="text-xs text-amber-300 mt-3">{feedbackMessage}</p>
         )}
         <div className="mt-3">
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => {
               if (feedbackInFlightRef.current || feedbackMutation.isPending) return
               feedbackInFlightRef.current = true
               feedbackMutation.mutate()
             }}
             disabled={feedbackMutation.isPending}
-            className="btn btn-sm border-amber-600/40 text-amber-400 bg-transparent hover:bg-amber-800/40"
+            loading={feedbackMutation.isPending}
+            loadingText="Generating…"
           >
-            {feedbackMutation.isPending
-              ? 'Generating…'
-              : visibleFeedback
-                ? 'Regenerate AI feedback'
-                : 'Get AI feedback'}
-          </button>
+            {visibleFeedback ? 'Regenerate AI feedback' : 'Get AI feedback'}
+          </Button>
         </div>
-      </section>
+      </GlassCard>
     </div>
   )
 }

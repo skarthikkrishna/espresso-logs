@@ -7,6 +7,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from tests.db_safety import assert_explicit_test_database_url
+
 # Provide a dummy value so Settings() does not raise at collection time.
 # Unit tests never hit a real sheet; integration tests supply the real value via env.
 os.environ.setdefault("SPREADSHEET_ID", "fake-spreadsheet-id-for-tests")
@@ -21,6 +23,9 @@ os.environ.setdefault("JWT_SECRET", _TEST_JWT_SECRET)
 # Override the session secret so tests can sign cookies with the known test secret,
 # regardless of any .env file present in the repo root.
 os.environ["SESSION_SECRET"] = "dev-insecure-secret-for-testing-only"
+
+if os.environ.get("TEST_DATABASE_URL") and not os.environ.get("DATABASE_URL"):
+    os.environ["DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
 
 # ---------------------------------------------------------------------------
 # Fake ORM objects for auth dependency overrides
@@ -73,10 +78,19 @@ def _make_fake_member() -> object:
 
 
 def _database_url_active() -> bool:
-    return bool(os.environ.get("DATABASE_URL"))
+    return bool(os.environ.get("TEST_DATABASE_URL") or os.environ.get("DATABASE_URL"))
+
+
+def _active_database_url() -> str | None:
+    return os.environ.get("TEST_DATABASE_URL") or os.environ.get("DATABASE_URL")
+
+
+def _assert_sql_test_database(*, purpose: str) -> None:
+    assert_explicit_test_database_url(_active_database_url(), purpose=purpose)
 
 
 def _run_alembic_upgrade_head() -> None:
+    _assert_sql_test_database(purpose="SQL test schema migration")
     result = subprocess.run(
         ["uv", "run", "alembic", "upgrade", "head"],
         capture_output=True,
@@ -118,10 +132,12 @@ async def _tenant_schema_present(engine) -> bool:
 
 async def _ensure_tenant_schema(engine) -> None:
     if not await _tenant_schema_present(engine):
+        _assert_sql_test_database(purpose="SQL test schema migration")
         _run_alembic_upgrade_head()
 
 
 async def _seed_global_tenant_context(conn) -> None:
+    _assert_sql_test_database(purpose="SQL test tenant fixture seeding")
     from sqlalchemy import text
 
     await conn.execute(
@@ -234,6 +250,7 @@ def _patch_get_db():
 
         @asynccontextmanager
         async def _tenant_cm():
+            _assert_sql_test_database(purpose="SQL test session setup")
             engine = create_async_engine(os.environ["DATABASE_URL"], echo=False)
             await _ensure_tenant_schema(engine)
             try:
