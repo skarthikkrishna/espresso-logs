@@ -15,5 +15,5 @@ test('app loads and renders authenticated dashboard', async ({ page }) => {
   // Use data-testid anchor to avoid matching on inline <br>/<span> text splits;
   // 15 s covers auth token refresh + React Query data fetch on slow/WebKit runs.
   await expect(page.getByTestId('dashboard-heading')).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByRole('button', { name: '+ Log Shot' })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole('button', { name: 'Log a shot' })).toBeVisible({ timeout: 10_000 });
 });

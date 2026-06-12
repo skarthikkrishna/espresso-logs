@@ -9,7 +9,7 @@ test.describe('D4 — +Log Shot button underline', () => {
   });
 
   test('no underline at rest', async ({ page }) => {
-    const btn = page.getByRole('button', { name: '+ Log Shot' });
+    const btn = page.getByRole('button', { name: 'Log a shot' });
     await expect(btn).toBeVisible({ timeout: 15_000 });
     const decoration = await btn.evaluate(
       (el) => getComputedStyle(el).textDecorationLine,
@@ -18,7 +18,7 @@ test.describe('D4 — +Log Shot button underline', () => {
   });
 
   test('no underline on hover', async ({ page }) => {
-    const btn = page.getByRole('button', { name: '+ Log Shot' });
+    const btn = page.getByRole('button', { name: 'Log a shot' });
     await expect(btn).toBeVisible({ timeout: 15_000 });
     await btn.hover();
     const decoration = await btn.evaluate(

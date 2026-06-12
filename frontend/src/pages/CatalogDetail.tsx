@@ -336,7 +336,7 @@ export default function CatalogDetail() {
                     setImageError(null)
                     setEditing(true)
                   }}
-                  className="border border-amber-600/40 text-amber-300 hover:bg-amber-800/40"
+                  className="border border-amber-600/40 text-amber-300 hover:bg-amber-800/40 appearance-none"
                 >
                   Edit
                 </Button>

@@ -83,7 +83,7 @@ test.describe('regression-029 D4 — no underline on Log Shot button', () => {
   });
 
   test('+ Log Shot button still has no text-decoration underline at rest', async ({ page }) => {
-    const btn = page.getByRole('button', { name: '+ Log Shot' });
+    const btn = page.getByRole('button', { name: 'Log a shot' });
     await expect(btn).toBeVisible({ timeout: 15_000 });
     const decoration = await btn.evaluate(
       (el: HTMLElement) => getComputedStyle(el).textDecorationLine,
@@ -123,7 +123,7 @@ test.describe('regression-029 D5 — labels display:block above inputs', () => {
   test('Bag label bounding box is above Bag select', async ({ page }) => {
     const formControl = page
       .locator('.form-control')
-      .filter({ has: page.locator('span.label-text', { hasText: /^Bag$/ }) })
+      .filter({ has: page.locator('span.label-text', { hasText: /^Bag\s*\*?$/ }) })
       .first();
 
     const labelBox = await formControl.locator('label.label').boundingBox();
