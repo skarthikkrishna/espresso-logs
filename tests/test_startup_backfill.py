@@ -9,6 +9,7 @@ state between tests.
 from __future__ import annotations
 
 import logging
+import uuid
 from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -17,6 +18,8 @@ import pytest
 from app.models.inventory import InventoryBag
 from app.models.maintenance import MaintenanceLog
 from app.testing.fake_sheets import FakeSheetsClient
+
+_TEST_HOUSEHOLD_ID = uuid.UUID("00000000-0000-0000-0000-00000000bf01")
 
 
 # ---------------------------------------------------------------------------
@@ -37,6 +40,13 @@ def _make_mock_db(count_return: int = 0) -> MagicMock:
 
     mock_db.execute = AsyncMock(return_value=count_result)
     return mock_db
+
+
+def _household_context_result() -> MagicMock:
+    """Return a mock current_setting() result with an active household id."""
+    result = MagicMock()
+    result.scalar_one_or_none.return_value = str(_TEST_HOUSEHOLD_ID)
+    return result
 
 
 def _make_session_factory(mock_db: MagicMock):  # type: ignore[no-untyped-def]
@@ -202,7 +212,7 @@ async def test_bf05_inventory_n_null_rows_upserts_n_times() -> None:
         }
     )
 
-    # count query → 2; per-bag SELECTs → None (bags absent from Postgres)
+    # count query → 2; context query → household; per-bag SELECTs → None.
     count_result = MagicMock()
     count_result.scalar_one.return_value = 2
     select_none = MagicMock()
@@ -211,7 +221,9 @@ async def test_bf05_inventory_n_null_rows_upserts_n_times() -> None:
     mock_db = MagicMock()
     mock_db.add = MagicMock()
     mock_db.commit = AsyncMock()
-    mock_db.execute = AsyncMock(side_effect=[count_result, select_none, select_none])
+    mock_db.execute = AsyncMock(
+        side_effect=[count_result, _household_context_result(), select_none, select_none]
+    )
 
     with patch.object(SqlInventoryRepo, "upsert", new_callable=AsyncMock) as mock_upsert:
         await _backfill_inventory_bags(mock_db, fake_sheets)
@@ -245,8 +257,8 @@ async def test_bf06_maintenance_already_set_row_is_not_updated() -> None:
         }
     )
 
-    # Simulate: count=1 (triggers backfill), then SELECT returns existing row with
-    # sheets_hardware_id already populated → upsert must be no-op.
+    # Simulate: count=1, context query returns a household, then SELECT returns
+    # existing row with sheets_hardware_id already populated → upsert no-ops.
     existing_row = MagicMock(spec=MaintenanceLog)
     existing_row.sheets_hardware_id = "HW-1"  # already set
 
@@ -259,7 +271,9 @@ async def test_bf06_maintenance_already_set_row_is_not_updated() -> None:
     mock_db = MagicMock()
     mock_db.add = MagicMock()
     mock_db.commit = AsyncMock()
-    mock_db.execute = AsyncMock(side_effect=[count_result, select_result])
+    mock_db.execute = AsyncMock(
+        side_effect=[count_result, _household_context_result(), select_result]
+    )
 
     await _backfill_maintenance_logs(mock_db, fake_sheets)
 
@@ -302,7 +316,9 @@ async def test_bf07_inventory_already_set_row_is_not_updated() -> None:
     mock_db = MagicMock()
     mock_db.add = MagicMock()
     mock_db.commit = AsyncMock()
-    mock_db.execute = AsyncMock(side_effect=[count_result, select_result])
+    mock_db.execute = AsyncMock(
+        side_effect=[count_result, _household_context_result(), select_result]
+    )
 
     await _backfill_inventory_bags(mock_db, fake_sheets)
 

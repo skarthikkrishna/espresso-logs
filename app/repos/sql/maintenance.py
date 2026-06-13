@@ -44,21 +44,24 @@ class SqlMaintenanceRepo:
         existing rows — the update scope is strictly limited to ``sheets_hardware_id``.
         """
         sheets_id = row.get("Maintenance_ID")
+        household_id = await row_household_id_or_context(self._db, row)
         existing: MaintenanceLog | None = None
         if sheets_id:
             result = await self._db.execute(
-                select(MaintenanceLog).where(MaintenanceLog.sheets_id == sheets_id)
+                select(MaintenanceLog).where(
+                    MaintenanceLog.sheets_id == sheets_id,
+                    MaintenanceLog.household_id == household_id,
+                )
             )
             existing = result.scalar_one_or_none()
 
         if existing is not None:
             if existing.sheets_hardware_id is None:
-                existing.household_id = await row_household_id_or_context(self._db, row)
+                existing.household_id = household_id
                 existing.sheets_hardware_id = row.get("Hardware_ID")
                 await self._db.commit()
             # else: sheets_hardware_id already set — no-op
         else:
-            household_id = await row_household_id_or_context(self._db, row)
             event = MaintenanceLog(
                 household_id=household_id,
                 sheets_id=sheets_id,

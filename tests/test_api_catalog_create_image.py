@@ -120,7 +120,7 @@ async def _seed_sql_household(household_id: uuid.UUID, user_id: uuid.UUID, suffi
                 """
                 INSERT INTO catalog (household_id, sheets_id, roaster, bean_name, roast_level)
                 VALUES (:hid, :catalog_id, :roaster, 'Seed Bean', 'Medium')
-                ON CONFLICT (sheets_id) DO NOTHING
+                ON CONFLICT (household_id, sheets_id) DO NOTHING
                 """
             ),
             {

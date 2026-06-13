@@ -24,7 +24,10 @@ class SqlCatalogRepo:
         household_id = await row_household_id_or_context(self._db, row)
         if sheets_id:
             result = await self._db.execute(
-                select(CatalogBean).where(CatalogBean.sheets_id == sheets_id)
+                select(CatalogBean).where(
+                    CatalogBean.sheets_id == sheets_id,
+                    CatalogBean.household_id == household_id,
+                )
             )
             existing = result.scalar_one_or_none()
         else:

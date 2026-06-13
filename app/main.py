@@ -30,7 +30,7 @@ from app.repos.maintenance import MaintenanceRepo
 from app.repos.sheets_client import SheetsClientProtocol
 from app.repos.sql.inventory import SqlInventoryRepo
 from app.repos.sql.maintenance import SqlMaintenanceRepo
-from app.repos.sql.tenant import assert_runtime_rls
+from app.repos.sql.tenant import assert_runtime_rls, current_household_id
 from app.routers import defaults as defaults_router, health, import_wizard
 from app.routers import (
     api_auth,
@@ -145,13 +145,24 @@ async def _backfill_inventory_bags(
         "Backfill: found %d inventory bags with sheets_catalog_id=NULL, starting upsert",
         null_count,
     )
+    household_id = await current_household_id(db)
+    if household_id is None:
+        logger.warning(
+            "Backfill: inventory_bags skipped because no active household context is set"
+        )
+        return
     sheets_repo = InventoryRepo(sheets_client, TTLCache())
     sql_repo = SqlInventoryRepo(db=db)
     for row in sheets_repo.list(status=None):
         bag_id = row.get("Bag_ID")
         if not bag_id:
             continue
-        bag_result = await db.execute(select(InventoryBag).where(InventoryBag.sheets_id == bag_id))
+        bag_result = await db.execute(
+            select(InventoryBag).where(
+                InventoryBag.sheets_id == bag_id,
+                InventoryBag.household_id == household_id,
+            )
+        )
         existing: InventoryBag | None = bag_result.scalar_one_or_none()
         if existing is None:
             # Bag absent from Postgres — full insert via repo

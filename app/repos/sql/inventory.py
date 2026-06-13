@@ -33,7 +33,10 @@ class SqlInventoryRepo:
         household_id = await row_household_id_or_context(self._db, row)
         if sheets_id:
             result = await self._db.execute(
-                select(InventoryBag).where(InventoryBag.sheets_id == sheets_id)
+                select(InventoryBag).where(
+                    InventoryBag.sheets_id == sheets_id,
+                    InventoryBag.household_id == household_id,
+                )
             )
             existing = result.scalar_one_or_none()
         else:
