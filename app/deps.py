@@ -273,7 +273,13 @@ def _require_sql_repo(sql: _RepoT | None, *, entity_type: str, operation: str) -
 
 
 def _sql_repo_for_read(sql: _RepoT | None, *, entity_type: str, operation: str) -> _RepoT | None:
-    """Return the SQL repo for active Postgres mode, else ``None`` for Sheets fallback."""
+    """Return the SQL repo for active Postgres mode, else ``None`` for Sheets fallback.
+
+    Tenant-isolated routes resolve ``current_household_membership`` before reaching
+    repository reads; with ``USE_POSTGRES=false`` that dependency yields ``db=None``
+    and rejects authenticated household traffic, so Sheets fallback remains a
+    local/test archive path rather than a multi-household serving path.
+    """
     if not settings.use_postgres:
         return None
     return _require_sql_repo(sql, entity_type=entity_type, operation=operation)
