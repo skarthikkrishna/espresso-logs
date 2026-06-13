@@ -9,8 +9,9 @@
 > **Stack:** React + TypeScript + Vite + DaisyUI v5 + Tailwind v4 · Theme: `espresso-dark` in `frontend/src/index.css`
 >
 > **Version note:** spec-043 amendment — 2026-06-13. Adds a non-WebKit progressive blur tier
-> for designated glass surfaces and the sanctioned cool-accent palette while preserving the
-> WebKit/mobile shadow-glint baseline. An authoritative synced copy is maintained in
+> for designated glass surfaces, the sanctioned cool-accent palette, and the approved shared
+> app-shell ambient layer. The WebGL cap is two foreground three.js surfaces plus one shared
+> `KaapiAmbientLayer` context. An authoritative synced copy is maintained in
 > `espresso-logs/docs/requirements/design-language.md` for build-time application; Maya should
 > formalize the durable sync mechanism as an ADR.
 
@@ -41,7 +42,7 @@ appear liftable. Matte-glass, like an anodized aluminium surface under a single 
 | **Typography-led** | Strong typographic hierarchy carries the UX. Avoid decorative UI chrome. |
 | **Photography-anchored** | Bean catalog cards are image-first. Aesthetically complementary images sourced by Sage (image agent) at bootstrap. |
 | **Mobile-first** | Every layout is designed for a phone in one hand while pulling a shot with the other. Two breakpoints: 375px baseline and 768px (`md:`). |
-| **Liquid Glass** | Baseline frosted translucency via `backdrop-filter` on modals and the AppShell only. Cards/buttons/rows use shadow + gradient glint by default; a non-WebKit `@supports` progressive tier may add real blur only to designated glass cards, the dashboard HeroVisualFrame, and overlay/sheet layers. |
+| **Liquid Glass** | Baseline frosted translucency via `backdrop-filter` on modals and the AppShell only. Cards/buttons/rows use shadow + gradient glint by default; a non-WebKit `@supports` progressive tier may add real blur only to designated glass cards, the dashboard HeroVisualFrame, and overlay/sheet layers. `KaapiAmbientLayer` provides shared behind-content depth without adding per-card/per-route blur or canvases. |
 | **Smooth Bevel** | Three-layer `box-shadow` recipe gives buttons and cards physical depth. No hard borders on primary buttons — shadow provides all edge definition. |
 | **iOS Readiness** | Every interactive element is Safari/WebKit-safe. `-webkit-` prefixes, tap-highlight suppression, and `appearance: none` are not optional. |
 | **Consistency mandate** | Every primary button computes identical `box-shadow`. Every modal computes identical `backdrop-filter`. This is enforced by Playwright assertions — not aspirational. |
@@ -96,6 +97,14 @@ Base token values defined in `frontend/src/index.css`:
   --kaapi-accent-violet:        #a78bfa;  /* channeled/fault taste accent */
   --kaapi-depth-teal:           #0f766e;  /* cool depth shadow / panel edge */
   --kaapi-glint-cool:           #cffafe;  /* extraction glint / cool highlight */
+
+  --kaapi-ambient-clear:        #120b06;
+  --kaapi-ambient-vignette:     rgba(6, 4, 2, 0.58);
+  --kaapi-ambient-warm-fog:     rgba(180, 83, 9, 0.18);
+  --kaapi-ambient-deep-fog:     rgba(45, 31, 14, 0.72);
+  --kaapi-ambient-cool-glint:   rgba(207, 250, 254, 0.18);
+  --kaapi-ambient-depth-teal:   rgba(15, 118, 110, 0.16);
+  --kaapi-ambient-static-gradient: radial-gradient(circle at 18% 22%, rgba(180, 83, 9, 0.18), transparent 34%), radial-gradient(circle at 78% 18%, rgba(207, 250, 254, 0.10), transparent 28%), radial-gradient(circle at 55% 82%, rgba(15, 118, 110, 0.12), transparent 36%), linear-gradient(135deg, #120b06 0%, #1a1209 42%, #22160b 72%, #0f0905 100%);
 }
 ```
 
@@ -112,6 +121,7 @@ Base token values defined in `frontend/src/index.css`:
 | `--kaapi-accent-violet` | Salty / Channeled under-extraction fault cue |
 | `--kaapi-depth-teal` | Cool depth edge/shadow tint for charts or non-CTA panels |
 | `--kaapi-glint-cool` | Extraction glint and cool highlight gradients on approved visualization surfaces |
+| `--kaapi-ambient-*` | Shared app-shell ambient depth only; values sourced from `specs/043-kaapi-kadai-design-coherence/ambient-layer-design.md` |
 | `base-200` | Card backgrounds, form panels |
 | `base-300` | Input fields, table stripes |
 | `success` | Active bag badge, Good Espresso badge |
@@ -214,6 +224,38 @@ DaisyUI's `.modal-backdrop` may not supply the prefix — Finn must add it expli
 
 ---
 
+## Design Principles: Motion and WebGL Surface Cap
+
+**Allowed three.js/WebGL ownership:** spec-043 amends the spec-042 baseline from exactly two total
+WebGL surfaces to **two foreground three.js surfaces plus one shared app-shell ambient context**.
+The sanctioned owners are:
+
+1. Dashboard hero foreground accent (`HeroVisualFrame` / `DashboardHero3D`)
+2. Extraction/brew visualization foreground surface
+3. Shared app-shell ambient layer (`KaapiAmbientLayer`)
+
+`KaapiAmbientLayer` is shell infrastructure, not a route/page/card feature. It is mounted once behind
+AppShell/`#main-content`, reused across route transitions, `aria-hidden`, non-interactive,
+non-focusable, and visually subordinate to content. It must not carry product meaning, navigation
+state, household state, data meaning, or user-facing copy.
+
+**Ambient guardrails:** Aria's approved ambient source of truth is
+`specs/043-kaapi-kadai-design-coherence/ambient-layer-design.md`. Implementation must preserve:
+
+- one shared WebGL context only; no per-route canvas, per-card 3D, modal WebGL, route-specific ambient shader, or card-local parallax;
+- `KAAPI_AMBIENT_DPR_MAX = 1.5`;
+- throttled frame cadence: `KAAPI_AMBIENT_FPS_VISIBLE = 30`, `KAAPI_AMBIENT_FPS_IDLE = 8`, and idle pause/reduce after `KAAPI_AMBIENT_IDLE_PAUSE_MS = 4500`;
+- immediate pause when `document.visibilityState` is hidden;
+- `prefers-reduced-motion`, no-WebGL, preload, dynamic-import error, and context-loss fallback to `--kaapi-ambient-static-gradient`, never a blank/dark box;
+- behind-content layering that preserves WCAG AA contrast with ambient active, static, disabled, and context-lost;
+- lazy loading counted inside the spec-042 gzip bundle budget;
+- renderer/context disposal and `webglcontextlost` handling without leaking or multiplying contexts.
+
+Foreground 3D surfaces retain their own reduced-motion/no-WebGL fallbacks and do not authorize any
+additional canvases. Per-card 3D and per-route canvases remain prohibited.
+
+---
+
 ## Design Principles: Smooth Bevel
 
 **Scope:** All primary buttons, secondary buttons, and card surfaces. Cards use the glass
@@ -287,6 +329,25 @@ scoped to `[data-theme="espresso-dark"]`. Finn implements these exact values.
 | `--kaapi-depth-teal` | `#0f766e` | Cool depth tint for chart panels, edges, and non-CTA visualization surfaces |
 | `--kaapi-glint-cool` | `#cffafe` | Extraction glint / cool highlight gradient stop on approved visualization surfaces |
 
+### Ambient Layer Tokens and Constants
+
+Aria's approved ambient source of truth is `specs/043-kaapi-kadai-design-coherence/ambient-layer-design.md`.
+Finn mirrors these CSS tokens in `frontend/src/index.css` and may mirror constants in TypeScript for shader/runtime use.
+
+| Token / constant | Value | Purpose |
+|---|---:|---|
+| `--kaapi-ambient-clear` | `#120b06` | Canvas clear/static fallback floor; darker than base without becoming black |
+| `--kaapi-ambient-vignette` | `rgba(6, 4, 2, 0.58)` | Edge vignette preserving content contrast |
+| `--kaapi-ambient-warm-fog` | `rgba(180, 83, 9, 0.18)` | Espresso/crema volumetric fog tint |
+| `--kaapi-ambient-deep-fog` | `rgba(45, 31, 14, 0.72)` | Deep roasted volume and fallback middle stop |
+| `--kaapi-ambient-cool-glint` | `rgba(207, 250, 254, 0.18)` | Maximum cool highlight opacity |
+| `--kaapi-ambient-depth-teal` | `rgba(15, 118, 110, 0.16)` | Deep cool edge tint echoing `--kaapi-depth-teal` |
+| `--kaapi-ambient-static-gradient` | `radial-gradient(circle at 18% 22%, rgba(180, 83, 9, 0.18), transparent 34%), radial-gradient(circle at 78% 18%, rgba(207, 250, 254, 0.10), transparent 28%), radial-gradient(circle at 55% 82%, rgba(15, 118, 110, 0.12), transparent 36%), linear-gradient(135deg, #120b06 0%, #1a1209 42%, #22160b 72%, #0f0905 100%)` | Required static fallback for preload, reduced-motion, no-WebGL, error, and context-loss states |
+| `KAAPI_AMBIENT_DPR_MAX` | `1.5` | Shared canvas DPR cap |
+| `KAAPI_AMBIENT_FPS_VISIBLE` | `30` | Maximum active visible cadence |
+| `KAAPI_AMBIENT_FPS_IDLE` | `8` | Idle cadence before full pause |
+| `KAAPI_AMBIENT_IDLE_PAUSE_MS` | `4500` | Pointer/scroll idle threshold before reducing or pausing RAF |
+
 ### Bevel / Depth Tokens
 
 | Token | Value | Purpose |
@@ -313,7 +374,7 @@ scoped to `[data-theme="espresso-dark"]`. Finn implements these exact values.
 | `--input-focus-ring` | `0 0 0 2px rgba(217, 119, 6, 0.6)` | Focus ring — applied via `box-shadow`, suppresses browser blue outline |
 | `--input-label-gap` | `0.375rem` | Gap between label and input control |
 
-**Total tokens defined: 23**
+**Total CSS tokens defined: 30, plus ambient runtime constants mirrored from the design spec.**
 
 ---
 
@@ -407,6 +468,8 @@ Coffee Tracker UI design, implementation, and review.
   var(--glass-blur)` only inside `@supports (backdrop-filter: blur(1px)) and (not
   (-webkit-touch-callout: none))`. Their shadow/gradient-glint fallback is mandatory and must
   preserve legibility without blur.
+- **WebGL surface cap:** Two foreground three.js surfaces plus one shared app-shell `KaapiAmbientLayer`
+  context. Per-card 3D, per-route canvases, modal WebGL, and route-specific ambient canvases remain prohibited.
 - **Modal backdrop blur:** Modal backdrops consume `var(--glass-blur)` directly so the computed
   backdrop filter resolves to `blur(16px)`. Both `backdrop-filter` and `-webkit-backdrop-filter`
   are required.
@@ -441,6 +504,7 @@ Coffee Tracker UI design, implementation, and review.
 | Component | DaisyUI v5 Base | Token / Surface | Notes |
 |-----------|----------------|-----------------|-------|
 | Page shell | `main.max-w-2xl.mx-auto.px-4.pt-4.pb-24` | `bg-base-100` | React Router `<Outlet>` target; `pb-24` clears bottom nav |
+| Shared ambient layer | `KaapiAmbientLayer` | `--kaapi-ambient-*` tokens | One app-shell WebGL context behind `#main-content`; static gradient fallback; no per-route/per-card canvas |
 | Cards — catalog/hardware | `.liquid-card` (custom) | `--glass-bg` bg + `--glass-border` border + `--bevel-shadow-raised` hover | Baseline: no blur; progressive non-WebKit tier may add `backdrop-filter: var(--glass-blur)` via the required `@supports` gate |
 | Cards — brew log rows | `.frosted-brew-card` (custom) | Semi-transparent bg + amber border on hover | No `backdrop-filter`; dense list rows are not progressive-tier surfaces |
 | Primary button | `btn btn-primary .btn-bevel` | `--btn-rest-shadow` → `--btn-hover-shadow` → `--btn-active-shadow` | Three-layer recipe; `--bevel-radius` on all |
@@ -515,10 +579,11 @@ to `max-w-2xl` (42rem) at 768px (`md:`). Component surface treatments are identi
 // App root — espresso-dark theme applied via DaisyUI default
 <html data-theme="espresso-dark" lang="en">
   <body>
-    <div className="app-bg bg-dashboard" />     {/* fixed full-bleed background */}
-    <div id="main-content">                      {/* AppShell: backdrop-filter: blur(4px) */}
+    <KaapiAmbientLayer />                        {/* fixed full-bleed, shared, non-interactive */}
+    <div className="app-bg bg-dashboard" />     {/* static fallback / photographic warmth */}
+    <div id="main-content">                     {/* AppShell contrast veil above ambient */}
       <main className="max-w-2xl mx-auto px-4 pt-4 pb-24">
-        <Outlet />                               {/* React Router page content */}
+        <Outlet />                              {/* React Router page content */}
       </main>
     </div>
     <nav className="btm-nav btm-nav-sm">…</nav>
