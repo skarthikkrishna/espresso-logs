@@ -4,7 +4,7 @@ Test strategy owner. Responsible for pytest unit/integration tests and Playwrigh
 
 ## Project Context
 
-**Project:** coffee_tracker — AI-augmented espresso logging PWA
+**Project:** the spec repo — AI-augmented espresso logging PWA
 **Test stack:** pytest + httpx (async) for unit/integration; Playwright (to be added) for E2E
 **CI:** Cloud Build (`cloudbuild.yaml`) — `uv run pytest` runs on every push
 

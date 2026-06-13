@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import uuid
+
+import sqlalchemy as sa
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -91,3 +94,75 @@ async def test_get_returns_inserted_row(db_session: AsyncSession) -> None:
     assert result["Hardware_ID"] == "HW-002"
     assert result["Name"] == "Niche Zero"
     assert result["Category"] == "Grinder"
+
+
+async def _create_household(db_session: AsyncSession, name: str) -> uuid.UUID:
+    user_id = uuid.uuid4()
+    household_id = uuid.uuid4()
+    await db_session.execute(
+        sa.text(
+            """
+            INSERT INTO users (id, username, password_hash, display_name)
+            VALUES (:uid, :username, 'fixture-only', :display_name)
+            """
+        ),
+        {"uid": user_id, "username": f"hardware-{user_id.hex}", "display_name": name},
+    )
+    await db_session.execute(
+        sa.text(
+            """
+            INSERT INTO households (id, name, created_by)
+            VALUES (:hid, :name, :uid)
+            """
+        ),
+        {"hid": household_id, "name": name, "uid": user_id},
+    )
+    return household_id
+
+
+async def test_hardware_reads_are_scoped_to_active_household(
+    db_session: AsyncSession, test_household_id: uuid.UUID
+) -> None:
+    other_household_id = await _create_household(db_session, "Hardware Other")
+    db_session.add(
+        Hardware(
+            household_id=test_household_id,
+            name="Visible",
+            category="Machine",
+            sheets_id="HW-SCOPE-A",
+        )
+    )
+    await db_session.flush()
+    await db_session.execute(
+        sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+        {"hid": str(other_household_id)},
+    )
+    db_session.add(
+        Hardware(
+            household_id=other_household_id,
+            name="Hidden",
+            category="Machine",
+            sheets_id="HW-SCOPE-B",
+        )
+    )
+    await db_session.flush()
+    await db_session.execute(
+        sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+        {"hid": str(test_household_id)},
+    )
+
+    repo = SqlHardwareRepo(db=db_session)
+    rows = await repo.list(category="Machine")
+    assert {row["Hardware_ID"] for row in rows} == {"HW-SCOPE-A"}
+    assert await repo.get("HW-SCOPE-B") is None
+
+
+async def test_hardware_reads_without_household_context_fail_closed(
+    db_session: AsyncSession,
+) -> None:
+    repo = SqlHardwareRepo(db=db_session)
+    await repo.upsert({"Hardware_ID": "HW-NO-CONTEXT", "Name": "M", "Category": "Machine"})
+    await db_session.execute(sa.text("SELECT set_config('app.current_household_id', '', true)"))
+
+    assert await repo.list() == []
+    assert await repo.get("HW-NO-CONTEXT") is None

@@ -1,14 +1,14 @@
 # Agent Behavioral Principles — espresso-logs Squad
 
-This file is an **espresso-logs-scoped copy** of the canonical behavioral framework defined in `coffee_tracker/AGENTS.md`.
+This file is an **espresso-logs-scoped copy** of the canonical behavioral framework defined in `AGENTS.md` in the spec repo.
 `espresso-logs` is the application repository for the coffee tracker product: FastAPI backend, React SPA, tests, and CI/CD quality gates.
-Spec management lives in `coffee_tracker`; infrastructure lives in `tf-infra`.
+Spec management lives in the spec repo; infrastructure lives in `tf-infra`.
 
 These principles describe *how agents think and act* — they are not process compliance rules.
 Scenario-specific charter rules are subordinate to these principles, not replacements for them.
 
 Repo-local extensions are permitted for `espresso-logs`-specific context. Extensions are marked `<!-- espresso-logs extension -->`.
-Extensions must not contradict canonical principles — if a contradiction is found, the canonical principle governs and the extension must be updated via the charter reconciliation protocol (`specs/038-cross-repo-squad-governance/protocols/charter-reconciliation.md` in `coffee_tracker`).
+Extensions must not contradict canonical principles — if a contradiction is found, the canonical principle governs and the extension must be updated via the charter reconciliation protocol (`specs/038-cross-repo-squad-governance/protocols/charter-reconciliation.md` in the spec repo).
 
 Platform-specific entry points (e.g., `.github/copilot-instructions.md` for GitHub Copilot) reference this file. The principles live here — not in any platform adapter.
 
@@ -186,5 +186,5 @@ Scenario-specific rules in agent charters ("don't maintain `requirements.txt` by
 - **Privacy gate always first:** Before writing any `.squad/` artifact, read `.squad/privacy-gate.md`. If the file does not exist, T012 is your first task — no other `.squad/` write proceeds before it is committed.
 - **Public-repo sensitivity:** `espresso-logs` must never contain secrets, service account references, GCP project IDs, Cloud Run identifiers, Postgres connection details, or any operationally sensitive identifier. The constraint applies to `.squad/` governance artifacts with the same force as it applies to application code.
 - **Stack awareness:** Python 3.12 · FastAPI · React 18 · Vite · TypeScript · TailwindCSS + DaisyUI · Google Sheets via `gspread` · Google OAuth + email allowlist · Gemini 2.5 Flash / Claude Haiku · Google Cloud Run (scale-to-zero) · Google Cloud Storage.
-- **Spec management is upstream:** Spec authoring, planning, and task decomposition happen in `coffee_tracker`. espresso-logs agents receive scoped task lists via `.squad/inbox/handoff-{spec_id}-summary.md` and execute against those — they do not query `coffee_tracker` files directly at execution time.
+- **Spec management is upstream:** Spec authoring, planning, and task decomposition happen in the spec repo. espresso-logs agents receive scoped task lists via `.squad/inbox/handoff-{spec_id}-summary.md` and execute against those — they do not query spec-repo files directly at execution time.
 <!-- end espresso-logs extension -->

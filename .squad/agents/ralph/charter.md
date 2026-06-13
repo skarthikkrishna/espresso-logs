@@ -4,7 +4,7 @@ Persistent memory agent that maintains context across sessions.
 
 ## Project Context
 
-**Project:** coffee_tracker
+**Project:** the spec repo
 
 
 ## Responsibilities

@@ -168,10 +168,10 @@ Post-implementation QA pass by Quinn on 5 spec-034 M5 backend commits. Classifie
 **Branch:** feat/034-m5-household-roles  
 **Status:** Complete (analysis session, no code changes)
 
-Read-only top-down audit of spec-034 (M5 Household Roles): cross-reference spec artifacts in `coffee_tracker/specs/034-m5-household-roles/` against current implementation on `feat/034-m5-household-roles`. Classified as DIRECT_PERMITTED (research task; no SpecKit trigger; no Quinn gate).
+Read-only top-down audit of spec-034 (M5 Household Roles): cross-reference spec artifacts in the spec repo's `specs/034-m5-household-roles/` against current implementation on `feat/034-m5-household-roles`. Classified as DIRECT_PERMITTED (research task; no SpecKit trigger; no Quinn gate).
 
 **Scope permitted (read-only):**
-- `coffee_tracker/specs/034-m5-household-roles/` — spec.md, plan.md, tasks.md, compliance.md, aria-gate.md, quinn-gate.md
+- the spec repo's `specs/034-m5-household-roles/` — spec.md, plan.md, tasks.md, compliance.md, aria-gate.md, quinn-gate.md
 - `app/`, `tests/`, `frontend/src/` on feature branch — implementation tracing only
 
 **Explicitly prohibited:** Modifying source files, committing code, opening PRs, invoking SpecKit phases.

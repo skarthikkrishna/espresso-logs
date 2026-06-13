@@ -363,3 +363,20 @@ async def test_get_returns_inserted_row(db_session: AsyncSession) -> None:
     assert result["Dose_In_g"] == "17.0"
     assert result["Yield_Out_g"] == "34.0"
     assert result["User_Notes"] == "slightly sour"
+
+
+async def test_list_existing_ids_is_household_scoped(db_session: AsyncSession) -> None:
+    household_one = await _make_household(db_session, "brew_log_ids_one")
+    household_two = await _make_household(db_session, "brew_log_ids_two")
+    repo = SqlBrewLogRepo(db=db_session)
+
+    await repo.set_household_context(household_one)
+    await repo.add({"Shot_ID": "SH-IDS-ONE"})
+    await repo.set_household_context(household_two)
+    await repo.add({"Shot_ID": "SH-IDS-TWO"})
+
+    await repo.set_household_context(household_one)
+    assert await repo.list_existing_ids() == ["SH-IDS-ONE"]
+
+    await db_session.execute(sa.text("SELECT set_config('app.current_household_id', '', true)"))
+    assert await repo.list_existing_ids() == []

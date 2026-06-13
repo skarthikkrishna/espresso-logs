@@ -18,6 +18,13 @@ class CatalogBean(Base):
     """A coffee bean entry in the household catalog."""
 
     __tablename__ = "catalog"
+    __table_args__ = (
+        sa.UniqueConstraint(
+            "household_id",
+            "sheets_id",
+            name="uq_catalog_household_sheets_id",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
@@ -36,7 +43,7 @@ class CatalogBean(Base):
     process: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     roast_level: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     notes: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
-    sheets_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True, unique=True)
+    sheets_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     product_url: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     local_image_path: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(

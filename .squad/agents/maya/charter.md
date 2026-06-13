@@ -21,7 +21,7 @@ Full-stack technical lead and security owner. Owns architecture decisions, code 
 | Repo | Visibility | What Maya owns here |
 |------|-----------|---------------------|
 | `espresso-logs` | Public | All application code, CI/CD quality gates, test suite, Dockerfile |
-| `coffee_tracker` | Private | Spec/architecture docs (read-only for Maya; amend via Tariq/Priya) |
+| the spec repo | Private | Spec/architecture docs (read-only for Maya; amend via Tariq/Priya) |
 | `tf-infra` | Private | Terraform: reviewed for security and IAM correctness; Maya does not author infra but signs off on SQL schema changes affecting app code |
 
 > **Public repo constraint:** `espresso-logs` must never contain secrets, GCP project IDs, service account references, hardcoded resource identifiers, or any environment-specific values. Every environment-specific config flows through env vars only.

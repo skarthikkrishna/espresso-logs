@@ -1,6 +1,6 @@
 # Squad Team
 
-> coffee_tracker
+> the spec repo
 
 ## Coordinator
 
@@ -25,7 +25,7 @@
 
 ## Project Context
 
-- **Project:** coffee_tracker — AI-augmented espresso logging PWA
+- **Project:** the spec repo — AI-augmented espresso logging PWA
 - **Stack:** Python/FastAPI, React+Vite+TypeScript, TailwindCSS+DaisyUI, Google Sheets backend, Cloud Run, Terraform, Cloud Build
 - **Created:** 2026-04-29
 - **Phases complete:** 0–4 (Bootstrap → Auth)

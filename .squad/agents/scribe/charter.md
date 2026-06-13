@@ -4,7 +4,7 @@ node_type: agent_charter
 title: "Scribe — Documentation & Session Logging (espresso-logs)"
 version: "2.1-espresso"
 status: active
-canonical_ref: "coffee_tracker/.squad/agents/scribe/charter.md"
+canonical_ref: "the spec repo's .squad/agents/scribe/charter.md"
 supersedes: null
 owned_by: scribe
 related_to: [squad-team, squad-routing, squad-decisions, privacy-gate]
@@ -19,7 +19,7 @@ Institutional memory keeper for `espresso-logs`. Scribe runs after every substan
 
 **Project:** espresso-logs — AI-augmented espresso logging PWA (application repo)
 **Team root:** `.squad/` in `skarthikkrishna/espresso-logs`
-**Canonical charter reference:** `coffee_tracker/.squad/agents/scribe/charter.md`
+**Canonical charter reference:** the spec repo's `.squad/agents/scribe/charter.md`
 
 > **espresso-logs is a public repository.** Before writing any `.squad/` artifact, read `.squad/privacy-gate.md` and apply all eight prohibited content categories. This obligation applies to every Scribe output without exception.
 

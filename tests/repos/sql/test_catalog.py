@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import uuid
+
+import sqlalchemy as sa
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -153,3 +156,76 @@ async def test_get_returns_inserted_row(db_session: AsyncSession) -> None:
     assert result["Roaster"] == "Onyx"
     assert result["Bean_Name"] == "Tropical Weather"
     assert result["Roast_Level"] == "Light"
+
+
+async def _create_household(db_session: AsyncSession, name: str) -> uuid.UUID:
+    user_id = uuid.uuid4()
+    household_id = uuid.uuid4()
+    await db_session.execute(
+        sa.text(
+            """
+            INSERT INTO users (id, username, password_hash, display_name)
+            VALUES (:uid, :username, 'fixture-only', :display_name)
+            """
+        ),
+        {"uid": user_id, "username": f"catalog-{user_id.hex}", "display_name": name},
+    )
+    await db_session.execute(
+        sa.text(
+            """
+            INSERT INTO households (id, name, created_by)
+            VALUES (:hid, :name, :uid)
+            """
+        ),
+        {"hid": household_id, "name": name, "uid": user_id},
+    )
+    return household_id
+
+
+async def test_catalog_reads_are_scoped_to_active_household(
+    db_session: AsyncSession, test_household_id: uuid.UUID
+) -> None:
+    other_household_id = await _create_household(db_session, "Catalog Other")
+    db_session.add(
+        CatalogBean(
+            household_id=test_household_id,
+            roaster="Visible",
+            bean_name="A",
+            sheets_id="CAT-SCOPE-A",
+        )
+    )
+    await db_session.flush()
+    await db_session.execute(
+        sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+        {"hid": str(other_household_id)},
+    )
+    db_session.add(
+        CatalogBean(
+            household_id=other_household_id,
+            roaster="Hidden",
+            bean_name="B",
+            sheets_id="CAT-SCOPE-B",
+        )
+    )
+    await db_session.flush()
+    await db_session.execute(
+        sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+        {"hid": str(test_household_id)},
+    )
+
+    repo = SqlCatalogRepo(db=db_session)
+    rows = await repo.list()
+    assert {row["Catalog_ID"] for row in rows} == {"CAT-SCOPE-A"}
+    assert await repo.get("CAT-SCOPE-B") is None
+    assert {row["Catalog_ID"] for row in await repo._fetch_all()} == {"CAT-SCOPE-A"}
+
+
+async def test_catalog_reads_without_household_context_fail_closed(
+    db_session: AsyncSession,
+) -> None:
+    repo = SqlCatalogRepo(db=db_session)
+    await repo.upsert({"Catalog_ID": "CAT-NO-CONTEXT", "Roaster": "R", "Bean_Name": "B"})
+    await db_session.execute(sa.text("SELECT set_config('app.current_household_id', '', true)"))
+
+    assert await repo.list() == []
+    assert await repo.get("CAT-NO-CONTEXT") is None

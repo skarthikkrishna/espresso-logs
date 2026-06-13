@@ -319,7 +319,7 @@ CREATE POLICY household_isolation ON brew_log
 -- Admin role bypasses RLS for cross-tenant queries
 CREATE ROLE app_user;
 CREATE ROLE app_admin BYPASSRLS;
-GRANT app_user TO coffee_tracker_runtime;
+GRANT app_user TO <application_runtime_role>;
 ```
 
 At the app layer, every request handler sets the `app.current_household_id` session variable after authentication resolves the user's household membership.

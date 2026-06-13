@@ -4,7 +4,7 @@ This directory is the **handoff inbox** for `espresso-logs`.
 
 ## Purpose
 
-The inbox receives committed handoff summary artifacts from `coffee_tracker` for each implementation spec. Each file is a self-contained summary that an espresso-logs implementation agent can use to execute the scoped task list without querying `coffee_tracker` directly.
+The inbox receives committed handoff summary artifacts from the spec repo for each implementation spec. Each file is a self-contained summary that an espresso-logs implementation agent can use to execute the scoped task list without querying the spec repo directly.
 
 ## File Naming Convention
 
@@ -29,7 +29,7 @@ On every spawn, before beginning any task, an espresso-logs implementation agent
 
 1. List all files in this directory
 2. Read any unprocessed handoff summaries before starting scoped work
-3. Confirm no coffee_tracker file path access is needed (the handoff summary should be self-contained)
+3. Confirm no the spec repo file path access is needed (the handoff summary should be self-contained)
 
 If no handoff summary is present but a cross-repo task is being executed, surface the missing artifact to the coordinator before proceeding.
 

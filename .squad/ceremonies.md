@@ -72,7 +72,7 @@ Production data: 0% completion across 6 retros using markdown checklists, 100% a
 
 ## Implementation-Cycle Close Retro
 
-> Added by Spec-038 (T017). Defined in full at `specs/038-cross-repo-squad-governance/plan.md §5.6` in `coffee_tracker`. Required by FR-038-008 through FR-038-011.
+> Added by Spec-038 (T017). Defined in full at `specs/038-cross-repo-squad-governance/plan.md §5.6` in the spec repo. Required by FR-038-008 through FR-038-011.
 
 | Field | Value |
 |-------|-------|
@@ -91,7 +91,7 @@ Production data: 0% completion across 6 retros using markdown checklists, 100% a
 
 3. **Charter Update Check** *(≤20 min)* — Tariq checks whether any canonical charter changed since last reconciliation (`git log --oneline .squad/agents/ --since={last-reconciliation-sha}`). If changes found: reconciliation performed per charter reconciliation protocol before retro proceeds. If no changes: "No reconciliation required" note committed to `decisions.md`.
 
-4. **Handoff Artifact Close** *(≤15 min)* — Scribe archives all `.squad/inbox/handoff-{spec_id}-summary.md` files for the completed cycle to `.squad/archive/`. The source `specs/{spec_id}/handoff-espresso-logs.md` in `coffee_tracker` is updated with `status: archived`. Commits per repo. No push without operator authorization.
+4. **Handoff Artifact Close** *(≤15 min)* — Scribe archives all `.squad/inbox/handoff-{spec_id}-summary.md` files for the completed cycle to `.squad/archive/`. The source `specs/{spec_id}/handoff-espresso-logs.md` in the spec repo is updated with `status: archived`. Commits per repo. No push without operator authorization.
 
 5. **Artifact Hygiene** *(≤20 min)* — Scribe identifies candidates for pruning (draft/superseded spec artifacts not referenced by any active spec, stale `.squad/sessions/` entries, duplicate governance files). Scribe produces a written inventory — does NOT delete without explicit per-item operator authorization. Operator reviews inventory and authorizes deletions.
 

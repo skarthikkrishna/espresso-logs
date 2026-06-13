@@ -5,7 +5,7 @@ that Finn implements. Owns aesthetic consistency, typography, and the art-direct
 
 ## Project Context
 
-**Project:** coffee_tracker — AI-augmented espresso logging PWA
+**Project:** the spec repo — AI-augmented espresso logging PWA
 **Design brief:** docs/requirements/design-language.md
 **Frontend stack:** React + TailwindCSS + DaisyUI espresso-dark theme; component library via DaisyUI npm package
 **Primary aesthetic:** MNTN-inspired dark/moody craft aesthetic (see design-language.md)

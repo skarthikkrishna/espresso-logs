@@ -1,5 +1,735 @@
 # Decisions Archive
 
+## 2026-06-13: Spec-042 US3 Isolation and Sheets ID Closeout Decisions
+
+### Decision Drop: Alex Routing Decision — spec-042 remediation
+
+- **Source drop:** `.squad/decisions/inbox/20260613T012838Z-alex-route-spec042-remediation.md`
+- **Status:** MERGED
+
+
+---
+node_id: 20260613T012838Z-alex-route-spec042-remediation
+node_type: routing_decision
+agent: Alex
+role: routing
+spec: spec-042
+date: 2026-06-13T01:28:38Z
+status: DIRECT_PERMITTED
+implementation_repo: espresso-logs
+implementation_branch: household_test_fixtures
+---
+
+# Alex Routing Decision — spec-042 remediation
+
+## Request Summary
+
+Route the operator request to remediate spec-042 review feedback from the spec repo's `specs/042-pr116-kaapi-kadai-remediation/spec_042_feedback.md`, specifically the skipped tenant-isolation implementation and verification tasks from the already-frozen spec-042 task list.
+
+## Evidence Reviewed
+
+- `spec_042_feedback.md:27-35` states US3 primary tenant-isolation criteria were not implemented and all Quinn verification tasks were skipped.
+- `spec_042_feedback.md:197-209` lists remaining work: T027-T033, T034-T037, T019-T026, and transferred G5/G6 disposition.
+- `spec_042_feedback.md:213-221` recommends landing T027-T033 plus T034-T037 before or in parallel with spec-043 because they are backend-only and need no design gate.
+- `tasks.md:126-138` defines Alex-owned US3 tenant-isolation implementation tasks T027-T033.
+- `tasks.md:140-155` defines Quinn-owned verification tasks T019-T026 and T034-T037, including final gate T026.
+- `tasks.md:168-176` says Alex owns T027-T033 and Quinn owns T019-T026 plus T034-T037; US3 dependency order is Alex T027-T033 first, then Quinn T034-T037.
+- `quinn-gate.md:1-9` and `quinn-gate.md:23-30` show `status: APPROVED_WITH_NOTES`; `quinn-gate.md:130-138` says T027-T033/T034-T037 are not yet implemented but the notes do not block fan-out.
+- `spec.md:119-138` reclassifies US3 as household tenant isolation on every read path, with test-pollution guardrails secondary only.
+- `spec.md:212-246` records NC-5 as resolved and confirms Maya/Tariq/Quinn re-runs are complete for the US3 scope change.
+- `spec.md:308-319` audits unscoped SQL read paths and confirms the AC change was already processed as a scope change before freeze.
+- `espresso-logs/app/repos/sql/catalog.py:68-80` still has unscoped catalog list/get reads.
+- `espresso-logs/app/repos/sql/brew_log.py:70-75`, `173-180`, `183-190`, `220-227`, and `237-244` show the current household-filter pattern to mirror.
+
+## Quinn Gate Verification Result
+
+the spec repo's `specs/042-pr116-kaapi-kadai-remediation/quinn-gate.md` is tracked by git and has `status: APPROVED_WITH_NOTES`. Implementation fan-out is permitted because the gate exists and is not BLOCKED.
+
+## Routing Status
+
+`status: DIRECT_PERMITTED`
+
+Rationale: this is not new product scope. The review feedback identifies previously skipped work already present in frozen spec-042 artifacts. US3 tenant isolation was already reclassified under NC-5, then re-run through Maya planning, Tariq task generation, and Quinn gate before freeze. Resuming the implementation phase for T027-T033 and their required Quinn verification does not require a new SpecKit cycle. Inviolable Rule 6 is respected because no new acceptance criteria are being added.
+
+## Bounded Scope for This Session
+
+### In Scope — backend remediation fan-out
+
+- **Alex:** T027 shared household-scoping helper.
+- **Alex:** T028 catalog list/get/_fetch_all scoping.
+- **Alex:** T029 inventory list/list_all/get scoping and same-household hydration.
+- **Alex:** T030 hardware plus maintenance list/get scoping and same-household linked reads.
+- **Alex:** T031 brew-log support/hydration scoping, especially list_existing_ids exposure.
+- **Alex:** T032 dual-write/Sheets fallback reachability assessment and blocking/scoping decision if runtime-reachable.
+- **Alex:** T033 startup/readiness runtime-role and RLS assertion.
+- **Quinn:** T023 retained secondary guardrail/cleanup verification if required as a dependency for T037.
+- **Quinn:** T034 SQL-backed direct cross-household isolation tests.
+- **Quinn:** T035 SQL-backed linked/hydration/dashboard/defaults/fresh-household/no-context tests.
+- **Quinn:** T036 runtime DB-role/RLS metadata tests.
+- **Quinn:** T037 CI execution of SQL-backed US3 isolation suite with fail-closed behavior.
+
+### Split from this backend-focused session but still spec-042 debt
+
+- **Quinn/Finn verification split:** T019, T020, T021, T022, T024, and T025 are frontend/PWA/motion/design verification tasks. They remain frozen spec-042 obligations, but they are not prerequisites for the backend-only US3 remediation fan-out recommended by the feedback.
+- **Quinn final gate:** T026 remains deferred until T019-T025 and T034-T037 all pass.
+
+### Explicitly Deferred / Out of Scope for This Session
+
+- G5 3D hero failure model is transferred to spec-043 scope per feedback.
+- G6 canonical primitive styling is transferred to spec-043 scope per feedback.
+- No new UX, design-system, GSAP, three.js, icon, hardware IA, import-copy, infrastructure, auth, schema, or product-entity changes are authorized by this routing decision.
+- Do not weaken or rewrite already-squash-merged e2e triage fixes; current evidence shows the CatalogDetail `appearance-none` restoration and updated e2e locators are present in the tree.
+
+## Recommended Owner Fan-Out
+
+1. **Alex backend implementation:** complete T027-T033 in dependency order, using `SqlBrewLogRepo._current_household_filter()` as the reference pattern and returning empty/not-found when no active household context exists.
+2. **Quinn backend verification:** in parallel where test scaffolding can start safely, prepare T034-T036 scenarios; finalize T034-T037 after Alex lands T027-T033. Include T023 only as needed for T037 dependency closure.
+3. **Coordinator:** schedule separate Quinn/Finn verification work for T019-T025 and only run T026 after all spec-042 verification tasks pass.
+
+
+### Decision Drop: Tariq triage — Spec-040 invitation-contract fixture failures
+
+- **Source drop:** `.squad/decisions/inbox/20260613T072210Z-tariq-triage-spec040-invitation-fixtures.md`
+- **Status:** MERGED
+
+
+---
+node_id: 20260613T072210Z-tariq-triage-spec040-invitation-fixtures
+node_type: decision_drop
+agent: Tariq
+role: triage
+repo: espresso-logs
+branch: household_test_fixtures
+date: 2026-06-13
+status: DIRECT_PERMITTED
+---
+
+# Tariq triage — Spec-040 invitation-contract fixture failures
+
+## Tests triaged
+
+1. `tests/test_spec040_household_contracts.py:181` — `test_spec040_public_invitation_preview_is_get_and_never_consumes_token`
+2. `tests/test_spec040_household_contracts.py:222` — `test_spec040_decline_invitation_is_non_consuming_dismissal`
+
+Verification run: `uv run pytest tests/test_spec040_household_contracts.py::test_spec040_public_invitation_preview_is_get_and_never_consumes_token tests/test_spec040_household_contracts.py::test_spec040_decline_invitation_is_non_consuming_dismissal -q` failed both tests with HTTP 410 `Invitation expired`, matching the reported failure mode.
+
+## Root-cause diagnosis
+
+The failure is a time-bomb test fixture, not an application regression. `_fake_invitation` hardcodes `invitation.invited_at = datetime.datetime(2026, 6, 9, tzinfo=UTC)` at `tests/test_spec040_household_contracts.py:99` and derives `invitation.expires_at = invitation.invited_at + datetime.timedelta(hours=72)` at `tests/test_spec040_household_contracts.py:100`. That produces `expires_at = 2026-06-12T00:00:00Z`; on 2026-06-13 the fixture represents an expired invitation.
+
+Both failing endpoints correctly enforce expiry before exercising the contract assertions. `_ensure_invitation_not_expired` raises HTTP 410 when `invitation.expires_at < datetime.datetime.now(datetime.timezone.utc)` at `app/routers/api_households.py:248-250`. Public preview calls that guard at `app/routers/api_households.py:372-381`; decline calls it at `app/routers/api_households.py:449-457`. Therefore both tests receive 410 before the preview non-consumption assertions at `tests/test_spec040_household_contracts.py:209-219` and decline non-consumption assertions at `tests/test_spec040_household_contracts.py:242-246` can run.
+
+These tests are pure unit/ASGI tests with mocks, not database-dependent failures. `db_override` yields an `AsyncMock` and overrides `get_db` at `tests/test_spec040_household_contracts.py:23-38`; preview patches `app.routers.api_households.HouseholdRepo` and `UserRepo` at `tests/test_spec040_household_contracts.py:194-204`; decline patches `HouseholdRepo` at `tests/test_spec040_household_contracts.py:229-235`.
+
+## Spec citations and contract assessment
+
+The endpoint behavior is spec-correct:
+
+- `GET /households/invitations/{token}` is a public preview that does not consume the token and must return 410 for expired invitations (the spec repo's `specs/040-household-experience-repair/spec.md:296-299`).
+- `AC-040-ACC-05` requires decline to dismiss without consuming or revoking the invitation, with later acceptance allowed until expiry unless revoked (the spec repo's `specs/040-household-experience-repair/spec.md:195-200`).
+- The detailed decline API contract repeats that decline must not consume, revoke, or make the token unacceptable before expiry (the spec repo's `specs/040-household-experience-repair/spec.md:304-305`).
+
+Conclusion: the tests' intended contracts are correct, and the application's 410-on-expired behavior is also correct. The only incorrect artifact is the fixture's absolute date for tests that require a still-valid pending invitation.
+
+## Blast radius
+
+`_fake_invitation` is used in this file at `tests/test_spec040_household_contracts.py:149`, `tests/test_spec040_household_contracts.py:187`, `tests/test_spec040_household_contracts.py:227`, and `tests/test_spec040_household_contracts.py:257`. The create-invitation test at `tests/test_spec040_household_contracts.py:142-178` does not exercise expiry validation. The preview test at `tests/test_spec040_household_contracts.py:181-219` and decline test at `tests/test_spec040_household_contracts.py:222-246` are affected. The resend test at `tests/test_spec040_household_contracts.py:249-280` uses the fixture but targets resend output, not the public expiry guard. The preview expected body reads `invitation.expires_at` dynamically at `tests/test_spec040_household_contracts.py:211-217`, so it should adapt to a relative fixture date.
+
+## Spec-042 postmortem taxonomy classification
+
+Classification verdict: **Inherited pre-existing failure**, with a time/environment-triggered mechanism.
+
+Spec-042 defines `Inherited pre-existing failure` as the category whose correct response is to bisect against baseline and fix forward per spec rules (the spec repo's `specs/042-pr116-kaapi-kadai-remediation/spec_042_feedback.md:326-331`). This failure was reported and revalidated as present on baseline `household_fixes`, so it is inherited rather than introduced by `household_test_fixtures`. The trigger is wall-clock time, so it resembles environment nondeterminism, but it is not a poisoned process/port/env issue; after the fixture's 2026-06-12 expiry boundary, the two mocked tests fail deterministically on any database/environment.
+
+## Routing decision
+
+`status: DIRECT_PERMITTED`
+
+Owner: **Quinn** (tests/contracts).
+
+Rationale: the fix is tests-only, bounded to the Spec-040 contract fixture, and requires no application behavior, infrastructure, product contract, or SpecKit artifact change. The expected application behavior is already aligned with the spec's expired-invitation contract.
+
+Bounded scope for fix:
+
+- Update `_fake_invitation` in `tests/test_spec040_household_contracts.py:84-103` so the default fixture represents a valid pending invitation relative to current time, e.g. set `invited_at = datetime.datetime.now(tz=UTC)` and keep `expires_at = invited_at + datetime.timedelta(hours=72)`.
+- Optional improvement: allow `_fake_invitation` to accept `invited_at` and/or `expires_at` overrides so future tests can explicitly construct expired, revoked, or edge-window invitations without reintroducing absolute-date time bombs.
+- Re-run the two failing tests first, then the relevant household contract test file, then repository-required quality gates before any push decision.
+
+## Follow-up recommendation
+
+Recommend a separate Quinn-owned follow-up sweep for hardcoded absolute-date fixtures in tests that are compared to `now()` or pass through expiry/freshness guards. Do not fold that sweep into this fix unless the coordinator explicitly expands scope; the immediate repair should remain surgical.
+
+
+### Decision Drop: Architecture Decision: Per-household `sheets_id` uniqueness
+
+- **Source drop:** `.squad/decisions/inbox/20260613T074426Z-maya-arch-sheets-id-per-household-uniqueness.md`
+- **Status:** MERGED
+
+
+---
+node_id: 20260613T074426Z-maya-arch-sheets-id-per-household-uniqueness
+node_type: decision_drop
+agent: Maya
+role: architecture
+spec_id: spec-042
+date: 2026-06-13T07:44:26Z
+status: decided
+privacy_gate: .squad/privacy-gate.md reviewed before writing
+---
+
+# Architecture Decision: Per-household `sheets_id` uniqueness
+
+## Defect
+
+The five tenant entity tables currently treat `sheets_id` as globally unique. That is incorrect because each household owns an independent source sheet and can legitimately generate the same sheet-local IDs, such as `CAT-001`, `BAG-001`, `HW-001`, maintenance IDs, or shot IDs.
+
+Evidence:
+
+- Migration `alembic/versions/0004_add_sheets_identity_and_v2_columns.py:31-72` creates `uq_<table>_sheets_id` constraints on `sheets_id` alone for `catalog`, `inventory_bags`, `hardware`, `maintenance_log`, and `brew_log`.
+- ORM models still declare `sheets_id` with `unique=True`: `app/models/catalog.py:39`, `app/models/inventory.py:38`, `app/models/hardware.py:33`, `app/models/maintenance.py:41`, `app/models/brew_log.py:40`.
+- SQL mirror upsert paths for four tables read by `sheets_id` alone before writing: `app/repos/sql/catalog.py:25-28`, `app/repos/sql/inventory.py:34-37`, `app/repos/sql/hardware.py:24-26`, `app/repos/sql/maintenance.py:48-52`.
+- `app/main.py:154-159` startup inventory backfill also looks up `InventoryBag` by `sheets_id` alone.
+- `app/repos/sql/brew_log.py` does not currently contain an unscoped read-before-write upsert; its read/update/delete paths are household-scoped (`app/repos/sql/brew_log.py:123-168`, `230-276`). However, its global unique constraint still prevents a second household from inserting an otherwise valid colliding `Shot_ID`.
+
+## Decision
+
+Change identity semantics from globally unique `sheets_id` to per-household unique `(household_id, sheets_id)` for all five tenant tables.
+
+### 1. Data-model fix
+
+Recommended constraints:
+
+- `catalog`: unique `(household_id, sheets_id)`
+- `inventory_bags`: unique `(household_id, sheets_id)`
+- `hardware`: unique `(household_id, sheets_id)`
+- `maintenance_log`: unique `(household_id, sheets_id)`
+- `brew_log`: unique `(household_id, sheets_id)`
+
+`household_id` is currently nullable because migration 0003 intentionally relaxed it for the M2 dual-write shadow period (`alembic/versions/0003_make_entity_household_id_nullable.py:1-26`). Live schema inspection confirms both `household_id` and `sheets_id` remain nullable for all five tables.
+
+Composite uniqueness with nullable `sheets_id` is acceptable: Postgres treats NULLs as distinct, so multiple rows with `sheets_id IS NULL` remain allowed in a household. That is desirable for direct app-created rows or partially imported rows, especially in `maintenance_log` and `brew_log`, where rows can exist without a sheet-local ID.
+
+Composite uniqueness with nullable `household_id` is not acceptable as a durable invariant. `UNIQUE (household_id, sheets_id)` would allow duplicate non-null `sheets_id` values when `household_id IS NULL`, and RLS tenant isolation also expects household-owned rows. Alex should either make `household_id` `NOT NULL` in the same remediation after a preflight assertion, or block the migration if any tenant-table row still has `household_id IS NULL` and require an explicit backfill/cleanup first.
+
+Live local test database safety results:
+
+| table | total rows | non-null sheets_id | null sheets_id | null household_id | cross-household duplicate sheets_ids | duplicate household+sheets pairs |
+|---|---:|---:|---:|---:|---:|---:|
+| brew_log | 0 | 0 | 0 | 0 | 0 | 0 |
+| catalog | 0 | 0 | 0 | 0 | 0 | 0 |
+| hardware | 0 | 0 | 0 | 0 | 0 | 0 |
+| inventory_bags | 0 | 0 | 0 | 0 | 0 | 0 |
+| maintenance_log | 0 | 0 | 0 | 0 | 0 | 0 |
+
+The inspected test database has no existing duplicates and no null household rows, so dropping global uniqueness and adding composite uniqueness is safe and non-destructive there.
+
+### 2. Write-path fix
+
+Every read-before-write or support lookup that identifies a tenant entity by `sheets_id` must include household scope before reading, updating, deleting, or deciding whether to insert.
+
+Required changes:
+
+- `SqlCatalogRepo.upsert`: replace `select(CatalogBean).where(CatalogBean.sheets_id == sheets_id)` with a household-scoped predicate using the household resolved by `row_household_id_or_context()`.
+- `SqlInventoryRepo.upsert`: scope the existing lookup by the resolved household.
+- `SqlHardwareRepo.upsert`: scope the existing lookup by the resolved household.
+- `SqlMaintenanceRepo.upsert`: scope the existing lookup by the resolved household.
+- `run_startup_backfill` in `app/main.py`: do not query `InventoryBag` by `sheets_id` alone. Either run under explicit household context and filter by household, or retire/rework this backfill if it cannot identify a household safely.
+- `SqlBrewLogRepo.add`: no read-before-write exists, but the insert path must rely on the new composite uniqueness. Existing brew-log read/update/delete/idempotency support is already household-scoped.
+
+Prefer reusing `household_read_scope` / `HouseholdReadScope` from `app/repos/sql/tenant.py:37-71` for reads. For upserts, because the row already resolves `household_id`, a small helper or explicit `Model.household_id == household_id` predicate is acceptable. Fail closed if `household_id` cannot be resolved; do not perform a global fallback query.
+
+Dual-write / Sheets interaction: Sheets remains the owner of sheet-local ID generation. SQL is a mirror and must store sheet IDs as household-local identity, not as global identity. Any import/sync code that writes SQL rows from Sheets must carry or derive household context before upserting.
+
+### 3. Migration design
+
+New Alembic revision after `0015`, design only:
+
+```python
+revision = "0016"
+down_revision = "0015"
+
+TABLES = (
+    ("catalog", "uq_catalog_sheets_id", "uq_catalog_household_sheets_id"),
+    ("inventory_bags", "uq_inventory_bags_sheets_id", "uq_inventory_bags_household_sheets_id"),
+    ("hardware", "uq_hardware_sheets_id", "uq_hardware_household_sheets_id"),
+    ("maintenance_log", "uq_maintenance_log_sheets_id", "uq_maintenance_log_household_sheets_id"),
+    ("brew_log", "uq_brew_log_sheets_id", "uq_brew_log_household_sheets_id"),
+)
+
+def upgrade() -> None:
+    # Preflight: fail if duplicate (household_id, sheets_id) rows exist for non-null sheets_id.
+    # Preflight: fail if household_id is NULL in any tenant table, or perform an approved backfill first.
+    for table, old_name, new_name in TABLES:
+        op.drop_constraint(old_name, table, type_="unique")
+        op.create_unique_constraint(new_name, table, ["household_id", "sheets_id"])
+        # If preflight proves no NULL household_id rows and product phase requires it:
+        # op.alter_column(table, "household_id", nullable=False)
+
+def downgrade() -> None:
+    for table, old_name, new_name in reversed(TABLES):
+        # Downgrade must preflight for globally duplicate non-null sheets_id values first.
+        op.drop_constraint(new_name, table, type_="unique")
+        op.create_unique_constraint(old_name, table, ["sheets_id"])
+```
+
+ORM design: remove `unique=True` from each `sheets_id` column and add `sa.UniqueConstraint("household_id", "sheets_id", name="uq_<table>_household_sheets_id")` in each model `__table_args__`.
+
+Downgrade is lossy in capability, not data: if two households have the same non-null `sheets_id`, restoring global uniqueness must fail loudly or require explicit data cleanup before recreating the old constraint.
+
+### 4. Spec / acceptance-criteria reconciliation
+
+Recommendation: **yes, run a Priya-owned `speckit.clarify` / spec amendment before implementation.**
+
+Reason: the original US3 intent already includes cross-household isolation and T034 explicitly names overlapping `sheets_id` values (the spec repo's `specs/042-pr116-kaapi-kadai-remediation/tasks.md:151`). The product intent does not change. However, the remediation scope changes from Quinn-only test coverage to an Alex-owned schema/write-path fix plus Quinn verification. Under the no-scope-changes-after-freeze rule, that implementation scope expansion should be captured in the spec/tasks rather than patched inline.
+
+### 5. Security, compliance, RLS, and compatibility
+
+Security decision: global `sheets_id` uniqueness is a tenant isolation defect. With forced RLS, the second household receives a unique-constraint failure even though it cannot see the first household's row. Without RLS, the unscoped upsert reads can find and mutate another household's row. The fix is required for confidentiality, integrity, and availability.
+
+RLS interaction:
+
+- FORCE RLS continues to protect reads/writes by household, but constraints execute globally and can still leak/block on globally unique keys.
+- Composite uniqueness aligns database constraints with RLS policy boundaries.
+- Missing household context must fail closed; do not let nullable `household_id` become a bypass of composite uniqueness.
+
+Backward compatibility:
+
+- APIs can keep using sheet-local IDs in paths/responses because household context disambiguates them.
+- Existing rows do not need ID rewriting.
+- Existing client-visible IDs remain unchanged.
+- Any admin/test cleanup that assumes globally unique seed prefixes should be reviewed. `app/routers/api_e2e.py` contains raw `sheets_id LIKE ...` cleanup/seeding queries (`app/routers/api_e2e.py:242-341`, `385-486`); these appear test-support oriented, but overlapping ID tests must ensure cleanup is anchored by household or synthetic prefixes.
+
+Known global-uniqueness reliance found by grep:
+
+- Migration 0004 global unique constraints.
+- ORM `unique=True` declarations on five models.
+- Four SQL upsert pre-read paths.
+- Startup inventory backfill in `app/main.py`.
+- No unscoped brew-log `sheets_id` read-support path was found; brew-log idempotency is already household-scoped via `app/repos/sql/brew_log.py:251-258` and the DB index is household-scoped in `alembic/versions/0014_brew_log_idempotency_rls.py:53-59`.
+
+### 6. Implementation routing
+
+Owner: **Alex** for schema migration, ORM changes, SQL repo write-path scoping, and startup backfill remediation.
+
+Sequencing:
+
+1. Priya amends/clarifies spec-042 and tasks to add the Alex remediation task(s) and unblock T034.
+2. Quinn pauses or narrows in-flight T034 overlapping-`sheets_id` assertions until Alex's fix lands; Quinn can continue unrelated isolation coverage if it does not require colliding IDs.
+3. Quinn produces or updates the pre-implementation gate for the amended work.
+4. Alex implements migration/model/repo changes after the gate.
+5. Quinn resumes T034-T037 and verifies overlapping sheet-local IDs across households under SQL-backed CI.
+
+Gate recommendation: **Quinn gate required before implementation.** This touches schema constraints, ORM models, write paths, tenant isolation, and RLS behavior.
+
+
+### Decision Drop: Routing Decision: spec-042 US3 `sheets_id` clarify amendment
+
+- **Source drop:** `.squad/decisions/inbox/20260613T075645Z-priya-route-spec-042-sheets-id-clarify.md`
+- **Status:** MERGED
+
+
+---
+node_id: 20260613T075645Z-priya-route-spec-042-sheets-id-clarify
+node_type: decision_drop
+agent: Priya
+role: product_spec_routing
+spec_id: spec-042
+date: 2026-06-13T07:56:45Z
+status: direct_permitted
+privacy_gate: .squad/privacy-gate.md reviewed before writing
+---
+
+# Routing Decision: spec-042 US3 `sheets_id` clarify amendment
+
+## Decision
+
+status: DIRECT_PERMITTED
+
+A Priya-owned post-freeze clarify amendment is permitted and required before implementation. The scope is bounded to encoding Maya architecture decision d1524c3 into spec-042 US3 and tasks; this is not a new product feature and does not require a full SpecKit restart.
+
+## Explicit Scope Confirmation
+
+Permitted changes are limited to:
+
+1. Amend US3 acceptance criteria so tenant table `sheets_id` identity is household-local, using `UNIQUE(household_id, sheets_id)` rather than global uniqueness.
+2. Clarify that every SQL write-path read-before-write lookup by `sheets_id` must be scoped to the resolved household and must fail closed when household context is unavailable.
+3. Add dependency-ordered Alex/Quinn tasks starting at T038 as needed for schema/model/write-path changes and verification.
+4. Preserve the existing US3 tenant-isolation intent, fresh-household empty-state requirement, and SQL-backed verification requirements.
+
+## Constraints
+
+- No implementation may begin from this routing decision alone; Quinn gate remains required before schema, ORM, repository, or RLS-affecting code changes.
+- No push is authorized.
+- Public-repository privacy gate applies to this decision drop and downstream governance artifacts.
+
+
+### Decision Drop: Clarify spec-042 US3: per-household `sheets_id` scope
+
+- **Source drop:** `.squad/decisions/inbox/20260613T080040Z-priya-clarify-spec042-per-household-sheets-id.md`
+- **Status:** MERGED
+
+
+---
+node_type: decision_drop
+agent: Priya
+role: product_spec
+spec_id: spec-042
+date: 2026-06-13
+status: clarified
+privacy_gate: .squad/privacy-gate.md reviewed before writing
+---
+
+# Clarify spec-042 US3: per-household `sheets_id` scope
+
+## Outcome
+
+spec-042 US3 is formally clarified to encode Maya's architecture decision `d1524c3`: tenant `sheets_id` values are household-local identifiers, not globally unique product identifiers.
+
+## Gap recorded
+
+The prior US3 scope covered app-layer read isolation but missed schema and write-path behavior. Global unique constraints on `sheets_id` could block a legitimate second household import using the same sheet-local ID, and unscoped read-before-write lookups could overwrite or return another household's row if database backstops were bypassed.
+
+## Resolution recorded
+
+- Replace global tenant-table `sheets_id` uniqueness with `UNIQUE(household_id, sheets_id)` on `catalog`, `inventory_bags`, `hardware`, `maintenance_log`, and `brew_log`.
+- Require every write-path read-before-write lookup by `sheets_id` to include household scope, including `upsert`, get-by-`sheets_id` support paths, and startup backfill.
+- Reconcile overlapping-`sheets_id` acceptance: after the composite migration, two households can hold the same non-null `sheets_id`, and isolation must prove Household A never reads or mutates Household B's same-`sheets_id` row.
+
+## Task changes
+
+- `T038` — Alex: per-household `sheets_id` uniqueness migration and ORM constraints for all five tenant tables.
+- `T039` — Alex: household-scope catalog, inventory, hardware, maintenance, and startup-backfill write-path `sheets_id` lookups; brew-log remains scoped and uses composite uniqueness.
+- `T040` — Quinn: repo-level and API-level overlapping-`sheets_id` isolation test for two households with the same sheet-local ID.
+
+## Gate
+
+Implementation remains blocked until the Quinn gate is present and approved for the amended US3 scope.
+
+
+### Decision Drop: Quinn Gate Decision: spec-042 T038–T040 per-household `sheets_id` uniqueness
+
+- **Source drop:** `.squad/decisions/inbox/20260613T080342Z-quinn-gate-spec042-t038-t040.md`
+- **Status:** MERGED
+
+
+---
+node_id: 20260613T080342Z-quinn-gate-spec042-t038-t040
+node_type: decision_drop
+agent: Quinn
+role: pre_implementation_gate
+spec_id: spec-042
+date: 2026-06-13T08:03:42Z
+status: APPROVED_WITH_NOTES
+privacy_gate: .squad/privacy-gate.md reviewed before writing
+---
+
+# Quinn Gate Decision: spec-042 T038–T040 per-household `sheets_id` uniqueness
+
+## Decision
+
+Quinn approves implementation of T038–T040 with notes. The scope is testable and implementable: move tenant table `sheets_id` identity from global uniqueness to per-household composite uniqueness, scope write-path `sheets_id` lookups by household, and add overlapping-ID SQL-backed isolation coverage.
+
+## Conditions
+
+1. T038 must drop the five global `uq_<table>_sheets_id` constraints, add `uq_<table>_household_sheets_id` on `(household_id, sheets_id)` for `catalog`, `inventory_bags`, `hardware`, `maintenance_log`, and `brew_log`, remove ORM `unique=True`, and add matching model-level composite unique constraints.
+2. The migration must preflight and fail closed before constraint changes if duplicate non-null `(household_id, sheets_id)` pairs exist or if unsafe `household_id IS NULL` tenant rows remain. Multiple `sheets_id IS NULL` rows are acceptable; null household ownership is not a durable invariant.
+3. Downgrade must preflight and fail closed before restoring global uniqueness if cross-household duplicate non-null `sheets_id` values exist. It must not delete, rewrite, or merge data.
+4. T039 must household-scope all known write-path read-before-write lookups: `SqlCatalogRepo.upsert`, `SqlInventoryRepo.upsert`, `SqlHardwareRepo.upsert`, `SqlMaintenanceRepo.upsert`, and startup inventory backfill. Missing household context must fail closed with no global fallback query.
+5. Brew-log read/update/delete/idempotency paths are already household-scoped; its insert path must not add an unscoped pre-read and must rely on composite uniqueness.
+6. T040 must prove overlapping non-null sheet-local IDs across households through repo-level and API-level reads, upserts/updates, linked hydration, and support lookups in the SQL-backed CI job.
+
+## Rationale
+
+The gate remains APPROVED_WITH_NOTES because the clarified tasks close a real tenant-isolation defect without requiring data rewrites, but correctness depends on strict migration preflights and complete lookup scoping. Composite uniqueness aligns database constraints with RLS boundaries and prevents global unique constraints from leaking or blocking sibling-household IDs.
+
+
+## 2026-06-07: PR Routing and CI Remediation Leftover Decisions
+
+### Decision Drop: Routing Decision — PR creation request
+
+- **Source drop:** `.squad/decisions/inbox/20260607-130425-pr-routing.md`
+- **Status:** MERGED
+
+
+# Routing Decision — PR creation request
+
+- Timestamp: 2026-06-07T13:04:25.561-07:00
+- Owner: Tariq
+- Request: Raise a PR
+- Repository: <repo>
+- Branch: fix/spec-039-production-readiness
+
+## Current git state inspected
+
+- Current branch: fix/spec-039-production-readiness
+- Working tree: clean before decision drop creation
+- Compared to origin/main: ahead by 3 commits, behind by 0
+- Recent branch commits:
+  - 8ed3f02 chore(squad): session log + decisions 2026-06-07
+  - 142f597 chore(squad): route spec 039 branch correction
+  - 2b9466a fix: complete spec 039 production readiness
+
+## Decision
+
+status: DIRECT_PERMITTED
+
+Rationale: The request is limited to release/process workflow for an already completed and validated branch. It does not introduce feature scope or code changes, so SpecKit is not required. Scope is explicitly limited to verifying this decision drop, following the PR/merge workflow, obtaining explicit operator permission before push, pushing only after affirmative approval, creating the PR, and waiting for green CI before external review tagging.
+
+## Required remaining workflow
+
+1. Verify this decision drop appears in `.squad/decisions/inbox/` commit history.
+2. Read and follow `.github/copilot-prompts/pr-merge-workflow.md`.
+3. Ask the operator for explicit permission before any `git push`.
+4. Push `fix/spec-039-production-readiness` only after affirmative permission.
+5. Create the PR.
+6. Do not request review or tag `@copilot can you review this please` until CI is green.
+
+## Constraints
+
+- No push without explicit operator approval after being asked.
+- No deploy, merge, production data access, or production secrets access.
+- Do not rewrite history.
+
+
+### Decision Drop: Routing decision: PR #108 CI/test failure triage
+
+- **Source drop:** `.squad/decisions/inbox/20260607-131119-pr108-ci-test-failure-routing.md`
+- **Status:** MERGED
+
+
+# Routing decision: PR #108 CI/test failure triage
+
+- Timestamp: 2026-06-07 13:11:19 -0700
+- Agent: Tariq
+- Request: triage-only inspection of PR #108 failing `CI/test (pull_request)` check using `gh`, write RCA under `.squad/log/`, and avoid app/frontend/test edits, push, deploy, review request, merge, and secrets/production access.
+
+## Decision
+
+status: DIRECT_PERMITTED
+
+Direct triage is permitted because CI failure triage is required before any fix attempt and the requested work is bounded to diagnosis plus repository-local log artifacts. SpecKit is not required for this triage-only diagnostic step.
+
+## Scope confirmation
+
+Permitted scope is limited to:
+
+1. Inspect PR #108 and GitHub Actions logs with `gh`.
+2. Write `.squad/log/20260607-131119-pr108-ci-test-failure-rca.md` as an uncommitted RCA artifact.
+3. Commit this decision drop only.
+
+Explicitly out of scope: application/frontend/test edits, remediation, push, deploy, review request, merge, production data access, and secrets access.
+
+
+### Decision Drop: Routing decision: PR #108 CI triage session close
+
+- **Source drop:** `.squad/decisions/inbox/20260607-132654-tariq-route-pr108-session-close.md`
+- **Status:** MERGED
+
+
+# Routing decision: PR #108 CI triage session close
+
+- Timestamp: 2026-06-07T13:26:54.984-07:00
+- Agent: Tariq
+- Request: authorize Scribe-style governance/log session closure for PR #108 CI failure triage.
+- Repository: `<repo>`
+
+## Decision
+
+status: DIRECT_PERMITTED
+
+Direct implementation is permitted because the requested work is governance/session documentation only: merge existing decision inbox entries into `.squad/decisions.md`, clear the decision inbox, and write a concise session log for the completed PR #108 CI/test failure triage. This does not change product behavior, CI behavior, application code, frontend code, tests, deployment, or repository settings, so SpecKit is not required.
+
+## Explicit scope confirmation
+
+Permitted follow-on Scribe scope is limited to:
+
+1. Merge files currently in `.squad/decisions/inbox/` into `.squad/decisions.md` and clear the inbox.
+2. Write `.squad/log/{timestamp}-pr108-ci-triage-session.md` summarizing:
+   - Ralph CLEAR.
+   - Tariq routing `DIRECT_PERMITTED` for diagnosis/log only.
+   - PR #108 CI/test failure triage completed.
+   - RCA file `.squad/log/20260607-131119-pr108-ci-test-failure-rca.md`.
+   - Root cause: CI using a bootstrap/superuser role that bypasses RLS.
+   - Recommended bounded fix: CI role separation.
+   - No application/frontend/test modifications and no push/review/merge.
+3. Keep the RCA file intact.
+4. Commit only `.squad` governance/log closure artifacts if repository convention requires session close artifacts to be committed.
+
+Explicitly out of scope: application, frontend, or test modifications; CI workflow/script remediation; push; deploy; review request; merge; GitHub posting; production data or secret access.
+
+## Quinn gate
+
+Quinn gate is waived for this direct closure because the authorized work is documentation/governance-only and the waiver is explicit in this routing decision. Any future change to application code, frontend code, test code, CI workflow behavior, scripts, infrastructure, or repository settings requires a new routing decision and any required quality gate before implementation.
+
+
+### Decision Drop: PR #108 CI triage recovery routing decision
+
+- **Source drop:** `.squad/decisions/inbox/20260607-133133-pr108-ci-triage-recovery-routing.md`
+- **Status:** MERGED
+
+
+# PR #108 CI triage recovery routing decision
+
+- Timestamp: 2026-06-07T13:31:33-07:00
+- Owner: Tariq — process/CI routing
+- Scope: Determine whether PR #108 CI/test triage is complete and whether coordinator may surface the result and proceed to bounded fix routing if needed.
+
+## Local state inspected
+
+- `.squad/log/20260607-131119-pr108-ci-test-failure-rca.md` exists locally and contains a complete RCA for PR #108 `CI/test` failure.
+- The RCA identifies GitHub Actions run `27103435257`, job `79988191288`, with 3 failing RLS isolation tests.
+- The RCA states root cause: CI reused the Postgres bootstrap/superuser role as the runtime/test role, bypassing RLS.
+- The RCA recommends a bounded CI environment fix: use a separate non-privileged runtime/test role with `NOSUPERUSER` and `NOBYPASSRLS` after migrations.
+- No application, frontend, or test file changes were observed or required for this recovery decision.
+
+## Decision
+
+status: DIRECT_PERMITTED
+
+Rationale: The previously interrupted triage has an existing local RCA with sufficient diagnosis, evidence, root cause, and bounded remediation recommendation. The coordinator may surface the existing RCA and, if the operator wants remediation, route only a bounded CI workflow/role-separation fix. SpecKit is not required for this recovery step because it is process/CI triage recovery, not product or application behavior design.
+
+## Explicit next action
+
+Read and surface `.squad/log/20260607-131119-pr108-ci-test-failure-rca.md`. If that RCA is unexpectedly unavailable, rerun only a tightly-scoped `CI/test` log inspection for PR #108 before any fix routing.
+
+## Constraints retained
+
+- Do not modify application, frontend, or test files under this routing decision.
+- Do not push, deploy, request review, merge, or access production data/secrets.
+
+
+### Decision Drop: PR #108 CI/test remediation routing decision
+
+- **Source drop:** `.squad/decisions/inbox/20260607-1335-pr108-ci-routing.md`
+- **Status:** MERGED
+
+
+# PR #108 CI/test remediation routing decision
+
+- Timestamp: 2026-06-07 13:35 -0700
+- Owner: Tariq — process/CI routing
+- Repository: espresso-logs
+- Branch: fix/spec-039-production-readiness
+- PR: #108
+- Related RCA: .squad/log/20260607-131119-pr108-ci-test-failure-rca.md
+
+## Decision
+
+status: DIRECT_PERMITTED
+
+Bounded direct remediation is permitted for PR #108's CI/test RLS failure.
+
+## Rationale
+
+The RCA identifies a CI environment defect, not an application, frontend, or test defect: the GitHub Actions Postgres service bootstrap role is reused as the Alembic and runtime/test role, so CI tests execute with a privileged role that bypasses row-level security. The relevant workflow currently sets `POSTGRES_USER` from `${{ vars.CI_DB_USER }}` and then uses the same credentials for both `uv run alembic upgrade head` and `bash scripts/run-ci-tests.sh`. The local shared test gate requires `DATABASE_URL`, and local validation passed with a runtime role that is neither superuser nor `BYPASSRLS`, confirming the failure is tied to CI role separation.
+
+The remediation is self-contained in CI/process scope and can be bounded to workflow/script changes that create or use a non-superuser, `NOBYPASSRLS` runtime/test role after migrations while preserving a privileged bootstrap/migration role.
+
+## Explicit permitted scope
+
+Direct remediation may change only the CI workflow and supporting CI/local test scripts needed to separate privileged migration/bootstrap credentials from the non-privileged runtime/test role for PR #108's RLS CI/test failure. Expected files are limited to `.github/workflows/ci.yml` and, only if necessary, scripts under `scripts/` that support CI Postgres role/grant setup or validation.
+
+## Constraints
+
+- Do not modify application, frontend, or test files under this routing authorization.
+- Do not change RLS policies or repository behavior to mask the CI role issue.
+- Do not access production data or secrets.
+- Do not deploy, merge, request review, or push without the required validation and operator approval.
+- Any broader database model, application authorization, or test expectation change requires new routing.
+
+## Required validation before push
+
+All four local checks must pass in the current terminal session before any push is considered:
+
+1. `uv run ruff check app/ tests/`
+2. `uv run ruff format --check app/ tests/`
+3. `uv run mypy app/ --strict`
+4. `SPREADSHEET_ID=dummy DATABASE_URL=<local DATABASE_URL redacted> bash scripts/run-ci-tests.sh`
+
+After push authorization and push, PR #108 `CI/test (pull_request)` must be rerun and green, along with the full PR CI suite.
+
+
+### Decision Drop: Decision drop — PR #109 Alex routing
+
+- **Source drop:** `.squad/decisions/inbox/20260607T142439-0700-pr109-alex-routing.md`
+- **Status:** MERGED
+
+
+# Decision drop — PR #109 Alex routing
+
+Date: 2026-06-07T14:24:39.374-07:00
+Owner: Alex — backend/API routing
+PR: https://github.com/skarthikkrishna/espresso-logs/pull/109
+Branch inspected: copilot/fix-code-for-review-comments
+
+## Inspected state
+
+- PR #109 is open, non-draft, merge state CLEAN.
+- Base: fix/spec-039-production-readiness.
+- Head: copilot/fix-code-for-review-comments.
+- Changed files are limited to backend/API dual-write and catalog upload paths plus focused tests.
+- GitHub currently reports no checks on the PR branch.
+- Internal Quinn artifacts reviewed:
+  - .squad/log/20260607T141841-0700-pr109-internal-review.md
+  - .squad/decisions/inbox/20260607T141841-0700-pr109-copilot-findings.md
+
+## Decision
+
+status: DIRECT_PERMITTED
+
+Rationale: The remaining actionable work is bounded PR remediation on the existing PR #109 branch, not a new product capability or architectural scope change. Quinn identified two concrete follow-ups: make the disabled-Postgres brew-log correction path fail loudly instead of surfacing as a misleading 404, and harden catalog upload validation beyond trusting the declared MIME header. The PR is not merge-ready until validation and checks pass, but these fixes can be handled directly with focused tests.
+
+## Explicit scope confirmation
+
+Permitted scope is limited to PR #109 branch remediation for:
+
+1. Disabled-Postgres brew-log correction behavior, preferring an explicit server/configuration failure response over `404 Shot not found` when persistence is unavailable.
+2. Catalog image upload byte validation so allowed MIME headers are not the only trust boundary.
+3. Tests and local validation directly required to prove those two fixes.
+
+Do not expand scope to unrelated API behavior, UI work, schema changes, production operations, deployment, merge, or push.
+
+## Quinn gate note
+
+Existing Quinn internal review context suffices for this bounded PR remediation routing decision. No new SpecKit cycle or separate Quinn filesystem gate is required before direct remediation, but Quinn's output remains internal-only and the PR still requires passing checks before merge readiness.
+
+
+### Decision Drop: Routing Decision: PR #109 conflict remediation against main
+
+- **Source drop:** `.squad/decisions/inbox/20260607T143708-0700-pr109-main-conflict-routing.md`
+- **Status:** MERGED
+
+
+# Routing Decision: PR #109 conflict remediation against main
+
+- Date: 2026-06-07T14:37:08.751-07:00
+- Agent: Alex
+- Repository: <repo>
+- PR: #109 — Fail closed for catalog image uploads and brew-log patch corrections
+- Head branch: copilot/fix-code-for-review-comments
+- Base branch: main
+- Observed state:
+  - Local branch is copilot/fix-code-for-review-comments at 6c025c5.
+  - GitHub PR #109 is OPEN, non-draft, base main, mergeStateStatus DIRTY.
+  - origin/main is f174c29 (PR #108 production readiness).
+  - Prospective merge conflicts against origin/main are limited to app/deps.py, app/routers/api_brew_log.py, app/routers/api_catalog.py, tests/test_api_brew_log_idempotency.py, and tests/test_api_catalog_create_image.py.
+  - Working tree had no conflicted index entries before this decision drop.
+- Decision: status: DIRECT_PERMITTED
+- Rationale: The requested work is bounded conflict remediation for an already-open follow-up PR after retargeting from the prior feature branch to main. The conflict set is finite and localized to backend/API hardening and directly corresponding tests. No new product behavior, schema change, or architecture decision is required.
+- Explicit scope:
+  - Resolve PR #109 conflicts against main only.
+  - Preserve PR #108 production-readiness fixes already on main.
+  - Preserve PR #109 hardening changes from commit 6c025c5, including fail-closed catalog image upload MIME validation and fail-closed Postgres correction path behavior.
+  - Do not broaden scope beyond conflict resolution and any directly necessary test alignment.
+- Required validation before any push:
+  1. uv run ruff check app/ tests/
+  2. uv run ruff format --check app/ tests/
+  3. uv run mypy app/ --strict
+  4. SPREADSHEET_ID=dummy DATABASE_URL=<local DATABASE_URL redacted> bash scripts/run-ci-tests.sh
+  5. Confirm branch is ready and obtain explicit operator permission before git push.
+
+---
+
 ## 2026-06-07: Spec-039 Bounded Remediation and Quinn Harness Closeout
 
 ### Decision: Tariq routing — DIRECT_PERMITTED (Spec-039 bounded remediation)
@@ -11,7 +741,7 @@
 - **Scope:** Bounded recovery for already-approved Spec-039 implementation/validation blockers only.
 - **Permitted owners:** Alex for backend/API/test remediation, Finn for frontend/UI/cache/accessibility remediation, Quinn for E2E harness/selectors/fixture evidence and validation reruns.
 - **Out of scope:** New feature behavior, broad cache rewrites, production data/log/image access, deploys, pushes, or PR/review requests.
-- **Quinn gate:** Filesystem verification in `coffee_tracker` found `specs/039-ui-data-freshness-bug-evidence/quinn-gate.md`; frontmatter status was `APPROVED_WITH_NOTES`.
+- **Quinn gate:** Filesystem verification in the spec repo found `specs/039-ui-data-freshness-bug-evidence/quinn-gate.md`; frontmatter status was `APPROVED_WITH_NOTES`.
 - **Validation sequence:** Fix bounded blockers, rerun T32, then T33, then T34; pause for Tariq triage on any validation failure.
 
 ### Decision: Tariq routing — DIRECT_PERMITTED (Spec-039 E2E harness/test-evidence remediation)
@@ -23,7 +753,7 @@
 - **Scope:** E2E harness and evidence remediation limited to `frontend/e2e/spec039-seed.ts`, `frontend/e2e/spec039-ui-data-freshness.spec.ts`, and `frontend/playwright.config.ts` only if browser-state isolation required it.
 - **Permitted fixes:** Protected API probes with active synthetic-session authorization, unambiguous Medium locator, session/browser-state hard-navigation stability, and seed-derived B07 dose expectation reconciliation.
 - **Out of scope:** Application behavior changes, backend/API changes, frontend product component changes, broad cache rewrites, non-Spec-039 tests, production/external provider access, deploys, pushes, or PR/review activity.
-- **Quinn gate:** Existing `coffee_tracker/specs/039-ui-data-freshness-bug-evidence/quinn-gate.md` was noted as `APPROVED_WITH_NOTES`; coordinator still had to verify the filesystem artifact before implementation.
+- **Quinn gate:** Existing the spec repo's `specs/039-ui-data-freshness-bug-evidence/quinn-gate.md` was noted as `APPROVED_WITH_NOTES`; coordinator still had to verify the filesystem artifact before implementation.
 - **Handling:** Preserve unrelated worktree changes; touch only scoped harness/config files for this remediation.
 
 ### Decision: Alex routing — DIRECT_PERMITTED (Spec-039 backend/API/test remediation)
@@ -73,9 +803,9 @@
 - **Classification:** DIRECT_PERMITTED
 - **drop_id:** 20260607T025734-0700-finn-aria-gate-routing
 - **Source drop:** `.squad/decisions/inbox/20260607T025734-0700-finn-aria-gate-routing.md`
-- **Operator Request:** Aria must review the existing Spec-039 artifacts and create/commit only `coffee_tracker/specs/039-ui-data-freshness-bug-evidence/aria-gate.md`.
+- **Operator Request:** Aria must review the existing Spec-039 artifacts and create/commit only the spec repo's `specs/039-ui-data-freshness-bug-evidence/aria-gate.md`.
 - **Rationale:** This was a self-contained gate-artifact step over already-created `spec.md`, `plan.md`, and `compliance.md`; no new product scope, implementation, or app-repo change was authorized.
-- **Scope:** Create and commit only the Spec-039 Aria gate in `coffee_tracker`; do not modify `espresso-logs`, other SpecKit artifacts, or push.
+- **Scope:** Create and commit only the Spec-039 Aria gate in the spec repo; do not modify `espresso-logs`, other SpecKit artifacts, or push.
 - **Outcome:** Aria approved the gate in `d5d9243 design: approve spec-039 aria gate`; `aria-gate.md` has `status: APPROVED`. This app-repo mirror records and clears the pending Finn drop without changing application code.
 
 ---
@@ -89,11 +819,11 @@
 - **Classification:** SPECKIT_REQUIRED
 - **drop_id:** 2026-06-06-tariq-squad-governance-spec-routing
 - **Operator Request:** Build a spec for cross-repo Squad governance covering: charter drift, CI debug loops, multi-repo parallel implementation, hub-and-spoke Squad model, privacy/security gates, retro ceremony with artifact pruning, and sustainable cleanup model.
-- **Rationale:** Multi-repo, cross-cutting governance touching new Squad protocols, per-repo Squad infrastructure, privacy/security gate definitions, retro ceremony design, and automation tradeoff. None are bounded single-file changes; all span three repos (`coffee_tracker`, `espresso-logs`, `tf-infra`).
-- **SpecKit Hub:** `coffee_tracker`. All gate artifacts land there. This drop is a local routing record in `espresso-logs` only.
+- **Rationale:** Multi-repo, cross-cutting governance touching new Squad protocols, per-repo Squad infrastructure, privacy/security gate definitions, retro ceremony design, and automation tradeoff. None are bounded single-file changes; all span three repos (the spec repo, `espresso-logs`, `tf-infra`).
+- **SpecKit Hub:** the spec repo. All gate artifacts land there. This drop is a local routing record in `espresso-logs` only.
 - **Scope:** Cross-repo charter normalization; hub-and-spoke handoff protocol; privacy/security gates; retro ceremony; artifact cleanup model; automation tradeoff.
 - **No-Push Constraint:** Binding. All commits local only.
-- **Outcome:** Priya specify + clarify complete (commits `e5ebd8d`, `f993f85` in `coffee_tracker-spec-038` worktree). Spec frontmatter `status: clarified`.
+- **Outcome:** Priya specify + clarify complete (commits `e5ebd8d`, `f993f85` in `the spec repo-spec-038` worktree). Spec frontmatter `status: clarified`.
 
 ### Decision: Tariq routing — SPECKIT_REQUIRED (Spec-038 tasks phase continuation)
 - **Agent:** Tariq
@@ -315,7 +1045,7 @@ SELECT rolname, rolbypassrls FROM pg_roles WHERE rolname = 'app_admin';
 If the row is absent, run:
 ```sql
 CREATE ROLE app_admin BYPASSRLS;
-GRANT app_admin TO coffee_tracker_runtime;
+GRANT app_admin TO <application_runtime_role>;
 ```
 as a Cloud SQL superuser before enabling RLS enforcement in the application.
 
@@ -477,7 +1207,7 @@ because `Result[Any].rowcount` is not typed in SQLAlchemy's mypy stubs.
 ### tariq-p1-runbook-20260521-085119.md
 # P.1 Decision Drop — Runbook update
 
-**Task:** [P.1] Runbook update (from `coffee_tracker/specs/034-m5-household-roles/tasks.md`)
+**Task:** [P.1] Runbook update (from the spec repo's `specs/034-m5-household-roles/tasks.md`)
 
 **Owner:** Tariq (TPM)
 
@@ -506,17 +1236,17 @@ Update M5 migration phase status in `docs/requirements/spec-kit_phases.md`:
 
 ### ✅ Verification Results
 
-**File:** `/Users/krishna/Documents/Development/GitHub/coffee_tracker/docs/requirements/spec-kit_phases.md`
+**File:** `<the spec repo>/docs/requirements/spec-kit_phases.md`
 
 **M5 Row (current state):**
 ```
-| M5 | Household, Roles & Sheets Write-Disable | 🟡 in progress | spec-034 · feat/034-m5-household-roles (espresso-logs) · spec/034-m5-household-roles (coffee_tracker) |
+| M5 | Household, Roles & Sheets Write-Disable | 🟡 in progress | spec-034 · feat/034-m5-household-roles (espresso-logs) · spec/034-m5-household-roles (the spec repo) |
 ```
 
 **Status:** ✅ Correct. Matches P.1 acceptance criteria:
 - Status: `🟡 in progress` ✓
 - Branch names included: `feat/034-m5-household-roles` (espresso-logs) ✓
-- Branch names included: `spec/034-m5-household-roles` (coffee_tracker) ✓
+- Branch names included: `spec/034-m5-household-roles` (the spec repo) ✓
 - Spec number noted: `spec-034` ✓
 
 ### ⚠️ Note: espresso-logs does not have spec-kit_phases.md
@@ -525,14 +1255,14 @@ Update M5 migration phase status in `docs/requirements/spec-kit_phases.md`:
 
 **Rationale:**
 - espresso-logs is the **application** repository (all app code)
-- coffee_tracker is the **specification** repository (specs, plans, tasks)
-- Progress tracking for migration phases logically belongs in coffee_tracker (single source of truth)
+- the spec repo is the **specification** repository (specs, plans, tasks)
+- Progress tracking for migration phases logically belongs in the spec repo (single source of truth)
 - No requirement identified to replicate this file in espresso-logs
 
 **Verification command outputs:**
 ```
 espresso-logs/docs/requirements/: engineering_architecture_v2.md, functional-spec-v2.md
-coffee_tracker/docs/requirements/: spec-kit_phases.md
+the spec repo's `docs/requirements/`: spec-kit_phases.md
 ```
 
 ### ✅ Other Runbook Files Checked
@@ -549,7 +1279,7 @@ Searched espresso-logs docs for phase/migration progress trackers:
 
 **Rationale:** 
 - P.1 was already completed as part of speckit.tasks phase
-- No uncommitted changes in espresso-logs or coffee_tracker
+- No uncommitted changes in espresso-logs or the spec repo
 - Both repos have clean working trees on their respective M5 branches
 - No new work is needed
 
@@ -559,9 +1289,9 @@ Searched espresso-logs docs for phase/migration progress trackers:
 
 | Criterion | Status | Evidence |
 |-----------|--------|----------|
-| M5 row shows `🟡 in progress` | ✅ Pass | coffee_tracker line 699 |
+| M5 row shows `🟡 in progress` | ✅ Pass | the spec repo line 699 |
 | Branch names noted (espresso-logs) | ✅ Pass | `feat/034-m5-household-roles` in Notes column |
-| Branch names noted (coffee_tracker) | ✅ Pass | `spec/034-m5-household-roles` in Notes column |
+| Branch names noted (the spec repo) | ✅ Pass | `spec/034-m5-household-roles` in Notes column |
 | Spec number noted | ✅ Pass | `spec-034` in Notes column |
 
 ---
@@ -570,13 +1300,13 @@ Searched espresso-logs docs for phase/migration progress trackers:
 
 ```bash
 # Expected: returns M5 row with 🟡 in progress
-cd /Users/krishna/Documents/Development/GitHub/coffee_tracker
+cd <the spec repo>
 grep "M5" docs/requirements/spec-kit_phases.md
 ```
 
 **Result:**
 ```
-| M5 | Household, Roles & Sheets Write-Disable | 🟡 in progress | spec-034 · feat/034-m5-household-roles (espresso-logs) · spec/034-m5-household-roles (coffee_tracker) |
+| M5 | Household, Roles & Sheets Write-Disable | 🟡 in progress | spec-034 · feat/034-m5-household-roles (espresso-logs) · spec/034-m5-household-roles (the spec repo) |
 ```
 
 ✅ **PASS** — All verification criteria met.
@@ -587,7 +1317,7 @@ grep "M5" docs/requirements/spec-kit_phases.md
 
 **P.1 task status: COMPLETE**
 
-P.1 (Runbook update) was successfully completed as part of the speckit.tasks phase. The M5 row in the coffee_tracker progress tracker has been updated to `🟡 in progress` with all required branch names and spec number. No further action required.
+P.1 (Runbook update) was successfully completed as part of the speckit.tasks phase. The M5 row in the spec repo progress tracker has been updated to `🟡 in progress` with all required branch names and spec number. No further action required.
 
 ---
 
@@ -686,7 +1416,7 @@ Alex is authorised to implement the following 7 backend items, no more, no less:
 ### CRITICAL — Security
 1. **Remove runtime BYPASSRLS grant; enforce FORCE ROW LEVEL SECURITY**
    - File: `alembic/versions/0007_m5_schema_corrections.py:146-171`
-   - Remove `GRANT app_admin TO coffee_tracker_runtime`; add `ALTER TABLE … FORCE ROW LEVEL SECURITY` where appropriate; extend RLS policies to `pending_invitations`, `guest_tokens`, `household_members`.
+   - Remove `GRANT app_admin TO <application_runtime_role>`; add `ALTER TABLE … FORCE ROW LEVEL SECURITY` where appropriate; extend RLS policies to `pending_invitations`, `guest_tokens`, `household_members`.
    - Tests: integration tests must run under the non-bypass runtime role.
 
 2. **Admin password reset — add shared-household validation**
@@ -745,7 +1475,7 @@ All four local checks must pass before any push:
 
 Two changes were assessed:
 
-1. **`alembic/versions/0007_m5_schema_corrections.py`** — Remove the `GRANT app_admin TO coffee_tracker_runtime` block; add `FORCE ROW LEVEL SECURITY` for each of the five tenant-scoped tables (alongside the existing `ENABLE ROW LEVEL SECURITY` statements); update `downgrade()` to mirror; add a comment block explaining why `BYPASSRLS` must never be granted to the runtime role.
+1. **`alembic/versions/0007_m5_schema_corrections.py`** — Remove the `GRANT app_admin TO <application_runtime_role>` block; add `FORCE ROW LEVEL SECURITY` for each of the five tenant-scoped tables (alongside the existing `ENABLE ROW LEVEL SECURITY` statements); update `downgrade()` to mirror; add a comment block explaining why `BYPASSRLS` must never be granted to the runtime role.
 
 2. **`app/routers/api_auth.py`** — Add shared-household boundary validation to `POST /auth/admin/reset-password` so an admin can only reset passwords for users who share the same household. Return 404 (not 403) if the target user is not a member of the caller's household, using `HouseholdRepo` (already imported) and the `household_id` available on the `HouseholdMember` returned by `require_admin`.
 
@@ -759,9 +1489,9 @@ Two changes were assessed:
 
 #### Item 1 — Migration security hardening
 
-- The migration `0007` already exists and already contains both the `ENABLE RLS` block and the `GRANT app_admin TO coffee_tracker_runtime` block.
+- The migration `0007` already exists and already contains both the `ENABLE RLS` block and the `GRANT app_admin TO <application_runtime_role>` block.
 - `FORCE ROW LEVEL SECURITY` is a complementary DDL modifier that prevents table owners from bypassing RLS policies. Adding it alongside `ENABLE RLS` is a security tightening of an already-defined intent, not a new feature.
-- Removing the `GRANT app_admin TO coffee_tracker_runtime` block removes a security gap introduced in the same migration: granting `BYPASSRLS` membership to the runtime role defeats the entire RLS model for tenant isolation.
+- Removing the `GRANT app_admin TO <application_runtime_role>` block removes a security gap introduced in the same migration: granting `BYPASSRLS` membership to the runtime role defeats the entire RLS model for tenant isolation.
 - The downgrade update is a mechanical inverse of the upgrade changes.
 - Adding a comment block is documentation only.
 - Scope: one file, no logic changes outside the migration.
@@ -961,7 +1691,7 @@ The following scope is permitted under this decision:
 - Must follow `SPREADSHEET_ID=dummy` + `FakeSheetsClient` pattern (no live sheets in tests)
 - Must pass all four local CI checks before any push: `ruff check`, `ruff format --check`, `mypy --strict`, `pytest`
 - Must not push without explicit operator affirmative
-- Quinn gate (`specs/034/quinn-gate.md` in `coffee_tracker` repo) should be verified if this work is intended to formally close the QE mandate; if the gate doesn't yet exist, the implementation agent should flag this to the operator rather than proceeding to push
+- Quinn gate (`specs/034/quinn-gate.md` in the spec repo) should be verified if this work is intended to formally close the QE mandate; if the gate doesn't yet exist, the implementation agent should flag this to the operator rather than proceeding to push
 
 ## 2026-05-23
 
@@ -1739,9 +2469,9 @@ Decision drop generated 2026-06-05T14:00 PDT
 | **Date** | 2026-06-06 |
 | **Drop file** | `charter-reconciliation-20260606-tariq-scribe.md` |
 | **Agent** | Tariq (reconciliation trigger author) |
-| **Decision** | Tariq charter updated to `v3.1-espresso` (T015); Scribe charter updated to `v2.1-espresso` (T016). Both derived from `coffee_tracker` canonical versions. Zero type-(c) behavioral contradictions. Reconciliation complete for this cycle. Four type-(b) non-blocking stale items tracked in `charter-audit.md`. |
-| **Canonical refs** | Tariq: `coffee_tracker/.squad/agents/tariq/charter.md` v3.1; Scribe: `coffee_tracker/.squad/agents/scribe/charter.md` v2.1 |
-| **Next reconciliation trigger** | Any charter update to `coffee_tracker/.squad/agents/tariq/` or `scribe/` after commit `a01523d` |
+| **Decision** | Tariq charter updated to `v3.1-espresso` (T015); Scribe charter updated to `v2.1-espresso` (T016). Both derived from the spec repo canonical versions. Zero type-(c) behavioral contradictions. Reconciliation complete for this cycle. Four type-(b) non-blocking stale items tracked in `charter-audit.md`. |
+| **Canonical refs** | Tariq: the spec repo's `.squad/agents/tariq/charter.md` v3.1; Scribe: the spec repo's `.squad/agents/scribe/charter.md` v2.1 |
+| **Next reconciliation trigger** | Any charter update to the spec repo's `.squad/agents/tariq/` or `scribe/` after commit `a01523d` |
 | **Status** | Accepted |
 
 

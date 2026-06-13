@@ -1,27 +1,43 @@
 ---
-updated_at: 2026-06-07T13:23:39.220-07:00
-focus_area: PR #108 CI test failure triaged; remediation not authorized
-milestone: RCA captured for CI runtime role/RLS failure
-active_phase: Awaiting authorization for bounded CI role-separation fix
+updated_at: 2026-06-13T01:34:13.160-07:00
+focus_area: spec-042 US3 app-layer tenant-isolation remediation; spec-040 invitation-fixture fix
+milestone: Shipped to review on household_test_fixtures
+active_phase: Awaiting review and merge
 ---
 
-# Session Status: PR #108 CI Failure Triage Continuity (2026-06-07)
+# Session Status: spec-042 US3 Tenant-Isolation Remediation Close (2026-06-13)
 
 ## Current Team Focus
 
-- PR #108 is on branch `fix/spec-039-production-readiness`.
-- The PR has a failing GitHub Actions `CI/test (pull_request)` check that has been triaged.
-- RCA: `.squad/log/20260607-131119-pr108-ci-test-failure-rca.md`.
-- Likely root cause: CI runtime tests are using the Postgres bootstrap/superuser role, which bypasses RLS; the targeted local repro passed with a non-superuser runtime role.
-- Bounded fix recommendation: separate the privileged CI bootstrap/migration role from the non-privileged CI runtime/test role, ensuring the runtime role is `NOSUPERUSER` and `NOBYPASSRLS` with only required grants.
-- No remediation has been authorized or attempted.
-- No application, frontend, or test files should be changed under the current triage-only authorization.
-- Review must not be requested until CI is green.
-- No push, deploy, review request, merge, production data access, production secrets access, or GitHub posting was performed by Ralph.
+- Current branch: `household_test_fixtures`, forked from `household_fixes`.
+- Active focus is complete: spec-042 US3 app-layer tenant-isolation remediation plus the spec-040 invitation-fixture fix across `espresso-logs` and the spec repo.
+- Delivery state: shipped to review; no implementation, test, or decision-inbox work remains in progress for this session.
+- Public-repo privacy constraint remains active: no secrets, PII, or operationally sensitive infrastructure identifiers belong in `.squad/` artifacts.
 
-## Open Work / Next Step
+## Completed Work
 
-- Coordinator must obtain a new routing decision and explicit authorization before editing CI workflows, repository scripts, application code, frontend code, tests, or repository settings.
-- If remediation is authorized, likely owner is Tariq for CI role separation, with Maya/Alex consultation as needed for database grant safety.
-- After any authorized fix, rerun required local validation and CI; do not request review for PR #108 until all checks are green.
-- Before any future push, all required local checks must pass and the operator must explicitly approve the push.
+- Completed spec-042 read-scoping tasks T027-T033:
+  - `HouseholdReadScope` helper.
+  - Catalog, inventory, hardware, maintenance, and brew-log read and join scoping.
+  - Startup and readiness runtime RLS assertions.
+- Completed SQL isolation coverage, RLS metadata checks, dashboard/defaults/fresh-household isolation coverage, and CI gate work for T034-T037 and T040.
+- Completed the spec-040 invitation-fixture time-bomb fix.
+- Completed per-household composite `sheets_id` uniqueness migration 0016 and write-path scoping for T038-T039 via Maya decision, Priya clarify, Quinn gate, and Alex implementation.
+- Merged and cleared the `.squad/decisions/inbox/` during this clean session close.
+
+## Verification
+
+- Ruff check passed.
+- Ruff format check passed.
+- Mypy strict check passed.
+- Pytest passed with 824 passed, 0 failed, 13 skipped.
+- Coverage: 86.75%.
+- Playwright end-to-end tests passed with 167 passed and 1 skipped.
+
+## Open Work / Next Session
+
+- PR `skarthikkrishna/espresso-logs#117` is open against `household_fixes` with `@copilot` review requested.
+- PR `the spec PR` is open against `household_fixes` with `@copilot` review requested.
+- Await review and merge for both PRs.
+- GitHub CI only runs on PRs to `main`, so these PRs have no CI checks by design; local CI-parity plus Playwright were the gate for this branch.
+- No in-progress or blocking state is carried over.

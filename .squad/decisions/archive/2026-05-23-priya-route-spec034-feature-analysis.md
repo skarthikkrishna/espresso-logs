@@ -10,7 +10,7 @@
 ## Request Summary
 
 A thorough top-down feature analysis of spec-034 (M5 Household Roles):
-- Read source-of-truth spec documents (spec.md, plan.md, tasks.md, compliance.md, aria-gate.md, quinn-gate.md in `coffee_tracker/specs/034-m5-household-roles/`)
+- Read source-of-truth spec documents (spec.md, plan.md, tasks.md, compliance.md, aria-gate.md, quinn-gate.md in the spec repo's `specs/034-m5-household-roles/`)
 - Map every requirement to current implementation on `feat/034-m5-household-roles`
 - Identify gaps, deviations, or incomplete items
 - Produce an analysis report
@@ -29,7 +29,7 @@ This is explicitly stated as **analysis/reporting only — no code changes**.
 
 2. **Not a SpecKit trigger.** SpecKit cycles exist to *produce* spec artifacts (spec.md, plan.md, tasks.md) or to gate implementation. An audit that reads those artifacts and cross-references them against existing implementation is entirely downstream of SpecKit — it is the kind of quality signal that informs PR review, not a new feature introduction.
 
-3. **Bounded and well-defined scope.** Source-of-truth artifacts are fully committed in `coffee_tracker/specs/034-m5-household-roles/` (spec.md, plan.md, tasks.md, compliance.md, aria-gate.md, quinn-gate.md). Implementation to audit lives on `feat/034-m5-household-roles`. The analysis scope has hard edges.
+3. **Bounded and well-defined scope.** Source-of-truth artifacts are fully committed in the spec repo's `specs/034-m5-household-roles/` (spec.md, plan.md, tasks.md, compliance.md, aria-gate.md, quinn-gate.md). Implementation to audit lives on `feat/034-m5-household-roles`. The analysis scope has hard edges.
 
 4. **Analysis tasks are explicitly treated as research tasks in the process protocol.** The coordinator's instructions state: "For research tasks where you're gathering information, searching files, or understanding the codebase — do NOT use exit_plan_mode." This request is precisely that category.
 
@@ -41,7 +41,7 @@ This is explicitly stated as **analysis/reporting only — no code changes**.
 
 Direct work is authorised for the following — and **only** the following:
 
-- Read `coffee_tracker/specs/034-m5-household-roles/spec.md`, `plan.md`, `tasks.md`, `compliance.md`, `aria-gate.md`, `quinn-gate.md`
+- Read the spec repo's `specs/034-m5-household-roles/spec.md`, `plan.md`, `tasks.md`, `compliance.md`, `aria-gate.md`, `quinn-gate.md`
 - Read `app/`, `tests/`, `frontend/src/` on branch `feat/034-m5-household-roles` to trace requirement implementation
 - Produce a written analysis report (surfaced in the conversation or as a read-only session artifact)
 

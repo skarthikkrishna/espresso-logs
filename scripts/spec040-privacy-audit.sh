@@ -122,7 +122,7 @@ else
 fi
 
 section "Spec repository binary artifact audit"
-spec040_dir="${SPEC040_DIR:-../coffee_tracker/specs/040-household-experience-repair}"
+spec040_dir="${SPEC040_DIR:?set SPEC040_DIR to the spec-040 directory}"
 if [ -d "$spec040_dir" ]; then
     binary_assets=$(find "$spec040_dir" -type f ! -name '*.md' ! -name '*.json' ! -name '*.yml' ! -name '*.yaml' ! -name '*.txt' -print)
     if [ -n "$binary_assets" ]; then
