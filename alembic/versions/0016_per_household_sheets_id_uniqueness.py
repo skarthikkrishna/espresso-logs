@@ -17,6 +17,7 @@ from __future__ import annotations
 from typing import Sequence, Union
 
 from alembic import op
+import sqlalchemy as sa
 
 revision: str = "0016"
 down_revision: Union[str, None] = "0015"
@@ -40,8 +41,51 @@ TABLES: tuple[tuple[str, str, str], ...] = (
 )
 
 
+def _preflight_tenant_sheets_ids() -> None:
+    """Fail closed if existing data cannot satisfy household-local uniqueness."""
+    bind = op.get_bind()
+    for table_name, _, _ in TABLES:
+        null_household_count = bind.execute(
+            sa.text(
+                f"""
+                SELECT count(*)
+                FROM {table_name}
+                WHERE sheets_id IS NOT NULL
+                  AND household_id IS NULL
+                """
+            )
+        ).scalar_one()
+        if null_household_count:
+            raise RuntimeError(
+                f"Migration 0016 preflight failed for {table_name}: "
+                "rows with sheets_id and NULL household_id exist"
+            )
+
+        duplicate_count = bind.execute(
+            sa.text(
+                f"""
+                SELECT count(*)
+                FROM (
+                    SELECT household_id, sheets_id
+                    FROM {table_name}
+                    WHERE household_id IS NOT NULL
+                      AND sheets_id IS NOT NULL
+                    GROUP BY household_id, sheets_id
+                    HAVING count(*) > 1
+                ) duplicates
+                """
+            )
+        ).scalar_one()
+        if duplicate_count:
+            raise RuntimeError(
+                f"Migration 0016 preflight failed for {table_name}: "
+                "duplicate non-null household_id/sheets_id pairs exist"
+            )
+
+
 def upgrade() -> None:
     """Replace global Sheets ID uniqueness with household-local uniqueness."""
+    _preflight_tenant_sheets_ids()
     for table_name, old_constraint, new_constraint in TABLES:
         op.drop_constraint(old_constraint, table_name, type_="unique")
         op.create_unique_constraint(
