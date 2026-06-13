@@ -73,7 +73,7 @@ All four are required. Not three. Not "the ones that seem relevant." All four.
 
 This is not optional. These steps are mechanical, not advisory. Execute them in order for every user request, every session. Copilot is a **dispatcher**, not a doer. It does not generate spec content, plan content, architecture decisions, or implementation code directly. Every domain artifact is produced by the owning Squad agent spawned via the `task` tool.
 
-> **Note:** SpecKit artifacts (`specs/`, plans, tasks, gates) live in the `coffee_tracker` repo. Filesystem checks for those artifacts must be run in that repo. All other protocol steps apply identically here.
+> **Note:** SpecKit artifacts (`specs/`, plans, tasks, gates) live in the spec repo. Filesystem checks for those artifacts must be run in that repo. All other protocol steps apply identically here.
 
 ---
 
@@ -138,7 +138,7 @@ git log --oneline -5 .squad/decisions/inbox/
 
 ### STEP 2 — SpecKit Phases (sequential, no skipping)
 
-Each phase = coordinator spawns the owning agent via `task` tool. Each phase blocks the next. Hard gate artifacts must exist on disk in the `coffee_tracker` repo (verified via `git ls-files` run there) before the next phase begins.
+Each phase = coordinator spawns the owning agent via `task` tool. Each phase blocks the next. Hard gate artifacts must exist on disk in the spec repo (verified via `git ls-files` run there) before the next phase begins.
 
 | Phase | Spawn | Owner | Hard Gate |
 |-------|-------|-------|-----------|
@@ -173,7 +173,7 @@ All three can run simultaneously. The coordinator monitors completion and surfac
 
 Only proceed here if STEP 1 returned `status: DIRECT_PERMITTED` with explicit rationale and scope confirmation.
 
-- For any change touching application or infrastructure code: Quinn gate (`specs/{n}/quinn-gate.md`) is still required. Check with `git ls-files` in the `coffee_tracker` repo.
+- For any change touching application or infrastructure code: Quinn gate (`specs/{n}/quinn-gate.md`) is still required. Check with `git ls-files` in the spec repo.
 - For documentation-only or governance-only changes: Quinn gate may be waived — but the routing agent must state this explicitly in its STEP 1 response. Coordinator does not make this call.
 
 ---
@@ -224,7 +224,7 @@ These are not guidelines. Violating any of these is a **process failure** that m
 
 4. **Squad agent decision is final.** If a spawned Squad agent returns BLOCKED or `SPECKIT_REQUIRED`, Copilot does not override it, rationalize past it, or proceed anyway. The blocker is surfaced to the operator.
 
-5. **Quinn gate is a filesystem artifact, not a verbal acknowledgment.** Run `git ls-files specs/{n}/quinn-gate.md` in the `coffee_tracker` repo. If the output is empty, implementation is blocked. No exceptions.
+5. **Quinn gate is a filesystem artifact, not a verbal acknowledgment.** Run `git ls-files specs/{n}/quinn-gate.md` in the spec repo. If the output is empty, implementation is blocked. No exceptions.
 
 6. **No scope changes after spec freeze.** If requirements change after `speckit.tasks` is complete, the change triggers a new `speckit.clarify` cycle — not an inline amendment during implementation.
 
@@ -232,7 +232,7 @@ These are not guidelines. Violating any of these is a **process failure** that m
 
 8. **Three operator corrections → session halts.** If the operator has corrected the coordinator or a spawned agent three or more times in a single session, stop all work immediately. Spawn Ralph + Tariq via `task` tool. Tariq produces a written diagnosis to `.squad/log/{timestamp}-rca.md`. No work continues until the operator has reviewed the diagnosis and explicitly authorised resumption.
 
-9. **Quinn gate is a filesystem artifact, not a verbal acknowledgment.** (Duplicate emphasis — this rule is that important.) Before any implementation begins: run `git ls-files specs/{n}/quinn-gate.md` in the `coffee_tracker` repo. Empty output = blocked. No exceptions for "small" tasks, "governance-only" work that touches code, or time pressure.
+9. **Quinn gate is a filesystem artifact, not a verbal acknowledgment.** (Duplicate emphasis — this rule is that important.) Before any implementation begins: run `git ls-files specs/{n}/quinn-gate.md` in the spec repo. Empty output = blocked. No exceptions for "small" tasks, "governance-only" work that touches code, or time pressure.
 
 10. **Before `git push`: ask or pause. Those are the only two options. There is no third.** Before executing `git push` on any branch:
     - All four local CI checks (ruff check, ruff format --check, mypy --strict, pytest) must have passed in the current terminal session. If any check has not been run or has failed: **STOP. Ask the operator. Do not push.**
@@ -258,7 +258,7 @@ Agents are spawned via the `task` tool. The coordinator does not impersonate the
 | **Ralph** | Session continuity, open work queue, conflict detection | Session open (Step 0) | sync (blocking) |
 | **Scribe** | Session logging, decision merge, institutional memory | Session close (Step 5) | background (non-blocking) |
 
-Squad agent charters live in `.squad/agents/` in `skarthikkrishna/coffee_tracker`.
+Squad agent charters live in `.squad/agents/` in the spec repo.
 
 ---
 

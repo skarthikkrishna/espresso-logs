@@ -10,7 +10,7 @@ active_phase: Awaiting review and merge
 ## Current Team Focus
 
 - Current branch: `household_test_fixtures`, forked from `household_fixes`.
-- Active focus is complete: spec-042 US3 app-layer tenant-isolation remediation plus the spec-040 invitation-fixture fix across `espresso-logs` and `coffee_tracker`.
+- Active focus is complete: spec-042 US3 app-layer tenant-isolation remediation plus the spec-040 invitation-fixture fix across `espresso-logs` and the spec repo.
 - Delivery state: shipped to review; no implementation, test, or decision-inbox work remains in progress for this session.
 - Public-repo privacy constraint remains active: no secrets, PII, or operationally sensitive infrastructure identifiers belong in `.squad/` artifacts.
 
@@ -37,7 +37,7 @@ active_phase: Awaiting review and merge
 ## Open Work / Next Session
 
 - PR `skarthikkrishna/espresso-logs#117` is open against `household_fixes` with `@copilot` review requested.
-- PR `skarthikkrishna/coffee_tracker#128` is open against `household_fixes` with `@copilot` review requested.
+- PR `the spec PR` is open against `household_fixes` with `@copilot` review requested.
 - Await review and merge for both PRs.
 - GitHub CI only runs on PRs to `main`, so these PRs have no CI checks by design; local CI-parity plus Playwright were the gate for this branch.
 - No in-progress or blocking state is carried over.

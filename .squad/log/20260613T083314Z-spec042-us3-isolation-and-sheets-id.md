@@ -36,7 +36,7 @@ Close the `household_test_fixtures` session for spec-042 US3 app-layer tenant is
 ## Outcome
 
 - Code PR raised: `skarthikkrishna/espresso-logs#117` against `household_fixes`.
-- Spec PR raised: `skarthikkrishna/coffee_tracker#128` against `household_fixes`.
+- Spec PR raised: `the spec PR` against `household_fixes`.
 - `@copilot` review requested.
 - GitHub CI only runs on PRs to `main`, so these `household_fixes` PRs have no CI checks by design. Local CI-parity plus Playwright were the gate.
 

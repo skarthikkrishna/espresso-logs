@@ -53,8 +53,8 @@ On top of that, major M5 product requirements are still missing or wrong: **onbo
 
 - **CRITICAL — Runtime DB role is granted `BYPASSRLS`, defeating DB-enforced isolation**  
   **Files:** `alembic/versions/0007_m5_schema_corrections.py:146-171`, `tests/test_integration.py:6-11`  
-  The migration creates `app_admin BYPASSRLS` and grants it to `coffee_tracker_runtime`. That means the application’s normal DB connection can bypass every RLS policy. The integration test file explicitly acknowledges owner/bypass behaviour and only forces RLS for one test.  
-  **Recommended fix:** Remove `GRANT app_admin TO coffee_tracker_runtime`; use a separate operational/admin connection for cross-tenant maintenance only, and enable/verify `FORCE ROW LEVEL SECURITY` where appropriate.
+  The migration creates `app_admin BYPASSRLS` and grants it to `the non-bypass application runtime role`. That means the application’s normal DB connection can bypass every RLS policy. The integration test file explicitly acknowledges owner/bypass behaviour and only forces RLS for one test.  
+  **Recommended fix:** Remove `GRANT app_admin TO <application_runtime_role>`; use a separate operational/admin connection for cross-tenant maintenance only, and enable/verify `FORCE ROW LEVEL SECURITY` where appropriate.
 
 - **CRITICAL — Cross-household admin password reset vulnerability**  
   **File:** `app/routers/api_auth.py:310-329`  

@@ -1,4 +1,4 @@
-"""Test doubles for the coffee_tracker test suite.
+"""Test doubles for the espresso-logs test suite.
 
 FakeSheetsClient is defined in app/testing/fake_sheets.py (canonical location)
 so app/deps.py can import it for E2E_AUTH_BYPASS mode without depending on the

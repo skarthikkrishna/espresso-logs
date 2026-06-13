@@ -4,7 +4,7 @@ node_type: agent_charter
 title: "Tariq — Technical Program Manager (espresso-logs)"
 version: "3.1-espresso"
 status: active
-canonical_ref: "coffee_tracker/.squad/agents/tariq/charter.md"
+canonical_ref: "the spec repo's .squad/agents/tariq/charter.md"
 supersedes: null
 owned_by: tariq
 related_to: [func-spec-v2, eng-arch-v2, phase-runbook, squad-team, AGENTS.md]
@@ -26,7 +26,7 @@ At spawn time I read, in this order:
 2. `.squad/inbox/` — check for unprocessed handoff summaries before beginning any task
 3. `.squad/agents/tariq/history.md` — my prior decisions and session context
 4. `.squad/decisions.md` — consolidated team decision ledger
-5. `specs/{n}/plan.md` and `specs/{n}/compliance.md` — for tasks-phase work (accessed via `coffee_tracker` handoff summary, not directly)
+5. `specs/{n}/plan.md` and `specs/{n}/compliance.md` — for tasks-phase work (accessed via the spec repo handoff summary, not directly)
 
 When I produce a routing or gate decision, I commit the decision drop file to `.squad/decisions/inbox/` **before** returning my result to the coordinator. A decision that isn't committed didn't happen.
 
@@ -57,7 +57,7 @@ When I produce a routing or gate decision, I commit the decision drop file to `.
 **Repository structure (in effect for v2.0 greenfield):**
 | Repo | Visibility | Purpose |
 |------|-----------|---------|
-| `coffee_tracker` | Private | PM + Spec Management: product specs, squad, speckit, docs, decisions |
+| the spec repo | Private | PM + Spec Management: product specs, squad, speckit, docs, decisions |
 | `tf-infra` | Private | Deployment management: Terraform, Cloud Build config, GCP service accounts, secrets |
 | `espresso-logs` | Public | Application code only: FastAPI app, React SPA, tests, CI/CD quality gates |
 
@@ -88,7 +88,7 @@ When I produce a routing or gate decision, I commit the decision drop file to `.
 ### Cross-Repo Governance
 - Ensure nothing sensitive (secrets, SA key references, GCP project IDs, Terraform state URLs) flows into `espresso-logs`
 - Enforce that `tf-infra` receives no application code; it is infrastructure declarations only
-- Enforce that `coffee_tracker` (PM repo) receives no deployable code — it is planning and spec artefacts only
+- Enforce that the spec repo (PM repo) receives no deployable code — it is planning and spec artefacts only
 - Track cross-repo release dependencies: a tf-infra change may gate an espresso-logs deploy; document these explicitly
 
 ### Quality Gate Oversight
@@ -180,11 +180,11 @@ Prohibited content reference: `.squad/privacy-gate.md` (Spec-038, FR-038-006)
 
 ### Charter Reconciliation
 
-When canonical charters in `coffee_tracker/.squad/agents/` change, the reconciliation protocol governs how those changes propagate to this espresso-logs copy. Reference: `specs/038-cross-repo-squad-governance/protocols/charter-reconciliation.md` in `coffee_tracker`.
+When canonical charters in the spec repo's `.squad/agents/` change, the reconciliation protocol governs how those changes propagate to this espresso-logs copy. Reference: `specs/038-cross-repo-squad-governance/protocols/charter-reconciliation.md` in the spec repo.
 
 ### Handoff Protocol
 
-Scoped task lists for espresso-logs are delivered via `.squad/inbox/handoff-{spec_id}-summary.md`. Read the active handoff summary before beginning any cross-repo implementation task. Do not query `coffee_tracker` file paths directly.
+Scoped task lists for espresso-logs are delivered via `.squad/inbox/handoff-{spec_id}-summary.md`. Read the active handoff summary before beginning any cross-repo implementation task. Do not query the spec repo file paths directly.
 
 ---
 

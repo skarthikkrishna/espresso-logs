@@ -43,7 +43,7 @@ Inbox is now empty. `038-no-push-gate.md` was not present in espresso-logs inbox
 
 **Outcome:** Complete (local)
 
-No espresso-logs `.squad/log/` entries required deletion or remediation. Spec-038 phase logs are retained in `coffee_tracker-spec-038`. Privacy gate scan (T039) confirmed zero prohibited findings across 155 `.squad/**` files — see `coffee_tracker-spec-038/specs/038-cross-repo-squad-governance/final-privacy-scan.md`.
+No espresso-logs `.squad/log/` entries required deletion or remediation. Spec-038 phase logs are retained in `the spec repo-spec-038`. Privacy gate scan (T039) confirmed zero prohibited findings across 155 `.squad/**` files — see `the spec repo-spec-038/specs/038-cross-repo-squad-governance/final-privacy-scan.md`.
 
 ---
 
@@ -59,7 +59,7 @@ Charter reconciliation notice (`charter-reconciliation-20260606-tariq-scribe.md`
 
 **Outcome:** Complete (local)
 
-`handoff-038-summary.md` archived from `.squad/inbox/` to `.squad/archive/handoff-038-summary.md`. Archive condition met: all T012–T019 tasks complete, T039 privacy scan passed. The `handoff-espresso-logs.md` canonical in `coffee_tracker-spec-038/specs/038-cross-repo-squad-governance/` carries `lifecycle: permanent` — retained, not archived.
+`handoff-038-summary.md` archived from `.squad/inbox/` to `.squad/archive/handoff-038-summary.md`. Archive condition met: all T012–T019 tasks complete, T039 privacy scan passed. The `handoff-espresso-logs.md` canonical in `the spec repo-spec-038/specs/038-cross-repo-squad-governance/` carries `lifecycle: permanent` — retained, not archived.
 
 ---
 
@@ -75,7 +75,7 @@ No hygiene actions required in espresso-logs beyond inbox drop deletion (Step 1)
 
 **Outcome:** Verified clean
 
-T039 final scan (commit `7dbf939` in `coffee_tracker-spec-038`): zero real prohibited findings across 155 `.squad/**` files in espresso-logs (3 documentation-label false positives classified and accepted). AC-038-003 satisfied.
+T039 final scan (commit `7dbf939` in `the spec repo-spec-038`): zero real prohibited findings across 155 `.squad/**` files in espresso-logs (3 documentation-label false positives classified and accepted). AC-038-003 satisfied.
 
 ---
 

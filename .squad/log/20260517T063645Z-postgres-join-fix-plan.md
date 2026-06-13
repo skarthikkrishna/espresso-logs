@@ -16,12 +16,12 @@
 - Rationale: Self-contained, bounded changes within existing domains
 
 ### Step 2: Planning (Background)
-- **Alex** wrote implementation plan to `coffee_tracker/specs/hotfix-postgres-join-fix/plan.md`
+- **Alex** wrote implementation plan to the spec repo's `specs/hotfix-postgres-join-fix/plan.md`
 - **Finn** wrote frontend verification section to same plan document
 
 ## Decisions Merged
 - 8 decision files from espresso-logs inbox → decisions.md
-- 6 decision files from coffee_tracker inbox → decisions.md
+- 6 decision files from the spec repo inbox → decisions.md
 - Inbox directories cleared
 
 ## Artifacts

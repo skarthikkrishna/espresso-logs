@@ -11,13 +11,13 @@ lifecycle: permanent
 
 # Handoff: spec-038 → espresso-logs (Inbox Summary)
 
-> **Self-contained artifact.** An espresso-logs implementation agent reading this file can execute all Phase 6 tasks without accessing any `coffee_tracker` file path. This file is the single source of truth for the espresso-logs stream of Spec-038.
+> **Self-contained artifact.** An espresso-logs implementation agent reading this file can execute all Phase 6 tasks without accessing any the spec repo file path. This file is the single source of truth for the espresso-logs stream of Spec-038.
 
 ---
 
 ## What You Are Implementing
 
-Spec-038 establishes cross-repo Squad governance, privacy gates, handoff infrastructure, and retro ceremonies for the three-repo product system (coffee_tracker, espresso-logs, tf-infra).
+Spec-038 establishes cross-repo Squad governance, privacy gates, handoff infrastructure, and retro ceremonies for the three-repo product system (the spec repo, espresso-logs, tf-infra).
 
 Your scope is **Phase 5 and Phase 6**: governance artifacts for `espresso-logs` only.
 
@@ -47,10 +47,10 @@ All tasks below are scoped to `espresso-logs`. No changes to application code, t
 |------|-------------|-------------|--------|
 | **T012** | Create `.squad/privacy-gate.md` | Fan-Out Gate | **MUST be committed first** |
 | **T013** | Create `.squad/inbox/README.md` | T012 | Create inbox directory and README |
-| **T014** | Create `AGENTS.md` at repo root | T012 | Derived from coffee_tracker `AGENTS.md`; espresso-logs-scoped copy; extensions marked `<!-- espresso-logs extension -->` |
+| **T014** | Create `AGENTS.md` at repo root | T012 | Derived from the spec repo `AGENTS.md`; espresso-logs-scoped copy; extensions marked `<!-- espresso-logs extension -->` |
 | **T015** | Update `.squad/agents/tariq/charter.md` | T014 | Add YAML frontmatter, behavioral principles, "How I Am Invoked", SpecKit ownership, Cross-Repo Governance; preserve existing content as marked extensions |
 | **T016** | Replace `.squad/agents/scribe/charter.md` | T014 | Full Scribe v2.1 protocol; privacy-gate references; handoff inbox check |
-| **T017** | Add Implementation-Cycle Close Retro to `.squad/ceremonies.md` | T012 | Same ceremony as coffee_tracker with espresso-logs context |
+| **T017** | Add Implementation-Cycle Close Retro to `.squad/ceremonies.md` | T012 | Same ceremony as the spec repo with espresso-logs context |
 | **T018** | Create `.squad/decisions/inbox/charter-reconciliation-20260606-tariq-scribe.md` | T012 | Charter-update trigger notice; no further reconciliation required before next session |
 | **T019** | Create this file (`.squad/inbox/handoff-038-summary.md`) | T013 | Self-contained inbox summary — you are reading it |
 | **T020** | Create `.github/workflows/squad-privacy-scan.yml` | T015, T016, T017 | **REQUIRES_OPERATOR_AUTH** — do NOT implement without operator authorization |
@@ -63,8 +63,8 @@ All tasks below are scoped to `espresso-logs`. No changes to application code, t
 
 | AC | Description | Validation |
 |----|-------------|------------|
-| **AC-038-001** | Charter Consistency — all agent charters in espresso-logs are consistent with coffee_tracker canonical versions; no type-(c) behavioral contradictions; behavioral contradiction count = 0 | Charter audit (T036): side-by-side diff; all deviations classified (a) additive, (b) stale, (c) conflicting |
-| **AC-038-002** | Cross-Repo Handoff — espresso-logs inbox summary is self-contained; an implementation agent can execute all Phase 6 tasks using only this file without coffee_tracker file access | Handoff dry-run (T037): written verification that all Phase 6 scope executable from this summary alone |
+| **AC-038-001** | Charter Consistency — all agent charters in espresso-logs are consistent with the spec repo canonical versions; no type-(c) behavioral contradictions; behavioral contradiction count = 0 | Charter audit (T036): side-by-side diff; all deviations classified (a) additive, (b) stale, (c) conflicting |
+| **AC-038-002** | Cross-Repo Handoff — espresso-logs inbox summary is self-contained; an implementation agent can execute all Phase 6 tasks using only this file without the spec repo file access | Handoff dry-run (T037): written verification that all Phase 6 scope executable from this summary alone |
 | **AC-038-003** | Privacy-Safe Artifacts — zero prohibited content in any `.squad/**` artifact committed to espresso-logs | Final privacy scan (T039): zero pattern matches across all `.squad/**` |
 
 ---
@@ -77,10 +77,10 @@ The following decisions apply to all espresso-logs operations under Spec-038:
 No push, no PR, no branch delete, no workflow deploy in espresso-logs without per-operation operator authorization. Every operation requiring a push must obtain and record written authorization before executing.
 
 ### Privacy gate design (Spec-038)
-Layer 1: written prohibition (`.squad/privacy-gate.md` — T012); Layer 2: CI scan (T020, REQUIRES_OPERATOR_AUTH); Layer 3: state-of-the-union scan (T032, cross-repo, in coffee_tracker). Layer 1 is the primary control; Layer 2 is the backstop.
+Layer 1: written prohibition (`.squad/privacy-gate.md` — T012); Layer 2: CI scan (T020, REQUIRES_OPERATOR_AUTH); Layer 3: state-of-the-union scan (T032, cross-repo, in the spec repo). Layer 1 is the primary control; Layer 2 is the backstop.
 
 ### Charter reconciliation protocol
-When canonical charters in coffee_tracker change, the charter reconciliation protocol governs propagation to espresso-logs. Trigger 2 (charter-update trigger): when any charter in `.squad/agents/` is updated, a reconciliation notice is committed to `.squad/decisions/inbox/`. Scribe processes the notice at the next retro. Reconciliation for Tariq and Scribe was performed as part of Spec-038 (T015, T016) — a notice is committed at T018.
+When canonical charters in the spec repo change, the charter reconciliation protocol governs propagation to espresso-logs. Trigger 2 (charter-update trigger): when any charter in `.squad/agents/` is updated, a reconciliation notice is committed to `.squad/decisions/inbox/`. Scribe processes the notice at the next retro. Reconciliation for Tariq and Scribe was performed as part of Spec-038 (T015, T016) — a notice is committed at T018.
 
 ---
 
@@ -102,7 +102,7 @@ Quinn gate for Spec-038: `APPROVED_WITH_NOTES` (reviewed 2026-06-06).
 
 Fan-out conditions satisfied at handoff time:
 - Quinn gate committed with `status: APPROVED_WITH_NOTES` ✅
-- `handoff-espresso-logs.md` committed in coffee_tracker ✅
+- `handoff-espresso-logs.md` committed in the spec repo ✅
 
 Implementation fan-out is **permitted** for espresso-logs (Phase 5 + Phase 6).
 

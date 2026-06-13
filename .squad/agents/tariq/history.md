@@ -2,7 +2,7 @@
 
 ## 2026-05-06 — Onboarded
 
-Joined coffee_tracker squad as TPM. Reviewed existing architecture and noted the project is at a multi-tenancy inflection point: the v1 single-user/single-Sheets model needs to evolve to support household-level multi-tenancy, proper database isolation, and a scalable auth model within a $0–$50/month cost envelope.
+Joined the spec repo squad as TPM. Reviewed existing architecture and noted the project is at a multi-tenancy inflection point: the v1 single-user/single-Sheets model needs to evolve to support household-level multi-tenancy, proper database isolation, and a scalable auth model within a $0–$50/month cost envelope.
 
 First task: contribute to v2 functional and engineering architecture specifications alongside Maya (Principal Engineer) and Priya (PM).
 

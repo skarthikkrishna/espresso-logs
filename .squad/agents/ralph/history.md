@@ -1,6 +1,6 @@
 # Project Context
 
-- **Project:** coffee_tracker
+- **Project:** the spec repo
 - **Created:** 2026-05-07
 
 ## Core Context

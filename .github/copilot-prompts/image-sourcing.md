@@ -56,7 +56,7 @@ Given a catalog ID and product URL, source the official bag image and update GCS
 - Object name format: `bean-images/{CAT_ID}-{uuid8}.{ext}`
 - Public URL: `https://storage.googleapis.com/<your-gcp-project-id>-assets/bean-images/{obj_name}`
 - GCP project: `<your-gcp-project-id>` (auto-detected via ADC)
-- Run script with: `cd /path/to/coffee_tracker && uv run python /tmp/upload_one.py`
+- Run script with: `cd /path/to/the spec repo && uv run python /tmp/upload_one.py`
 - Most roasters use Shopify — `og:image` is always the main product bag shot
 
 ## When og:image is wrong (lifestyle/farm photo)

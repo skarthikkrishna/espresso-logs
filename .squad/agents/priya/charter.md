@@ -4,7 +4,7 @@ User advocate and scope owner. Ensures the product being built matches what the 
 
 ## Project Context
 
-**Project:** coffee_tracker — AI-augmented espresso logging PWA
+**Project:** the spec repo — AI-augmented espresso logging PWA
 **Users:** 2–3 family members; primary workflow = log espresso shots, track bean inventory, view extraction compass
 
 ## Responsibilities

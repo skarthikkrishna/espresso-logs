@@ -24,7 +24,7 @@ implementation_branch: household_test_fixtures
 
 ## Request Summary
 
-Route the operator request to remediate spec-042 review feedback from `coffee_tracker/specs/042-pr116-kaapi-kadai-remediation/spec_042_feedback.md`, specifically the skipped tenant-isolation implementation and verification tasks from the already-frozen spec-042 task list.
+Route the operator request to remediate spec-042 review feedback from the spec repo's `specs/042-pr116-kaapi-kadai-remediation/spec_042_feedback.md`, specifically the skipped tenant-isolation implementation and verification tasks from the already-frozen spec-042 task list.
 
 ## Evidence Reviewed
 
@@ -43,7 +43,7 @@ Route the operator request to remediate spec-042 review feedback from `coffee_tr
 
 ## Quinn Gate Verification Result
 
-`coffee_tracker/specs/042-pr116-kaapi-kadai-remediation/quinn-gate.md` is tracked by git and has `status: APPROVED_WITH_NOTES`. Implementation fan-out is permitted because the gate exists and is not BLOCKED.
+the spec repo's `specs/042-pr116-kaapi-kadai-remediation/quinn-gate.md` is tracked by git and has `status: APPROVED_WITH_NOTES`. Implementation fan-out is permitted because the gate exists and is not BLOCKED.
 
 ## Routing Status
 
@@ -125,9 +125,9 @@ These tests are pure unit/ASGI tests with mocks, not database-dependent failures
 
 The endpoint behavior is spec-correct:
 
-- `GET /households/invitations/{token}` is a public preview that does not consume the token and must return 410 for expired invitations (`coffee_tracker/specs/040-household-experience-repair/spec.md:296-299`).
-- `AC-040-ACC-05` requires decline to dismiss without consuming or revoking the invitation, with later acceptance allowed until expiry unless revoked (`coffee_tracker/specs/040-household-experience-repair/spec.md:195-200`).
-- The detailed decline API contract repeats that decline must not consume, revoke, or make the token unacceptable before expiry (`coffee_tracker/specs/040-household-experience-repair/spec.md:304-305`).
+- `GET /households/invitations/{token}` is a public preview that does not consume the token and must return 410 for expired invitations (the spec repo's `specs/040-household-experience-repair/spec.md:296-299`).
+- `AC-040-ACC-05` requires decline to dismiss without consuming or revoking the invitation, with later acceptance allowed until expiry unless revoked (the spec repo's `specs/040-household-experience-repair/spec.md:195-200`).
+- The detailed decline API contract repeats that decline must not consume, revoke, or make the token unacceptable before expiry (the spec repo's `specs/040-household-experience-repair/spec.md:304-305`).
 
 Conclusion: the tests' intended contracts are correct, and the application's 410-on-expired behavior is also correct. The only incorrect artifact is the fixture's absolute date for tests that require a still-valid pending invitation.
 
@@ -139,7 +139,7 @@ Conclusion: the tests' intended contracts are correct, and the application's 410
 
 Classification verdict: **Inherited pre-existing failure**, with a time/environment-triggered mechanism.
 
-Spec-042 defines `Inherited pre-existing failure` as the category whose correct response is to bisect against baseline and fix forward per spec rules (`coffee_tracker/specs/042-pr116-kaapi-kadai-remediation/spec_042_feedback.md:326-331`). This failure was reported and revalidated as present on baseline `household_fixes`, so it is inherited rather than introduced by `household_test_fixtures`. The trigger is wall-clock time, so it resembles environment nondeterminism, but it is not a poisoned process/port/env issue; after the fixture's 2026-06-12 expiry boundary, the two mocked tests fail deterministically on any database/environment.
+Spec-042 defines `Inherited pre-existing failure` as the category whose correct response is to bisect against baseline and fix forward per spec rules (the spec repo's `specs/042-pr116-kaapi-kadai-remediation/spec_042_feedback.md:326-331`). This failure was reported and revalidated as present on baseline `household_fixes`, so it is inherited rather than introduced by `household_test_fixtures`. The trigger is wall-clock time, so it resembles environment nondeterminism, but it is not a poisoned process/port/env issue; after the fixture's 2026-06-12 expiry boundary, the two mocked tests fail deterministically on any database/environment.
 
 ## Routing decision
 
@@ -280,7 +280,7 @@ Downgrade is lossy in capability, not data: if two households have the same non-
 
 Recommendation: **yes, run a Priya-owned `speckit.clarify` / spec amendment before implementation.**
 
-Reason: the original US3 intent already includes cross-household isolation and T034 explicitly names overlapping `sheets_id` values (`coffee_tracker/specs/042-pr116-kaapi-kadai-remediation/tasks.md:151`). The product intent does not change. However, the remediation scope changes from Quinn-only test coverage to an Alex-owned schema/write-path fix plus Quinn verification. Under the no-scope-changes-after-freeze rule, that implementation scope expansion should be captured in the spec/tasks rather than patched inline.
+Reason: the original US3 intent already includes cross-household isolation and T034 explicitly names overlapping `sheets_id` values (the spec repo's `specs/042-pr116-kaapi-kadai-remediation/tasks.md:151`). The product intent does not change. However, the remediation scope changes from Quinn-only test coverage to an Alex-owned schema/write-path fix plus Quinn verification. Under the no-scope-changes-after-freeze rule, that implementation scope expansion should be captured in the spec/tasks rather than patched inline.
 
 ### 5. Security, compliance, RLS, and compatibility
 
@@ -741,7 +741,7 @@ Existing Quinn internal review context suffices for this bounded PR remediation 
 - **Scope:** Bounded recovery for already-approved Spec-039 implementation/validation blockers only.
 - **Permitted owners:** Alex for backend/API/test remediation, Finn for frontend/UI/cache/accessibility remediation, Quinn for E2E harness/selectors/fixture evidence and validation reruns.
 - **Out of scope:** New feature behavior, broad cache rewrites, production data/log/image access, deploys, pushes, or PR/review requests.
-- **Quinn gate:** Filesystem verification in `coffee_tracker` found `specs/039-ui-data-freshness-bug-evidence/quinn-gate.md`; frontmatter status was `APPROVED_WITH_NOTES`.
+- **Quinn gate:** Filesystem verification in the spec repo found `specs/039-ui-data-freshness-bug-evidence/quinn-gate.md`; frontmatter status was `APPROVED_WITH_NOTES`.
 - **Validation sequence:** Fix bounded blockers, rerun T32, then T33, then T34; pause for Tariq triage on any validation failure.
 
 ### Decision: Tariq routing — DIRECT_PERMITTED (Spec-039 E2E harness/test-evidence remediation)
@@ -753,7 +753,7 @@ Existing Quinn internal review context suffices for this bounded PR remediation 
 - **Scope:** E2E harness and evidence remediation limited to `frontend/e2e/spec039-seed.ts`, `frontend/e2e/spec039-ui-data-freshness.spec.ts`, and `frontend/playwright.config.ts` only if browser-state isolation required it.
 - **Permitted fixes:** Protected API probes with active synthetic-session authorization, unambiguous Medium locator, session/browser-state hard-navigation stability, and seed-derived B07 dose expectation reconciliation.
 - **Out of scope:** Application behavior changes, backend/API changes, frontend product component changes, broad cache rewrites, non-Spec-039 tests, production/external provider access, deploys, pushes, or PR/review activity.
-- **Quinn gate:** Existing `coffee_tracker/specs/039-ui-data-freshness-bug-evidence/quinn-gate.md` was noted as `APPROVED_WITH_NOTES`; coordinator still had to verify the filesystem artifact before implementation.
+- **Quinn gate:** Existing the spec repo's `specs/039-ui-data-freshness-bug-evidence/quinn-gate.md` was noted as `APPROVED_WITH_NOTES`; coordinator still had to verify the filesystem artifact before implementation.
 - **Handling:** Preserve unrelated worktree changes; touch only scoped harness/config files for this remediation.
 
 ### Decision: Alex routing — DIRECT_PERMITTED (Spec-039 backend/API/test remediation)
@@ -803,9 +803,9 @@ Existing Quinn internal review context suffices for this bounded PR remediation 
 - **Classification:** DIRECT_PERMITTED
 - **drop_id:** 20260607T025734-0700-finn-aria-gate-routing
 - **Source drop:** `.squad/decisions/inbox/20260607T025734-0700-finn-aria-gate-routing.md`
-- **Operator Request:** Aria must review the existing Spec-039 artifacts and create/commit only `coffee_tracker/specs/039-ui-data-freshness-bug-evidence/aria-gate.md`.
+- **Operator Request:** Aria must review the existing Spec-039 artifacts and create/commit only the spec repo's `specs/039-ui-data-freshness-bug-evidence/aria-gate.md`.
 - **Rationale:** This was a self-contained gate-artifact step over already-created `spec.md`, `plan.md`, and `compliance.md`; no new product scope, implementation, or app-repo change was authorized.
-- **Scope:** Create and commit only the Spec-039 Aria gate in `coffee_tracker`; do not modify `espresso-logs`, other SpecKit artifacts, or push.
+- **Scope:** Create and commit only the Spec-039 Aria gate in the spec repo; do not modify `espresso-logs`, other SpecKit artifacts, or push.
 - **Outcome:** Aria approved the gate in `d5d9243 design: approve spec-039 aria gate`; `aria-gate.md` has `status: APPROVED`. This app-repo mirror records and clears the pending Finn drop without changing application code.
 
 ---
@@ -819,11 +819,11 @@ Existing Quinn internal review context suffices for this bounded PR remediation 
 - **Classification:** SPECKIT_REQUIRED
 - **drop_id:** 2026-06-06-tariq-squad-governance-spec-routing
 - **Operator Request:** Build a spec for cross-repo Squad governance covering: charter drift, CI debug loops, multi-repo parallel implementation, hub-and-spoke Squad model, privacy/security gates, retro ceremony with artifact pruning, and sustainable cleanup model.
-- **Rationale:** Multi-repo, cross-cutting governance touching new Squad protocols, per-repo Squad infrastructure, privacy/security gate definitions, retro ceremony design, and automation tradeoff. None are bounded single-file changes; all span three repos (`coffee_tracker`, `espresso-logs`, `tf-infra`).
-- **SpecKit Hub:** `coffee_tracker`. All gate artifacts land there. This drop is a local routing record in `espresso-logs` only.
+- **Rationale:** Multi-repo, cross-cutting governance touching new Squad protocols, per-repo Squad infrastructure, privacy/security gate definitions, retro ceremony design, and automation tradeoff. None are bounded single-file changes; all span three repos (the spec repo, `espresso-logs`, `tf-infra`).
+- **SpecKit Hub:** the spec repo. All gate artifacts land there. This drop is a local routing record in `espresso-logs` only.
 - **Scope:** Cross-repo charter normalization; hub-and-spoke handoff protocol; privacy/security gates; retro ceremony; artifact cleanup model; automation tradeoff.
 - **No-Push Constraint:** Binding. All commits local only.
-- **Outcome:** Priya specify + clarify complete (commits `e5ebd8d`, `f993f85` in `coffee_tracker-spec-038` worktree). Spec frontmatter `status: clarified`.
+- **Outcome:** Priya specify + clarify complete (commits `e5ebd8d`, `f993f85` in `the spec repo-spec-038` worktree). Spec frontmatter `status: clarified`.
 
 ### Decision: Tariq routing — SPECKIT_REQUIRED (Spec-038 tasks phase continuation)
 - **Agent:** Tariq
@@ -1045,7 +1045,7 @@ SELECT rolname, rolbypassrls FROM pg_roles WHERE rolname = 'app_admin';
 If the row is absent, run:
 ```sql
 CREATE ROLE app_admin BYPASSRLS;
-GRANT app_admin TO coffee_tracker_runtime;
+GRANT app_admin TO <application_runtime_role>;
 ```
 as a Cloud SQL superuser before enabling RLS enforcement in the application.
 
@@ -1207,7 +1207,7 @@ because `Result[Any].rowcount` is not typed in SQLAlchemy's mypy stubs.
 ### tariq-p1-runbook-20260521-085119.md
 # P.1 Decision Drop — Runbook update
 
-**Task:** [P.1] Runbook update (from `coffee_tracker/specs/034-m5-household-roles/tasks.md`)
+**Task:** [P.1] Runbook update (from the spec repo's `specs/034-m5-household-roles/tasks.md`)
 
 **Owner:** Tariq (TPM)
 
@@ -1236,17 +1236,17 @@ Update M5 migration phase status in `docs/requirements/spec-kit_phases.md`:
 
 ### ✅ Verification Results
 
-**File:** `<coffee_tracker>/docs/requirements/spec-kit_phases.md`
+**File:** `<the spec repo>/docs/requirements/spec-kit_phases.md`
 
 **M5 Row (current state):**
 ```
-| M5 | Household, Roles & Sheets Write-Disable | 🟡 in progress | spec-034 · feat/034-m5-household-roles (espresso-logs) · spec/034-m5-household-roles (coffee_tracker) |
+| M5 | Household, Roles & Sheets Write-Disable | 🟡 in progress | spec-034 · feat/034-m5-household-roles (espresso-logs) · spec/034-m5-household-roles (the spec repo) |
 ```
 
 **Status:** ✅ Correct. Matches P.1 acceptance criteria:
 - Status: `🟡 in progress` ✓
 - Branch names included: `feat/034-m5-household-roles` (espresso-logs) ✓
-- Branch names included: `spec/034-m5-household-roles` (coffee_tracker) ✓
+- Branch names included: `spec/034-m5-household-roles` (the spec repo) ✓
 - Spec number noted: `spec-034` ✓
 
 ### ⚠️ Note: espresso-logs does not have spec-kit_phases.md
@@ -1255,14 +1255,14 @@ Update M5 migration phase status in `docs/requirements/spec-kit_phases.md`:
 
 **Rationale:**
 - espresso-logs is the **application** repository (all app code)
-- coffee_tracker is the **specification** repository (specs, plans, tasks)
-- Progress tracking for migration phases logically belongs in coffee_tracker (single source of truth)
+- the spec repo is the **specification** repository (specs, plans, tasks)
+- Progress tracking for migration phases logically belongs in the spec repo (single source of truth)
 - No requirement identified to replicate this file in espresso-logs
 
 **Verification command outputs:**
 ```
 espresso-logs/docs/requirements/: engineering_architecture_v2.md, functional-spec-v2.md
-coffee_tracker/docs/requirements/: spec-kit_phases.md
+the spec repo's `docs/requirements/`: spec-kit_phases.md
 ```
 
 ### ✅ Other Runbook Files Checked
@@ -1279,7 +1279,7 @@ Searched espresso-logs docs for phase/migration progress trackers:
 
 **Rationale:** 
 - P.1 was already completed as part of speckit.tasks phase
-- No uncommitted changes in espresso-logs or coffee_tracker
+- No uncommitted changes in espresso-logs or the spec repo
 - Both repos have clean working trees on their respective M5 branches
 - No new work is needed
 
@@ -1289,9 +1289,9 @@ Searched espresso-logs docs for phase/migration progress trackers:
 
 | Criterion | Status | Evidence |
 |-----------|--------|----------|
-| M5 row shows `🟡 in progress` | ✅ Pass | coffee_tracker line 699 |
+| M5 row shows `🟡 in progress` | ✅ Pass | the spec repo line 699 |
 | Branch names noted (espresso-logs) | ✅ Pass | `feat/034-m5-household-roles` in Notes column |
-| Branch names noted (coffee_tracker) | ✅ Pass | `spec/034-m5-household-roles` in Notes column |
+| Branch names noted (the spec repo) | ✅ Pass | `spec/034-m5-household-roles` in Notes column |
 | Spec number noted | ✅ Pass | `spec-034` in Notes column |
 
 ---
@@ -1300,13 +1300,13 @@ Searched espresso-logs docs for phase/migration progress trackers:
 
 ```bash
 # Expected: returns M5 row with 🟡 in progress
-cd <coffee_tracker>
+cd <the spec repo>
 grep "M5" docs/requirements/spec-kit_phases.md
 ```
 
 **Result:**
 ```
-| M5 | Household, Roles & Sheets Write-Disable | 🟡 in progress | spec-034 · feat/034-m5-household-roles (espresso-logs) · spec/034-m5-household-roles (coffee_tracker) |
+| M5 | Household, Roles & Sheets Write-Disable | 🟡 in progress | spec-034 · feat/034-m5-household-roles (espresso-logs) · spec/034-m5-household-roles (the spec repo) |
 ```
 
 ✅ **PASS** — All verification criteria met.
@@ -1317,7 +1317,7 @@ grep "M5" docs/requirements/spec-kit_phases.md
 
 **P.1 task status: COMPLETE**
 
-P.1 (Runbook update) was successfully completed as part of the speckit.tasks phase. The M5 row in the coffee_tracker progress tracker has been updated to `🟡 in progress` with all required branch names and spec number. No further action required.
+P.1 (Runbook update) was successfully completed as part of the speckit.tasks phase. The M5 row in the spec repo progress tracker has been updated to `🟡 in progress` with all required branch names and spec number. No further action required.
 
 ---
 
@@ -1416,7 +1416,7 @@ Alex is authorised to implement the following 7 backend items, no more, no less:
 ### CRITICAL — Security
 1. **Remove runtime BYPASSRLS grant; enforce FORCE ROW LEVEL SECURITY**
    - File: `alembic/versions/0007_m5_schema_corrections.py:146-171`
-   - Remove `GRANT app_admin TO coffee_tracker_runtime`; add `ALTER TABLE … FORCE ROW LEVEL SECURITY` where appropriate; extend RLS policies to `pending_invitations`, `guest_tokens`, `household_members`.
+   - Remove `GRANT app_admin TO <application_runtime_role>`; add `ALTER TABLE … FORCE ROW LEVEL SECURITY` where appropriate; extend RLS policies to `pending_invitations`, `guest_tokens`, `household_members`.
    - Tests: integration tests must run under the non-bypass runtime role.
 
 2. **Admin password reset — add shared-household validation**
@@ -1475,7 +1475,7 @@ All four local checks must pass before any push:
 
 Two changes were assessed:
 
-1. **`alembic/versions/0007_m5_schema_corrections.py`** — Remove the `GRANT app_admin TO coffee_tracker_runtime` block; add `FORCE ROW LEVEL SECURITY` for each of the five tenant-scoped tables (alongside the existing `ENABLE ROW LEVEL SECURITY` statements); update `downgrade()` to mirror; add a comment block explaining why `BYPASSRLS` must never be granted to the runtime role.
+1. **`alembic/versions/0007_m5_schema_corrections.py`** — Remove the `GRANT app_admin TO <application_runtime_role>` block; add `FORCE ROW LEVEL SECURITY` for each of the five tenant-scoped tables (alongside the existing `ENABLE ROW LEVEL SECURITY` statements); update `downgrade()` to mirror; add a comment block explaining why `BYPASSRLS` must never be granted to the runtime role.
 
 2. **`app/routers/api_auth.py`** — Add shared-household boundary validation to `POST /auth/admin/reset-password` so an admin can only reset passwords for users who share the same household. Return 404 (not 403) if the target user is not a member of the caller's household, using `HouseholdRepo` (already imported) and the `household_id` available on the `HouseholdMember` returned by `require_admin`.
 
@@ -1489,9 +1489,9 @@ Two changes were assessed:
 
 #### Item 1 — Migration security hardening
 
-- The migration `0007` already exists and already contains both the `ENABLE RLS` block and the `GRANT app_admin TO coffee_tracker_runtime` block.
+- The migration `0007` already exists and already contains both the `ENABLE RLS` block and the `GRANT app_admin TO <application_runtime_role>` block.
 - `FORCE ROW LEVEL SECURITY` is a complementary DDL modifier that prevents table owners from bypassing RLS policies. Adding it alongside `ENABLE RLS` is a security tightening of an already-defined intent, not a new feature.
-- Removing the `GRANT app_admin TO coffee_tracker_runtime` block removes a security gap introduced in the same migration: granting `BYPASSRLS` membership to the runtime role defeats the entire RLS model for tenant isolation.
+- Removing the `GRANT app_admin TO <application_runtime_role>` block removes a security gap introduced in the same migration: granting `BYPASSRLS` membership to the runtime role defeats the entire RLS model for tenant isolation.
 - The downgrade update is a mechanical inverse of the upgrade changes.
 - Adding a comment block is documentation only.
 - Scope: one file, no logic changes outside the migration.
@@ -1691,7 +1691,7 @@ The following scope is permitted under this decision:
 - Must follow `SPREADSHEET_ID=dummy` + `FakeSheetsClient` pattern (no live sheets in tests)
 - Must pass all four local CI checks before any push: `ruff check`, `ruff format --check`, `mypy --strict`, `pytest`
 - Must not push without explicit operator affirmative
-- Quinn gate (`specs/034/quinn-gate.md` in `coffee_tracker` repo) should be verified if this work is intended to formally close the QE mandate; if the gate doesn't yet exist, the implementation agent should flag this to the operator rather than proceeding to push
+- Quinn gate (`specs/034/quinn-gate.md` in the spec repo) should be verified if this work is intended to formally close the QE mandate; if the gate doesn't yet exist, the implementation agent should flag this to the operator rather than proceeding to push
 
 ## 2026-05-23
 
@@ -2469,9 +2469,9 @@ Decision drop generated 2026-06-05T14:00 PDT
 | **Date** | 2026-06-06 |
 | **Drop file** | `charter-reconciliation-20260606-tariq-scribe.md` |
 | **Agent** | Tariq (reconciliation trigger author) |
-| **Decision** | Tariq charter updated to `v3.1-espresso` (T015); Scribe charter updated to `v2.1-espresso` (T016). Both derived from `coffee_tracker` canonical versions. Zero type-(c) behavioral contradictions. Reconciliation complete for this cycle. Four type-(b) non-blocking stale items tracked in `charter-audit.md`. |
-| **Canonical refs** | Tariq: `coffee_tracker/.squad/agents/tariq/charter.md` v3.1; Scribe: `coffee_tracker/.squad/agents/scribe/charter.md` v2.1 |
-| **Next reconciliation trigger** | Any charter update to `coffee_tracker/.squad/agents/tariq/` or `scribe/` after commit `a01523d` |
+| **Decision** | Tariq charter updated to `v3.1-espresso` (T015); Scribe charter updated to `v2.1-espresso` (T016). Both derived from the spec repo canonical versions. Zero type-(c) behavioral contradictions. Reconciliation complete for this cycle. Four type-(b) non-blocking stale items tracked in `charter-audit.md`. |
+| **Canonical refs** | Tariq: the spec repo's `.squad/agents/tariq/charter.md` v3.1; Scribe: the spec repo's `.squad/agents/scribe/charter.md` v2.1 |
+| **Next reconciliation trigger** | Any charter update to the spec repo's `.squad/agents/tariq/` or `scribe/` after commit `a01523d` |
 | **Status** | Accepted |
 
 
