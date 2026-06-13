@@ -30,6 +30,7 @@ from app.repos.maintenance import MaintenanceRepo
 from app.repos.sheets_client import SheetsClientProtocol
 from app.repos.sql.inventory import SqlInventoryRepo
 from app.repos.sql.maintenance import SqlMaintenanceRepo
+from app.repos.sql.tenant import assert_runtime_rls
 from app.routers import defaults as defaults_router, health, import_wizard
 from app.routers import (
     api_auth,
@@ -197,6 +198,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
             await init_async_engine(settings.database_url)
             logger.info("Cloud SQL Connector initialized (async, bound to uvicorn event loop)")
         async with get_session_factory()() as db:
+            await assert_runtime_rls(db)
             await setup_guard.check_and_set_setup_required(db)
     else:
         setup_guard.clear_setup_required()
