@@ -104,11 +104,24 @@ async def assert_runtime_rls(db: AsyncSession) -> None:
         for row in table_result.all()
     }
     missing = required_tables.difference(flags)
-    unsafe = sorted(
-        name for name, (rls_enabled, force_rls) in flags.items() if not rls_enabled or not force_rls
-    )
+    unsafe = {
+        name: (rls_enabled, force_rls)
+        for name, (rls_enabled, force_rls) in flags.items()
+        if not rls_enabled or not force_rls
+    }
     if missing or unsafe:
+        details: list[str] = []
+        if missing:
+            details.append(f"missing tables: {', '.join(sorted(missing))}")
+        for name in sorted(unsafe):
+            rls_enabled, force_rls = unsafe[name]
+            disabled_flags = []
+            if not rls_enabled:
+                disabled_flags.append("RLS disabled")
+            if not force_rls:
+                disabled_flags.append("FORCE RLS disabled")
+            details.append(f"{name}: {', '.join(disabled_flags)}")
         raise RuntimeError(
             "Unsafe tenant RLS configuration for required tables: "
-            "RLS and FORCE RLS must both be enabled"
+            "RLS and FORCE RLS must both be enabled; " + "; ".join(details)
         )

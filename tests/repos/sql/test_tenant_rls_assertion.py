@@ -92,15 +92,19 @@ async def test_assert_runtime_rls_rejects_privileged_runtime_roles(
 
 
 @pytest.mark.parametrize(
-    "table_rows",
+    ("table_rows", "expected_details"),
     [
-        _rows(missing={"catalog"}),
-        _rows(unsafe={"brew_log": (False, True)}),
-        _rows(unsafe={"inventory_bags": (True, False)}),
+        (_rows(missing={"catalog"}), ("missing tables: catalog",)),
+        (_rows(unsafe={"brew_log": (False, True)}), ("brew_log", "RLS disabled")),
+        (
+            _rows(unsafe={"inventory_bags": (True, False)}),
+            ("inventory_bags", "FORCE RLS disabled"),
+        ),
     ],
 )
 async def test_assert_runtime_rls_rejects_missing_or_non_forced_tenant_tables(
     table_rows: list[SimpleNamespace],
+    expected_details: tuple[str, ...],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     db = _session_for(table_rows=table_rows)
@@ -111,6 +115,8 @@ async def test_assert_runtime_rls_rejects_missing_or_non_forced_tenant_tables(
     message = str(exc_info.value)
     assert "Unsafe tenant RLS configuration" in message
     assert "RLS and FORCE RLS must both be enabled" in message
+    for expected_detail in expected_details:
+        assert expected_detail in message
     assert "password" not in message.lower()
     assert _REDACTED_DSN not in message
     assert not caplog.records
