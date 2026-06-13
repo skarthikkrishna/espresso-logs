@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import uuid
+
+import sqlalchemy as sa
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -310,3 +313,104 @@ async def test_mr_join_05_list_returns_hardware_sheets_id_from_join_in_to_dict(
     results = await repo.list(hardware_id="HW-DICT-01")
     assert len(results) == 1
     assert results[0]["Hardware_ID"] == "HW-DICT-01"
+
+
+async def _create_maintenance_household(db_session: AsyncSession, name: str) -> uuid.UUID:
+    user_id = uuid.uuid4()
+    household_id = uuid.uuid4()
+    await db_session.execute(
+        sa.text(
+            """
+            INSERT INTO users (id, username, password_hash, display_name)
+            VALUES (:uid, :username, 'fixture-only', :display_name)
+            """
+        ),
+        {"uid": user_id, "username": f"maintenance-{user_id.hex}", "display_name": name},
+    )
+    await db_session.execute(
+        sa.text(
+            """
+            INSERT INTO households (id, name, created_by)
+            VALUES (:hid, :name, :uid)
+            """
+        ),
+        {"hid": household_id, "name": name, "uid": user_id},
+    )
+    return household_id
+
+
+async def test_maintenance_reads_and_hardware_filter_are_household_scoped(
+    db_session: AsyncSession, test_household_id: uuid.UUID
+) -> None:
+    other_household_id = await _create_maintenance_household(db_session, "Maintenance Other")
+    visible_hw = Hardware(
+        household_id=test_household_id,
+        name="Visible",
+        category="Machine",
+        sheets_id="HW-MAINT-A",
+    )
+    db_session.add(visible_hw)
+    await db_session.flush()
+    await db_session.execute(
+        sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+        {"hid": str(other_household_id)},
+    )
+    hidden_hw = Hardware(
+        household_id=other_household_id,
+        name="Hidden",
+        category="Machine",
+        sheets_id="HW-MAINT-B",
+    )
+    db_session.add(hidden_hw)
+    await db_session.flush()
+    db_session.add(
+        MaintenanceLog(
+            household_id=other_household_id,
+            hardware_id=hidden_hw.id,
+            sheets_id="MNT-SCOPE-B",
+            action="Hidden",
+        )
+    )
+    await db_session.flush()
+    await db_session.execute(
+        sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+        {"hid": str(test_household_id)},
+    )
+    db_session.add_all(
+        [
+            MaintenanceLog(
+                household_id=test_household_id,
+                hardware_id=visible_hw.id,
+                sheets_id="MNT-SCOPE-A",
+                action="Visible",
+            ),
+            MaintenanceLog(
+                household_id=test_household_id,
+                hardware_id=hidden_hw.id,
+                sheets_hardware_id="HW-LEGACY-A",
+                sheets_id="MNT-CROSS-HW",
+                action="Cross",
+            ),
+        ]
+    )
+    await db_session.flush()
+
+    repo = SqlMaintenanceRepo(db=db_session)
+    rows = await repo.list()
+    by_id = {row["Maintenance_ID"]: row for row in rows}
+    assert set(by_id) == {"MNT-SCOPE-A", "MNT-CROSS-HW"}
+    assert by_id["MNT-SCOPE-A"]["Hardware_ID"] == "HW-MAINT-A"
+    assert by_id["MNT-CROSS-HW"]["Hardware_ID"] == "HW-LEGACY-A"
+    assert await repo.list(hardware_id="HW-MAINT-B") == []
+    assert await repo.get("MNT-SCOPE-B") is None
+
+
+async def test_maintenance_reads_without_household_context_fail_closed(
+    db_session: AsyncSession,
+) -> None:
+    repo = SqlMaintenanceRepo(db=db_session)
+    await repo.add({"Maintenance_ID": "MNT-NO-CONTEXT", "Action_Type": "Clean"})
+    await db_session.execute(sa.text("SELECT set_config('app.current_household_id', '', true)"))
+
+    assert await repo.list() == []
+    assert await repo.get("MNT-NO-CONTEXT") is None

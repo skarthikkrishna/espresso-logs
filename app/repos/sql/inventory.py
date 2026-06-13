@@ -6,12 +6,12 @@ import builtins
 import datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.catalog import CatalogBean
 from app.models.inventory import InventoryBag
-from app.repos.sql.tenant import row_household_id_or_context
+from app.repos.sql.tenant import household_read_scope, row_household_id_or_context
 
 
 def _to_date(val: Any) -> datetime.date | None:
@@ -75,9 +75,20 @@ class SqlInventoryRepo:
         """No-op."""
 
     async def list(self, status: str | None = "Active") -> builtins.list[dict[str, Any]]:
-        """Return inventory bags, optionally filtered by status."""
-        q = select(InventoryBag, CatalogBean.sheets_id.label("catalog_sheets_id")).outerjoin(
-            CatalogBean, InventoryBag.catalog_id == CatalogBean.id
+        """Return active-household inventory bags, optionally filtered by status."""
+        scope = await household_read_scope(self._db, InventoryBag)
+        if not scope.has_context:
+            return []
+        q = (
+            select(InventoryBag, CatalogBean.sheets_id.label("catalog_sheets_id"))
+            .outerjoin(
+                CatalogBean,
+                and_(
+                    InventoryBag.catalog_id == CatalogBean.id,
+                    CatalogBean.household_id == scope.household_id,
+                ),
+            )
+            .where(scope.require_predicate())
         )
         if status is not None:
             q = q.where(InventoryBag.status == status)
@@ -85,19 +96,39 @@ class SqlInventoryRepo:
         return [self._to_dict(bag, cat_id) for bag, cat_id in result.all()]
 
     async def list_all(self) -> builtins.list[dict[str, Any]]:
-        """Return all inventory bags regardless of status."""
-        q = select(InventoryBag, CatalogBean.sheets_id.label("catalog_sheets_id")).outerjoin(
-            CatalogBean, InventoryBag.catalog_id == CatalogBean.id
+        """Return active-household inventory bags regardless of status."""
+        scope = await household_read_scope(self._db, InventoryBag)
+        if not scope.has_context:
+            return []
+        q = (
+            select(InventoryBag, CatalogBean.sheets_id.label("catalog_sheets_id"))
+            .outerjoin(
+                CatalogBean,
+                and_(
+                    InventoryBag.catalog_id == CatalogBean.id,
+                    CatalogBean.household_id == scope.household_id,
+                ),
+            )
+            .where(scope.require_predicate())
         )
         result = await self._db.execute(q)
         return [self._to_dict(bag, cat_id) for bag, cat_id in result.all()]
 
     async def get(self, bag_id: str) -> dict[str, Any] | None:
-        """Fetch a single inventory bag by Sheets Bag_ID."""
+        """Fetch a single inventory bag by Sheets Bag_ID within the active household."""
+        scope = await household_read_scope(self._db, InventoryBag)
+        if not scope.has_context:
+            return None
         q = (
             select(InventoryBag, CatalogBean.sheets_id.label("catalog_sheets_id"))
-            .outerjoin(CatalogBean, InventoryBag.catalog_id == CatalogBean.id)
-            .where(InventoryBag.sheets_id == bag_id)
+            .outerjoin(
+                CatalogBean,
+                and_(
+                    InventoryBag.catalog_id == CatalogBean.id,
+                    CatalogBean.household_id == scope.household_id,
+                ),
+            )
+            .where(scope.require_predicate(), InventoryBag.sheets_id == bag_id)
         )
         result = await self._db.execute(q)
         row = result.one_or_none()

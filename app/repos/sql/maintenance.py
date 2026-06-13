@@ -5,12 +5,12 @@ from __future__ import annotations
 import datetime
 from typing import Any
 
-from sqlalchemy import or_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.hardware import Hardware
 from app.models.maintenance import MaintenanceLog
-from app.repos.sql.tenant import row_household_id_or_context
+from app.repos.sql.tenant import household_read_scope, row_household_id_or_context
 
 
 def _parse_datetime(val: Any) -> datetime.datetime | None:
@@ -94,9 +94,20 @@ class SqlMaintenanceRepo:
         """No-op."""
 
     async def list(self, hardware_id: str | None = None) -> list[dict[str, Any]]:
-        """Return maintenance events, optionally filtered by Sheets Hardware_ID."""
-        q = select(MaintenanceLog, Hardware.sheets_id.label("hardware_sheets_id")).outerjoin(
-            Hardware, MaintenanceLog.hardware_id == Hardware.id
+        """Return active-household maintenance events, optionally filtered by hardware ID."""
+        scope = await household_read_scope(self._db, MaintenanceLog)
+        if not scope.has_context:
+            return []
+        q = (
+            select(MaintenanceLog, Hardware.sheets_id.label("hardware_sheets_id"))
+            .outerjoin(
+                Hardware,
+                and_(
+                    MaintenanceLog.hardware_id == Hardware.id,
+                    Hardware.household_id == scope.household_id,
+                ),
+            )
+            .where(scope.require_predicate())
         )
         if hardware_id is not None:
             q = q.where(
@@ -109,9 +120,14 @@ class SqlMaintenanceRepo:
         return [self._to_dict(log, hw_id) for log, hw_id in result.all()]
 
     async def get(self, maintenance_id: str) -> dict[str, Any] | None:
-        """Fetch a single maintenance event by Sheets Maintenance_ID."""
+        """Fetch a single maintenance event by Sheets Maintenance_ID within the active household."""
+        scope = await household_read_scope(self._db, MaintenanceLog)
+        if not scope.has_context:
+            return None
         result = await self._db.execute(
-            select(MaintenanceLog).where(MaintenanceLog.sheets_id == maintenance_id)
+            select(MaintenanceLog).where(
+                scope.require_predicate(), MaintenanceLog.sheets_id == maintenance_id
+            )
         )
         row = result.scalar_one_or_none()
         return self._to_dict(row) if row else None

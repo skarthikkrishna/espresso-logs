@@ -299,3 +299,107 @@ async def test_inv_join_04_list_returns_empty_catalog_id_when_no_catalog_link(
     results = await repo.list_all()
     assert len(results) == 1
     assert results[0]["Catalog_ID"] == ""
+
+
+async def _create_inventory_household(db_session: AsyncSession, name: str) -> uuid.UUID:
+    user_id = uuid.uuid4()
+    household_id = uuid.uuid4()
+    await db_session.execute(
+        sa.text(
+            """
+            INSERT INTO users (id, username, password_hash, display_name)
+            VALUES (:uid, :username, 'fixture-only', :display_name)
+            """
+        ),
+        {"uid": user_id, "username": f"inventory-{user_id.hex}", "display_name": name},
+    )
+    await db_session.execute(
+        sa.text(
+            """
+            INSERT INTO households (id, name, created_by)
+            VALUES (:hid, :name, :uid)
+            """
+        ),
+        {"hid": household_id, "name": name, "uid": user_id},
+    )
+    return household_id
+
+
+async def test_inventory_reads_and_catalog_hydration_are_household_scoped(
+    db_session: AsyncSession, test_household_id: uuid.UUID
+) -> None:
+    other_household_id = await _create_inventory_household(db_session, "Inventory Other")
+    visible_catalog = CatalogBean(
+        household_id=test_household_id,
+        roaster="Visible",
+        bean_name="Visible",
+        sheets_id="CAT-VISIBLE",
+    )
+    db_session.add(visible_catalog)
+    await db_session.flush()
+    await db_session.execute(
+        sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+        {"hid": str(other_household_id)},
+    )
+    other_catalog = CatalogBean(
+        household_id=other_household_id,
+        roaster="Hidden",
+        bean_name="Hidden",
+        sheets_id="CAT-HIDDEN",
+    )
+    db_session.add(other_catalog)
+    await db_session.flush()
+    db_session.add(
+        InventoryBag(
+            household_id=other_household_id,
+            sheets_id="BAG-SCOPE-B",
+            beans="Hidden",
+            status="Active",
+        )
+    )
+    await db_session.flush()
+    await db_session.execute(
+        sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+        {"hid": str(test_household_id)},
+    )
+    db_session.add_all(
+        [
+            InventoryBag(
+                household_id=test_household_id,
+                sheets_id="BAG-SCOPE-A",
+                catalog_id=visible_catalog.id,
+                sheets_catalog_id=None,
+                beans="Visible",
+                status="Active",
+            ),
+            InventoryBag(
+                household_id=test_household_id,
+                sheets_id="BAG-CROSS-CATALOG",
+                catalog_id=other_catalog.id,
+                sheets_catalog_id="CAT-LEGACY-A",
+                beans="Cross",
+                status="Active",
+            ),
+        ]
+    )
+    await db_session.flush()
+
+    repo = SqlInventoryRepo(db=db_session)
+    rows = await repo.list()
+    by_id = {row["Bag_ID"]: row for row in rows}
+    assert set(by_id) == {"BAG-SCOPE-A", "BAG-CROSS-CATALOG"}
+    assert by_id["BAG-SCOPE-A"]["Catalog_ID"] == "CAT-VISIBLE"
+    assert by_id["BAG-CROSS-CATALOG"]["Catalog_ID"] == "CAT-LEGACY-A"
+    assert await repo.get("BAG-SCOPE-B") is None
+
+
+async def test_inventory_reads_without_household_context_fail_closed(
+    db_session: AsyncSession,
+) -> None:
+    repo = SqlInventoryRepo(db=db_session)
+    await repo.upsert({"Bag_ID": "BAG-NO-CONTEXT", "Beans": "B", "Status": "Active"})
+    await db_session.execute(sa.text("SELECT set_config('app.current_household_id', '', true)"))
+
+    assert await repo.list() == []
+    assert await repo.list_all() == []
+    assert await repo.get("BAG-NO-CONTEXT") is None

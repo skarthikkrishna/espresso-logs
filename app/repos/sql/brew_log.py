@@ -228,9 +228,12 @@ class SqlBrewLogRepo:
         return [self._to_dict(r) for r in result.scalars().all()]
 
     async def list_existing_ids(self) -> builtins.list[str]:
-        """Return all known Sheets Shot_IDs."""
+        """Return active-household known Sheets Shot_IDs."""
+        household_filter = await self._current_household_filter()
+        if household_filter is None:
+            return []
         result = await self._db.execute(
-            select(BrewLog.sheets_id).where(BrewLog.sheets_id.is_not(None))
+            select(BrewLog.sheets_id).where(household_filter, BrewLog.sheets_id.is_not(None))
         )
         return [row[0] for row in result.all()]
 
