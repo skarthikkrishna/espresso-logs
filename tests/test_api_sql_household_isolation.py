@@ -21,6 +21,11 @@ from app.deps import (
 from app.main import app
 from app.models.base import get_db
 from app.models.household import HouseholdMember
+from app.repos.sql.brew_log import SqlBrewLogRepo
+from app.repos.sql.catalog import SqlCatalogRepo
+from app.repos.sql.hardware import SqlHardwareRepo
+from app.repos.sql.inventory import SqlInventoryRepo
+from app.repos.sql.maintenance import SqlMaintenanceRepo
 
 pytestmark = pytest.mark.asyncio(loop_scope="module")
 
@@ -384,6 +389,194 @@ async def _seed_fresh_household(suffix: str) -> _SeededHousehold:
     )
 
 
+async def _create_overlap_household(label: str, suffix: str) -> tuple[uuid.UUID, uuid.UUID]:
+    household_id = uuid.uuid4()
+    user_id = uuid.uuid4()
+    session_factory = _sessionmaker()
+    async with session_factory() as session:
+        await session.execute(
+            sa.text(
+                """
+                INSERT INTO users (id, username, password_hash, display_name)
+                VALUES (:uid, :username, 'fixture-only', :display_name)
+                """
+            ),
+            {
+                "uid": user_id,
+                "username": f"spec042-overlap-{label}-{suffix}",
+                "display_name": f"Spec042 Overlap {label}",
+            },
+        )
+        await session.execute(
+            sa.text("INSERT INTO households (id, name, created_by) VALUES (:hid, :name, :uid)"),
+            {"hid": household_id, "name": f"Spec042 Overlap {label}", "uid": user_id},
+        )
+        await session.execute(
+            sa.text(
+                """
+                INSERT INTO household_members (household_id, user_id, role)
+                VALUES (:hid, :uid, 'admin')
+                """
+            ),
+            {"hid": household_id, "uid": user_id},
+        )
+        await session.execute(
+            sa.text("UPDATE users SET active_household_id = :hid WHERE id = :uid"),
+            {"hid": household_id, "uid": user_id},
+        )
+        await session.commit()
+    return household_id, user_id
+
+
+async def _set_household_context(session: AsyncSession, household_id: uuid.UUID) -> None:
+    await session.execute(
+        sa.text("SELECT set_config('app.current_household_id', :hid, true)"),
+        {"hid": str(household_id)},
+    )
+
+
+async def _cleanup_overlap_fixtures() -> None:
+    session_factory = _sessionmaker()
+    async with session_factory() as session:
+        result = await session.execute(
+            sa.text(
+                """
+                SELECT DISTINCT h.id
+                FROM households h
+                JOIN users u ON u.id = h.created_by
+                WHERE u.username LIKE 'spec042-overlap-%'
+                """
+            )
+        )
+        household_ids = [row[0] for row in result.all()]
+        if not household_ids:
+            return
+
+        await session.execute(
+            sa.text(
+                "UPDATE users SET active_household_id = NULL WHERE active_household_id = ANY(:hids)"
+            ),
+            {"hids": household_ids},
+        )
+        for table in (
+            "brew_log",
+            "maintenance_log",
+            "inventory_bags",
+            "hardware",
+            "catalog",
+            "household_members",
+        ):
+            await session.execute(
+                sa.text(f"DELETE FROM {table} WHERE household_id = ANY(:hids)"),
+                {"hids": household_ids},
+            )
+        await session.execute(
+            sa.text("DELETE FROM households WHERE id = ANY(:hids)"), {"hids": household_ids}
+        )
+        await session.execute(sa.text("DELETE FROM users WHERE username LIKE 'spec042-overlap-%'"))
+        await session.commit()
+
+
+async def _seed_overlapping_sql_rows(household_id: uuid.UUID, label: str) -> None:
+    session_factory = _sessionmaker()
+    async with session_factory() as session:
+        catalog_repo = SqlCatalogRepo(db=session)
+        inventory_repo = SqlInventoryRepo(db=session)
+        hardware_repo = SqlHardwareRepo(db=session)
+        maintenance_repo = SqlMaintenanceRepo(db=session)
+        brew_log_repo = SqlBrewLogRepo(db=session)
+
+        await _set_household_context(session, household_id)
+        await catalog_repo.upsert(
+            {
+                "Catalog_ID": "CAT-001",
+                "Roaster": f"Overlap Roaster {label}",
+                "Bean_Name": f"Overlap Bean {label}",
+                "Roast_Level": "Light" if label == "A" else "Dark",
+            }
+        )
+        await _set_household_context(session, household_id)
+        await inventory_repo.upsert(
+            {
+                "Bag_ID": "BAG-001",
+                "Catalog_ID": "CAT-001",
+                "Beans": f"Overlap Beans {label}",
+                "Display_Name": f"Overlap Bag {label}",
+                "RoastDate": "2026-06-01" if label == "A" else "2026-06-02",
+                "Status": "Active",
+            }
+        )
+        await _set_household_context(session, household_id)
+        await hardware_repo.upsert(
+            {
+                "Hardware_ID": "HW-001",
+                "Name": f"Overlap Machine {label}",
+                "Category": "Machine",
+            }
+        )
+        await _set_household_context(session, household_id)
+        await maintenance_repo.upsert(
+            {
+                "Maintenance_ID": "MAINT-001",
+                "Hardware_ID": "HW-001",
+                "Date": "2026-06-03T00:00:00+00:00",
+                "Action_Type": f"Backflush {label}",
+                "Notes": f"Overlap Maintenance {label}",
+            }
+        )
+        await _set_household_context(session, household_id)
+        await brew_log_repo.add(
+            {
+                "Shot_ID": "SHOT-001",
+                "Date": "2026-06-04T00:00:00+00:00",
+                "Bag_ID": "BAG-001",
+                "Machine_ID": "HW-001",
+                "Dose_In_g": "18.0" if label == "A" else "21.0",
+                "Yield_Out_g": "40.0" if label == "A" else "50.0",
+                "Taste_Summary": f"Overlap Taste {label}",
+                "AI_Feedback": f"Overlap Feedback {label}",
+            }
+        )
+
+
+async def _assert_overlapping_repo_view(household_id: uuid.UUID, label: str) -> None:
+    other_label = "B" if label == "A" else "A"
+    session_factory = _sessionmaker()
+    async with session_factory() as session:
+        await _set_household_context(session, household_id)
+        catalog_repo = SqlCatalogRepo(db=session)
+        inventory_repo = SqlInventoryRepo(db=session)
+        hardware_repo = SqlHardwareRepo(db=session)
+        maintenance_repo = SqlMaintenanceRepo(db=session)
+        brew_log_repo = SqlBrewLogRepo(db=session)
+
+        catalog = await catalog_repo.get("CAT-001")
+        assert catalog is not None
+        assert catalog["Roaster"] == f"Overlap Roaster {label}"
+        assert catalog["Bean_Name"] == f"Overlap Bean {label}"
+        assert f"Overlap Roaster {other_label}" not in str(await catalog_repo.list())
+
+        inventory = await inventory_repo.get("BAG-001")
+        assert inventory is not None
+        assert inventory["Beans"] == f"Overlap Beans {label}"
+        assert f"Overlap Beans {other_label}" not in str(await inventory_repo.list_all())
+
+        hardware = await hardware_repo.get("HW-001")
+        assert hardware is not None
+        assert hardware["Name"] == f"Overlap Machine {label}"
+        assert f"Overlap Machine {other_label}" not in str(await hardware_repo.list())
+
+        maintenance = await maintenance_repo.get("MAINT-001")
+        assert maintenance is not None
+        assert maintenance["Action_Type"] == f"Backflush {label}"
+        assert f"Overlap Maintenance {other_label}" not in str(await maintenance_repo.list())
+
+        brew = await brew_log_repo.get("SHOT-001")
+        assert brew is not None
+        assert brew["Taste_Summary"] == f"Overlap Taste {label}"
+        assert f"Overlap Taste {other_label}" not in str(await brew_log_repo.list())
+
+
 def _ids(rows: list[dict[str, object]], key: str) -> set[str]:
     return {str(row[key]) for row in rows}
 
@@ -545,10 +738,39 @@ async def test_sql_fresh_household_receives_empty_read_models(
     assert set(defaults.json().values()) == {None}
 
 
-@pytest.mark.skip(
-    reason="overlapping sheets_id requires per-household composite unique — Maya/Alex follow-up, spec-042"
-)
-async def test_sql_api_overlapping_sheets_id_placeholder() -> None:
-    raise AssertionError(
-        "Tracked by spec-042 follow-up; not runnable until composite uniqueness lands"
-    )
+async def test_sql_overlapping_sheets_ids_are_household_scoped(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _require_sql_backend(monkeypatch)
+    suffix = uuid.uuid4().hex[:8]
+    await _cleanup_overlap_fixtures()
+
+    try:
+        household_a_id, user_a_id = await _create_overlap_household("A", suffix)
+        household_b_id, _ = await _create_overlap_household("B", suffix)
+
+        await _seed_overlapping_sql_rows(household_a_id, "A")
+        await _seed_overlapping_sql_rows(household_b_id, "B")
+
+        await _assert_overlapping_repo_view(household_a_id, "A")
+        await _assert_overlapping_repo_view(household_b_id, "B")
+
+        active = {"household_id": household_a_id, "user_id": user_a_id}
+        _install_sql_app_overrides(active)
+        try:
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                catalog_detail = await client.get("/api/catalog/CAT-001")
+        finally:
+            _clear_sql_app_overrides()
+    finally:
+        await _cleanup_overlap_fixtures()
+
+    assert catalog_detail.status_code == 200
+    payload = catalog_detail.json()
+    assert payload["item"]["catalog_id"] == "CAT-001"
+    assert payload["item"]["roaster"] == "Overlap Roaster A"
+    assert payload["item"]["bean_name"] == "Overlap Bean A"
+    assert "Overlap Roaster B" not in str(payload)
+    assert "Overlap Beans B" not in str(payload)
