@@ -14,6 +14,13 @@ class MaintenanceLog(Base):
     """A maintenance action performed on a piece of hardware."""
 
     __tablename__ = "maintenance_log"
+    __table_args__ = (
+        sa.UniqueConstraint(
+            "household_id",
+            "sheets_id",
+            name="uq_maintenance_log_household_sheets_id",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
@@ -38,7 +45,7 @@ class MaintenanceLog(Base):
         server_default=sa.text("now()"),
     )
     notes: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
-    sheets_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True, unique=True)
+    sheets_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     sheets_hardware_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(
         sa.TIMESTAMP(timezone=True),

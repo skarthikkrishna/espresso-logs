@@ -14,6 +14,13 @@ class BrewLog(Base):
     """A brew session record."""
 
     __tablename__ = "brew_log"
+    __table_args__ = (
+        sa.UniqueConstraint(
+            "household_id",
+            "sheets_id",
+            name="uq_brew_log_household_sheets_id",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
@@ -37,7 +44,7 @@ class BrewLog(Base):
     time_sec: Mapped[int | None] = mapped_column(sa.Integer, nullable=True)
     rating: Mapped[int | None] = mapped_column(sa.SmallInteger, nullable=True)
     notes: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
-    sheets_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True, unique=True)
+    sheets_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     bag_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     machine_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     grinder_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
