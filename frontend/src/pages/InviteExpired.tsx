@@ -1,18 +1,19 @@
 import { Link } from 'react-router-dom'
 import StandaloneHouseholdShell from '../components/StandaloneHouseholdShell'
+import { COPY } from '../copy'
 
 export default function InviteExpired() {
   return (
     <StandaloneHouseholdShell background="bg-invite-recovery" align="left" labelledBy="invite-expired-heading">
       <div className="w-full max-w-md">
-        <div className="glass-card card-bevel p-6 text-center space-y-4">
-          <p className="text-xs uppercase tracking-[0.22em] text-warning/80">Invitation expired</p>
-          <h1 id="invite-expired-heading" className="text-2xl font-display text-amber-100">This invitation has expired</h1>
-          <p className="text-base-content/75 text-sm">
-            Ask the household admin to resend your invitation. New links are copyable from household settings and remain available until expiry or revocation.
+        <div className="kaapi-content-surface p-6 text-center space-y-4">
+          <p className="text-xs uppercase tracking-[0.22em] text-warning">{COPY.invite.expiredEyebrow}</p>
+          <h1 id="invite-expired-heading" className="text-2xl font-display text-[var(--kaapi-content-content)]">{COPY.invite.expiredTitle}</h1>
+          <p className="text-[var(--kaapi-content-muted)] text-sm">
+            {COPY.invite.expiredBody}
           </p>
           <Link to="/login" className="btn btn-primary btn-sm btn-bevel no-underline">
-            Sign in
+            {COPY.invite.signIn}
           </Link>
         </div>
       </div>

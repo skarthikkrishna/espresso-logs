@@ -9,12 +9,14 @@ import { getMe } from '../api/auth'
 import { createHousehold } from '../api/households'
 import { useAuth } from '../contexts/AuthContext'
 import StandaloneHouseholdShell from '../components/StandaloneHouseholdShell'
+import { Button, FormField, Input } from '../components/ui'
+import { COPY } from '../copy'
 
 type WizardStep = 'choose' | 'create' | 'invite-instructions'
 
 function validateName(value: string): string | null {
-  if (!value.trim()) return 'Household name is required'
-  if (value.trim().length > 64) return 'Name must be 64 characters or less'
+  if (!value.trim()) return COPY.onboarding.nameRequired
+  if (value.trim().length > 64) return COPY.onboarding.nameTooLong
   return null
 }
 
@@ -46,16 +48,16 @@ export default function Welcome() {
       if (axios.isAxiosError(err)) {
         if (err.response?.status === 422) {
           const detail = (err.response.data as { detail?: string }).detail
-          setSubmitError(detail ?? 'Could not create household. Please check your inputs.')
+          setSubmitError(detail ?? COPY.welcome.createInvalid)
         } else if (err.response?.status === 409) {
-          setSubmitError('A household with that name already exists. Please choose a different name.')
+          setSubmitError(COPY.welcome.duplicateName)
         } else if (!err.response) {
-          setSubmitError('Unable to connect. Please check your connection and try again.')
+          setSubmitError(COPY.welcome.connectionError)
         } else {
-          setSubmitError('Could not create household. Please try again.')
+          setSubmitError(COPY.welcome.createFailed)
         }
       } else {
-        setSubmitError('Could not create household. Please try again.')
+        setSubmitError(COPY.welcome.createFailed)
       }
     } finally {
       setIsSubmitting(false)
@@ -65,9 +67,9 @@ export default function Welcome() {
   if (isLoading) {
     return (
       <StandaloneHouseholdShell background="bg-household-transition" align="center">
-        <div className="glass-card card-bevel p-6 text-center" role="status" aria-live="polite">
-          <span className="loading loading-spinner loading-lg text-primary" aria-label="Loading welcome" />
-          <p className="mt-3 text-sm text-base-content/70">Preparing household setup…</p>
+        <div className="kaapi-content-surface p-6 text-center" role="status" aria-live="polite">
+          <span className="loading loading-spinner loading-lg text-primary" aria-label={COPY.welcome.loadingAria} />
+          <p className="mt-3 text-sm text-[var(--kaapi-content-muted)]">{COPY.welcome.loadingBody}</p>
         </div>
       </StandaloneHouseholdShell>
     )
@@ -84,57 +86,61 @@ export default function Welcome() {
   return (
     <StandaloneHouseholdShell background="bg-household-onboarding" align="center" labelledBy="welcome-heading">
       <div className="w-full max-w-md space-y-6">
-        <div className="glass-card card-bevel p-6 space-y-5">
+        <div className="kaapi-content-surface p-6 space-y-5">
           {step === 'choose' ? (
             <>
               <div className="text-center space-y-3">
-                <p className="text-xs uppercase tracking-[0.22em] text-amber-300/70">Household setup</p>
-                <h1 id="welcome-heading" className="text-2xl font-display text-base-content">Welcome to Kaapi Kadai</h1>
-                <p className="text-base-content/80 text-sm">
-                  Kaapi Kadai is a household app. You&apos;ll need to either create a new household or accept an invitation from a friend.
+                <p className="text-xs uppercase tracking-[0.22em] text-[var(--kaapi-content-muted)]">{COPY.welcome.eyebrow}</p>
+                <h1 id="welcome-heading" className="text-2xl font-display text-[var(--kaapi-content-content)]">{COPY.welcome.title}</h1>
+                <p className="text-[var(--kaapi-content-muted)] text-sm">
+                  {COPY.welcome.intro}
                 </p>
               </div>
 
-              <button
+              <Button
                 type="button"
-                className="btn btn-primary w-full btn-bevel"
+                variant="primary"
+                fullWidth
                 onClick={() => setStep('create')}
               >
-                Create my household
-              </button>
+                {COPY.welcome.createCta}
+              </Button>
 
-              <button
+              <Button
                 type="button"
-                className="btn btn-outline btn-bevel w-full"
+                variant="outline"
+                fullWidth
                 onClick={() => setStep('invite-instructions')}
               >
-                I have an invitation
-              </button>
+                {COPY.welcome.inviteCta}
+              </Button>
             </>
           ) : null}
 
           {step === 'create' ? (
             <>
               <div className="space-y-2 text-center">
-                <h1 className="text-2xl font-display text-base-content">Create your household</h1>
-                <p className="text-base-content/70 text-sm">
-                  Give your household a name to get started.
+                <h1 className="text-2xl font-display text-[var(--kaapi-content-content)]">{COPY.welcome.createTitle}</h1>
+                <p className="text-[var(--kaapi-content-muted)] text-sm">
+                  {COPY.onboarding.nameHint}
                 </p>
               </div>
 
               <form onSubmit={(e) => { void handleCreateSubmit(e) }} noValidate className="space-y-4">
-                <div className="form-control">
-                  <label className="label" htmlFor="welcome-household-name">
-                    <span className="label-text text-sm font-medium">Household name</span>
-                  </label>
-                  <input
+                <FormField
+                  label={COPY.onboarding.nameLabel}
+                  htmlFor="welcome-household-name"
+                  error={nameError}
+                  errorId="welcome-name-error"
+                >
+                  <Input
                     id="welcome-household-name"
                     name="name"
                     type="text"
                     autoComplete="off"
                     required
                     maxLength={64}
-                    className={`input input-bordered input-styled w-full ${nameError ? 'input-error' : ''}`}
+                    error={Boolean(nameError)}
                     aria-invalid={nameError ? 'true' : 'false'}
                     aria-describedby={nameError ? 'welcome-name-error' : undefined}
                     value={name}
@@ -142,14 +148,9 @@ export default function Welcome() {
                       setName(e.target.value)
                       if (nameError) setNameError(validateName(e.target.value))
                     }}
-                    placeholder="e.g. Home, The Office, Studio…"
+                    placeholder={COPY.onboarding.namePlaceholder}
                   />
-                  {nameError ? (
-                    <p id="welcome-name-error" className="text-error text-sm mt-1" role="alert" aria-live="polite">
-                      {nameError}
-                    </p>
-                  ) : null}
-                </div>
+                </FormField>
 
                 {submitError ? (
                   <p className="text-error text-sm text-center" role="alert" aria-live="polite">
@@ -157,64 +158,63 @@ export default function Welcome() {
                   </p>
                 ) : null}
 
-                <button
+                <Button
                   type="submit"
-                  className="btn btn-primary w-full btn-bevel"
-                  disabled={isSubmitting}
+                  variant="primary"
+                  fullWidth
+                  loading={isSubmitting}
+                  loadingText={COPY.welcome.creating}
                 >
-                  {isSubmitting ? (
-                    <>
-                      <span className="loading loading-spinner loading-sm" />
-                      Creating household...
-                    </>
-                  ) : (
-                    'Create household'
-                  )}
-                </button>
+                  {COPY.welcome.submit}
+                </Button>
               </form>
 
-              <button
+              <Button
                 type="button"
-                className="btn btn-ghost btn-sm w-full"
+                variant="ghost"
+                size="sm"
+                fullWidth
                 onClick={() => {
                   setSubmitError(null)
                   setNameError(null)
                   setStep('choose')
                 }}
               >
-                ← Back
-              </button>
+                {COPY.welcome.back}
+              </Button>
             </>
           ) : null}
 
           {step === 'invite-instructions' ? (
             <>
               <div className="space-y-3 text-center">
-                <h1 className="text-2xl font-display text-base-content">Join with an invitation</h1>
-                <p className="text-base-content/80 text-sm">
-                  Ask a household admin to share an invitation link with you. Open that link to join their household directly. No email address is required — the link is all you need.
+                <h1 className="text-2xl font-display text-[var(--kaapi-content-content)]">{COPY.welcome.inviteTitle}</h1>
+                <p className="text-[var(--kaapi-content-muted)] text-sm">
+                  {COPY.welcome.inviteBody}
                 </p>
               </div>
 
-              <button
+              <Button
                 type="button"
-                className="btn btn-ghost btn-sm w-full"
+                variant="ghost"
+                size="sm"
+                fullWidth
                 onClick={() => setStep('create')}
               >
-                ← Create a new household instead
-              </button>
+                {COPY.welcome.inviteBack}
+              </Button>
             </>
           ) : null}
         </div>
 
         <p className="text-center text-xs text-base-content/40">
-          Not you?{' '}
+          {COPY.welcome.notYou}{' '}
           <button
             onClick={logout}
             className="link link-hover text-amber-400/70"
             type="button"
           >
-            Sign out
+            {COPY.actions.signOut}
           </button>
         </p>
       </div>

@@ -16,41 +16,30 @@ import axios from 'axios'
 import { register, getMe } from '../api/auth'
 import { useAuth } from '../contexts/AuthContext'
 import StandaloneHouseholdShell from '../components/StandaloneHouseholdShell'
+import { Button, FormField, Input } from '../components/ui'
+import { COPY } from '../copy'
 
 // ---------------------------------------------------------------------------
 // Validation helpers — aligned with spec: 3–30 chars, alphanumeric + undersscores only
 // ---------------------------------------------------------------------------
 
 function validateUsername(value: string): string | null {
-  if (value.length < 3) return 'Username must be at least 3 characters'
-  if (value.length > 30) return 'Username must be 30 characters or less'
+  if (value.length < 3) return COPY.auth.usernameTooShort
+  if (value.length > 30) return COPY.auth.usernameTooLong
   if (!/^[a-zA-Z0-9_]{3,30}$/.test(value)) {
-    return 'Username can only contain letters, numbers, and underscores'
+    return COPY.auth.usernameInvalid
   }
   return null
 }
 
 function validatePassword(value: string): string | null {
-  if (value.length < 12) return 'Password must be at least 12 characters'
+  if (value.length < 12) return COPY.auth.passwordTooShort
   return null
 }
 
 function validateConfirm(value: string, password: string): string | null {
-  if (value !== password) return 'Passwords do not match'
+  if (value !== password) return COPY.auth.passwordsNoMatch
   return null
-}
-
-// ---------------------------------------------------------------------------
-// Field error display — reusable inline component
-// ---------------------------------------------------------------------------
-
-function FieldError({ id, message }: { id: string; message: string | null }) {
-  if (!message) return null
-  return (
-    <p id={id} className="text-error text-sm mt-1" role="alert" aria-live="polite">
-      {message}
-    </p>
-  )
 }
 
 // ---------------------------------------------------------------------------
@@ -153,14 +142,14 @@ export default function Register() {
         if (err.response?.status === 409) {
           setErrors((e) => ({
             ...e,
-            username: 'Username already taken. Please choose another.',
+            username: COPY.auth.usernameTaken,
           }))
           usernameRef.current?.focus()
         } else if (err.response?.status === 422) {
           const detail = (err.response.data as { detail?: string }).detail
           setErrors((e) => ({
             ...e,
-            username: detail ?? 'Registration failed. Please check your inputs.',
+            username: detail ?? COPY.auth.registrationFailed,
           }))
           usernameRef.current?.focus()
         } else if (err.response && err.response.status >= 500) {
@@ -168,21 +157,20 @@ export default function Register() {
           // to try signing in rather than retrying and hitting a 409.
           setErrors((e) => ({
             ...e,
-            username:
-              'Something went wrong on our end. Your account may have been created — try signing in.',
+            username: COPY.auth.serverError,
           }))
           usernameRef.current?.focus()
         } else if (!err.response) {
           setErrors((e) => ({
             ...e,
-            username: 'Unable to connect. Please check your connection.',
+            username: COPY.auth.connectionError,
           }))
           usernameRef.current?.focus()
         }
       } else {
         setErrors((e) => ({
           ...e,
-          username: 'An unexpected error occurred. Please try again.',
+          username: COPY.auth.unexpectedError,
         }))
         usernameRef.current?.focus()
       }
@@ -198,14 +186,14 @@ export default function Register() {
   return (
     <StandaloneHouseholdShell background="bg-auth-register" align="left" labelledBy="register-heading">
       <div className="w-full max-w-sm">
-        <div className="glass-card card-bevel p-6">
-          <h1 id="register-heading" className="font-display text-2xl text-base-content text-center mb-6">
-            Create account
+        <div className="kaapi-content-surface p-6">
+          <h1 id="register-heading" className="font-display text-2xl text-[var(--kaapi-content-content)] text-center mb-6">
+            {COPY.auth.createAccount}
           </h1>
 
           {inviteToken ? (
             <div className="alert alert-info card-bevel mb-4 text-sm">
-              <span>Create your account, then we&apos;ll return you to the household invitation.</span>
+              <span>{COPY.auth.registerInviteBanner}</span>
             </div>
           ) : null}
 
@@ -214,86 +202,82 @@ export default function Register() {
               void handleSubmit(e)
             }}
             noValidate
+            className="space-y-4"
           >
-            {/* Username */}
-            <div className="form-control w-full mb-4">
-              <label htmlFor="reg-username" className="label">
-                <span className="label-text text-sm font-medium">Username</span>
-              </label>
-              <input
+            <FormField
+              label={COPY.auth.usernameLabel}
+              htmlFor="reg-username"
+              error={errors.username}
+              errorId="reg-username-error"
+            >
+              <Input
                 ref={usernameRef}
                 id="reg-username"
                 name="username"
                 type="text"
                 autoComplete="username"
                 required
-                className={`input input-bordered input-styled w-full ${errors.username ? 'input-error' : ''}`}
+                error={Boolean(errors.username)}
                 aria-invalid={errors.username ? 'true' : 'false'}
                 aria-describedby={errors.username ? 'reg-username-error' : undefined}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 onBlur={handleUsernameBlur}
               />
-              <FieldError id="reg-username-error" message={errors.username} />
-            </div>
+            </FormField>
 
-            {/* Display Name (optional) */}
-            <div className="form-control w-full mb-4">
-              <label htmlFor="reg-display-name" className="label">
-                <span className="label-text text-sm font-medium">
-                  Display name{' '}
-                  <span className="text-base-content/50 font-normal">(optional)</span>
-                </span>
-              </label>
-              <input
+            <FormField
+              label={COPY.auth.displayNameLabel}
+              htmlFor="reg-display-name"
+              hint={COPY.auth.displayNameHint}
+            >
+              <Input
                 id="reg-display-name"
                 name="display_name"
                 type="text"
                 autoComplete="name"
-                className="input input-bordered input-styled w-full"
                 aria-invalid="false"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
               />
-            </div>
+            </FormField>
 
-            {/* Password */}
-            <div className="form-control w-full mb-4">
-              <label htmlFor="reg-password" className="label">
-                <span className="label-text text-sm font-medium">Password</span>
-              </label>
-              <input
+            <FormField
+              label={COPY.auth.passwordLabel}
+              htmlFor="reg-password"
+              error={errors.password}
+              errorId="reg-password-error"
+            >
+              <Input
                 ref={passwordRef}
                 id="reg-password"
                 name="password"
                 type="password"
                 autoComplete="new-password"
                 required
-                className={`input input-bordered input-styled w-full ${errors.password ? 'input-error' : ''}`}
+                error={Boolean(errors.password)}
                 aria-invalid={errors.password ? 'true' : 'false'}
                 aria-describedby={errors.password ? 'reg-password-error' : undefined}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onBlur={handlePasswordBlur}
               />
-              <FieldError id="reg-password-error" message={errors.password} />
-            </div>
+            </FormField>
 
-            {/* Confirm Password */}
-            <div className="form-control w-full mb-6">
-              <label htmlFor="reg-confirm-password" className="label">
-                <span className="label-text text-sm font-medium">
-                  Confirm password
-                </span>
-              </label>
-              <input
+            <FormField
+              label={COPY.auth.confirmPasswordLabel}
+              htmlFor="reg-confirm-password"
+              error={errors.confirmPassword}
+              errorId="reg-confirm-error"
+            >
+              <Input
                 ref={confirmRef}
                 id="reg-confirm-password"
                 name="confirm_password"
                 type="password"
                 autoComplete="new-password"
                 required
-                className={`input input-bordered input-styled w-full ${errors.confirmPassword ? 'input-error' : ''}`}
+                error={Boolean(errors.confirmPassword)}
                 aria-invalid={errors.confirmPassword ? 'true' : 'false'}
                 aria-describedby={
                   errors.confirmPassword ? 'reg-confirm-error' : undefined
@@ -302,29 +286,23 @@ export default function Register() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 onBlur={handleConfirmBlur}
               />
-              <FieldError id="reg-confirm-error" message={errors.confirmPassword} />
-            </div>
+            </FormField>
 
-            <button
+            <Button
               type="submit"
-              className="btn btn-primary w-full btn-bevel"
-              disabled={isSubmitting}
+              variant="primary"
+              fullWidth
+              loading={isSubmitting}
+              loadingText={COPY.auth.creatingAccount}
             >
-              {isSubmitting ? (
-                <>
-                  <span className="loading loading-spinner loading-sm" />
-                  Creating account...
-                </>
-              ) : (
-                'Create account'
-              )}
-            </button>
+              {COPY.auth.createAccount}
+            </Button>
           </form>
 
-          <p className="text-center text-sm mt-6">
-            Already have an account?{' '}
-            <Link to={authQuery ? `/login?${authQuery}` : '/login'} className="link link-hover text-amber-400">
-              Sign in
+          <p className="text-center text-sm mt-6 text-[var(--kaapi-content-content)]">
+            {COPY.auth.haveAccountPrompt}{' '}
+            <Link to={authQuery ? `/login?${authQuery}` : '/login'} className="link link-hover font-medium text-[var(--kaapi-content-content)]">
+              {COPY.auth.signIn}
             </Link>
           </p>
         </div>
