@@ -69,6 +69,28 @@ describe('GlassCard — children and className', () => {
   })
 })
 
+describe('GlassCard — content variant (T004 — solid light surface)', () => {
+  it('variant="content" adds glass-card--content while keeping the core hooks', () => {
+    const { container } = render(<GlassCard variant="content">x</GlassCard>)
+    const div = container.firstChild as HTMLElement
+    expect(div).toHaveClass('glass-card')
+    expect(div).toHaveClass('card-bevel')
+    expect(div).toHaveClass('glass-card--content')
+  })
+
+  it('default variant does NOT add glass-card--content', () => {
+    const { container } = render(<GlassCard>x</GlassCard>)
+    expect(container.firstChild).not.toHaveClass('glass-card--content')
+  })
+
+  it('interactive content variant uses the amber-600 hover border (light surface)', () => {
+    const { container } = render(<GlassCard variant="content" interactive>x</GlassCard>)
+    const div = container.firstChild as HTMLElement
+    expect(div).toHaveClass('cursor-pointer')
+    expect(div).toHaveClass('hover:border-amber-600/40')
+  })
+})
+
 describe('GlassCard — forwardRef', () => {
   it('forwards ref to the underlying <div> DOM element', () => {
     const ref = createRef<HTMLDivElement>()
