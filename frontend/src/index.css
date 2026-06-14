@@ -428,6 +428,28 @@ h1, h2, .font-display {
   box-shadow: var(--kaapi-content-shadow);
 }
 
+/* ── spec-043 T005: HeroVisualFrame — solid elevated hero content surface ──
+   design-language §Component → Visual mapping: HeroVisualFrame / .hero-visual-frame
+   is "Solid elevated hero content surface; no progressive blur". It is deliberately
+   absent from the @supports progressive-blur allowlist below — the frame and its
+   five visual states (active / idle / loading / fallback / error) never blur. The
+   fallback poster is a warm token gradient so a missing/failed WebGL layer is never
+   a blank or dark box. */
+.hero-visual-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--bevel-radius);
+  background: var(--kaapi-content-surface);
+  border: 1px solid var(--kaapi-content-border);
+  box-shadow: var(--kaapi-content-shadow);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.hero-visual-frame__fallback {
+  background:
+    radial-gradient(circle at 50% 34%, rgba(245, 158, 11, 0.20), rgba(247, 234, 216, 0.10) 46%, rgba(255, 247, 237, 0) 100%);
+}
+
 /* ── Chrome / overlay / sheet glass surfaces (design-language §Liquid Glass) ──
    Allowed blur surfaces only. Inner operational content stays solid (above).
    Fallback depth (bg + border + shadow) is mandatory and defined on each so the
