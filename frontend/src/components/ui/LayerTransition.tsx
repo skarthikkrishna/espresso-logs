@@ -6,7 +6,7 @@ import { usePrefersReducedMotion } from '../../lib/motion'
 
 gsap.registerPlugin(useGSAP)
 
-type LayerVariant = 'route' | 'modal' | 'section'
+type LayerVariant = 'route' | 'modal' | 'section' | 'side'
 
 interface LayerTransitionProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode
@@ -18,8 +18,8 @@ interface LayerTransitionProps extends HTMLAttributes<HTMLDivElement> {
 /**
  * spec-043 T005 — LayerTransition.
  *
- * One place that owns GSAP enter choreography and its cleanup for route, modal, and
- * section layers. Built on `useGSAP`, so the gsap.context is reverted automatically
+ * One place that owns GSAP enter choreography and its cleanup for route, modal, section, and
+ * side layers. Built on `useGSAP`, so the gsap.context is reverted automatically
  * on unmount and re-run when `transitionKey` changes — this is what prevents stale
  * tweens across route/layer/modal/section changes and makes it safe under React
  * StrictMode's double-invoke (mount → revert → mount). When `focusOnEnter` is set the
@@ -31,6 +31,7 @@ const enterVars: Record<LayerVariant, { from: gsap.TweenVars; duration: number; 
   route: { from: { opacity: 0, y: 10 }, duration: kaapiMotionGrammar.route, ease: kaapiGrammarEase.emphasized },
   modal: { from: { opacity: 0, y: 8, scale: 0.97 }, duration: kaapiMotionGrammar.enter, ease: kaapiGrammarEase.emphasized },
   section: { from: { opacity: 0, y: 12 }, duration: kaapiMotionGrammar.enter, ease: kaapiGrammarEase.standard },
+  side: { from: { opacity: 0, x: 24 }, duration: kaapiMotionGrammar.route, ease: kaapiGrammarEase.emphasized },
 }
 
 export default function LayerTransition({

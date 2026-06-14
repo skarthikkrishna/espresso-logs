@@ -50,7 +50,7 @@ describe('LayerTransition — focus handoff', () => {
 })
 
 describe('LayerTransition — variants', () => {
-  it.each(['route', 'modal', 'section'] as const)('renders without error for the %s variant', (variant) => {
+  it.each(['route', 'modal', 'section', 'side'] as const)('renders without error for the %s variant', (variant) => {
     render(
       <LayerTransition variant={variant}>
         <span>content</span>
