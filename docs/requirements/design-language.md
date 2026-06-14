@@ -1,4 +1,4 @@
-<!-- SYNCED COPY — canonical source: coffee_tracker/docs/requirements/design-language.md. Do not edit here; edit the canonical file and re-sync. Last synced: 2026-06-13 (spec-043). -->
+<!-- SYNCED COPY — canonical source: coffee_tracker/docs/requirements/design-language.md. Do not edit here; edit the canonical file and re-sync. Last synced: 2026-06-13 (spec-043 thesis reconciliation). -->
 # Design Language — Coffee Tracker
 
 > **Purpose.** The single authoritative reference for the visual aesthetic, component conventions,
@@ -8,12 +8,13 @@
 >
 > **Stack:** React + TypeScript + Vite + DaisyUI v5 + Tailwind v4 · Theme: `espresso-dark` in `frontend/src/index.css`
 >
-> **Version note:** spec-043 amendment — 2026-06-13. Adds a non-WebKit progressive blur tier
-> for designated glass surfaces, the sanctioned cool-accent palette, and the approved shared
-> app-shell ambient layer. The WebGL cap is two foreground three.js surfaces plus one shared
-> `KaapiAmbientLayer` context. An authoritative synced copy is maintained in
-> `espresso-logs/docs/requirements/design-language.md` for build-time application; Maya should
-> formalize the durable sync mechanism as an ADR.
+> **Version note:** spec-043 thesis reconciliation — 2026-06-13. Encodes the
+> Warm Editorial Instrument Calm thesis: an espresso-dark frame/chrome with solid, light, elevated
+> warm content surfaces; chrome/overlay/sheet-only blur; restrained semantic color; density-keyed
+> photographic backgrounds; subtle ambient depth; and Fable-level fluidity expectations. The WebGL
+> cap remains two foreground three.js surfaces plus one shared `KaapiAmbientLayer` context. An
+> authoritative synced copy is maintained in `espresso-logs/docs/requirements/design-language.md`
+> for build-time application; Maya should formalize the durable sync mechanism as an ADR.
 
 ---
 
@@ -27,9 +28,24 @@
 | [Modern Product Launch](https://www.figma.com/community/file/1487309170684591074/modern-product-launch) | **Secondary** | Clean layout, high contrast CTAs, polished card surfaces, refined spacing. Reference for card and button elevation. |
 | [Login Page Perfect UI](https://www.figma.com/community/file/1050476989533233612/login-page-perfect-ui-freebie) | **Tertiary** | Elegant form inputs, minimal field styling, premium interaction feel. Reference for form input treatment. |
 
-**Guiding aesthetic statement:** The app should feel like a precision instrument — dark, tactile,
-and considered. Interactive elements have physical weight: surfaces catch light from above, buttons
-appear liftable. Matte-glass, like an anodized aluminium surface under a single warm light source.
+**Guiding aesthetic statement:** The app should feel like a calm precision instrument — espresso-dark
+in its frame, warm and instantly legible in its work surfaces, tactile through motion rather than
+ornament. Interactive elements have physical weight because they respond gracefully to touch, focus,
+scroll, and state changes; the material system is restrained, not cloying.
+
+### Hybrid base and surface contract
+
+Kaapi Kadai uses a **hybrid base**. The product identity lives in the espresso-dark frame: sidebar,
+bottom navigation, AppShell chrome, background canvas, modal/sheet chrome, and page atmosphere. The
+work itself lives on **solid, light, elevated warm content surfaces**. Operational content means any
+shot data, forms, tables, rows, cards, metrics, settings, auth/invite tasks, modal body content,
+alerts, badges that carry state, and controls that the user must read or operate.
+
+**Surface contract:** operational content always sits on a guaranteed-contrast solid light surface.
+That surface does not depend on a photograph, glass translucency, blur, ambient darkness, or a dark
+card to become readable. WCAG AA contrast is required on both sides of the hybrid base: light warm
+content surfaces and espresso-dark frame/chrome. The dark frame may be expressive; the content plane
+must be trustworthy, calm, and immediately legible.
 
 ---
 
@@ -37,13 +53,14 @@ appear liftable. Matte-glass, like an anodized aluminium surface under a single 
 
 | Principle | Description |
 |-----------|-------------|
-| **Dark-first** | Default theme is `espresso-dark` (DaisyUI v5 custom theme). Light mode is a future phase consideration. |
+| **Hybrid base** | Espresso-dark frame/chrome carries identity; solid light elevated warm surfaces carry operational content. Light mode as a full product mode remains future work. |
+| **Surface contract** | Shot data, forms, rows, cards, metrics, settings, auth/invite tasks, modal body content, and other operational surfaces always sit on guaranteed-contrast solid light surfaces. |
 | **Craft, not productivity** | Visual language communicates ritual and care, not efficiency metrics. |
 | **Typography-led** | Strong typographic hierarchy carries the UX. Avoid decorative UI chrome. |
-| **Photography-anchored** | Bean catalog cards are image-first. Aesthetically complementary images sourced by Sage (image agent) at bootstrap. |
+| **Photography-anchored, density-keyed** | Photographic route backgrounds remain warm atmosphere behind the surface contract; prominence is tuned by page density and scrim depth, not blanket-retired. |
 | **Mobile-first** | Every layout is designed for a phone in one hand while pulling a shot with the other. Two breakpoints: 375px baseline and 768px (`md:`). |
-| **Liquid Glass** | Baseline frosted translucency via `backdrop-filter` on modals and the AppShell only. Cards/buttons/rows use shadow + gradient glint by default; a non-WebKit `@supports` progressive tier may add real blur only to designated glass cards, the dashboard HeroVisualFrame, and overlay/sheet layers. `KaapiAmbientLayer` provides shared behind-content depth without adding per-card/per-route blur or canvases. |
-| **Smooth Bevel** | Three-layer `box-shadow` recipe gives buttons and cards physical depth. No hard borders on primary buttons — shadow provides all edge definition. |
+| **Liquid Glass restraint** | Real blur/glass is confined to chrome, overlays, modals, and sheets. Repeated operational content cards/rows are solid; no `backdrop-filter` on content cards, controls, dense lists, tables, badges, chips, pagination, or arbitrary containers. |
+| **Motion-led tactility** | Smooth Bevel remains restrained material support, but tactility comes primarily from fluid route, scroll, layer, primitive, text/clip, pointer, and focus motion with reduced-motion parity. |
 | **iOS Readiness** | Every interactive element is Safari/WebKit-safe. `-webkit-` prefixes, tap-highlight suppression, and `appearance: none` are not optional. |
 | **Consistency mandate** | Every primary button computes identical `box-shadow`. Every modal computes identical `backdrop-filter`. This is enforced by Playwright assertions — not aspirational. |
 
@@ -85,6 +102,16 @@ Base token values defined in `frontend/src/index.css`:
   --color-base-200:         #22160b;   /* card background */
   --color-base-300:         #2d1f0e;   /* card hover / input bg */
   --color-base-content:     #f5e6d3;
+
+  --kaapi-frame-bg:          #120b06;   /* espresso-dark frame/chrome floor */
+  --kaapi-frame-surface:     #1a1209;   /* AppShell/sidebar/nav chrome */
+  --kaapi-content-surface:   #fff7ed;   /* solid warm operational content */
+  --kaapi-content-surface-2: #f7ead8;   /* elevated warm secondary content */
+  --kaapi-content-border:    rgba(120, 53, 15, 0.18);
+  --kaapi-content-content:   #2d1608;   /* primary text on light content surfaces */
+  --kaapi-content-muted:     #6b4a2f;
+  --kaapi-content-shadow:    0 18px 44px rgba(18, 11, 6, 0.28), 0 2px 8px rgba(18, 11, 6, 0.18), inset 0 1px 0 rgba(255,255,255,0.72);
+
   --color-info:             #0e7490;   /* app-wide info/status teal */
   --color-info-content:     #ffffff;
   --color-success:          #10b981;
@@ -110,6 +137,11 @@ Base token values defined in `frontend/src/index.css`:
 
 **Semantic colour usage guide:**
 
+Color is minimal and semantic. Amber (`primary` / `accent`) is the brand and CTA anchor, not a page
+wash. Cool accents are restrained tools for information, status, taste, chart depth, and approved
+extraction/depth glints. Brew methods are differentiated by content, structure, labels, and
+iconography first — not by assigning every method its own hue.
+
 | Token | Use |
 |-------|-----|
 | `primary` / `btn-primary` | Add Shot CTA, form submit, active nav icon |
@@ -129,10 +161,12 @@ Base token values defined in `frontend/src/index.css`:
 | `error` | Reject badge, validation errors, over-extracted zones |
 | `neutral` | Finished bag badge, metadata text |
 
-**Palette guardrails:** Amber (`primary` / `accent`) remains the primary CTA and brand accent. Cool
+**Palette guardrails:** Amber (`primary` / `accent`) remains the primary CTA and brand anchor. Cool
 accents are sanctioned only for information/status, taste-zone encoding, chart depth, and extraction
-glint semantics listed above. Raw hex or RGBA values are prohibited outside token definitions and
-the documented Extraction Compass visualization-zone values.
+glint semantics listed above. They are not a broad decorative palette. Raw hex or RGBA values are
+prohibited outside token definitions and the documented Extraction Compass visualization-zone values.
+Brew-method distinction must come from labels, structure, iconography, and content grouping before
+color; a method-color rainbow is a design regression.
 
 **`--color-info` blast radius:** Changing `--color-info` from `#3b82f6` to `#0e7490` affects every
 DaisyUI `alert-info`, `badge-info`, `btn-info`, and related info surface app-wide. Any implementation
@@ -143,31 +177,34 @@ outside the immediate design-coherence scope such as the Login invite notice.
 
 ## Design Principles: Liquid Glass
 
-**Baseline scope:** Modals, dialog backdrops, and the `#main-content` AppShell shell ONLY.
-`backdrop-filter` remains prohibited on buttons, dense lists, table rows, and arbitrary containers.
-Cards and buttons receive depth from `box-shadow`, surface opacity, and gradient glint by default.
-This is the mandatory WebKit/Safari/mobile fallback.
+**Baseline scope:** AppShell chrome, modal/dialog backdrops, overlay chrome, and sheet chrome ONLY.
+`backdrop-filter` remains prohibited on operational content cards, buttons, dense lists, table rows,
+badges/chips, pagination, expanders, and arbitrary containers. Content cards and rows receive depth
+from solid warm light surfaces, shadow, border, and restrained glint — never from blur.
 
 **Progressive enhancement scope:** On capable, non-WebKit engines only, real translucency/refraction
-may be added to these designated surfaces:
+may be added to chrome/overlay/sheet surfaces:
 
-1. Glass cards implemented as `GlassCard` / `.liquid-card`
-2. The dashboard `HeroVisualFrame` / `.hero-visual-frame`
-3. Overlay and sheet layers implemented as `.glass-overlay` or `.glass-sheet`
+1. AppShell/chrome surfaces that are not operational reading planes, such as `#main-content` veil or
+   documented shell chrome wrappers.
+2. Overlay and sheet layers implemented as `.glass-overlay`, `.glass-sheet`, `.modal-backdrop`, or
+   an approved modal/sheet chrome wrapper.
 
-Dense brew-log lists, table rows, repeated list items, every button, and arbitrary containers are not
-eligible. The fallback surface treatment must remain defined for every eligible surface, and the
-blur tier is purely additive: no text, icon, border, or contrast decision may depend on blur for
-legibility.
+`GlassCard` / `.liquid-card`, dashboard `HeroVisualFrame` / `.hero-visual-frame`, dense brew-log
+lists, table rows, repeated list items, every button, badges/chips, pagination, expanders, and
+arbitrary containers are not eligible. The fallback surface treatment must remain defined for every
+eligible chrome/overlay/sheet surface, and the blur tier is purely additive: no text, icon, border,
+or contrast decision may depend on blur for legibility.
 
 **Required feature gate for progressive blur:**
 
 ```css
 @supports (backdrop-filter: blur(1px)) and (not (-webkit-touch-callout: none)) {
-  .liquid-card,
-  .hero-visual-frame,
+  #main-content,
+  .glass-chrome,
   .glass-overlay,
-  .glass-sheet {
+  .glass-sheet,
+  .modal-backdrop {
     backdrop-filter: var(--glass-blur);
   }
 }
@@ -177,7 +214,7 @@ Use this exact gate unless Maya approves and records an equivalent capability/en
 `(backdrop-filter: blur(1px))` confirms unprefixed support; `(not (-webkit-touch-callout: none))`
 excludes WebKit so Safari and iOS continue to receive the safe shadow/gradient-glint baseline.
 The progressive tier reuses `var(--glass-blur)` (`blur(16px)`) and does not add
-`-webkit-backdrop-filter` to these card/sheet surfaces.
+`-webkit-backdrop-filter` to these progressive chrome/overlay/sheet surfaces.
 
 **Mandatory fallback for every progressive surface:**
 
@@ -193,10 +230,11 @@ blur and keep the fallback depth treatment. Do not substitute opacity changes th
 
 ```css
 @media (prefers-reduced-transparency: reduce) {
-  .liquid-card,
-  .hero-visual-frame,
+  #main-content,
+  .glass-chrome,
   .glass-overlay,
-  .glass-sheet {
+  .glass-sheet,
+  .modal-backdrop {
     backdrop-filter: none;
   }
 }
@@ -247,6 +285,7 @@ state, household state, data meaning, or user-facing copy.
 - throttled frame cadence: `KAAPI_AMBIENT_FPS_VISIBLE = 30`, `KAAPI_AMBIENT_FPS_IDLE = 8`, and idle pause/reduce after `KAAPI_AMBIENT_IDLE_PAUSE_MS = 4500`;
 - immediate pause when `document.visibilityState` is hidden;
 - `prefers-reduced-motion`, no-WebGL, preload, dynamic-import error, and context-loss fallback to `--kaapi-ambient-static-gradient`, never a blank/dark box;
+- subtle calm depth only: ambient is behind content, low-contrast, rare-glint, and never fog/smoke/particle spectacle;
 - behind-content layering that preserves WCAG AA contrast with ambient active, static, disabled, and context-lost;
 - lazy loading counted inside the spec-042 gzip bundle budget;
 - renderer/context disposal and `webglcontextlost` handling without leaking or multiplying contexts.
@@ -258,10 +297,10 @@ additional canvases. Per-card 3D and per-route canvases remain prohibited.
 
 ## Design Principles: Smooth Bevel
 
-**Scope:** All primary buttons, secondary buttons, and card surfaces. Cards use the glass
-background token plus `box-shadow` for baseline depth. Only progressive-tier eligible glass cards
-may add `backdrop-filter` inside the required non-WebKit `@supports` gate; all other cards remain
-box-shadow only.
+**Scope:** All primary buttons, secondary buttons, and card/content surfaces. Operational content
+cards use solid light warm content tokens plus `box-shadow` for baseline depth. No content card may
+add `backdrop-filter`, including `GlassCard` when it is used as a repeated card/row/form/panel
+surface. Glass naming in legacy components does not override the surface contract.
 
 **Three-layer box-shadow recipe (all three layers are required on every primary button):**
 
@@ -307,14 +346,27 @@ iOS Safari or Simulator for R3 items. All other WebKit requirements are Playwrig
 All tokens live inside the `@plugin "daisyui/theme"` block in `frontend/src/index.css`,
 scoped to `[data-theme="espresso-dark"]`. Finn implements these exact values.
 
-### Glass Surface Tokens
+### Surface Tokens
 
 | Token | Value | Purpose |
 |-------|-------|---------|
-| `--glass-bg` | `rgba(15, 10, 8, 0.72)` | Modal backdrop background |
-| `--glass-blur` | `blur(16px)` | Modal/AppShell `backdrop-filter` value; reused by progressive non-WebKit glass tier |
-| `--glass-border` | `rgba(255, 255, 255, 0.08)` | Glass edge top/left highlight border |
-| `--glass-highlight` | `inset 0 1px 0 rgba(255,255,255,0.08)` | Modal inner top highlight (box-shadow layer) |
+| `--kaapi-frame-bg` | `#120b06` | Espresso-dark frame/canvas floor |
+| `--kaapi-frame-surface` | `#1a1209` | Sidebar, AppShell, navigation, and dark chrome surfaces |
+| `--kaapi-content-surface` | `#fff7ed` | Solid warm operational content surface |
+| `--kaapi-content-surface-2` | `#f7ead8` | Slightly elevated/secondary warm content surface |
+| `--kaapi-content-border` | `rgba(120, 53, 15, 0.18)` | Subtle warm edge on light content surfaces |
+| `--kaapi-content-content` | `#2d1608` | Primary text/icons on light content surfaces |
+| `--kaapi-content-muted` | `#6b4a2f` | Secondary/meta text on light content surfaces |
+| `--kaapi-content-shadow` | `0 18px 44px rgba(18, 11, 6, 0.28), 0 2px 8px rgba(18, 11, 6, 0.18), inset 0 1px 0 rgba(255,255,255,0.72)` | Light-surface elevation and top light catch |
+
+### Glass / Chrome Tokens
+
+| Token | Value | Purpose |
+|-------|-------|---------|
+| `--glass-bg` | `rgba(15, 10, 8, 0.72)` | AppShell/modal/overlay/sheet chrome background; not repeated content-card fill |
+| `--glass-blur` | `blur(16px)` | Chrome/overlay/sheet `backdrop-filter` value only |
+| `--glass-border` | `rgba(255, 255, 255, 0.08)` | Glass chrome edge top/left highlight border |
+| `--glass-highlight` | `inset 0 1px 0 rgba(255,255,255,0.08)` | Chrome inner top highlight (box-shadow layer) |
 
 ### Palette / Cool Accent Tokens
 
@@ -369,12 +421,31 @@ Finn mirrors these CSS tokens in `frontend/src/index.css` and may mirror constan
 
 | Token | Value | Purpose |
 |-------|-------|---------|
-| `--input-bg` | `rgba(34, 22, 11, 0.8)` | Form input background |
-| `--input-border` | `1px solid rgba(217, 119, 6, 0.2)` | Form input border |
-| `--input-focus-ring` | `0 0 0 2px rgba(217, 119, 6, 0.6)` | Focus ring — applied via `box-shadow`, suppresses browser blue outline |
+| `--input-bg` | `var(--kaapi-content-surface)` | Solid light form input background |
+| `--input-border` | `1px solid var(--kaapi-content-border)` | Warm light-surface form input border |
+| `--input-focus-ring` | `0 0 0 2px rgba(217, 119, 6, 0.45)` | Amber focus ring — applied via `box-shadow`, suppresses browser blue outline |
 | `--input-label-gap` | `0.375rem` | Gap between label and input control |
 
-**Total CSS tokens defined: 30, plus ambient runtime constants mirrored from the design spec.**
+### Motion / Fluidity Tokens
+
+Exact values may be refined by Aria/Finn, but implementation must use named reusable tokens rather
+than page-local one-off easing.
+
+| Token | Role |
+|---|---|
+| `--motion-duration-instant` | 80–120ms final-state feedback and reduced-motion settle. |
+| `--motion-duration-micro` | 140–180ms button/card/nav hover, focus, and press feedback. |
+| `--motion-duration-enter` | 280–420ms card/list/section entrance choreography. |
+| `--motion-duration-route` | 450–650ms route/layer transition. |
+| `--motion-duration-ambient-settle` | 700–1200ms ambient/pointer/scroll settle. |
+| `--motion-ease-standard` | Default calm material ease. |
+| `--motion-ease-emphasized` | Route/layer enter/exit with richer deceleration. |
+| `--motion-ease-press` | Button press/release with no bouncy overshoot. |
+| `--motion-stagger-card` | Short card/list stagger that preserves scanning speed. |
+| `--motion-clip-reveal-distance` | Maximum text/clip mask travel. |
+| `--motion-depth-hover-max-px` | Maximum pointer/hover depth translation using 2D transforms. |
+
+**Total CSS tokens defined: 38 plus motion tokens, plus ambient runtime constants mirrored from the design spec.**
 
 ---
 
@@ -460,14 +531,16 @@ Coffee Tracker UI design, implementation, and review.
 
 ### Interaction and surface rules
 
-- **Blur scope baseline:** `backdrop-filter` is allowed only on `#main-content` and modal backdrops
-  for the WebKit/Safari/mobile baseline. Buttons, dense lists, table rows, and arbitrary containers
-  never receive blur.
-- **Progressive blur tier:** `GlassCard` / `.liquid-card`, dashboard `HeroVisualFrame` /
-  `.hero-visual-frame`, and `.glass-overlay` / `.glass-sheet` layers may add `backdrop-filter:
-  var(--glass-blur)` only inside `@supports (backdrop-filter: blur(1px)) and (not
-  (-webkit-touch-callout: none))`. Their shadow/gradient-glint fallback is mandatory and must
-  preserve legibility without blur.
+- **Surface contract:** operational content always sits on solid light warm elevated surfaces using
+  `--kaapi-content-*` tokens. The content plane must pass WCAG AA without help from photography,
+  blur, translucent cards, or ambient darkness.
+- **Blur scope baseline:** `backdrop-filter` is allowed only on AppShell/chrome, modal/dialog
+  backdrops, overlays, and sheet chrome. Buttons, content cards, dense lists, table rows, badges,
+  chips, pagination, expanders, and arbitrary containers never receive blur.
+- **Progressive blur tier:** `#main-content`, `.glass-chrome`, `.glass-overlay`, `.glass-sheet`, and
+  `.modal-backdrop` may add `backdrop-filter: var(--glass-blur)` only inside `@supports
+  (backdrop-filter: blur(1px)) and (not (-webkit-touch-callout: none))`. Content surfaces including
+  `GlassCard` / `.liquid-card` and `HeroVisualFrame` / `.hero-visual-frame` are not eligible.
 - **WebGL surface cap:** Two foreground three.js surfaces plus one shared app-shell `KaapiAmbientLayer`
   context. Per-card 3D, per-route canvases, modal WebGL, and route-specific ambient canvases remain prohibited.
 - **Modal backdrop blur:** Modal backdrops consume `var(--glass-blur)` directly so the computed
@@ -505,18 +578,18 @@ Coffee Tracker UI design, implementation, and review.
 |-----------|----------------|-----------------|-------|
 | Page shell | `main.max-w-2xl.mx-auto.px-4.pt-4.pb-24` | `bg-base-100` | React Router `<Outlet>` target; `pb-24` clears bottom nav |
 | Shared ambient layer | `KaapiAmbientLayer` | `--kaapi-ambient-*` tokens | One app-shell WebGL context behind `#main-content`; static gradient fallback; no per-route/per-card canvas |
-| Cards — catalog/hardware | `.liquid-card` (custom) | `--glass-bg` bg + `--glass-border` border + `--bevel-shadow-raised` hover | Baseline: no blur; progressive non-WebKit tier may add `backdrop-filter: var(--glass-blur)` via the required `@supports` gate |
-| Cards — brew log rows | `.frosted-brew-card` (custom) | Semi-transparent bg + amber border on hover | No `backdrop-filter`; dense list rows are not progressive-tier surfaces |
+| Cards — catalog/hardware | `GlassCard` content variant / `.liquid-card` legacy class | `--kaapi-content-surface` + `--kaapi-content-border` + `--kaapi-content-shadow` | Solid light elevated warm content surface; no blur even if legacy class name contains `glass` |
+| Cards — brew log rows | `.frosted-brew-card` retuned as solid row surface | `--kaapi-content-surface` + restrained semantic border/state tokens | Solid dense-list row; no `backdrop-filter`; image never shows through operational row content |
 | Primary button | `btn btn-primary .btn-bevel` | `--btn-rest-shadow` → `--btn-hover-shadow` → `--btn-active-shadow` | Three-layer recipe; `--bevel-radius` on all |
 | Secondary / outline button | `btn btn-outline` | `--glass-border` border; `--bevel-shadow-raised` on hover | No hard colour fill |
 | Destructive button | `btn btn-error btn-outline` | No bevel — flat error treatment | |
 | Navigation | `nav.btm-nav.btm-nav-sm` | `bg-base-200` | Bottom tab bar; 5 tabs; React NavLink for active state |
-| Form inputs | `input.input` + custom token CSS | `--input-bg` + `--input-border` + `--input-focus-ring` on focus | `appearance: none` on selects; focus via `box-shadow`, no outline |
+| Form inputs | `input.input` + custom token CSS | `--input-bg` + `--input-border` + `--input-focus-ring` on focus | Solid light controls inside content surfaces; `appearance: none` on selects; focus via `box-shadow`, no outline |
 | Form labels | `.form-control > .label` | `display: block; width: 100%` | Spec-029 D5 fix — must not regress |
-| Modal / dialog | `dialog.modal.modal-bottom.sm:modal-middle` | `.modal-glass` class: `--glass-bg` + backdrop support via the overlay | Surface card does not carry blur |
-| Modal backdrop | `.modal-backdrop` | `backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur)` | Baseline blur allowed; apply to overlay, not to surface card |
-| Dashboard hero visual | `.hero-visual-frame` / `HeroVisualFrame` | `--glass-bg` + `--glass-border` + `--bevel-shadow-raised`; progressive gate may add `backdrop-filter: var(--glass-blur)` | Fallback required; not a dense/repeated surface |
-| Overlay / sheet layers | `.glass-overlay`, `.glass-sheet` | `--glass-bg` + `--glass-border` + `--bevel-shadow-raised`; progressive gate may add `backdrop-filter: var(--glass-blur)` | Non-WebKit progressive tier only; not every modal surface |
+| Modal / dialog | `dialog.modal.modal-bottom.sm:modal-middle` | `.modal-glass` chrome plus solid light inner content surface | Backdrop/shell may blur; modal body content remains solid and contrast-safe |
+| Modal backdrop | `.modal-backdrop` | `backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur)` | Baseline blur allowed; apply to overlay/chrome, not to content surface |
+| Dashboard hero visual | `.hero-visual-frame` / `HeroVisualFrame` | `--kaapi-content-surface` + `--kaapi-content-shadow` plus approved foreground 3D/fallback | Solid elevated hero content surface; no progressive blur |
+| Overlay / sheet layers | `.glass-overlay`, `.glass-sheet` | `--glass-bg` + `--glass-border` + `--bevel-shadow-raised`; progressive gate may add `backdrop-filter: var(--glass-blur)` | Non-WebKit progressive tier only; inner operational content remains solid |
 | Toast / feedback | `div.toast.toast-end` | DaisyUI defaults | Auto-dismiss via React `setTimeout` |
 | Loading spinner | `span.loading.loading-spinner` | DaisyUI defaults | Shown during async operations |
 | FAB (primary CTA) | `btn btn-primary .btn-bevel` + `fixed bottom-24 right-4` positioning | Same token set as primary button | Where applicable per page |
@@ -525,6 +598,27 @@ Coffee Tracker UI design, implementation, and review.
 | Eligibility badges | `badge badge-sm` + semantic variant | `badge-error/warning/success/accent` | See §Eligibility table |
 
 ---
+
+## Per-Page Background and Layer Discipline
+
+Photographic backgrounds are **density-keyed**, not blanket-retired. Every route starts from the
+Clutter & Comprehension Diagnostic in `specs/043-kaapi-kadai-design-coherence/design-brief.md`: first
+apply the surface contract, then layer discipline, then scrim/prominence tuning, density rhythm,
+color restraint, and de-redundancy before deciding whether an image needs to recede further.
+
+**Binding rule:** photo behind scrim, content on solid elevated light surfaces, one translucent layer
+maximum, rhythm before ornament, amber as anchor rather than wash.
+
+| Density / scenario | Background treatment | Required controls |
+|---|---|---|
+| Sparse standalone flows (`StandaloneHouseholdShell`, login/welcome/recovery) | Keep photography visibly warm and atmospheric. | Solid auth/task card, generous negative space, one glass/scrim layer at shell/backdrop only. |
+| Medium task flows (register, invite accept, household new, detail pages, modals) | Keep or quiet the image based on task length and focal competition. | Solid form/detail surface, grouped fields, restrained semantic accents, no duplicate context labels. |
+| Dense app/admin/list flows (`AppShell`, dashboard, catalog list, brew log, hardware, import, settings) | Keep photography as receded mood behind a deeper scrim. | Solid cards/rows/panels, strict badge/color restraint, measured row/card rhythm, no translucent repeated content. |
+
+Layer discipline is absolute: at most one translucent layer participates in a stack. Never combine
+photo + glass + card + badge as competing translucent planes. If content feels cluttered, do not add
+another blur/card/badge; fix the reading surface, grouping, scrim, semantic color, or duplicate labels.
+The design brief's per-page matrix is the source of truth for route-specific treatment.
 
 ## Typography
 
@@ -570,8 +664,11 @@ Coffee Tracker UI design, implementation, and review.
 └─────────────────────────────────────┘
 ```
 
-No sidebar. No top header bar. `btm-nav` is the only persistent chrome. Content column widens
-to `max-w-2xl` (42rem) at 768px (`md:`). Component surface treatments are identical at all widths.
+The historical mobile-first skeleton used only bottom navigation. spec-043 may also use desktop
+sidebar/AppShell chrome where the implementation already provides it, but the rule is unchanged:
+persistent chrome belongs to the espresso-dark frame, while operational content sits on solid light
+warm elevated surfaces. Content column widths and shell density may adapt at larger breakpoints, but
+component surface treatment must preserve the same surface contract at all widths.
 
 ### React App Shell (reference skeleton)
 
@@ -579,9 +676,9 @@ to `max-w-2xl` (42rem) at 768px (`md:`). Component surface treatments are identi
 // App root — espresso-dark theme applied via DaisyUI default
 <html data-theme="espresso-dark" lang="en">
   <body>
-    <KaapiAmbientLayer />                        {/* fixed full-bleed, shared, non-interactive */}
-    <div className="app-bg bg-dashboard" />     {/* static fallback / photographic warmth */}
-    <div id="main-content">                     {/* AppShell contrast veil above ambient */}
+    <KaapiAmbientLayer />                        {/* subtle calm depth; fixed, shared, non-interactive */}
+    <div className="app-bg bg-dashboard" />     {/* photo behind density-keyed scrim */}
+    <div id="main-content">                     {/* espresso-dark AppShell/chrome veil above ambient */}
       <main className="max-w-2xl mx-auto px-4 pt-4 pb-24">
         <Outlet />                              {/* React Router page content */}
       </main>
@@ -665,6 +762,13 @@ via `useRef` + `useEffect` — no CDN import in JSX.
 - This is intentional and designed to look polished, not broken.
 
 ---
+
+## Changelog
+
+- **2026-06-13 — spec-043 thesis reconciliation:** Added Warm Editorial Instrument Calm hybrid base,
+  the solid light content-surface contract, chrome/overlay/sheet-only blur scope, restrained semantic
+  color guidance, density-keyed photographic backgrounds, one-translucent-layer discipline, subtle
+  ambient depth, and named fluidity token expectations.
 
 ## Aria's Brief (Designer Agent)
 
