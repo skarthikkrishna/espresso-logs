@@ -21,7 +21,9 @@ describe('auditCopySource — true positives (render sinks must be flagged)', ()
   })
 
   it('flags unapproved CTA / button label text', () => {
-    expect(texts('export const A = () => <button>Save changes</button>')).toContain('Save changes')
+    // "Save preferences" is intentionally absent from the registry; "Save changes"
+    // is now approved copy (EditHardwareModal submit label, spec-043 T018).
+    expect(texts('export const A = () => <button>Save preferences</button>')).toContain('Save preferences')
   })
 
   it('flags unapproved aria-label copy', () => {

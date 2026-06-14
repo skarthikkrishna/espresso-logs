@@ -84,6 +84,13 @@ describe('AddBeanModal — manual image selection', () => {
     })
   })
 
+  it('closes (calls onClose) when Escape is pressed', () => {
+    const onClose = vi.fn()
+    renderModal({ onClose })
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
   it('keeps the saved item visible with a detail retry path when image upload fails', async () => {
     const onSaved = vi.fn()
     const onClose = vi.fn()

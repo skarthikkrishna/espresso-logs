@@ -98,4 +98,11 @@ describe('AddHardwareModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
     expect(defaultProps.onClose).toHaveBeenCalledTimes(1)
   })
+
+  it('closes modal (calls onClose) when Escape is pressed', () => {
+    const onClose = vi.fn()
+    renderModal(<AddHardwareModal {...defaultProps} onClose={onClose} />)
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
 })

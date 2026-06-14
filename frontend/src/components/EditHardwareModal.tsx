@@ -4,6 +4,9 @@ import { updateHardware } from '../api/hardware'
 import type { HardwareDetail, HardwareItem } from '../types/entities'
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
 import { householdKeys } from '../api/queryKeys'
+import AccessibleDialog from './AccessibleDialog'
+import { FormField, Input, ModalFooter } from './ui'
+import { COPY } from '../copy'
 
 interface EditHardwareModalProps {
   hardware: HardwareItem
@@ -38,51 +41,35 @@ export default function EditHardwareModal({ hardware, onClose, onSaved }: EditHa
       onClose()
     },
     onError: () => {
-      setSaveError("Couldn't update hardware. Please try again.")
+      setSaveError(COPY.modals.editHardware.saveError)
     },
   })
 
   const canSave = name.trim().length > 0 && !isPending
 
   return (
-    <dialog className="modal modal-open glass-modal-backdrop" open>
-      <div className="modal-box bg-stone-900 border border-amber-900/30 glass-modal-surface">
-        <h3 className="font-semibold text-lg text-amber-300 mb-4">Edit hardware</h3>
+    <AccessibleDialog open title={COPY.modals.editHardware.title} onClose={onClose}>
+      <div className="kaapi-content-surface space-y-4 p-4 sm:p-5">
+        <FormField label={COPY.modals.editHardware.nameLabel} htmlFor="edit-hardware-name">
+          <Input
+            id="edit-hardware-name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </FormField>
 
-        <div className="flex flex-col gap-3">
-          <div>
-            <label className="label text-sm text-amber-200/70 mb-1">Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="input input-bordered input-sm w-full input-styled"
-            />
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="modal-action mt-4 flex-col items-stretch gap-2">
-          {saveError && (
-            <p className="text-xs text-red-400 text-center w-full">{saveError}</p>
-          )}
-          <div className="flex justify-end gap-2">
-            <button onClick={onClose} className="btn btn-sm btn-ghost text-amber-300/70">
-              Cancel
-            </button>
-            <button
-              onClick={() => mutate()}
-              disabled={!canSave}
-              className="btn btn-sm btn-primary btn-bevel"
-            >
-              {isPending
-                ? <span className="loading loading-spinner loading-xs" />
-                : 'Save changes'}
-            </button>
-          </div>
-        </div>
+        <ModalFooter
+          status={saveError}
+          secondary={{ label: COPY.actions.cancel, onClick: onClose }}
+          primary={{
+            label: COPY.modals.editHardware.save,
+            onClick: () => mutate(),
+            loading: isPending,
+            disabled: !canSave,
+          }}
+        />
       </div>
-      <form method="dialog" className="modal-backdrop" onClick={onClose} />
-    </dialog>
+    </AccessibleDialog>
   )
 }

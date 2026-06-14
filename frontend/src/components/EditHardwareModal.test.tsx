@@ -87,4 +87,11 @@ describe('EditHardwareModal', () => {
     expect(defaultProps.onClose).not.toHaveBeenCalled()
     expect(defaultProps.onSaved).not.toHaveBeenCalled()
   })
+
+  it('closes modal (calls onClose) when Escape is pressed', () => {
+    const onClose = vi.fn()
+    renderModal(<EditHardwareModal {...defaultProps} onClose={onClose} />)
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
 })
