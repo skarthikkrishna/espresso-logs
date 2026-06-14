@@ -7,7 +7,7 @@
 
 import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { useKaapiDepth } from '../useKaapiDepth'
 
 function HoverHarness({ mobile = false }: { mobile?: boolean }) {
@@ -51,5 +51,24 @@ describe('useKaapiDepth — opt-out', () => {
     render(<NoHoverHarness />)
     const btn = screen.getByRole('button', { name: 'flat' })
     expect(btn).toHaveAttribute('data-has-enter', 'false')
+  })
+})
+
+describe('useKaapiDepth — reduced-motion parity', () => {
+  it('suppresses the pointer lift entirely when reduced motion is preferred', () => {
+    const original = window.matchMedia
+    window.matchMedia = vi.fn().mockReturnValue({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }) as unknown as typeof window.matchMedia
+    try {
+      render(<HoverHarness />)
+      const btn = screen.getByRole('button', { name: 'lift' })
+      fireEvent.pointerEnter(btn)
+      expect(btn.style.transform).toBe('')
+    } finally {
+      window.matchMedia = original
+    }
   })
 })

@@ -19,7 +19,7 @@ import axios from 'axios'
 import { login, getMe } from '../api/auth'
 import { useAuth } from '../contexts/AuthContext'
 import StandaloneHouseholdShell from '../components/StandaloneHouseholdShell'
-import { Button, FormField, Input } from '../components/ui'
+import { Button, FormField, Input, LayerTransition } from '../components/ui'
 import { COPY } from '../copy'
 
 // ---------------------------------------------------------------------------
@@ -241,7 +241,7 @@ export default function Login() {
 
   return (
     <StandaloneHouseholdShell background="bg-auth-login" align="right" labelledBy="login-heading">
-      <div className="w-full max-w-sm">
+      <LayerTransition variant="route" className="w-full max-w-sm">
         <div className="kaapi-content-surface p-6">
           <h1 id="login-heading" className="font-display text-2xl text-[var(--kaapi-content-content)] text-center mb-6">
             {COPY.auth.signIn}
@@ -346,7 +346,7 @@ export default function Login() {
             </Link>
           </p>
         </div>
-      </div>
+      </LayerTransition>
     </StandaloneHouseholdShell>
   )
 }

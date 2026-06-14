@@ -176,8 +176,8 @@ export default function HardwarePage() {
   })
 
   useEffect(() => {
-    if (routeRef.current) routeEnter(routeRef.current)
-  }, [routeEnter])
+    if (!isLoading && !isError && routeRef.current) routeEnter(routeRef.current)
+  }, [isLoading, isError, routeEnter])
 
   useEffect(() => {
     if (selectedId) return

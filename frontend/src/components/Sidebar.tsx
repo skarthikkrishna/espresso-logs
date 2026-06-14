@@ -82,7 +82,7 @@ export default function Sidebar() {
             to={item.path}
             end={item.path === '/'}
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150 ${
+              `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-[var(--motion-duration-micro)] ${
                 isActive
                   ? 'border border-amber-600/30 bg-amber-600/20 text-amber-400'
                   : 'text-amber-100/70 hover:bg-amber-900/30 hover:text-amber-200'

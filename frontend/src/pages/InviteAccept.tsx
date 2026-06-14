@@ -5,7 +5,7 @@ import { getMe } from '../api/auth'
 import { acceptInvitation, declineInvitation, getInvitationPreview, type InvitationPreview } from '../api/invitations'
 import { useAuth } from '../contexts/AuthContext'
 import StandaloneHouseholdShell from '../components/StandaloneHouseholdShell'
-import { Button } from '../components/ui'
+import { Button, LayerTransition } from '../components/ui'
 import { COPY } from '../copy'
 
 function formatExpiry(value: string): string {
@@ -127,7 +127,7 @@ export default function InviteAccept() {
 
   return (
     <StandaloneHouseholdShell background="bg-invite-accept" align="right" labelledBy="invite-heading">
-      <div className="w-full max-w-md">
+      <LayerTransition variant="route" className="w-full max-w-md">
         <div className="kaapi-content-surface p-6 space-y-5">
           <div className="space-y-2 text-center">
             <p className="text-xs uppercase tracking-[0.22em] text-[var(--kaapi-content-muted)]">{COPY.invite.eyebrow}</p>
@@ -171,7 +171,7 @@ export default function InviteAccept() {
             </Link>
           </div>
         </div>
-      </div>
+      </LayerTransition>
     </StandaloneHouseholdShell>
   )
 }

@@ -16,7 +16,7 @@ import axios from 'axios'
 import { register, getMe } from '../api/auth'
 import { useAuth } from '../contexts/AuthContext'
 import StandaloneHouseholdShell from '../components/StandaloneHouseholdShell'
-import { Button, FormField, Input } from '../components/ui'
+import { Button, FormField, Input, LayerTransition } from '../components/ui'
 import { COPY } from '../copy'
 
 // ---------------------------------------------------------------------------
@@ -185,7 +185,7 @@ export default function Register() {
 
   return (
     <StandaloneHouseholdShell background="bg-auth-register" align="left" labelledBy="register-heading">
-      <div className="w-full max-w-sm">
+      <LayerTransition variant="route" className="w-full max-w-sm">
         <div className="kaapi-content-surface p-6">
           <h1 id="register-heading" className="font-display text-2xl text-[var(--kaapi-content-content)] text-center mb-6">
             {COPY.auth.createAccount}
@@ -306,7 +306,7 @@ export default function Register() {
             </Link>
           </p>
         </div>
-      </div>
+      </LayerTransition>
     </StandaloneHouseholdShell>
   )
 }

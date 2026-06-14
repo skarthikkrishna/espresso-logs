@@ -6,7 +6,7 @@
  * destructive delete flow. All mutations run through React Query; admin-only.
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
@@ -30,6 +30,7 @@ import { householdKeys } from '../api/queryKeys'
 import { useAuth } from '../contexts/AuthContext'
 import AccessibleDialog from '../components/AccessibleDialog'
 import { Badge, Button, FormField, Input, PageHeader, Select } from '../components/ui'
+import { useKaapiMotion } from '../lib/motion'
 import { COPY } from '../copy'
 
 function formatDate(value: string | null | undefined): string {
@@ -93,6 +94,8 @@ export default function HouseholdSettings() {
   const adminCount = useMemo(() => data?.members.filter((member) => member.role === 'admin').length ?? 0, [data?.members])
   const isAdmin = activeMembership?.role === 'admin'
   const inviteDisabled = !data?.member_limit.can_invite
+  const routeRef = useRef<HTMLDivElement>(null)
+  const { routeEnter } = useKaapiMotion({ scope: routeRef })
 
   const invalidateSettings = async () => {
     await Promise.all([
@@ -219,6 +222,12 @@ export default function HouseholdSettings() {
     }
   }
 
+  useEffect(() => {
+    if (activeHouseholdId && isAdmin && !isLoading && !isError && data && routeRef.current) {
+      routeEnter(routeRef.current)
+    }
+  }, [activeHouseholdId, isAdmin, isLoading, isError, data, routeEnter])
+
   if (!activeHouseholdId) {
     return (
       <div className="mx-auto max-w-xl p-4 md:p-6">
@@ -268,7 +277,7 @@ export default function HouseholdSettings() {
   const canSaveName = draftName.trim() !== householdName && !nameInvalid && !renameMutation.isPending
 
   return (
-    <div className="mx-auto max-w-5xl space-y-4 p-4 pb-32 md:p-6 lg:pb-6">
+    <div ref={routeRef} data-testid="motion-route-boundary" className="mx-auto max-w-5xl space-y-4 p-4 pb-32 md:p-6 lg:pb-6">
       <PageHeader
         subtitle={COPY.householdSettings.eyebrow}
         title={COPY.householdSettings.title}

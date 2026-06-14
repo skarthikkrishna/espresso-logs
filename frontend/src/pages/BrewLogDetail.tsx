@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -21,6 +21,7 @@ import ExtractionBrewVizMotion from '../components/motion/ExtractionBrewVizMotio
 import { Badge, Button, GlassCard, FormField, Input, PageHeader, SectionHeading, Select, Textarea } from '../components/ui'
 import type { BrewLogEntry } from '../types/entities'
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
+import { useKaapiMotion } from '../lib/motion'
 import { eligibilityBadgeTone } from '../utils/eligibility'
 import { COPY, LOCKED_LABELS } from '../copy/registry'
 
@@ -98,6 +99,8 @@ export default function BrewLogDetail() {
   const queryClient = useQueryClient()
   const activeHouseholdId = useHouseholdQueryScope()
   const cachedShot = findCachedBrewLogShot(queryClient, shotId, activeHouseholdId)
+  const routeRef = useRef<HTMLDivElement>(null)
+  const { routeEnter } = useKaapiMotion({ scope: routeRef })
 
   const { data: shot, isLoading, error } = useQuery({
     queryKey: brewLogDetailQueryKey(shotId, activeHouseholdId),
@@ -175,6 +178,10 @@ export default function BrewLogDetail() {
     deleteMutation.mutate()
   }
 
+  useEffect(() => {
+    if (!isLoading && !error && routeRef.current) routeEnter(routeRef.current)
+  }, [isLoading, error, routeEnter])
+
   if (isLoading) return <LoadingSpinner />
   if (error) return <div className="p-6 text-error">{COPY.brewLogDetail.loadError}</div>
   if (!shot) return null
@@ -216,7 +223,7 @@ export default function BrewLogDetail() {
   }
 
   return (
-    <div data-testid="brew-log-detail" className="p-4 md:p-6 space-y-6 max-w-2xl">
+    <div ref={routeRef} data-testid="brew-log-detail" className="p-4 md:p-6 space-y-6 max-w-2xl">
       {/* AC-15: ← Back text confirmed */}
       <Link to={backTarget} className="text-sm text-amber-400 hover:text-amber-300 inline-block">
         ← Back

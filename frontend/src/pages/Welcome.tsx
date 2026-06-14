@@ -9,7 +9,7 @@ import { getMe } from '../api/auth'
 import { createHousehold } from '../api/households'
 import { useAuth } from '../contexts/AuthContext'
 import StandaloneHouseholdShell from '../components/StandaloneHouseholdShell'
-import { Button, FormField, Input } from '../components/ui'
+import { Button, FormField, Input, LayerTransition } from '../components/ui'
 import { COPY } from '../copy'
 
 type WizardStep = 'choose' | 'create' | 'invite-instructions'
@@ -85,7 +85,7 @@ export default function Welcome() {
 
   return (
     <StandaloneHouseholdShell background="bg-household-onboarding" align="center" labelledBy="welcome-heading">
-      <div className="w-full max-w-md space-y-6">
+      <LayerTransition variant="route" className="w-full max-w-md space-y-6">
         <div className="kaapi-content-surface p-6 space-y-5">
           {step === 'choose' ? (
             <>
@@ -217,7 +217,7 @@ export default function Welcome() {
             {COPY.actions.signOut}
           </button>
         </p>
-      </div>
+      </LayerTransition>
     </StandaloneHouseholdShell>
   )
 }

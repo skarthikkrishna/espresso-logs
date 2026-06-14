@@ -144,3 +144,23 @@ describe('Dashboard — spec-043 T009 contract', () => {
     expect(tile).toHaveTextContent('2')
   })
 })
+
+describe('Dashboard — spec-043 T020 motion', () => {
+  it('attaches the motion route boundary once content has loaded', async () => {
+    renderWithQuery(<Dashboard />)
+
+    await screen.findByTestId('dashboard-fab')
+    expect(screen.getByTestId('motion-route-boundary')).toBeInTheDocument()
+  })
+
+  it('wires capped pointer-depth onto the hero card (4px desktop lift, reset on leave)', async () => {
+    renderWithQuery(<Dashboard />)
+
+    await screen.findByTestId('dashboard-fab')
+    const hero = screen.getByTestId('dashboard-hero-card')
+    fireEvent.pointerEnter(hero)
+    expect(hero.style.transform).toBe('translate3d(0, -4px, 0)')
+    fireEvent.pointerLeave(hero)
+    expect(hero.style.transform).toBe('')
+  })
+})

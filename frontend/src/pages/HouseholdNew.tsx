@@ -15,7 +15,7 @@ import { getMe } from '../api/auth'
 import { createHousehold } from '../api/households'
 import { useAuth } from '../contexts/AuthContext'
 import StandaloneHouseholdShell from '../components/StandaloneHouseholdShell'
-import { Button, FormField, Input } from '../components/ui'
+import { Button, FormField, Input, LayerTransition } from '../components/ui'
 import { COPY } from '../copy'
 
 function validateName(value: string): string | null {
@@ -70,7 +70,7 @@ export default function HouseholdNew() {
 
   return (
     <StandaloneHouseholdShell background="bg-household-onboarding" align="center" labelledBy="household-new-heading">
-      <div className="w-full max-w-sm">
+      <LayerTransition variant="route" className="w-full max-w-sm">
         <div className="kaapi-content-surface p-6 space-y-5">
           <div className="text-center">
             <p className="text-xs uppercase tracking-[0.22em] text-[var(--kaapi-content-muted)]">
@@ -128,7 +128,7 @@ export default function HouseholdNew() {
             {COPY.householdNew.cancel}
           </Button>
         </div>
-      </div>
+      </LayerTransition>
     </StandaloneHouseholdShell>
   )
 }

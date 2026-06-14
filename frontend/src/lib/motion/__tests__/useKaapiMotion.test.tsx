@@ -9,16 +9,21 @@
 
 import React, { useEffect, useRef } from 'react'
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { useKaapiMotion } from '../useKaapiMotion'
 
-function RevealHarness() {
+function MotionHarness() {
   const scope = useRef<HTMLDivElement>(null)
   const target = useRef<HTMLDivElement>(null)
   const motion = useKaapiMotion({ scope })
 
   useEffect(() => {
     if (!target.current) return
+    motion.routeEnter(target.current)
+    motion.staggerCards(target.current)
+    motion.fabMount(target.current)
+    motion.pressFeedback(target.current)
+    motion.modalOpen(target.current, scope.current)
     motion.clipReveal(target.current)
     motion.textReveal(target.current)
     motion.sectionStagger(target.current)
@@ -26,14 +31,32 @@ function RevealHarness() {
 
   return (
     <div ref={scope}>
-      <div ref={target}>revealed</div>
+      <div ref={target} data-testid="reveal-target">revealed</div>
     </div>
   )
 }
 
-describe('useKaapiMotion — named-grammar reveals', () => {
-  it('runs clipReveal/textReveal/sectionStagger without error and keeps the target', () => {
-    render(<RevealHarness />)
+describe('useKaapiMotion — named-grammar API', () => {
+  it('runs the full route/stagger/fab/press/modal/clip/text/section API without error and keeps the target', () => {
+    render(<MotionHarness />)
     expect(screen.getByText('revealed')).toBeInTheDocument()
+  })
+})
+
+describe('useKaapiMotion — reduced-motion parity', () => {
+  it('lands on the final visible state (opacity 1) instead of animating from a hidden frame', () => {
+    const original = window.matchMedia
+    window.matchMedia = vi.fn().mockReturnValue({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }) as unknown as typeof window.matchMedia
+    try {
+      render(<MotionHarness />)
+      const target = screen.getByTestId('reveal-target')
+      expect(target.style.opacity).toBe('1')
+    } finally {
+      window.matchMedia = original
+    }
   })
 })

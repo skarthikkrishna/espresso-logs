@@ -72,8 +72,8 @@ export default function CatalogDetail() {
   })
 
   useEffect(() => {
-    if (routeRef.current) routeEnter(routeRef.current)
-  }, [routeEnter])
+    if (!isLoading && !isError && routeRef.current) routeEnter(routeRef.current)
+  }, [isLoading, isError, routeEnter])
 
   useEffect(() => {
     const cards = cardListRef.current?.querySelectorAll('.kaapi-motion-card')

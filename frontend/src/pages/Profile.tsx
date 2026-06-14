@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import type { Membership } from '../types/entities'
 import { Badge, Button, GlassCard, PageHeader } from '../components/ui'
+import { useKaapiMotion } from '../lib/motion'
 import { COPY } from '../copy'
 
 function formatDate(value: string | null | undefined): string {
@@ -33,7 +34,7 @@ function HouseholdRow({
       <GlassCard
         variant="content"
         padding="sm"
-        className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
+        className="kaapi-motion-card flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
       >
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -72,6 +73,18 @@ export default function Profile() {
   const [status, setStatus] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [switching, setSwitching] = useState(false)
+  const routeRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLUListElement>(null)
+  const { routeEnter, staggerCards } = useKaapiMotion({ scope: routeRef })
+
+  useEffect(() => {
+    if (user && routeRef.current) routeEnter(routeRef.current)
+  }, [user, routeEnter])
+
+  useEffect(() => {
+    const cards = listRef.current?.querySelectorAll('.kaapi-motion-card')
+    if (cards?.length) staggerCards(cards)
+  }, [memberships.length, staggerCards])
 
   if (!user) return null
 
@@ -96,7 +109,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 p-4 pb-32 md:p-6 lg:pb-6">
+    <div ref={routeRef} data-testid="motion-route-boundary" className="mx-auto max-w-3xl space-y-4 p-4 pb-32 md:p-6 lg:pb-6">
       <PageHeader
         subtitle={COPY.profile.eyebrow}
         title={COPY.profile.title}
@@ -153,7 +166,7 @@ export default function Profile() {
             {COPY.profile.noHouseholds}
           </div>
         ) : (
-          <ul className="space-y-3">
+          <ul ref={listRef} className="space-y-3">
             {memberships.map((membership) => (
               <HouseholdRow
                 key={membership.household_id}

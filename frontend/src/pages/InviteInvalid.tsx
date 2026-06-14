@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom'
 import StandaloneHouseholdShell from '../components/StandaloneHouseholdShell'
+import { LayerTransition } from '../components/ui'
 import { COPY } from '../copy'
 
 export default function InviteInvalid() {
   return (
     <StandaloneHouseholdShell background="bg-invite-recovery" align="left" labelledBy="invite-invalid-heading">
-      <div className="w-full max-w-md">
+      <LayerTransition variant="route" className="w-full max-w-md">
         <div className="kaapi-content-surface p-6 text-center space-y-4">
           <p className="text-xs uppercase tracking-[0.22em] text-error">{COPY.invite.invalidEyebrow}</p>
           <h1 id="invite-invalid-heading" className="text-2xl font-display text-[var(--kaapi-content-content)]">{COPY.invite.invalidTitle}</h1>
@@ -21,7 +22,7 @@ export default function InviteInvalid() {
             </Link>
           </div>
         </div>
-      </div>
+      </LayerTransition>
     </StandaloneHouseholdShell>
   )
 }

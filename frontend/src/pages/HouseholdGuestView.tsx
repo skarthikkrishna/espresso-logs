@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import { getGuestHouseholdView, type GuestViewResponse } from '../api/guest'
 import StandaloneHouseholdShell from '../components/StandaloneHouseholdShell'
 import { Badge } from '../components/ui'
+import { useKaapiMotion } from '../lib/motion'
 import { COPY } from '../copy'
 
 function guestErrorMessage(error: unknown): string {
@@ -38,6 +39,11 @@ export default function HouseholdGuestView() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const routeRef = useRef<HTMLDivElement>(null)
+  const heroRef = useRef<HTMLHeadingElement>(null)
+  const sectionRef = useRef<HTMLElement>(null)
+  const { routeEnter, clipReveal, sectionStagger } = useKaapiMotion({ scope: routeRef })
+
   useEffect(() => {
     if (missingGuestKey) return undefined
 
@@ -55,6 +61,14 @@ export default function HouseholdGuestView() {
 
     return () => { cancelled = true }
   }, [guestKey, householdId, missingGuestKey])
+
+  useEffect(() => {
+    if (isLoading || error || !data || !routeRef.current) return
+    routeEnter(routeRef.current)
+    if (heroRef.current) clipReveal(heroRef.current)
+    const sections = sectionRef.current?.querySelectorAll('.kaapi-motion-section')
+    if (sections?.length) sectionStagger(sections)
+  }, [isLoading, error, data, routeEnter, clipReveal, sectionStagger])
 
   if (missingGuestKey) {
     return (
@@ -105,14 +119,14 @@ export default function HouseholdGuestView() {
 
   return (
     <StandaloneHouseholdShell background="bg-guest" align="wide" labelledBy="guest-heading">
-      <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-2">
+      <div ref={routeRef} data-testid="motion-route-boundary" className="mx-auto w-full max-w-6xl space-y-6 px-4 py-2">
         <div className="alert alert-warning card-bevel">
           <span>{data.banner || COPY.guest.banner(data.household.name)}</span>
         </div>
 
         <header className="kaapi-content-surface p-6 md:p-8">
           <p className="text-xs uppercase tracking-[0.22em] text-[var(--kaapi-content-muted)]">{COPY.guest.readonlyEyebrow}</p>
-          <h1 id="guest-heading" className="mt-2 font-display text-4xl text-[var(--kaapi-content-content)] md:text-5xl">{data.household.name}</h1>
+          <h1 ref={heroRef} id="guest-heading" className="mt-2 font-display text-4xl text-[var(--kaapi-content-content)] md:text-5xl">{data.household.name}</h1>
           <p className="mt-3 max-w-2xl text-sm text-[var(--kaapi-content-muted)]">{COPY.guest.readonlyBody}</p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link to="/login" className="btn btn-primary btn-bevel no-underline">{COPY.guest.signIn}</Link>
@@ -122,8 +136,8 @@ export default function HouseholdGuestView() {
 
         <StatGrid stats={data.dashboard.stats} />
 
-        <section className="grid gap-4 lg:grid-cols-3">
-          <article className="kaapi-content-surface p-5 lg:col-span-1">
+        <section ref={sectionRef} className="grid gap-4 lg:grid-cols-3">
+          <article className="kaapi-motion-section kaapi-content-surface p-5 lg:col-span-1">
             <h2 className="text-sm font-medium uppercase tracking-wide text-[var(--kaapi-content-muted)]">{COPY.guest.activeBags}</h2>
             {activeBags.length === 0 ? (
               <p className="mt-3 text-sm text-[var(--kaapi-content-muted)]">{COPY.guest.activeBagsEmpty}</p>
@@ -139,7 +153,7 @@ export default function HouseholdGuestView() {
             )}
           </article>
 
-          <article className="kaapi-content-surface p-5 lg:col-span-1">
+          <article className="kaapi-motion-section kaapi-content-surface p-5 lg:col-span-1">
             <h2 className="text-sm font-medium uppercase tracking-wide text-[var(--kaapi-content-muted)]">{COPY.guest.recentShots}</h2>
             {recentShots.length === 0 ? (
               <p className="mt-3 text-sm text-[var(--kaapi-content-muted)]">{COPY.guest.recentShotsEmpty}</p>
@@ -156,7 +170,7 @@ export default function HouseholdGuestView() {
             )}
           </article>
 
-          <article className="kaapi-content-surface p-5 lg:col-span-1">
+          <article className="kaapi-motion-section kaapi-content-surface p-5 lg:col-span-1">
             <h2 className="text-sm font-medium uppercase tracking-wide text-[var(--kaapi-content-muted)]">{COPY.guest.catalog}</h2>
             {beans.length === 0 ? (
               <p className="mt-3 text-sm text-[var(--kaapi-content-muted)]">{COPY.guest.catalogEmpty}</p>

@@ -11,7 +11,7 @@ import { Badge, Button, EmptyState, GlassCard, PageHeader, SectionHeading } from
 import { COPY, LOCKED_LABELS } from '../copy/registry'
 import type { BrewLogEntry } from '../types/entities'
 import { useAuth, useHouseholdQueryScope } from '../contexts/AuthContext'
-import { useKaapiMotion } from '../lib/motion'
+import { useKaapiDepth, useKaapiMotion } from '../lib/motion'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -21,6 +21,7 @@ export default function Dashboard() {
   const cardListRef = useRef<HTMLDivElement>(null)
   const fabRef = useRef<HTMLButtonElement>(null)
   const { routeEnter, staggerCards, fabMount, pressFeedback } = useKaapiMotion({ scope: routeRef })
+  const { ref: heroDepthRef, depthProps } = useKaapiDepth<HTMLDivElement>()
 
   const { data: bags, isLoading, isError, error, refetch } = useQuery({
     queryKey: dashboardQueryKey(activeHouseholdId),
@@ -34,8 +35,8 @@ export default function Dashboard() {
   })
 
   useEffect(() => {
-    if (routeRef.current) routeEnter(routeRef.current)
-  }, [routeEnter])
+    if (!isLoading && !isError && routeRef.current) routeEnter(routeRef.current)
+  }, [isLoading, isError, routeEnter])
 
   useEffect(() => {
     const cards = cardListRef.current?.querySelectorAll('.kaapi-motion-card')
@@ -78,7 +79,7 @@ export default function Dashboard() {
     <div ref={routeRef} data-testid="motion-route-boundary" className="p-4 md:p-6 space-y-6 md:space-y-8">
       <PageHeader title={COPY.nav.home} testId="dashboard-heading" />
 
-      <GlassCard variant="content" data-testid="dashboard-hero-card" padding="lg" className="overflow-hidden">
+      <GlassCard ref={heroDepthRef} {...depthProps} variant="content" data-testid="dashboard-hero-card" padding="lg" className="overflow-hidden">
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.75fr)] lg:items-center">
           <div className="space-y-5">
             <div className="grid grid-cols-3 gap-2 sm:max-w-lg">

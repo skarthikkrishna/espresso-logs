@@ -54,7 +54,7 @@ export default function ActionExpander({
   const prefersReducedMotion = usePrefersReducedMotion()
   const label = expanded ? showFewerLabel : showMoreLabel
 
-  const chevronMotion = prefersReducedMotion ? '' : 'transition-transform duration-200'
+  const chevronMotion = prefersReducedMotion ? '' : 'transition-transform duration-[var(--motion-duration-micro)] ease-[var(--motion-ease-standard)]'
   const chevronRotation = expanded ? 'rotate-180' : 'rotate-0'
 
   return (

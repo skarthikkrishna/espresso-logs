@@ -48,8 +48,8 @@ export default function BrewLogList() {
   }, [toast])
 
   useEffect(() => {
-    if (routeRef.current) routeEnter(routeRef.current)
-  }, [routeEnter])
+    if (!isLoading && !error && routeRef.current) routeEnter(routeRef.current)
+  }, [isLoading, error, routeEnter])
 
   useEffect(() => {
     const cards = cardListRef.current?.querySelectorAll('.kaapi-motion-card')
