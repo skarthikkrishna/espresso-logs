@@ -22,7 +22,11 @@
   --color-base-200: #22160b;
   --color-base-300: #2d1f0e;
   --color-base-content: #f5e6d3;
-  --color-info: #3b82f6;
+  /* spec-043 T003: info teal #0e7490 (was #3b82f6) — restrained semantic cool,
+     WCAG AA with white content (~4.7:1). Blast radius: every alert-info/badge-info
+     app-wide (Login/Register/InviteAccept notices). */
+  --color-info: #0e7490;
+  --color-info-content: #ffffff;
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-error: #ef4444;
@@ -72,6 +76,67 @@
   --kaapi-glow-amber: 0 0 28px rgba(245,158,11,0.22);
   --kaapi-glow-coral: 0 0 28px rgba(180,83,9,0.20);
   --kaapi-gradient-warm: linear-gradient(135deg, #b45309 0%, #f59e0b 52%, #f5e6d3 100%);
+
+  /* ── spec-043: Warm Editorial Instrument Calm — hybrid base + surface contract ──
+     Kept in :root (not the DaisyUI theme block) because multi-layer shadows and
+     gradients are comma-truncated by the theme plugin. Mirrors the token table in
+     docs/requirements/design-language.md (Surface / Cool Accent / Ambient sections).
+     Amber (--color-primary #b45309) remains the brand/CTA anchor; cool tokens are
+     restrained semantic/depth tools, never a method-color wash. */
+
+  /* Espresso-dark frame/chrome tokens — identity layer */
+  --kaapi-frame-bg: #120b06;
+  --kaapi-frame-surface: #1a1209;
+
+  /* Solid, light, elevated warm operational content surfaces — AA-safe without
+     help from photography, blur, ambient darkness, or translucency.
+     #2d1608 text on #fff7ed ≈ 13:1; --kaapi-content-muted on surface ≈ 5.6:1. */
+  --kaapi-content-surface: #fff7ed;
+  --kaapi-content-surface-2: #f7ead8;
+  --kaapi-content-border: rgba(120, 53, 15, 0.18);
+  --kaapi-content-content: #2d1608;
+  --kaapi-content-muted: #6b4a2f;
+  --kaapi-content-shadow: 0 18px 44px rgba(18, 11, 6, 0.28), 0 2px 8px rgba(18, 11, 6, 0.18), inset 0 1px 0 rgba(255,255,255,0.72);
+
+  /* Restrained semantic cool accents — info/status, taste zones, chart depth,
+     extraction glint only (see design-language §Semantic colour usage guide). */
+  --kaapi-accent-teal: #14b8a6;
+  --kaapi-accent-teal-content: #041f1d;
+  --kaapi-accent-cyan: #67e8f9;
+  --kaapi-accent-violet: #a78bfa;
+  --kaapi-depth-teal: #0f766e;
+  --kaapi-glint-cool: #cffafe;
+
+  /* Shared app-shell ambient depth tokens + static fallback (KaapiAmbientLayer,
+     T006). Subtle calm depth only — never fog/smoke/particle spectacle. */
+  --kaapi-ambient-clear: #120b06;
+  --kaapi-ambient-vignette: rgba(6, 4, 2, 0.58);
+  --kaapi-ambient-warm-fog: rgba(180, 83, 9, 0.18);
+  --kaapi-ambient-deep-fog: rgba(45, 31, 14, 0.72);
+  --kaapi-ambient-cool-glint: rgba(207, 250, 254, 0.18);
+  --kaapi-ambient-depth-teal: rgba(15, 118, 110, 0.16);
+  --kaapi-ambient-static-gradient: radial-gradient(circle at 18% 22%, rgba(180, 83, 9, 0.18), transparent 34%), radial-gradient(circle at 78% 18%, rgba(207, 250, 254, 0.10), transparent 28%), radial-gradient(circle at 55% 82%, rgba(15, 118, 110, 0.12), transparent 36%), linear-gradient(135deg, #120b06 0%, #1a1209 42%, #22160b 72%, #0f0905 100%);
+
+  /* Named motion / fluidity grammar (wired into primitives + ambient in T006).
+     Values per handoff: instant 100 / micro 160 / enter 340 / route 560 /
+     ambient-settle 900ms; card stagger 36ms, section stagger 70ms; clip reveal
+     0.45em; hover depth cap 4px desktop / 2px mobile; scroll-y cap 18 / 8px. */
+  --motion-duration-instant: 100ms;
+  --motion-duration-micro: 160ms;
+  --motion-duration-enter: 340ms;
+  --motion-duration-route: 560ms;
+  --motion-duration-ambient-settle: 900ms;
+  --motion-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --motion-ease-press: cubic-bezier(0.34, 0, 0.4, 1);
+  --motion-stagger-card: 36ms;
+  --motion-stagger-section: 70ms;
+  --motion-clip-reveal-distance: 0.45em;
+  --motion-depth-hover-max: 4px;
+  --motion-depth-hover-max-mobile: 2px;
+  --motion-scroll-depth-max: 18px;
+  --motion-scroll-depth-max-mobile: 8px;
 }
 
 /* ── Custom font families (Tailwind v4 @theme creates utility classes) ─── */
@@ -116,13 +181,19 @@ h1, h2, .font-display {
   .page-content.page-enter { animation: none; -webkit-animation: none; }
 }
 
-/* Full-bleed background photo */
+/* Full-bleed background photo.
+   spec-043 density-keyed scrims (photography kept, never blanket-removed):
+   - Sparse standalone flows (login/welcome/recovery/guest) keep photography
+     visibly warm — lighter scrims, handled by the household/auth tokens below.
+   - Dense app/admin/list flows (dashboard/brew-log/catalog/hardware) keep the
+     photo as receded mood behind a deeper scrim so solid light content reads.
+   The shared KaapiAmbientLayer sits behind this; content sits on solid surfaces. */
 .app-bg {
   position: fixed;
   inset: 0;
   z-index: -1;
   background-image:
-    linear-gradient(rgba(6, 4, 2, 0.32), rgba(8, 5, 2, 0.48)),
+    linear-gradient(rgba(6, 4, 2, 0.46), rgba(8, 5, 2, 0.60)),
     /* @vite-ignore */
     url('/static/img/hero-dashboard.jpg');
   background-size: cover;
@@ -141,31 +212,31 @@ h1, h2, .font-display {
   will-change: transform;
 }
 
-/* Per-page background overrides */
+/* Per-page background overrides — dense app routes keyed to deeper scrims */
 .app-bg.bg-dashboard {
   background-image:
-    linear-gradient(rgba(6, 4, 2, 0.32), rgba(8, 5, 2, 0.48)),
+    linear-gradient(rgba(6, 4, 2, 0.46), rgba(8, 5, 2, 0.60)),
     /* @vite-ignore */
     url('/static/img/hero-dashboard.jpg');
   background-position: center 40%;
 }
 .app-bg.bg-brew-log {
   background-image:
-    linear-gradient(rgba(8, 5, 2, 0.45), rgba(8, 5, 2, 0.62)),
+    linear-gradient(rgba(8, 5, 2, 0.52), rgba(8, 5, 2, 0.66)),
     /* @vite-ignore */
     url('/static/img/hero-brew.jpg');
   background-position: center 40%;
 }
 .app-bg.bg-catalog {
   background-image:
-    linear-gradient(rgba(8, 5, 2, 0.40), rgba(8, 5, 2, 0.52)),
+    linear-gradient(rgba(8, 5, 2, 0.48), rgba(8, 5, 2, 0.62)),
     /* @vite-ignore */
     url('/static/img/hero-catalog.jpg');
   background-position: center 55%;
 }
 .app-bg.bg-hardware {
   background-image:
-    linear-gradient(rgba(8, 5, 2, 0.40), rgba(8, 5, 2, 0.52)),
+    linear-gradient(rgba(8, 5, 2, 0.50), rgba(8, 5, 2, 0.66)),
     /* @vite-ignore */
     url('/static/img/hero-hardware.jpg');
   background-position: center 20%;
@@ -277,7 +348,11 @@ h1, h2, .font-display {
   }
 }
 
-/* Frosted glass main content panel */
+/* AppShell content panel — baseline chrome glass tier (design-language §iOS
+   Readiness: "Baseline #main-content and modal backdrop glass" gets both prefixes
+   on all engines). This is chrome, not an operational reading plane; the tuned
+   subtle blur(4px) veil is kept for WebKit-safe compositor stability. The
+   progressive 16px tier below is reserved for overlay/sheet/chrome classes. */
 #main-content {
   position: relative;
   z-index: 1;
@@ -290,6 +365,28 @@ h1, h2, .font-display {
     0 0 80px rgba(0, 0, 0, 0.30);
 }
 
+/* ── spec-043 surface contract: solid, light, elevated warm content surface ──
+   The canonical operational content plane. AA-safe on its own (dark text on
+   #fff7ed), blur-free, and independent of photography/ambient/translucency.
+   Migrated cards, rows, forms, modal bodies, hero frames, and the GlassCard
+   content variant (T004) consume this. Text defaults to the dark content token
+   so migrated children read correctly without per-element color overrides. */
+.kaapi-content-surface {
+  position: relative;
+  z-index: 1;
+  background: var(--kaapi-content-surface);
+  color: var(--kaapi-content-content);
+  border: 1px solid var(--kaapi-content-border);
+  border-radius: var(--bevel-radius);
+  box-shadow: var(--kaapi-content-shadow);
+  /* Surface contract: operational content never blurs. */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.kaapi-content-surface--elevated {
+  background: var(--kaapi-content-surface-2);
+}
+
 /* Frosted glass card */
 .glass-card {
   position: relative;
@@ -299,6 +396,45 @@ h1, h2, .font-display {
   border-radius: var(--bevel-radius);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+}
+
+/* ── Chrome / overlay / sheet glass surfaces (design-language §Liquid Glass) ──
+   Allowed blur surfaces only. Inner operational content stays solid (above).
+   Fallback depth (bg + border + shadow) is mandatory and defined on each so the
+   blur tier is purely additive — no contrast decision depends on blur. */
+.glass-chrome,
+.glass-overlay,
+.glass-sheet {
+  background: var(--glass-bg);
+  border-top: 1px solid var(--glass-border);
+  border-left: 1px solid var(--glass-border);
+  box-shadow: var(--glass-highlight), var(--bevel-shadow-raised);
+}
+
+/* Progressive blur — EXACT chrome/overlay/sheet gate. The capability check
+   confirms unprefixed backdrop-filter; (not (-webkit-touch-callout: none))
+   excludes WebKit so Safari/iOS keep the safe shadow/gradient baseline. The
+   progressive tier reuses var(--glass-blur) and stays unprefixed by design. */
+@supports (backdrop-filter: blur(1px)) and (not (-webkit-touch-callout: none)) {
+  .glass-chrome,
+  .glass-overlay,
+  .glass-sheet,
+  .modal-backdrop {
+    backdrop-filter: var(--glass-blur);
+  }
+}
+
+/* Reduced transparency — drop progressive blur, keep fallback depth. Never
+   substitute opacity changes that reduce contrast. */
+@media (prefers-reduced-transparency: reduce) {
+  #main-content,
+  .glass-chrome,
+  .glass-overlay,
+  .glass-sheet,
+  .modal-backdrop {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }
 
 .nav-shell {
