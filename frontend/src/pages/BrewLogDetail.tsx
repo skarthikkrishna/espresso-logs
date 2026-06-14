@@ -1,11 +1,12 @@
 import { useRef, useState } from 'react'
 import axios from 'axios'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
 import {
   brewLogDetailQueryKey,
   brewLogFeedbackQueryKey,
+  deleteBrewLogEntry,
   generateBrewLogFeedback,
   getBrewLogDetail,
   getBrewLogFeedback,
@@ -15,21 +16,13 @@ import type { BrewLogCorrectionPayload } from '../api/brewLog'
 import { brewLogListQueryKey, dashboardQueryKey } from '../api/queryKeys'
 import type { BrewLogPage } from '../api/brewLog'
 import LoadingSpinner from '../components/LoadingSpinner'
-import Chip from '../components/Chip'
+import AccessibleDialog from '../components/AccessibleDialog'
 import ExtractionBrewVizMotion from '../components/motion/ExtractionBrewVizMotion'
-import { Button, GlassCard, FormField, Input, PageHeader, SectionHeading, Select, Textarea } from '../components/ui'
+import { Badge, Button, GlassCard, FormField, Input, PageHeader, SectionHeading, Select, Textarea } from '../components/ui'
 import type { BrewLogEntry } from '../types/entities'
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
-
-function eligibilityBadgeClasses(eligibility: string): string {
-  switch (eligibility) {
-    case 'God Shot':       return 'bg-amber-400/20 text-amber-300 border-amber-400/50'
-    case 'Good Espresso':  return 'bg-green-800/30 text-green-300 border-green-600/40'
-    case 'Passable':       return 'bg-zinc-700/40 text-zinc-300 border-zinc-500/40'
-    case 'Reject':         return 'bg-red-900/30 text-red-300 border-red-600/40'
-    default:               return 'bg-zinc-700/40 text-zinc-300 border-zinc-500/40'
-  }
-}
+import { eligibilityBadgeTone } from '../utils/eligibility'
+import { COPY, LOCKED_LABELS } from '../copy/registry'
 
 type CachedBrewLogShot = {
   shot: BrewLogEntry
@@ -85,11 +78,14 @@ function apiErrorMessage(err: unknown, fallback: string): string {
 export default function BrewLogDetail() {
   const { id } = useParams<{ id: string }>()
   const shotId = id ?? ''
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const rawBack = searchParams.get('back')
   // Security guard: accept only root-relative paths; reject protocol-relative (//evil.com)
   const backTarget = rawBack?.startsWith('/') && !rawBack?.startsWith('//') ? rawBack : '/brew-log'
   const [correctionOpen, setCorrectionOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [correctionForm, setCorrectionForm] = useState<CorrectionForm>({
     taste_summary: '',
     user_notes: '',
@@ -158,6 +154,27 @@ export default function BrewLogDetail() {
     },
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteBrewLogEntry(shotId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: brewLogListQueryKey(activeHouseholdId) })
+      queryClient.invalidateQueries({ queryKey: dashboardQueryKey(activeHouseholdId) })
+      queryClient.removeQueries({ queryKey: brewLogDetailQueryKey(shotId, activeHouseholdId) })
+      setDeleteOpen(false)
+      setDeleteError(null)
+      navigate(backTarget)
+    },
+    onError: (err) => {
+      setDeleteError(apiErrorMessage(err, COPY.brewLog.deleteError))
+    },
+  })
+
+  const confirmDelete = () => {
+    if (deleteMutation.isPending) return
+    setDeleteError(null)
+    deleteMutation.mutate()
+  }
+
   if (isLoading) return <LoadingSpinner />
   if (error) return <div className="p-6 text-error">Failed to load shot.</div>
   if (!shot) return null
@@ -207,31 +224,42 @@ export default function BrewLogDetail() {
 
       <div>
         <PageHeader title={shot.bag_display} subtitle={shot.date} />
-        <Chip label={shot.roast_level} />
-        {shot.shot_eligibility && (
-          <span
-            data-testid="eligibility-badge"
-            className={`badge badge-sm border ${eligibilityBadgeClasses(shot.shot_eligibility)}`}
-          >
-            {shot.shot_eligibility}
-          </span>
-        )}
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <Badge tone="neutral" emphasis="solid">{shot.roast_level}</Badge>
+          {shot.shot_eligibility && (
+            <Badge
+              tone={eligibilityBadgeTone(shot.shot_eligibility)}
+              emphasis="solid"
+              data-testid="eligibility-badge"
+            >
+              {shot.shot_eligibility}
+            </Badge>
+          )}
+        </div>
         {!correctionOpen && (
-          <Button
-            variant="outline"
-            size="xs"
-            onClick={openCorrectionForm}
-            className="mt-3 block"
-          >
-            Correct shot details
-          </Button>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="xs" onClick={openCorrectionForm}>
+              Correct shot details
+            </Button>
+            <Button
+              variant="danger"
+              size="xs"
+              data-testid="delete-shot-trigger"
+              onClick={() => {
+                setDeleteError(null)
+                setDeleteOpen(true)
+              }}
+            >
+              {LOCKED_LABELS.delete}
+            </Button>
+          </div>
         )}
       </div>
 
       {correctionOpen && (
-        <GlassCard>
-          <h2 className="text-sm font-semibold text-amber-300 mb-1">Correct typo-safe fields</h2>
-          <p className="text-xs text-amber-200/60 mb-3">
+        <GlassCard variant="content">
+          <h2 className="text-sm font-semibold mb-1">Correct typo-safe fields</h2>
+          <p className="text-xs text-[var(--kaapi-content-muted)] mb-3">
             Only notes, taste, grind setting, and shot eligibility can be corrected here.
           </p>
           <div className="space-y-3">
@@ -288,7 +316,7 @@ export default function BrewLogDetail() {
             </FormField>
           </div>
           {correctionFieldError && (
-            <p role="alert" className="text-xs text-red-400 mt-3">{correctionFieldError}</p>
+            <p role="alert" className="text-error text-sm mt-3">{correctionFieldError}</p>
           )}
           <div className="flex justify-end gap-2 mt-4">
             <Button
@@ -317,50 +345,50 @@ export default function BrewLogDetail() {
       )}
 
       {/* Shot parameters */}
-      <GlassCard>
-        <h2 className="text-sm font-semibold text-amber-300 mb-3">Shot parameters</h2>
+      <GlassCard variant="content">
+        <h2 className="text-sm font-semibold mb-3">Shot parameters</h2>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
           {shot.dose_in_g != null && (
             <>
-              <dt className="text-amber-200/60">Dose</dt>
-              <dd className="text-amber-100 font-mono">{shot.dose_in_g}g</dd>
+              <dt className="text-[var(--kaapi-content-muted)]">Dose</dt>
+              <dd className="font-mono">{shot.dose_in_g}g</dd>
             </>
           )}
           {shot.yield_out_g != null && (
             <>
-              <dt className="text-amber-200/60">Yield</dt>
-              <dd className="text-amber-100 font-mono">{shot.yield_out_g}g</dd>
+              <dt className="text-[var(--kaapi-content-muted)]">Yield</dt>
+              <dd className="font-mono">{shot.yield_out_g}g</dd>
             </>
           )}
           {shot.time_sec != null && (
             <>
-              <dt className="text-amber-200/60">Time</dt>
-              <dd className="text-amber-100 font-mono">{shot.time_sec}s</dd>
+              <dt className="text-[var(--kaapi-content-muted)]">Time</dt>
+              <dd className="font-mono">{shot.time_sec}s</dd>
             </>
           )}
           {shot.grind_setting && (
             <>
-              <dt className="text-amber-200/60">Grind setting</dt>
-              <dd className="text-amber-100">{shot.grind_setting}</dd>
+              <dt className="text-[var(--kaapi-content-muted)]">Grind setting</dt>
+              <dd>{shot.grind_setting}</dd>
             </>
           )}
           {shot.taste_summary && (
             <>
-              <dt data-testid="taste-summary-row" className="text-amber-200/60">Taste</dt>
-              <dd className="text-amber-100">{shot.taste_summary}</dd>
+              <dt data-testid="taste-summary-row" className="text-[var(--kaapi-content-muted)]">Taste</dt>
+              <dd>{shot.taste_summary}</dd>
             </>
           )}
           {shot.storage_method && (
             <>
-              <dt className="text-amber-200/60">Storage</dt>
-              <dd className="text-amber-100">{shot.storage_method}</dd>
+              <dt className="text-[var(--kaapi-content-muted)]">Storage</dt>
+              <dd>{shot.storage_method}</dd>
             </>
           )}
         </dl>
       </GlassCard>
 
       {shot.dose_in_g != null && shot.yield_out_g != null && shot.time_sec != null && (
-        <GlassCard>
+        <GlassCard variant="content">
           <SectionHeading title="Extraction shape" />
           <ExtractionBrewVizMotion
             doseGrams={shot.dose_in_g}
@@ -372,25 +400,25 @@ export default function BrewLogDetail() {
 
       {/* Hardware */}
       {(shot.machine_name || shot.grinder_name || shot.basket_name) && (
-        <GlassCard>
-          <h2 className="text-sm font-semibold text-amber-300 mb-3">Hardware</h2>
+        <GlassCard variant="content">
+          <h2 className="text-sm font-semibold mb-3">Hardware</h2>
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             {shot.machine_name && (
               <>
-                <dt className="text-amber-200/60">Machine</dt>
-                <dd className="text-amber-100">{shot.machine_name}</dd>
+                <dt className="text-[var(--kaapi-content-muted)]">Machine</dt>
+                <dd>{shot.machine_name}</dd>
               </>
             )}
             {shot.grinder_name && (
               <>
-                <dt className="text-amber-200/60">Grinder</dt>
-                <dd className="text-amber-100">{shot.grinder_name}</dd>
+                <dt className="text-[var(--kaapi-content-muted)]">Grinder</dt>
+                <dd>{shot.grinder_name}</dd>
               </>
             )}
             {shot.basket_name && (
               <>
-                <dt className="text-amber-200/60">Basket</dt>
-                <dd className="text-amber-100">{shot.basket_name}</dd>
+                <dt className="text-[var(--kaapi-content-muted)]">Basket</dt>
+                <dd>{shot.basket_name}</dd>
               </>
             )}
           </dl>
@@ -399,25 +427,25 @@ export default function BrewLogDetail() {
 
       {/* Notes */}
       {shot.user_notes && (
-        <GlassCard data-testid="notes-section">
-          <h2 className="text-sm font-semibold text-amber-300 mb-2">Notes</h2>
-          <p className="text-sm text-amber-100">{shot.user_notes}</p>
+        <GlassCard variant="content" data-testid="notes-section">
+          <h2 className="text-sm font-semibold mb-2">Notes</h2>
+          <p className="text-sm">{shot.user_notes}</p>
         </GlassCard>
       )}
 
       {/* AI feedback */}
-      <GlassCard>
-        <h2 className="text-sm font-semibold text-amber-300 mb-3">AI feedback</h2>
+      <GlassCard variant="content">
+        <h2 className="text-sm font-semibold mb-3">AI feedback</h2>
         {visibleFeedback ? (
-          <p className="text-sm text-amber-100">{visibleFeedback}</p>
+          <p className="text-sm">{visibleFeedback}</p>
         ) : (
-          <p className="text-amber-200/50 text-sm mb-3">No feedback available yet.</p>
+          <p className="text-[var(--kaapi-content-muted)] text-sm mb-3">No feedback available yet.</p>
         )}
         {feedbackError && (
-          <p role="alert" className="text-xs text-red-400 mt-3">{feedbackError}</p>
+          <p role="alert" className="text-error text-sm mt-3">{feedbackError}</p>
         )}
         {feedbackMessage && !feedbackError && (
-          <p role="status" className="text-xs text-amber-300 mt-3">{feedbackMessage}</p>
+          <p role="status" className="text-[var(--kaapi-content-muted)] text-sm mt-3">{feedbackMessage}</p>
         )}
         <div className="mt-3">
           <Button
@@ -436,6 +464,54 @@ export default function BrewLogDetail() {
           </Button>
         </div>
       </GlassCard>
+
+      <AccessibleDialog
+        open={deleteOpen}
+        title={COPY.brewLog.deleteTitle}
+        description={COPY.brewLog.deleteBody}
+        size="sm"
+        onClose={() => {
+          if (deleteMutation.isPending) return
+          setDeleteOpen(false)
+          setDeleteError(null)
+        }}
+      >
+        <div
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault()
+              confirmDelete()
+            }
+          }}
+        >
+          {deleteError && (
+            <p role="alert" className="text-error text-sm mb-3">{deleteError}</p>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setDeleteOpen(false)
+                setDeleteError(null)
+              }}
+              disabled={deleteMutation.isPending}
+            >
+              {COPY.actions.cancel}
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={confirmDelete}
+              disabled={deleteMutation.isPending}
+              loading={deleteMutation.isPending}
+              loadingText={COPY.brewLog.deleting}
+            >
+              {LOCKED_LABELS.delete}
+            </Button>
+          </div>
+        </div>
+      </AccessibleDialog>
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import React from 'react'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
@@ -7,11 +7,13 @@ import type { BrewLogPage } from '../api/brewLog'
 import { brewLogListQueryKey } from '../api/queryKeys'
 import type { BrewLogEntry } from '../types/entities'
 
+const { navigateMock } = vi.hoisted(() => ({ navigateMock: vi.fn() }))
+
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
   return {
     ...actual,
-    useNavigate: () => vi.fn(),
+    useNavigate: () => navigateMock,
     useParams: () => ({ id: 'SHOT-001' }),
     useSearchParams: () => [new URLSearchParams(), vi.fn()],
   }
@@ -24,11 +26,12 @@ vi.mock('../api/brewLog', () => ({
   getBrewLogDetail: vi.fn(),
   getBrewLogFeedback: vi.fn(),
   updateBrewLogEntry: vi.fn(),
+  deleteBrewLogEntry: vi.fn(),
   generateBrewLogFeedback: vi.fn(),
   submitShot: vi.fn(),
 }))
 
-import { generateBrewLogFeedback, getBrewLogDetail, getBrewLogFeedback, updateBrewLogEntry } from '../api/brewLog'
+import { deleteBrewLogEntry, generateBrewLogFeedback, getBrewLogDetail, getBrewLogFeedback, updateBrewLogEntry } from '../api/brewLog'
 import BrewLogDetail from './BrewLogDetail'
 
 const baseShot: BrewLogEntry = {
@@ -100,6 +103,7 @@ beforeEach(() => {
   vi.mocked(getBrewLogDetail).mockResolvedValue(baseShot)
   vi.mocked(getBrewLogFeedback).mockResolvedValue({ ai_feedback: '' })
   vi.mocked(updateBrewLogEntry).mockResolvedValue(baseShot)
+  vi.mocked(deleteBrewLogEntry).mockResolvedValue(undefined)
   vi.mocked(generateBrewLogFeedback).mockResolvedValue({ ai_feedback: 'Generated feedback' })
 })
 
@@ -324,5 +328,102 @@ describe('BrewLogDetail — AI feedback generation', () => {
 
     expect(await screen.findByText(/failed to generate ai feedback/i)).toBeInTheDocument()
     expect(screen.getByText(/no feedback available yet/i)).toBeInTheDocument()
+  })
+})
+
+describe('BrewLogDetail — delete shot', () => {
+  async function openDeleteDialog() {
+    expect(await screen.findByText('Verve Coffee — Seabright')).toBeInTheDocument()
+    const trigger = screen.getByTestId('delete-shot-trigger')
+    trigger.focus()
+    fireEvent.click(trigger)
+    return screen.findByRole('dialog')
+  }
+
+  it('confirms deletion, invalidates list + dashboard caches, and navigates back to the list', async () => {
+    const { queryClient } = renderWithPaginatedCache(baseShot)
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+
+    const dialog = await openDeleteDialog()
+    expect(dialog).toHaveTextContent(/delete this shot/i)
+
+    fireEvent.click(within(dialog).getByRole('button', { name: /^delete$/i }))
+
+    await waitFor(() => {
+      expect(deleteBrewLogEntry).toHaveBeenCalledWith('SHOT-001')
+      expect(navigateMock).toHaveBeenCalledWith('/brew-log')
+    })
+
+    const invalidatedKeys = invalidateSpy.mock.calls.map((call) => call[0]?.queryKey)
+    expect(invalidatedKeys).toEqual(
+      expect.arrayContaining([
+        expect.arrayContaining(['brew-log']),
+        expect.arrayContaining(['dashboard']),
+      ]),
+    )
+  })
+
+  it('Enter confirms deletion from within the dialog', async () => {
+    renderWithPaginatedCache(baseShot)
+    const dialog = await openDeleteDialog()
+
+    fireEvent.keyDown(within(dialog).getByRole('button', { name: /^delete$/i }), { key: 'Enter' })
+
+    await waitFor(() => {
+      expect(deleteBrewLogEntry).toHaveBeenCalledWith('SHOT-001')
+    })
+  })
+
+  it('Escape closes the dialog without deleting and restores focus to the trigger', async () => {
+    renderWithPaginatedCache(baseShot)
+    const dialog = await openDeleteDialog()
+
+    fireEvent.keyDown(dialog, { key: 'Escape' })
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull()
+    })
+    expect(deleteBrewLogEntry).not.toHaveBeenCalled()
+    expect(screen.getByTestId('delete-shot-trigger')).toHaveFocus()
+  })
+
+  it('Cancel closes the dialog without deleting', async () => {
+    renderWithPaginatedCache(baseShot)
+    const dialog = await openDeleteDialog()
+
+    fireEvent.click(within(dialog).getByRole('button', { name: /^cancel$/i }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull()
+    })
+    expect(deleteBrewLogEntry).not.toHaveBeenCalled()
+    expect(navigateMock).not.toHaveBeenCalled()
+  })
+
+  it('disables the dialog actions and shows progress while the delete is in flight', async () => {
+    vi.mocked(deleteBrewLogEntry).mockReturnValue(new Promise<undefined>(() => {}))
+    renderWithPaginatedCache(baseShot)
+    const dialog = await openDeleteDialog()
+
+    fireEvent.click(within(dialog).getByRole('button', { name: /^delete$/i }))
+
+    await waitFor(() => {
+      const confirmButton = within(dialog).getByRole('button', { name: /deleting/i })
+      expect(confirmButton).toBeDisabled()
+      expect(within(dialog).getByRole('button', { name: /^cancel$/i })).toBeDisabled()
+    })
+    expect(navigateMock).not.toHaveBeenCalled()
+  })
+
+  it('keeps the dialog open and surfaces an actionable error when deletion fails', async () => {
+    vi.mocked(deleteBrewLogEntry).mockRejectedValue(new Error('server exploded'))
+    renderWithPaginatedCache(baseShot)
+    const dialog = await openDeleteDialog()
+
+    fireEvent.click(within(dialog).getByRole('button', { name: /^delete$/i }))
+
+    expect(await screen.findByText(/we could not delete this shot/i)).toBeInTheDocument()
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(navigateMock).not.toHaveBeenCalled()
   })
 })

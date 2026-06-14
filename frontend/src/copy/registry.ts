@@ -93,6 +93,12 @@ export const COPY = {
     showMore: 'Show more',
     showFewer: 'Show fewer',
   },
+  brewLog: {
+    deleteTitle: 'Delete this shot?',
+    deleteBody: 'This permanently removes the shot from your brew log. This cannot be undone.',
+    deleteError: 'We could not delete this shot. Please try again.',
+    deleting: 'Deleting…',
+  },
 } as const
 
 const collectStrings = (value: unknown, sink: Set<string>): void => {
