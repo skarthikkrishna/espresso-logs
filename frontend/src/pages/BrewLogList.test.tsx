@@ -16,12 +16,15 @@ import { brewLogListQueryKey } from '../api/queryKeys'
 // Module mocks — hoisted before any import of the mocked module
 // ---------------------------------------------------------------------------
 
+const routerState = vi.hoisted(() => ({ search: new URLSearchParams() }))
+const setSearchParamsMock = vi.hoisted(() => vi.fn())
+
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
   return {
     ...actual,
     useNavigate: () => vi.fn(),
-    useSearchParams: () => [new URLSearchParams(), vi.fn()],
+    useSearchParams: () => [routerState.search, setSearchParamsMock] as const,
   }
 })
 
@@ -53,6 +56,8 @@ function renderWithQuery(ui: React.ReactElement) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  routerState.search = new URLSearchParams()
+  setSearchParamsMock.mockClear()
   vi.mocked(listBrewLog).mockResolvedValue({
     items: [
       {
@@ -104,65 +109,80 @@ describe('BrewLogList — detail prefetch cache key', () => {
 })
 
 // ---------------------------------------------------------------------------
-// Pagination controls — AC #2
+// Pagination controls — AC #2 (shared Pagination primitive)
 // ---------------------------------------------------------------------------
 
 describe('BrewLogList — pagination controls', () => {
+  const multiPage = {
+    items: [{ shot_id: 'shot-1', date: '2025-07-29', bag_display: 'Roaster — Bean' }],
+    page: 1,
+    per_page: 100,
+    total_count: 200, // 2 pages at 100/page
+    has_next: true,
+    sync_alert: false,
+  }
+
+  it('renders no pagination chrome when there is only a single page', async () => {
+    // Intent: a one-page history shows no Previous/Next controls — the shared
+    // Pagination primitive returns null at pageCount <= 1. Re-adding always-on
+    // controls (or miscomputing pageCount) would fail this.
+    renderWithQuery(<BrewLogList />) // default beforeEach data: total_count = 1
+    await screen.findByText('Test Roaster — Test Bean')
+
+    expect(screen.queryByRole('navigation', { name: /pagination/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /next/i })).not.toBeInTheDocument()
+  })
+
   it('Previous button is disabled on page 1', async () => {
     // Intent: navigating back past the first page must be blocked so users
     // cannot request negative offsets or page 0.
-    renderWithQuery(<BrewLogList />)
-    await screen.findByText('Test Roaster — Test Bean')
-
-    const prev = screen.getByRole('button', { name: /previous/i })
-    expect(prev).toBeDisabled()
-  })
-
-  it('Next button is disabled when has_next is false', async () => {
-    // Intent: when the API signals no more pages, the Next control must be
-    // inert so clicking it cannot trigger a spurious out-of-range page fetch.
-    renderWithQuery(<BrewLogList />)
-    await screen.findByText('Test Roaster — Test Bean')
-
-    const next = screen.getByRole('button', { name: /next/i })
-    expect(next).toBeDisabled()
-  })
-
-  it('Next button is enabled when has_next is true', async () => {
-    // Intent: when more pages exist, the Next control must be interactive
-    // so users can reach later history.
-    vi.mocked(listBrewLog).mockResolvedValue({
-      items: [{ shot_id: 'shot-1', date: '2025-07-29', bag_display: 'Roaster — Bean' }],
-      page: 1,
-      per_page: 100,
-      total_count: 200,
-      has_next: true,
-      sync_alert: false,
-    })
+    vi.mocked(listBrewLog).mockResolvedValue(multiPage)
     renderWithQuery(<BrewLogList />)
     await screen.findByText('Roaster — Bean')
 
-    const next = screen.getByRole('button', { name: /next/i })
-    expect(next).not.toBeDisabled()
+    expect(screen.getByRole('button', { name: /previous/i })).toBeDisabled()
   })
 
-  it('pagination nav has accessible label', async () => {
-    // Intent: screen readers must be able to identify the pagination region;
-    // removing aria-label from <nav> would break this assertion.
+  it('Next button is disabled on the last page', async () => {
+    // Intent: on the final page the Next control must be inert so clicking it
+    // cannot trigger a spurious out-of-range page fetch.
+    routerState.search = new URLSearchParams('page=2')
+    vi.mocked(listBrewLog).mockResolvedValue({ ...multiPage, page: 2, has_next: false })
     renderWithQuery(<BrewLogList />)
-    await screen.findByText('Test Roaster — Test Bean')
+    await screen.findByText('Roaster — Bean')
 
-    expect(screen.getByRole('navigation', { name: /brew log pagination/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /next/i })).toBeDisabled()
+  })
+
+  it('Next button is enabled when more pages exist', async () => {
+    // Intent: when more pages exist, the Next control must be interactive
+    // so users can reach later history.
+    vi.mocked(listBrewLog).mockResolvedValue(multiPage)
+    renderWithQuery(<BrewLogList />)
+    await screen.findByText('Roaster — Bean')
+
+    expect(screen.getByRole('button', { name: /next/i })).not.toBeDisabled()
+  })
+
+  it('pagination nav has an accessible label', async () => {
+    // Intent: screen readers must be able to identify the pagination region;
+    // removing the nav aria-label would break this assertion.
+    vi.mocked(listBrewLog).mockResolvedValue(multiPage)
+    renderWithQuery(<BrewLogList />)
+    await screen.findByText('Roaster — Bean')
+
+    expect(screen.getByRole('navigation', { name: /pagination/i })).toBeInTheDocument()
   })
 
   it('active page indicator has aria-current="page"', async () => {
     // Intent: assistive technologies rely on aria-current to announce the
     // current page; removing the attribute would silently break accessibility.
+    vi.mocked(listBrewLog).mockResolvedValue(multiPage)
     renderWithQuery(<BrewLogList />)
-    await screen.findByText('Test Roaster — Test Bean')
+    await screen.findByText('Roaster — Bean')
 
-    const pageIndicator = screen.getByText('1')
-    expect(pageIndicator).toHaveAttribute('aria-current', 'page')
+    const current = screen.getByRole('button', { name: '1' })
+    expect(current).toHaveAttribute('aria-current', 'page')
   })
 })
 

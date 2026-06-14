@@ -1,12 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { brewLogDetailQueryKey, listBrewLog, getBrewLogDetail } from '../api/brewLog'
 import { brewLogListQueryKey } from '../api/queryKeys'
 import LoadingSpinner from '../components/LoadingSpinner'
-import { Button, EmptyState, GlassCard, PageHeader } from '../components/ui'
+import { Badge, Button, EmptyState, GlassCard, PageHeader, Pagination } from '../components/ui'
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
+import { useKaapiMotion } from '../lib/motion'
+import { eligibilityBadgeTone } from '../utils/eligibility'
 
 export default function BrewLogList() {
   const navigate = useNavigate()
@@ -19,6 +21,9 @@ export default function BrewLogList() {
   const [syncAlertDismissed, setSyncAlertDismissed] = useState(false)
   const queryClient = useQueryClient()
   const activeHouseholdId = useHouseholdQueryScope()
+  const routeRef = useRef<HTMLDivElement>(null)
+  const cardListRef = useRef<HTMLDivElement>(null)
+  const { routeEnter, staggerCards } = useKaapiMotion({ scope: routeRef })
 
   const { data, isLoading, isPlaceholderData, error } = useQuery({
     queryKey: brewLogListQueryKey(activeHouseholdId, page, 100),
@@ -41,11 +46,23 @@ export default function BrewLogList() {
     return () => clearTimeout(t)
   }, [toast])
 
+  useEffect(() => {
+    if (routeRef.current) routeEnter(routeRef.current)
+  }, [routeEnter])
+
+  useEffect(() => {
+    const cards = cardListRef.current?.querySelectorAll('.kaapi-motion-card')
+    if (cards?.length) staggerCards(cards)
+  }, [data, staggerCards])
+
   if (isLoading) return <LoadingSpinner />
   if (error) return <div className="p-6 text-error">Failed to load brew log.</div>
 
+  const perPage = data?.per_page || 100
+  const pageCount = Math.max(1, Math.ceil((data?.total_count ?? 0) / perPage))
+
   return (
-    <div className="p-4 md:p-6 relative">
+    <div ref={routeRef} data-testid="motion-route-boundary" className="p-4 md:p-6 relative">
       <PageHeader title="Brew log" />
       {toast && createPortal(
         <div
@@ -72,7 +89,7 @@ export default function BrewLogList() {
         </div>
       ) : (
         <>
-          <div data-testid="brew-log-list" className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div ref={cardListRef} data-testid="brew-log-list" className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {data.items.map((entry) => (
               <Link
                 data-testid="brew-log-entry"
@@ -85,86 +102,64 @@ export default function BrewLogList() {
                     staleTime: 60_000,
                   })
                 }}
-                className="block h-full"
+                className="kaapi-motion-card block h-full no-underline"
               >
                 <GlassCard
+                  variant="content"
                   padding="sm"
                   interactive
-                  className={`frosted-brew-card !flex-col !items-start !p-3 md:!p-3 h-full gap-3 border-l-4 ${
-                    entry.shot_eligibility === 'Good Espresso' || entry.shot_eligibility === 'God Shot'
-                      ? 'border-l-amber-400/70'
-                      : 'border-l-white/10'
-                  }`}
+                  className="!flex-col !items-start !p-3 md:!p-3 h-full gap-3"
                 >
                   <div className="flex w-full items-start justify-between gap-3">
                     <div className="min-w-0 space-y-1">
-                      <p className="text-xs uppercase tracking-[0.22em] text-amber-300/50">{entry.date}</p>
-                      <p className="text-sm md:text-base leading-snug text-amber-100 break-words">{entry.bag_display}</p>
+                      <p className="text-xs uppercase tracking-[0.22em] text-[var(--kaapi-content-muted)]">{entry.date}</p>
+                      <p className="text-sm md:text-base leading-snug break-words">{entry.bag_display}</p>
                     </div>
                     {entry.shot_eligibility && (
-                      <span className="badge badge-sm shrink-0 border border-amber-400/30 bg-amber-400/10 text-amber-200">
+                      <Badge tone={eligibilityBadgeTone(entry.shot_eligibility)} emphasis="solid" className="shrink-0">
                         {entry.shot_eligibility}
-                      </span>
+                      </Badge>
                     )}
                   </div>
 
                   <div className="flex w-full flex-wrap gap-2">
                     {entry.dose_in_g != null && entry.yield_out_g != null && (
-                      <span className="rounded-full border border-white/10 bg-black/10 px-2.5 py-1 text-xs font-mono text-amber-300">
+                      <span className="rounded-full bg-[var(--kaapi-content-surface-2)] px-2.5 py-1 text-xs font-mono text-[var(--kaapi-content-muted)]">
                         {entry.dose_in_g}g → {entry.yield_out_g}g
                       </span>
                     )}
                     {entry.time_sec != null && (
-                      <span className="rounded-full border border-white/10 bg-black/10 px-2.5 py-1 text-xs text-amber-200/80">
+                      <span className="rounded-full bg-[var(--kaapi-content-surface-2)] px-2.5 py-1 text-xs text-[var(--kaapi-content-muted)]">
                         {entry.time_sec}s
                       </span>
                     )}
                     {entry.grind_setting && (
-                      <span className="rounded-full border border-white/10 bg-black/10 px-2.5 py-1 text-xs text-amber-200/80">
+                      <span className="rounded-full bg-[var(--kaapi-content-surface-2)] px-2.5 py-1 text-xs text-[var(--kaapi-content-muted)]">
                         Grind {entry.grind_setting}
                       </span>
                     )}
                   </div>
 
                   {(entry.machine_name || entry.grinder_name || entry.basket_name) && (
-                    <div className="flex w-full flex-wrap gap-x-3 gap-y-1 text-xs text-amber-200/60">
-                      {entry.machine_name && <span>Machine: {entry.machine_name}</span>}
-                      {entry.grinder_name && <span>Grinder: {entry.grinder_name}</span>}
-                      {entry.basket_name && <span>Basket: {entry.basket_name}</span>}
+                    <div className="flex w-full flex-wrap gap-x-3 gap-y-1 text-xs text-[var(--kaapi-content-muted)]">
+                      {entry.machine_name && <span className="break-words">Machine: {entry.machine_name}</span>}
+                      {entry.grinder_name && <span className="break-words">Grinder: {entry.grinder_name}</span>}
+                      {entry.basket_name && <span className="break-words">Basket: {entry.basket_name}</span>}
                     </div>
                   )}
                 </GlassCard>
               </Link>
             ))}
           </div>
-          <nav aria-label="Brew log pagination" className="flex justify-center mt-4">
-            <div className="join">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="join-item"
-                disabled={page <= 1 || isPlaceholderData}
-                onClick={() => setSearchParams({ page: String(page - 1) })}
-              >
-                Previous
-              </Button>
-              <span
-                className="join-item btn btn-sm btn-active"
-                aria-current="page"
-              >
-                {page}
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="join-item"
-                disabled={!data?.has_next || isPlaceholderData}
-                onClick={() => setSearchParams({ page: String(page + 1) })}
-              >
-                Next
-              </Button>
-            </div>
-          </nav>
+          <Pagination
+            page={page}
+            pageCount={pageCount}
+            onPageChange={(next) => {
+              if (isPlaceholderData) return
+              setSearchParams({ page: String(next) })
+            }}
+            className="mt-4"
+          />
         </>
       )}
 
