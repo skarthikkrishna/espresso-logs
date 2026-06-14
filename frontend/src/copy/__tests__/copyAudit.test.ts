@@ -128,3 +128,34 @@ describe('isMeaningfulCopy', () => {
     expect(isMeaningfulCopy('18')).toBe(false)
   })
 })
+
+describe('production sources carry no unapproved user-facing copy (spec-043 T019)', () => {
+  // Render sinks + a11y props in shipped .tsx must resolve through COPY / LOCKED_LABELS.
+  // Enum values, routes, query keys, class names, test ids, and data values stay exempt
+  // (Quinn carry-forward note 2) — they are verified by the fixtures above.
+  // Sources are loaded via Vite's raw glob so the guard needs no Node typings.
+  const sources = import.meta.glob('/src/**/*.tsx', {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  }) as Record<string, string>
+
+  const productionFiles = Object.entries(sources).filter(
+    ([path]) => !path.endsWith('.test.tsx') && !path.includes('/__tests__/') && !path.includes('/test/'),
+  )
+
+  it('covers the shipped component + page surface', () => {
+    expect(productionFiles.length).toBeGreaterThan(40)
+  })
+
+  it('flags zero inline literals across shipped .tsx', () => {
+    const offenders = productionFiles
+      .sort(([a], [b]) => a.localeCompare(b))
+      .flatMap(([path, source]) =>
+        auditCopySource(path, source, APPROVED_COPY).map(
+          (v) => `${path}:${v.line}:${v.column} [${v.kind}${v.attribute ? ' ' + v.attribute : ''}] ${JSON.stringify(v.text)}`,
+        ),
+      )
+    expect(offenders, `Unapproved user-facing copy found:\n${offenders.join('\n')}`).toEqual([])
+  })
+})

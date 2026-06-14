@@ -1,6 +1,7 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { getZoneGuidance } from '../utils/zoneGuidance'
 import type { ZoneBoundaries } from '../utils/zoneBoundaries'
+import { COPY } from '../copy'
 
 const DEFAULT_BOUNDARIES: ZoneBoundaries = { timeMin: 15, timeMax: 60, ratioInnerThird: 1.67, ratioOuterThird: 2.33 }
 
@@ -275,17 +276,17 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
         {/* Axis labels — directional, no tick marks */}
         <text x={PADDING.left + chartW / 2} y={H - 5} textAnchor="middle"
               fill="rgba(245,230,211,0.65)" fontSize={9} fontFamily="Inter, sans-serif"
-              filter="url(#zoneLabelShadow)">Sour  ←  Ratio  →  Bitter</text>
+              filter="url(#zoneLabelShadow)">{COPY.compass.axisRatio}</text>
         <text x={10} y={PADDING.top + chartH / 2} textAnchor="middle"
               fill="rgba(245,230,211,0.65)" fontSize={9} fontFamily="Inter, sans-serif"
               filter="url(#zoneLabelShadow)"
-              transform={`rotate(-90, 10, ${PADDING.top + chartH / 2})`}>Fast ↕ Slow</text>
+              transform={`rotate(-90, 10, ${PADDING.top + chartH / 2})`}>{COPY.compass.axisTime}</text>
 
         {/* Null-dose callout: show when yieldG present but doseG absent */}
         {nullDoseFallback && (
           <text x={PADDING.left + chartW / 2} y={PADDING.top + chartH / 2}
                 textAnchor="middle" dominantBaseline="middle"
-                fill="rgba(245,230,211,0.5)" fontSize={9}>Add dose →</text>
+                fill="rgba(245,230,211,0.5)" fontSize={9}>{COPY.compass.addDose}</text>
         )}
 
         {/* Live dot */}
@@ -323,12 +324,11 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
         </p>
         {activeZoneTaste && selectedTaste && activeZoneTaste !== selectedTaste && (
           <p className="text-xs text-amber-200/50 text-center">
-            Your parameters suggest {activeZoneTaste.toLowerCase()},{' '}
-            but you tasted {selectedTaste.toLowerCase()} — taste is personal!
+            {COPY.compass.personalNote(activeZoneTaste.toLowerCase(), selectedTaste.toLowerCase())}
           </p>
         )}
         <p className="text-xs text-amber-200/30 text-center">
-          ⬤ Your shot &nbsp;·&nbsp; Zones = extraction outcome
+          {COPY.compass.legend}
         </p>
       </div>
     </div>

@@ -176,7 +176,7 @@ export default function BrewLogDetail() {
   }
 
   if (isLoading) return <LoadingSpinner />
-  if (error) return <div className="p-6 text-error">Failed to load shot.</div>
+  if (error) return <div className="p-6 text-error">{COPY.brewLogDetail.loadError}</div>
   if (!shot) return null
 
   const openCorrectionForm = () => {
@@ -239,7 +239,7 @@ export default function BrewLogDetail() {
         {!correctionOpen && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Button variant="outline" size="xs" onClick={openCorrectionForm}>
-              Correct shot details
+              {COPY.brewLogDetail.correctTitle}
             </Button>
             <Button
               variant="danger"
@@ -258,9 +258,9 @@ export default function BrewLogDetail() {
 
       {correctionOpen && (
         <GlassCard variant="content">
-          <h2 className="text-sm font-semibold mb-1">Correct typo-safe fields</h2>
+          <h2 className="text-sm font-semibold mb-1">{COPY.brewLogDetail.correctFormTitle}</h2>
           <p className="text-xs text-[var(--kaapi-content-muted)] mb-3">
-            Only notes, taste, grind setting, and shot eligibility can be corrected here.
+            {COPY.brewLogDetail.correctFormHint}
           </p>
           <div className="space-y-3">
             <FormField label="Taste summary" htmlFor="correction-taste-summary">
@@ -299,7 +299,7 @@ export default function BrewLogDetail() {
                 aria-describedby={!correctionEligibilityValid ? 'correction-eligibility-error' : undefined}
                 error={!correctionEligibilityValid}
               >
-                <option value="">No eligibility</option>
+                <option value="">{COPY.brewLogDetail.noEligibility}</option>
                 {ELIGIBILITY_OPTIONS.map((option) => (
                   <option key={option} value={option}>{option}</option>
                 ))}
@@ -338,7 +338,7 @@ export default function BrewLogDetail() {
               loading={correctionMutation.isPending}
               loadingText="Saving…"
             >
-              Save corrections
+              {COPY.brewLogDetail.saveCorrections}
             </Button>
           </div>
         </GlassCard>
@@ -346,41 +346,41 @@ export default function BrewLogDetail() {
 
       {/* Shot parameters */}
       <GlassCard variant="content">
-        <h2 className="text-sm font-semibold mb-3">Shot parameters</h2>
+        <h2 className="text-sm font-semibold mb-3">{COPY.brewLogDetail.shotParameters}</h2>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
           {shot.dose_in_g != null && (
             <>
-              <dt className="text-[var(--kaapi-content-muted)]">Dose</dt>
+              <dt className="text-[var(--kaapi-content-muted)]">{COPY.fields.dose}</dt>
               <dd className="font-mono">{shot.dose_in_g}g</dd>
             </>
           )}
           {shot.yield_out_g != null && (
             <>
-              <dt className="text-[var(--kaapi-content-muted)]">Yield</dt>
+              <dt className="text-[var(--kaapi-content-muted)]">{COPY.fields.yield}</dt>
               <dd className="font-mono">{shot.yield_out_g}g</dd>
             </>
           )}
           {shot.time_sec != null && (
             <>
-              <dt className="text-[var(--kaapi-content-muted)]">Time</dt>
+              <dt className="text-[var(--kaapi-content-muted)]">{COPY.fields.time}</dt>
               <dd className="font-mono">{shot.time_sec}s</dd>
             </>
           )}
           {shot.grind_setting && (
             <>
-              <dt className="text-[var(--kaapi-content-muted)]">Grind setting</dt>
+              <dt className="text-[var(--kaapi-content-muted)]">{COPY.fields.grindSetting}</dt>
               <dd>{shot.grind_setting}</dd>
             </>
           )}
           {shot.taste_summary && (
             <>
-              <dt data-testid="taste-summary-row" className="text-[var(--kaapi-content-muted)]">Taste</dt>
+              <dt data-testid="taste-summary-row" className="text-[var(--kaapi-content-muted)]">{COPY.fields.taste}</dt>
               <dd>{shot.taste_summary}</dd>
             </>
           )}
           {shot.storage_method && (
             <>
-              <dt className="text-[var(--kaapi-content-muted)]">Storage</dt>
+              <dt className="text-[var(--kaapi-content-muted)]">{COPY.fields.storage}</dt>
               <dd>{shot.storage_method}</dd>
             </>
           )}
@@ -389,7 +389,7 @@ export default function BrewLogDetail() {
 
       {shot.dose_in_g != null && shot.yield_out_g != null && shot.time_sec != null && (
         <GlassCard variant="content">
-          <SectionHeading title="Extraction shape" />
+          <SectionHeading title={COPY.brewLogDetail.extractionShape} />
           <ExtractionBrewVizMotion
             doseGrams={shot.dose_in_g}
             yieldGrams={shot.yield_out_g}
@@ -405,19 +405,19 @@ export default function BrewLogDetail() {
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             {shot.machine_name && (
               <>
-                <dt className="text-[var(--kaapi-content-muted)]">Machine</dt>
+                <dt className="text-[var(--kaapi-content-muted)]">{COPY.fields.machine}</dt>
                 <dd>{shot.machine_name}</dd>
               </>
             )}
             {shot.grinder_name && (
               <>
-                <dt className="text-[var(--kaapi-content-muted)]">Grinder</dt>
+                <dt className="text-[var(--kaapi-content-muted)]">{COPY.fields.grinder}</dt>
                 <dd>{shot.grinder_name}</dd>
               </>
             )}
             {shot.basket_name && (
               <>
-                <dt className="text-[var(--kaapi-content-muted)]">Basket</dt>
+                <dt className="text-[var(--kaapi-content-muted)]">{COPY.fields.basket}</dt>
                 <dd>{shot.basket_name}</dd>
               </>
             )}
@@ -435,11 +435,11 @@ export default function BrewLogDetail() {
 
       {/* AI feedback */}
       <GlassCard variant="content">
-        <h2 className="text-sm font-semibold mb-3">AI feedback</h2>
+        <h2 className="text-sm font-semibold mb-3">{COPY.brewLogDetail.aiFeedback}</h2>
         {visibleFeedback ? (
           <p className="text-sm">{visibleFeedback}</p>
         ) : (
-          <p className="text-[var(--kaapi-content-muted)] text-sm mb-3">No feedback available yet.</p>
+          <p className="text-[var(--kaapi-content-muted)] text-sm mb-3">{COPY.brewLogDetail.noFeedback}</p>
         )}
         {feedbackError && (
           <p role="alert" className="text-error text-sm mt-3">{feedbackError}</p>

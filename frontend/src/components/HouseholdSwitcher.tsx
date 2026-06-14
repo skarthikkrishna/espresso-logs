@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import AccessibleDialog from './AccessibleDialog'
 import type { Membership } from '../types/entities'
+import { COPY } from '../copy'
 
 interface HouseholdSwitcherProps {
   variant: 'desktop' | 'mobile'
@@ -126,7 +127,7 @@ export default function HouseholdSwitcher({ variant }: HouseholdSwitcherProps) {
                 />
               ))}
               <Link to="/household/new" className="btn btn-ghost min-h-11 w-full justify-start text-amber-300 no-underline" onClick={() => setOpen(false)}>
-                + Create new household
+                + {COPY.household.createNew}
               </Link>
             </div>
             {error ? <p className="mt-2 px-2 text-xs text-error" role="alert">{error}</p> : null}
@@ -178,7 +179,7 @@ export default function HouseholdSwitcher({ variant }: HouseholdSwitcherProps) {
             />
           ))}
           <Link to="/household/new" className="btn btn-outline btn-bevel w-full no-underline" onClick={() => setOpen(false)}>
-            + Create new household
+            + {COPY.household.createNew}
           </Link>
           {error ? <p className="text-sm text-error" role="alert">{error}</p> : null}
         </div>

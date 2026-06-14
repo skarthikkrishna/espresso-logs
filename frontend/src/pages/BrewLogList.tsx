@@ -9,6 +9,7 @@ import { Badge, Button, EmptyState, GlassCard, PageHeader, Pagination } from '..
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
 import { useKaapiMotion } from '../lib/motion'
 import { eligibilityBadgeTone } from '../utils/eligibility'
+import { COPY } from '../copy'
 
 export default function BrewLogList() {
   const navigate = useNavigate()
@@ -56,7 +57,7 @@ export default function BrewLogList() {
   }, [data, staggerCards])
 
   if (isLoading) return <LoadingSpinner />
-  if (error) return <div className="p-6 text-error">Failed to load brew log.</div>
+  if (error) return <div className="p-6 text-error">{COPY.brewLogList.loadError}</div>
 
   const perPage = data?.per_page || 100
   const pageCount = Math.max(1, Math.ceil((data?.total_count ?? 0) / perPage))
@@ -75,7 +76,7 @@ export default function BrewLogList() {
       )}
       {data?.sync_alert && !syncAlertDismissed && (
         <div role="alert" className="alert alert-warning mb-4">
-          <span>Your brew log history may be incomplete. Contact support or run the sync check.</span>
+          <span>{COPY.brewLogList.syncAlert}</span>
           <button className="btn btn-sm btn-ghost" onClick={() => setSyncAlertDismissed(true)}>✕</button>
         </div>
       )}
@@ -83,8 +84,8 @@ export default function BrewLogList() {
         <div data-testid="fresh-household-empty-brew-log">
           <EmptyState
             icon={<span aria-hidden="true" className="text-3xl">☕</span>}
-            title="No shots logged yet."
-            description="Your recent brews will appear here once you start logging shots. Fresh households start empty."
+            title={COPY.brewLogList.emptyTitle}
+            description={COPY.brewLogList.emptyBody}
           />
         </div>
       ) : (
@@ -135,16 +136,16 @@ export default function BrewLogList() {
                     )}
                     {entry.grind_setting && (
                       <span className="rounded-full bg-[var(--kaapi-content-surface-2)] px-2.5 py-1 text-xs text-[var(--kaapi-content-muted)]">
-                        Grind {entry.grind_setting}
+                        {COPY.brewLogList.grind} {entry.grind_setting}
                       </span>
                     )}
                   </div>
 
                   {(entry.machine_name || entry.grinder_name || entry.basket_name) && (
                     <div className="flex w-full flex-wrap gap-x-3 gap-y-1 text-xs text-[var(--kaapi-content-muted)]">
-                      {entry.machine_name && <span className="break-words">Machine: {entry.machine_name}</span>}
-                      {entry.grinder_name && <span className="break-words">Grinder: {entry.grinder_name}</span>}
-                      {entry.basket_name && <span className="break-words">Basket: {entry.basket_name}</span>}
+                      {entry.machine_name && <span className="break-words">{COPY.brewLogList.machine} {entry.machine_name}</span>}
+                      {entry.grinder_name && <span className="break-words">{COPY.brewLogList.grinder} {entry.grinder_name}</span>}
+                      {entry.basket_name && <span className="break-words">{COPY.brewLogList.basket} {entry.basket_name}</span>}
                     </div>
                   )}
                 </GlassCard>
@@ -171,14 +172,14 @@ export default function BrewLogList() {
           className="btn-circle fixed right-[max(1rem,env(safe-area-inset-right))] bottom-[var(--mobile-fab-offset)] md:bottom-6 z-50"
           size="lg"
           variant="primary"
-          aria-label="Add shot"
+          aria-label={COPY.brewLogList.addShot}
           icon={(
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
           )}
         >
-          <span className="sr-only">Add shot</span>
+          <span className="sr-only">{COPY.brewLogList.addShot}</span>
         </Button>,
         document.body
       )}

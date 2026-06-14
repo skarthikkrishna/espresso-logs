@@ -9,6 +9,7 @@ import AddBeanModal from '../components/AddBeanModal'
 import type { CatalogItem } from '../types/entities'
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
 import { Badge, Button, EmptyState, GlassCard, Input, PageHeader, SectionHeading } from '../components/ui'
+import { COPY } from '../copy'
 import { useKaapiMotion } from '../lib/motion'
 
 function CatalogCardFigure({ item }: { item: CatalogItem }) {
@@ -88,7 +89,7 @@ export default function CatalogList() {
   if (isError) return (
     <div className="p-4 md:p-6">
       <GlassCard variant="content" padding="lg" className="text-center">
-        <p className="font-medium">Couldn't load catalog</p>
+        <p className="font-medium">{COPY.catalog.listLoadError}</p>
         <p className="mt-1 text-sm text-[var(--kaapi-content-muted)]">{(error as Error)?.message}</p>
         <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-3">
           Retry
@@ -100,15 +101,15 @@ export default function CatalogList() {
   return (
     <div ref={routeRef} data-testid="motion-route-boundary" className="p-4 md:p-6 space-y-6">
       <PageHeader title="Catalog" subtitle="BEANS / INVENTORY" />
-      <SectionHeading title="Coffee library" testId="catalog-section-heading" />
+      <SectionHeading title={COPY.catalog.library} testId="catalog-section-heading" />
 
       {data?.length === 0 ? (
         <div data-testid="fresh-household-empty-catalog">
           <EmptyState
             icon={<span aria-hidden="true" className="text-3xl">☕</span>}
-            title="No beans in catalog yet"
-            description="Add the first coffee this household brews. Fresh households start empty."
-            action={<Button variant="primary" size="sm" onClick={() => setModalOpen(true)}>Add coffee</Button>}
+            title={COPY.catalog.emptyTitle}
+            description={COPY.catalog.emptyBody}
+            action={<Button variant="primary" size="sm" onClick={() => setModalOpen(true)}>{COPY.catalog.addCoffee}</Button>}
           />
         </div>
       ) : (
@@ -116,15 +117,15 @@ export default function CatalogList() {
           <div className="kaapi-content-surface max-w-md p-2.5">
             <Input
               type="text"
-              placeholder="Search roaster or bean…"
+              placeholder={COPY.catalog.searchPlaceholder}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              aria-label="Search catalog"
+              aria-label={COPY.catalog.searchAria}
             />
           </div>
           {!filtered.length ? (
             <GlassCard variant="content">
-              <p className="text-sm text-[var(--kaapi-content-muted)]">No results found.</p>
+              <p className="text-sm text-[var(--kaapi-content-muted)]">{COPY.catalog.noResults}</p>
             </GlassCard>
           ) : (
             <div ref={cardListRef} data-testid="catalog-grid" className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">

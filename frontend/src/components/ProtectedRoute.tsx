@@ -5,6 +5,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import StandaloneHouseholdShell from './StandaloneHouseholdShell'
+import { COPY } from '../copy'
 
 interface ProtectedRouteProps {
   requiredRole?: 'admin' | 'member'
@@ -19,9 +20,9 @@ export default function ProtectedRoute({ requiredRole }: ProtectedRouteProps) {
   if (isRouteLoading) {
     return (
       <StandaloneHouseholdShell background="bg-household-transition" align="center">
-        <div className="glass-card card-bevel p-6 text-center" role="status" aria-live="polite">
-          <span className="loading loading-spinner loading-lg text-primary" aria-label="Loading" />
-          <p className="mt-3 text-sm text-base-content/70">Loading household context…</p>
+        <div className="kaapi-content-surface p-6 text-center" role="status" aria-live="polite">
+          <span className="loading loading-spinner loading-lg text-primary" aria-label={COPY.loadingState.aria} />
+          <p className="mt-3 text-sm text-[var(--kaapi-content-muted)]">{COPY.loadingState.householdContext}</p>
         </div>
       </StandaloneHouseholdShell>
     )

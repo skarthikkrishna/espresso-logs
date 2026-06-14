@@ -18,6 +18,7 @@ import { Badge, Button, FormField, GlassCard, Input, PageHeader, SectionHeading,
 import { ROAST_LEVELS } from '../utils/roastLevels'
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
 import { useKaapiMotion } from '../lib/motion'
+import { COPY } from '../copy'
 
 export default function CatalogDetail() {
   const { id } = useParams<{ id: string }>()
@@ -111,7 +112,7 @@ export default function CatalogDetail() {
   if (isError) return (
     <div className="p-4">
       <GlassCard variant="content" padding="lg" className="text-center">
-        <p className="font-medium">Couldn't load coffee details</p>
+        <p className="font-medium">{COPY.catalog.detailLoadError}</p>
         <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-3">Retry</Button>
       </GlassCard>
     </div>
@@ -171,7 +172,7 @@ export default function CatalogDetail() {
             disabled={imageUploading || editSaving}
             size="xs"
             className="absolute -bottom-2 -right-2"
-            aria-label="Replace image"
+            aria-label={COPY.catalog.replaceImage}
           >
             {imageUploading ? <span className="loading loading-spinner loading-xs" /> : 'Replace'}
           </Button>
@@ -291,7 +292,7 @@ export default function CatalogDetail() {
                   value={editRoastLevel}
                   onChange={(e) => setEditRoastLevel(e.target.value)}
                 >
-                  <option value="">Select…</option>
+                  <option value="">{COPY.catalog.selectPlaceholder}</option>
                   {ROAST_LEVELS.map((r) => (
                     <option key={r} value={r}>{r}</option>
                   ))}
@@ -359,10 +360,10 @@ export default function CatalogDetail() {
                 rel="noopener noreferrer"
                 className="btn btn-sm btn-outline btn-bevel"
               >
-                View on roaster website ↗
+                {COPY.catalog.viewOnRoaster}
               </a>
             ) : (
-              <p className="text-sm text-[var(--kaapi-content-muted)]">No roaster link saved.</p>
+              <p className="text-sm text-[var(--kaapi-content-muted)]">{COPY.catalog.noRoasterLink}</p>
             )}
           </div>
         </GlassCard>
@@ -371,11 +372,11 @@ export default function CatalogDetail() {
       {/* Bags */}
       <section className="space-y-3">
         <SectionHeading
-          title="Bags"
+          title={COPY.catalog.bags}
           testId="catalog-section-heading"
           actions={(
             <Button onClick={openAddBagForm} size="xs">
-              + Add bag
+              {COPY.catalog.addBag}
             </Button>
           )}
         />
@@ -409,7 +410,7 @@ export default function CatalogDetail() {
                     />
                   </FormField>
                   <p id="add-bag-roast-level-locked-note" className="mt-1 text-xs text-[var(--kaapi-content-muted)]">
-                    Roast level set by catalog: {lockedCatalogRoast}
+                    {COPY.catalog.roastLockedPrefix} {lockedCatalogRoast}
                   </p>
                 </div>
               ) : (
@@ -422,7 +423,7 @@ export default function CatalogDetail() {
                       onChange={(e) => setBagRoastLevel(e.target.value)}
                       required
                     >
-                      <option value="">Select…</option>
+                      <option value="">{COPY.catalog.selectPlaceholder}</option>
                       {ROAST_LEVELS.map((r) => (
                         <option key={r} value={r}>{r}</option>
                       ))}
@@ -468,7 +469,9 @@ export default function CatalogDetail() {
         )}
 
         {bags.length === 0 ? (
-          <p className="text-sm text-amber-200/60">No bags in inventory.</p>
+          <GlassCard variant="content">
+            <p className="text-sm text-[var(--kaapi-content-muted)]">{COPY.catalog.noBags}</p>
+          </GlassCard>
         ) : (
           <div ref={cardListRef} data-testid="motion-card-list" className="space-y-2">
             {bags.map((bag) => {
@@ -504,9 +507,11 @@ export default function CatalogDetail() {
 
       {/* Brew history */}
       <section className="space-y-3">
-        <SectionHeading title="Brew history" testId="catalog-section-heading" />
+        <SectionHeading title={COPY.catalog.brewHistory} testId="catalog-section-heading" />
         {recent_shots.length === 0 ? (
-          <p className="text-sm text-amber-200/60">No shots logged yet.</p>
+          <GlassCard variant="content">
+            <p className="text-sm text-[var(--kaapi-content-muted)]">{COPY.catalog.noShots}</p>
+          </GlassCard>
         ) : (
           <GlassCard variant="content" padding="none">
             <div className="overflow-x-auto">
@@ -514,8 +519,8 @@ export default function CatalogDetail() {
                 <thead className="text-xs text-[var(--kaapi-content-muted)]">
                   <tr>
                     <th>Date</th>
-                    <th>Dose → yield</th>
-                    <th>Time</th>
+                    <th>{COPY.catalog.doseYield}</th>
+                    <th>{COPY.catalog.time}</th>
                   </tr>
                 </thead>
                 <tbody>

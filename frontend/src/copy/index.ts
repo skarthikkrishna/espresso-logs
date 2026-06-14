@@ -7,10 +7,7 @@ export {
   isApprovedCopy,
   type LockedLabelKey,
 } from './registry'
-export {
-  COPY_ATTRIBUTES,
-  auditCopySource,
-  isMeaningfulCopy,
-  type CopyViolation,
-  type CopyViolationKind,
-} from './audit'
+
+// `./audit` is intentionally NOT re-exported here: it imports the TypeScript
+// compiler, so re-exporting it would pull ~3.4 MB into every production bundle
+// that imports COPY. Audit consumers (tests only) import from './audit' directly.

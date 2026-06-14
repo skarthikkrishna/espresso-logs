@@ -105,6 +105,14 @@
   --kaapi-content-border: rgba(120, 53, 15, 0.18);
   --kaapi-content-content: #2d1608;
   --kaapi-content-muted: #6b4a2f;
+  /* On-light semantic text (spec-043 T022). DaisyUI --color-error #ef4444 ≈ 3.54:1
+     and --color-warning #f59e0b ≈ 2.02:1 on #fff7ed both fail WCAG AA for normal
+     text. These darker tints restore AA on the cream content surface while staying
+     unmistakably red / amber: error #b91c1c ≈ 6.09:1, warning #92400e ≈ 6.68:1
+     (both ≥ 4.5:1 normal, ≥ 3:1 large). Scoped to content surfaces only — the
+     lighter DaisyUI values remain correct on the espresso-dark frame. */
+  --kaapi-content-error: #b91c1c;
+  --kaapi-content-warning: #92400e;
   --kaapi-content-shadow: 0 18px 44px rgba(18, 11, 6, 0.28), 0 2px 8px rgba(18, 11, 6, 0.18), inset 0 1px 0 rgba(255,255,255,0.72);
 
   /* Restrained semantic cool accents — info/status, taste zones, chart depth,
@@ -545,106 +553,6 @@ h1, h2, .font-display {
   padding-bottom: max(env(safe-area-inset-bottom), 1rem);
 }
 
-/* ── Liquid Glass Card — Catalog & Hardware cards ──────────────────────── */
-.liquid-card {
-  position: relative;
-  background: rgba(14, 9, 5, 0.50);
-  border: 1px solid rgba(200, 134, 10, 0.10);
-  border-radius: var(--bevel-radius);
-  box-shadow: var(--bevel-shadow-raised);
-  overflow: hidden;
-  cursor: pointer;
-  transition: box-shadow 200ms ease, border-color 200ms ease, transform 150ms ease;
-  text-decoration: none;
-  display: block;
-}
-.liquid-card:hover {
-  box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(200, 134, 10, 0.25),
-    inset 0 1px 0 rgba(255, 200, 80, 0.06);
-  border-color: rgba(200, 134, 10, 0.30);
-  transform: translateY(-1px);
-}
-
-.liquid-card-figure {
-  height: 11rem;
-  overflow: hidden;
-  border-radius: var(--bevel-radius) var(--bevel-radius) 0 0;
-  background: linear-gradient(
-    180deg,
-    rgba(28, 20, 12, 0.92) 0%,
-    rgba(14, 10, 6, 0.96) 100%
-  );
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  user-select: none;
-  box-shadow: inset 0 -12px 24px rgba(4, 2, 1, 0.70);
-}
-
-.liquid-card-figure.hardware {
-  height: 10rem;
-  background: linear-gradient(
-    180deg,
-    rgba(22, 16, 10, 0.94) 0%,
-    rgba(12, 8, 4, 0.97) 100%
-  );
-}
-
-.liquid-card-monogram {
-  font-family: var(--font-display, 'Playfair Display', Georgia, serif);
-  font-size: 3rem;
-  font-weight: 700;
-  color: rgba(253, 230, 138, 0.40);
-  transition: color 150ms ease;
-  line-height: 1;
-}
-.liquid-card:hover .liquid-card-monogram {
-  color: rgba(253, 230, 138, 0.62);
-}
-
-.liquid-card-icon {
-  width: 4rem;
-  height: 4rem;
-  color: rgba(200, 190, 180, 0.55);
-  transition: color 150ms ease;
-}
-.liquid-card:hover .liquid-card-icon {
-  color: rgba(220, 210, 200, 0.75);
-}
-
-.liquid-card-body {
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-/* ── Frosted brew-log row cards ─────────────────────────────────────────── */
-.frosted-brew-card {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: var(--bevel-radius);
-  background: rgba(14, 9, 4, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: background 150ms ease, border-color 150ms ease;
-  cursor: pointer;
-  text-align: left;
-}
-.frosted-brew-card:hover {
-  background: rgba(14, 9, 4, 0.60);
-  border-color: rgba(200, 134, 10, 0.20);
-}
-
-@media (min-width: 768px) {
-  .frosted-brew-card {
-    padding: 1.25rem 1.5rem;
-  }
-}
-
 /* Sentence-case override for DaisyUI file-input placeholder text */
 input[type="file"]::file-selector-button {
   text-transform: none;
@@ -771,6 +679,22 @@ textarea.input-styled:focus {
 .kaapi-content-surface textarea.input-styled:focus {
   outline: none;
   box-shadow: var(--input-focus-ring);
+}
+
+/* spec-043 T022: on-light semantic text. The cream content surface ships in two
+   forms — the .kaapi-content-surface utility and the .glass-card--content
+   primitive variant — both at #fff7ed. Descendant selectors (0,2,0) win over the
+   DaisyUI .text-error / .text-warning utilities (0,1,0) only inside those light
+   surfaces, so FormField errors and semantic eyebrows meet WCAG AA on cream
+   (#b91c1c ≈ 6.09:1, #92400e ≈ 6.68:1) while error/warning text on the
+   espresso-dark frame keeps the lighter DaisyUI values. */
+.kaapi-content-surface .text-error,
+.glass-card--content .text-error {
+  color: var(--kaapi-content-error);
+}
+.kaapi-content-surface .text-warning,
+.glass-card--content .text-warning {
+  color: var(--kaapi-content-warning);
 }
 
 /* ── Bevel card surface ──────────────────────────────────────────────────── */

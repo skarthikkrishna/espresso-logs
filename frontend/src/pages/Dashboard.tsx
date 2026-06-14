@@ -60,7 +60,7 @@ export default function Dashboard() {
   if (isError) return (
     <div className="p-4 md:p-6">
       <GlassCard variant="content" padding="lg" className="text-center">
-        <p className="font-medium">Couldn't load dashboard</p>
+        <p className="font-medium">{COPY.dashboard.loadError}</p>
         <p className="mt-1 text-sm text-[var(--kaapi-content-muted)]">{(error as Error)?.message}</p>
         <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-3">
           {COPY.actions.retry}
@@ -88,7 +88,7 @@ export default function Dashboard() {
               </div>
               <div className="kaapi-content-surface kaapi-content-surface--elevated p-3">
                 <p className="text-3xl font-bold">{recentShots.length}</p>
-                <p className="text-xs uppercase tracking-[0.16em] text-[var(--kaapi-content-muted)]">Recent</p>
+                <p className="text-xs uppercase tracking-[0.16em] text-[var(--kaapi-content-muted)]">{COPY.dashboard.recent}</p>
               </div>
               <div className="kaapi-content-surface kaapi-content-surface--elevated p-3">
                 <p className="text-3xl font-bold">{householdCount}</p>
@@ -97,7 +97,7 @@ export default function Dashboard() {
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button variant="primary" onClick={() => navigate('/brew-log/add')}>{LOCKED_LABELS.logAShot}</Button>
-              <Button variant="outline" onClick={() => navigate('/catalog')}>Manage catalog</Button>
+              <Button variant="outline" onClick={() => navigate('/catalog')}>{COPY.dashboard.manageCatalog}</Button>
             </div>
           </div>
           <DashboardHeroMotion maxHeight={240} />
@@ -112,12 +112,12 @@ export default function Dashboard() {
               <div data-testid="fresh-household-empty-dashboard">
                 <EmptyState
                   icon={<span aria-hidden="true" className="text-3xl">☕</span>}
-                  title="No coffee data yet"
-                  description="Add your first bag or import a CSV to start this household with clean data."
+                  title={COPY.dashboard.emptyTitle}
+                  description={COPY.dashboard.emptyBody}
                   action={(
                     <div className="flex flex-col gap-2 sm:flex-row">
-                      <Button variant="primary" size="sm" onClick={() => navigate('/catalog')}>Add your first bag</Button>
-                      <Button variant="outline" size="sm" onClick={() => navigate('/import')}>Import CSV</Button>
+                      <Button variant="primary" size="sm" onClick={() => navigate('/catalog')}>{COPY.dashboard.addFirstBag}</Button>
+                      <Button variant="outline" size="sm" onClick={() => navigate('/import')}>{COPY.dashboard.importCsv}</Button>
                     </div>
                   )}
                 />
@@ -133,7 +133,7 @@ export default function Dashboard() {
                   className="kaapi-motion-card"
                   onClick={() => navigate(`/brew-log/add?bag_id=${encodeURIComponent(bag.bag_id)}`)}
                 >
-                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--kaapi-content-muted)]">Ready to brew</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--kaapi-content-muted)]">{COPY.dashboard.readyToBrew}</p>
                   <p className="mt-2 font-display text-lg font-bold leading-snug">{bag.display_name}</p>
                   {bag.roast_level && <Badge tone="neutral" emphasis="solid" className="mt-3">{bag.roast_level}</Badge>}
                   {bag.days_since_last_shot != null && (
@@ -151,9 +151,9 @@ export default function Dashboard() {
             </div>
           ) : (
             <EmptyState
-              title="No active bags yet"
-              description="Add a bag from your catalog before logging household shots."
-              action={<Button variant="primary" size="sm" onClick={() => navigate('/catalog')}>Go to catalog</Button>}
+              title={COPY.dashboard.noActiveBagsTitle}
+              description={COPY.dashboard.noActiveBagsBody}
+              action={<Button variant="primary" size="sm" onClick={() => navigate('/catalog')}>{COPY.dashboard.goToCatalog}</Button>}
             />
           )}
         </section>
@@ -162,7 +162,7 @@ export default function Dashboard() {
           <SectionHeading title="Recent shots" />
           {!hasRecentShots ? (
             <GlassCard variant="content" className="kaapi-motion-card">
-              <p className="text-sm text-[var(--kaapi-content-muted)]">No shots logged yet.</p>
+              <p className="text-sm text-[var(--kaapi-content-muted)]">{COPY.dashboard.noShots}</p>
             </GlassCard>
           ) : (
             <div className="grid gap-3 md:grid-cols-2">

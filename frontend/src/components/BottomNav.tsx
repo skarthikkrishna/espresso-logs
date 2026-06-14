@@ -3,6 +3,7 @@ import { Link, NavLink } from 'react-router-dom'
 import HouseholdSwitcher from './HouseholdSwitcher'
 import AccessibleDialog from './AccessibleDialog'
 import { useAuth } from '../contexts/AuthContext'
+import { COPY } from '../copy'
 
 interface NavItem {
   path: string
@@ -78,7 +79,7 @@ export default function BottomNav() {
       <nav
         data-testid="bottom-nav"
         className="nav-shell household-bottom-safe fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t px-1 pt-2 lg:hidden"
-        aria-label="Primary"
+        aria-label={COPY.shell.primaryNav}
       >
         {NAV_ITEMS.map((item) => (
           <NavLink

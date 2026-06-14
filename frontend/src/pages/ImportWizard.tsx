@@ -4,6 +4,7 @@ import { submitShot } from '../api/brewLog'
 import { Badge, Button, FormField, GlassCard, PageHeader } from '../components/ui'
 import { useAuth } from '../contexts/AuthContext'
 import { useKaapiMotion } from '../lib/motion'
+import { COPY } from '../copy'
 
 type Step = 1 | 2 | 3
 
@@ -82,7 +83,7 @@ function AlertIcon() {
  */
 function ImportStepper({ step }: { step: Step }) {
   return (
-    <nav aria-label="Import progress">
+    <nav aria-label={COPY.import.progressAria}>
       <ol className="flex items-stretch gap-2">
         {STEP_LABELS.map((label, i) => {
           const n = (i + 1) as Step
@@ -212,9 +213,9 @@ export default function ImportWizard() {
       <div className="mx-auto w-full max-w-5xl space-y-6">
         {/* Header — espresso-dark frame carries household context (shell-owned identity). */}
         <div data-testid="import-household-header">
-          <PageHeader subtitle="IMPORT" title="Bring in your coffee data" />
+          <PageHeader subtitle="IMPORT" title={COPY.import.title} />
           <p className="mt-2 text-sm text-amber-200/70">
-            Importing into: <span className="font-medium text-amber-100">{activeMembership?.household_name ?? 'Current household'}</span>
+            {COPY.import.importingInto} <span className="font-medium text-amber-100">{activeMembership?.household_name ?? 'Current household'}</span>
           </p>
         </div>
 
@@ -226,9 +227,9 @@ export default function ImportWizard() {
           <div className="space-y-6 lg:col-span-2">
             {step === 1 && (
               <div className="kaapi-content-surface space-y-6 p-4 md:p-6">
-                <h2 className="font-display text-lg font-semibold text-[var(--kaapi-content-content)]">Upload file</h2>
+                <h2 className="font-display text-lg font-semibold text-[var(--kaapi-content-content)]">{COPY.import.uploadFile}</h2>
                 <p className="text-sm leading-6 text-[var(--kaapi-content-muted)]">
-                  Choose a CSV exported from your spreadsheet. Kaapi Kadai previews the file first, so you can fix rows before saving anything.
+                  {COPY.import.uploadIntro}
                 </p>
 
                 <div className="space-y-1">
@@ -238,9 +239,9 @@ export default function ImportWizard() {
                     download
                     className="btn btn-outline btn-sm btn-bevel w-full sm:w-auto"
                   >
-                    Download example CSV
+                    {COPY.import.downloadExample}
                   </a>
-                  <p className="text-xs text-[var(--kaapi-content-muted)]">Use this as a starting point; it contains fake sample data only.</p>
+                  <p className="text-xs text-[var(--kaapi-content-muted)]">{COPY.import.exampleNote}</p>
                 </div>
 
                 <FormField label="CSV file" htmlFor="import-csv" required>
@@ -254,7 +255,7 @@ export default function ImportWizard() {
                     aria-describedby="import-csv-hint import-validation-message"
                   />
                   <p id="import-csv-hint" className="mb-2 text-xs text-[var(--kaapi-content-muted)]">
-                    Upload a .csv exported from your spreadsheet. You can preview before anything is saved.
+                    {COPY.import.uploadHint}
                   </p>
                   <div className="input-styled flex flex-col gap-3 rounded-[var(--bevel-radius)] p-3 sm:flex-row sm:items-center sm:justify-between">
                     <span className="truncate text-sm">{selectedFileName}</span>
@@ -266,7 +267,7 @@ export default function ImportWizard() {
                       onMouseDown={(event) => pressFeedback(event.currentTarget)}
                       onClick={() => fileInputRef.current?.click()}
                     >
-                      Choose CSV
+                      {COPY.import.chooseCsv}
                     </Button>
                   </div>
                 </FormField>
@@ -282,14 +283,14 @@ export default function ImportWizard() {
                 {rows.length === 0 ? (
                   <div className="flex flex-col items-center gap-2 rounded-[var(--bevel-radius)] border border-dashed border-[var(--kaapi-content-border)] bg-[var(--kaapi-content-surface-2)] px-4 py-8 text-center">
                     <span className="text-3xl" aria-hidden="true">📄</span>
-                    <p className="font-medium text-[var(--kaapi-content-content)]">Upload a CSV to unlock preview</p>
-                    <p className="text-sm text-[var(--kaapi-content-muted)]">The Preview step becomes available after we detect a header row and at least one data row.</p>
+                    <p className="font-medium text-[var(--kaapi-content-content)]">{COPY.import.unlockPreviewTitle}</p>
+                    <p className="text-sm text-[var(--kaapi-content-muted)]">{COPY.import.unlockPreviewBody}</p>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 rounded-[var(--bevel-radius)] border border-[var(--kaapi-content-border)] bg-[var(--kaapi-content-surface-2)] px-4 py-3">
-                    <Badge tone="success" emphasis="solid" icon={<CheckIcon />}>Ready</Badge>
+                    <Badge tone="success" emphasis="solid" icon={<CheckIcon />}>{COPY.import.ready}</Badge>
                     <span className="text-sm text-[var(--kaapi-content-content)]">
-                      {rows.length} row{rows.length !== 1 ? 's' : ''} ready to review before import.
+                      {COPY.import.readyToReview(rows.length)}
                     </span>
                   </div>
                 )}
@@ -303,8 +304,8 @@ export default function ImportWizard() {
             {step === 2 && (
               <GlassCard variant="content" padding="lg" className="space-y-6">
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                  <h2 className="font-display text-lg font-semibold text-[var(--kaapi-content-content)]">Preview rows</h2>
-                  <p className="text-sm text-[var(--kaapi-content-muted)]">{validRows} valid · {invalidRows} with issues</p>
+                  <h2 className="font-display text-lg font-semibold text-[var(--kaapi-content-content)]">{COPY.import.previewRows}</h2>
+                  <p className="text-sm text-[var(--kaapi-content-muted)]">{COPY.import.validityCount(validRows, invalidRows)}</p>
                 </div>
 
                 {/* Single responsive structure: stacked rows on mobile (no horizontal scroll),
@@ -313,9 +314,9 @@ export default function ImportWizard() {
                 <div className="overflow-hidden rounded-[var(--bevel-radius)] border border-[var(--kaapi-content-border)]">
                   <div className="hidden bg-[var(--kaapi-content-surface-2)] px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-[var(--kaapi-content-muted)] md:grid md:grid-cols-[3rem_8rem_1fr_auto] md:gap-3">
                     <span>#</span>
-                    <span>Type</span>
-                    <span>Summary</span>
-                    <span>Status</span>
+                    <span>{COPY.import.colType}</span>
+                    <span>{COPY.import.colSummary}</span>
+                    <span>{COPY.import.colStatus}</span>
                   </div>
                   {rows.map((row, i) => {
                     const ok = row.errors.length === 0
@@ -325,7 +326,7 @@ export default function ImportWizard() {
                         className="grid grid-cols-1 gap-2 border-t border-[var(--kaapi-content-border)] bg-[var(--kaapi-content-surface)] px-4 py-3 first:border-t-0 md:grid-cols-[3rem_8rem_1fr_auto] md:items-center md:gap-3 md:first:border-t-0"
                       >
                         <span className="text-xs font-medium text-[var(--kaapi-content-muted)] md:text-sm">
-                          <span className="md:hidden">Row </span>{i + 1}
+                          <span className="md:hidden">{COPY.import.rowLabel}{' '}</span>{i + 1}
                         </span>
                         <div>
                           <Badge tone="neutral" emphasis="solid" className="capitalize">{row.type}</Badge>
@@ -333,9 +334,9 @@ export default function ImportWizard() {
                         <p className="min-w-0 break-words text-sm text-[var(--kaapi-content-content)] md:truncate">{rowSummary(row)}</p>
                         <div>
                           {ok ? (
-                            <Badge tone="success" emphasis="solid" icon={<CheckIcon />}>Ready</Badge>
+                            <Badge tone="success" emphasis="solid" icon={<CheckIcon />}>{COPY.import.ready}</Badge>
                           ) : (
-                            <Badge tone="danger" emphasis="solid" icon={<AlertIcon />}>Needs fix</Badge>
+                            <Badge tone="danger" emphasis="solid" icon={<AlertIcon />}>{COPY.import.needsFix}</Badge>
                           )}
                         </div>
                         {!ok && (
@@ -354,7 +355,7 @@ export default function ImportWizard() {
                     {`Import ${validRows} valid rows`}
                   </Button>
                 </div>
-                <p className="text-sm leading-6 text-[var(--kaapi-content-muted)]">Rows with issues are skipped so you can fix them in your CSV and try again.</p>
+                <p className="text-sm leading-6 text-[var(--kaapi-content-muted)]">{COPY.import.skipNote}</p>
               </GlassCard>
             )}
 
@@ -363,18 +364,18 @@ export default function ImportWizard() {
                 <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-700 text-white" aria-hidden="true">
                   <CheckIcon />
                 </span>
-                <p className="font-display text-2xl font-bold text-[var(--kaapi-content-content)]">Import complete</p>
+                <p className="font-display text-2xl font-bold text-[var(--kaapi-content-content)]">{COPY.import.complete}</p>
                 <p className="text-sm leading-6 text-[var(--kaapi-content-muted)]">
-                  {results.success} row{results.success !== 1 ? 's' : ''} imported successfully{results.errors > 0 && `, ${results.errors} failed`}.
+                  {COPY.import.completeSummary(results.success, results.errors)}
                 </p>
-                <Button variant="primary" onClick={() => { setStep(1); setRows([]); setSelectedFileName('No file selected') }}>Import more</Button>
+                <Button variant="primary" onClick={() => { setStep(1); setRows([]); setSelectedFileName('No file selected') }}>{COPY.import.importMore}</Button>
               </GlassCard>
             )}
           </div>
 
           <aside className="lg:col-span-1">
             <GlassCard variant="content" padding="lg" className="space-y-4">
-              <h2 className="font-display text-lg font-semibold text-[var(--kaapi-content-content)]">What each column means</h2>
+              <h2 className="font-display text-lg font-semibold text-[var(--kaapi-content-content)]">{COPY.import.columnsTitle}</h2>
               <div ref={guidanceRef} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
                 {FIELD_GUIDANCE.map((group) => (
                   <div key={group.group} className="space-y-3">
@@ -382,9 +383,9 @@ export default function ImportWizard() {
                     {group.items.map(([label, what, why, where, raw, example]) => (
                       <div key={raw} data-testid="import-field-guidance" className="rounded-[var(--bevel-radius)] border border-[var(--kaapi-content-border)] bg-[var(--kaapi-content-surface-2)] p-4">
                         <p className="font-medium text-[var(--kaapi-content-content)]">{label} <span className="font-normal text-[var(--kaapi-content-muted)]">— {what}.</span></p>
-                        <p className="mt-1 text-sm leading-6 text-[var(--kaapi-content-muted)]">{why}. Find it in {where}.</p>
+                        <p className="mt-1 text-sm leading-6 text-[var(--kaapi-content-muted)]">{COPY.import.fieldWhere(why, where)}</p>
                         <p className="mt-2 text-xs text-[var(--kaapi-content-muted)]">
-                          <code className="rounded border border-[var(--kaapi-content-border)] bg-[var(--kaapi-content-surface)] px-1.5 py-0.5 font-mono text-[var(--kaapi-content-content)]">{raw}</code> Example: <span className="text-[var(--kaapi-content-content)]">{example}</span>
+                          <code className="rounded border border-[var(--kaapi-content-border)] bg-[var(--kaapi-content-surface)] px-1.5 py-0.5 font-mono text-[var(--kaapi-content-content)]">{raw}</code> {COPY.import.example} <span className="text-[var(--kaapi-content-content)]">{example}</span>
                         </p>
                       </div>
                     ))}

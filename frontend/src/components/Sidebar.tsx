@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import HouseholdSwitcher from './HouseholdSwitcher'
 import { useAuth } from '../contexts/AuthContext'
+import { COPY } from '../copy'
 
 interface NavItem {
   path: string
@@ -69,12 +70,12 @@ export default function Sidebar() {
           aria-hidden="true"
           data-testid="brand-mark"
         />
-        <span className="text-xl font-display font-bold text-amber-400">Kaapi Kadai</span>
+        <span className="text-xl font-display font-bold text-amber-400">{COPY.shell.brand}</span>
       </div>
 
       <HouseholdSwitcher variant="desktop" />
 
-      <nav className="flex-1 space-y-1 px-3" aria-label="Primary">
+      <nav className="flex-1 space-y-1 px-3" aria-label={COPY.shell.primaryNav}>
         {NAV_ITEMS.map((item) => (
           <NavLink
             key={item.path}

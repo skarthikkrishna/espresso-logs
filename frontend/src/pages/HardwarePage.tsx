@@ -11,6 +11,7 @@ import type { HardwareDetail, HardwareItem } from '../types/entities'
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
 import { householdKeys } from '../api/queryKeys'
 import { useKaapiMotion } from '../lib/motion'
+import { COPY } from '../copy'
 
 function HardwareIcon({ category, className = 'h-16 w-16' }: { category: string; className?: string }) {
   const svgProps = {
@@ -78,7 +79,7 @@ function HardwarePhotoCard({ item, householdId }: { item: HardwareItem; househol
       queryClient.invalidateQueries({ queryKey: householdKeys.hardware(householdId), refetchType: 'inactive' })
       setSuccess(true)
     } catch {
-      setError('Image upload failed. Please try again.')
+      setError(COPY.hardware.imageUploadFailed)
     } finally {
       setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -87,7 +88,7 @@ function HardwarePhotoCard({ item, householdId }: { item: HardwareItem; househol
 
   return (
     <GlassCard variant="content" className="space-y-4">
-      <h3 className="text-sm font-semibold">Photo</h3>
+      <h3 className="text-sm font-semibold">{COPY.hardware.photo}</h3>
       <div className="overflow-hidden rounded-[var(--bevel-radius)] border border-[var(--kaapi-content-border)] bg-[var(--kaapi-content-surface-2)]">
         {imagePath ? (
           <img
@@ -126,11 +127,11 @@ function HardwarePhotoCard({ item, householdId }: { item: HardwareItem; househol
           }}
         />
         {uploading && (
-          <p role="status" className="mt-2 text-xs text-[var(--kaapi-content-muted)]">Uploading image…</p>
+          <p role="status" className="mt-2 text-xs text-[var(--kaapi-content-muted)]">{COPY.hardware.uploadingImage}</p>
         )}
         {success && !uploading && (
           <p role="status" data-testid="hardware-image-success" className="mt-2 text-xs text-[var(--kaapi-content-muted)]">
-            Image updated.
+            {COPY.hardware.imageUpdated}
           </p>
         )}
         {error && (
@@ -221,7 +222,7 @@ export default function HardwarePage() {
   if (isError) return (
     <div className="p-4 md:p-6">
       <GlassCard variant="content" padding="lg" className="text-center">
-        <p className="text-lg font-semibold">Couldn't load hardware</p>
+        <p className="text-lg font-semibold">{COPY.hardware.loadError}</p>
         <p className="mt-2 text-sm text-[var(--kaapi-content-muted)]">{(error as Error)?.message}</p>
         <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-4">Retry</Button>
       </GlassCard>
@@ -248,8 +249,8 @@ export default function HardwarePage() {
           <div data-testid="fresh-household-empty-hardware">
             <EmptyState
               icon={<HardwareIcon category="Machine" />}
-              title="No hardware yet"
-              description="Add the machine, grinder, basket, and storage this household uses. Fresh households start empty."
+              title={COPY.hardware.emptyTitle}
+              description={COPY.hardware.emptyBody}
               action={<Button variant="primary" size="sm" onClick={() => setAddModal({ open: true })}>Add hardware</Button>}
             />
           </div>
@@ -273,7 +274,7 @@ export default function HardwarePage() {
                 onClick={closeDetail}
                 className="px-0 text-amber-300 hover:text-amber-200"
               >
-                ← Back to hardware
+                {COPY.hardware.backToHardware}
               </Button>
 
               {/* Header block — espresso-dark chrome; operational content sits on the light cards below. */}
@@ -297,7 +298,7 @@ export default function HardwarePage() {
               {/* Maintenance — Machine + Grinder only */}
               {selectedItem.category !== 'Basket' && selectedItem.category !== 'Storage' && (
                 <GlassCard variant="content" className="space-y-3">
-                  <h3 className="text-sm font-semibold">Maintenance log</h3>
+                  <h3 className="text-sm font-semibold">{COPY.hardware.maintenanceLog}</h3>
                   {detail?.maintenance?.length ? (
                     <div>
                       {detail.maintenance.map((m) => (
@@ -311,7 +312,7 @@ export default function HardwarePage() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-[var(--kaapi-content-muted)]">No maintenance records.</p>
+                    <p className="text-sm text-[var(--kaapi-content-muted)]">{COPY.hardware.noMaintenance}</p>
                   )}
                 </GlassCard>
               )}
@@ -325,10 +326,10 @@ export default function HardwarePage() {
                 onClick={closeDetail}
                 className="px-0 text-amber-300 hover:text-amber-200"
               >
-                ← Back to hardware
+                {COPY.hardware.backToHardware}
               </Button>
               <GlassCard variant="content" padding="lg" className="text-center">
-                <p className="text-sm text-[var(--kaapi-content-muted)]">This hardware item is no longer available.</p>
+                <p className="text-sm text-[var(--kaapi-content-muted)]">{COPY.hardware.unavailable}</p>
               </GlassCard>
             </div>
           )}
@@ -348,7 +349,7 @@ export default function HardwarePage() {
                       aria-label={`Add ${cat}`}
                       className="text-amber-300 hover:text-amber-200"
                     >
-                      Add
+                      {COPY.hardware.add}
                     </Button>
                   )}
                 />
@@ -402,7 +403,7 @@ export default function HardwarePage() {
                       <div className="min-w-0 p-4">
                         <Badge tone="neutral" emphasis="solid">{item.category}</Badge>
                         <h3 title={item.name} className="mt-3 truncate font-display text-base font-bold leading-snug text-[var(--kaapi-content-content)]">{item.name}</h3>
-                        <p className="mt-1 text-xs text-[var(--kaapi-content-muted)]">Select for details and maintenance.</p>
+                        <p className="mt-1 text-xs text-[var(--kaapi-content-muted)]">{COPY.hardware.selectHint}</p>
                       </div>
                     </GlassCard>
                   ))}

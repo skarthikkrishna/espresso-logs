@@ -15,6 +15,8 @@ import { Button, FormField, Input, PageHeader, Select, Textarea, ActionExpander 
 import { useKaapiMotion } from '../lib/motion'
 import { COPY } from '../copy'
 
+const ELIGIBILITY_OPTIONS = ['Reject', 'Passable', 'Good Espresso', 'God Shot'] as const
+
 export default function BrewLogAdd() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -222,8 +224,8 @@ export default function BrewLogAdd() {
   if (invError) return (
     <div className="p-4 md:p-6">
       <div className="kaapi-content-surface mx-auto w-full max-w-md p-6 text-center">
-        <p className="font-medium">Couldn't load your beans</p>
-        <p className="text-[var(--kaapi-content-muted)] text-sm mt-1">Check your connection and try again.</p>
+        <p className="font-medium">{COPY.brewLogAdd.loadError}</p>
+        <p className="text-[var(--kaapi-content-muted)] text-sm mt-1">{COPY.brewLogAdd.loadErrorBody}</p>
         <Button
           variant="outline"
           size="sm"
@@ -239,7 +241,7 @@ export default function BrewLogAdd() {
   return (
     <div ref={routeRef} data-testid="motion-route-boundary" className="p-4 md:p-6">
       <div className="mx-auto w-full max-w-4xl">
-        <PageHeader title="Add shot" />
+        <PageHeader title={COPY.brewLogAdd.title} />
 
         <form data-testid="brew-log-add-form" onSubmit={handleSubmit} className="kaapi-content-surface mt-4 p-4 md:p-6 space-y-4">
           <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:gap-6 lg:items-start">
@@ -257,7 +259,7 @@ export default function BrewLogAdd() {
             }}
             required
           >
-            <option value="">Select bag…</option>
+            <option value="">{COPY.brewLogAdd.selectBag}</option>
             {inventory?.map((bag) => (
               <option key={bag.bag_id} value={bag.bag_id}>
                 {bag.display_name}
@@ -265,7 +267,7 @@ export default function BrewLogAdd() {
             ))}
           </Select>
           {requestedBagId && !inventory && (
-            <p className="text-xs text-[var(--kaapi-content-muted)] mt-1">Checking selected bag from Home…</p>
+            <p className="text-xs text-[var(--kaapi-content-muted)] mt-1">{COPY.brewLogAdd.checkingBag}</p>
           )}
           {bagParamNotice && (
             <p role="status" className="text-xs text-[var(--kaapi-content-muted)] mt-1">{bagParamNotice}</p>
@@ -313,12 +315,12 @@ export default function BrewLogAdd() {
             <FormField label="Basket" htmlFor="brew-log-basket">
               {hardwareIsLoading && (
                 <Select id="brew-log-basket" disabled>
-                  <option>Loading baskets…</option>
+                  <option>{COPY.brewLogAdd.loadingBaskets}</option>
                 </Select>
               )}
               {hardwareIsSuccess && baskets.length === 0 && (
                 <Select id="brew-log-basket" disabled>
-                  <option>No baskets found</option>
+                  <option>{COPY.brewLogAdd.noBaskets}</option>
                 </Select>
               )}
               {hardwareIsSuccess && baskets.length > 0 && (
@@ -327,7 +329,7 @@ export default function BrewLogAdd() {
                   value={basketId}
                   onChange={e => { dirtyFields.current.add('basket'); setBasketId(e.target.value) }}
                 >
-                  <option value="">Select basket…</option>
+                  <option value="">{COPY.brewLogAdd.selectBasket}</option>
                   {baskets.map(b => (
                     <option key={b.hardware_id} value={b.hardware_id}>{b.name}</option>
                   ))}
@@ -343,11 +345,10 @@ export default function BrewLogAdd() {
                 onChange={e => setEligibility(e.target.value)}
                 required
               >
-                <option value="">Select…</option>
-                <option value="Reject">Reject</option>
-                <option value="Passable">Passable</option>
-                <option value="Good Espresso">Good Espresso</option>
-                <option value="God Shot">God Shot</option>
+                <option value="">{COPY.brewLogAdd.selectPlaceholder}</option>
+                {ELIGIBILITY_OPTIONS.map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
               </Select>
             </FormField>
           </div>
@@ -358,7 +359,7 @@ export default function BrewLogAdd() {
           <div className="mt-6 lg:mt-0 min-w-0">
             <div className="form-control">
               <p id="extraction-compass-label" className="label">
-                <span className="label-text text-sm font-medium">Extraction compass</span>
+                <span className="label-text text-sm font-medium">{COPY.brewLogAdd.extractionCompass}</span>
               </p>
               <div
                 className="rounded-[var(--bevel-radius)] border border-[var(--glass-border)] bg-[var(--kaapi-frame-surface)] p-3 w-full"
@@ -399,7 +400,7 @@ export default function BrewLogAdd() {
                 onChange={e => setMachineId(e.target.value)}
                 disabled={hardwareIsLoading}
               >
-                <option value="">Select machine…</option>
+                <option value="">{COPY.brewLogAdd.selectMachine}</option>
                 {machines.map(m => (
                   <option key={m.hardware_id} value={m.hardware_id}>{m.name}</option>
                 ))}
@@ -412,7 +413,7 @@ export default function BrewLogAdd() {
                 onChange={e => setGrinderId(e.target.value)}
                 disabled={hardwareIsLoading}
               >
-                <option value="">Select grinder…</option>
+                <option value="">{COPY.brewLogAdd.selectGrinder}</option>
                 {grinders.map(g => (
                   <option key={g.hardware_id} value={g.hardware_id}>{g.name}</option>
                 ))}
@@ -440,7 +441,7 @@ export default function BrewLogAdd() {
                 onChange={e => setStorageMethod(e.target.value)}
                 disabled={hardwareIsLoading}
               >
-                <option value="">Select storage…</option>
+                <option value="">{COPY.brewLogAdd.selectStorage}</option>
                 {storageItems.map(h => (
                   <option key={h.hardware_id} value={h.name}>{h.name}</option>
                 ))}
@@ -460,7 +461,7 @@ export default function BrewLogAdd() {
         </div>
 
         {mutation.isError && (
-          <p className="text-error text-sm">Failed to save shot. Please try again.</p>
+          <p className="text-error text-sm">{COPY.brewLogAdd.saveError}</p>
         )}
 
         <Button
@@ -471,7 +472,7 @@ export default function BrewLogAdd() {
           loading={mutation.isPending}
           loadingText="Saving…"
         >
-          Log shot
+          {COPY.brewLogAdd.submit}
         </Button>
       </form>
       </div>
