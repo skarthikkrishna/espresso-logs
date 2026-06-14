@@ -11,6 +11,45 @@ import { useHouseholdQueryScope } from '../contexts/AuthContext'
 import { Badge, Button, EmptyState, GlassCard, Input, PageHeader, SectionHeading } from '../components/ui'
 import { useKaapiMotion } from '../lib/motion'
 
+function CatalogCardFigure({ item }: { item: CatalogItem }) {
+  const monogram = ((item.roaster || item.bean_name || '?').slice(0, 2)).toUpperCase()
+  return (
+    <div className="relative aspect-[4/3] w-full overflow-hidden bg-[var(--kaapi-content-surface-2)]">
+      {item.image_path ? (
+        <>
+          <img
+            src={item.image_path}
+            alt={item.bean_name}
+            className="h-full w-full object-cover"
+            onError={(e) => {
+              const img = e.currentTarget
+              img.style.display = 'none'
+              const mono = img.nextElementSibling as HTMLElement | null
+              if (mono?.dataset.monogram) mono.style.display = 'flex'
+            }}
+          />
+          <span
+            data-monogram="true"
+            aria-hidden="true"
+            className="absolute inset-0 items-center justify-center font-display text-3xl font-bold text-[var(--kaapi-content-muted)]"
+            style={{ display: 'none' }}
+          >
+            {monogram}
+          </span>
+        </>
+      ) : (
+        <span
+          data-monogram="true"
+          aria-hidden="true"
+          className="flex h-full w-full items-center justify-center font-display text-3xl font-bold text-[var(--kaapi-content-muted)]"
+        >
+          {monogram}
+        </span>
+      )}
+    </div>
+  )
+}
+
 export default function CatalogList() {
   const [search, setSearch] = useState('')
   const queryClient = useQueryClient()
@@ -48,10 +87,10 @@ export default function CatalogList() {
   if (isLoading) return <LoadingSpinner />
   if (isError) return (
     <div className="p-4 md:p-6">
-      <GlassCard padding="lg" className="text-center">
-        <p className="font-medium text-amber-200">Couldn't load catalog</p>
-        <p className="mt-1 text-sm text-amber-400/70">{(error as Error)?.message}</p>
-        <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-3 border-amber-600 text-amber-200">
+      <GlassCard variant="content" padding="lg" className="text-center">
+        <p className="font-medium">Couldn't load catalog</p>
+        <p className="mt-1 text-sm text-[var(--kaapi-content-muted)]">{(error as Error)?.message}</p>
+        <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-3">
           Retry
         </Button>
       </GlassCard>
@@ -74,19 +113,18 @@ export default function CatalogList() {
         </div>
       ) : (
         <>
-          <GlassCard padding="sm" className="max-w-md">
+          <div className="kaapi-content-surface max-w-md p-2.5">
             <Input
               type="text"
               placeholder="Search roaster or bean…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               aria-label="Search catalog"
-              className="placeholder-amber-200/40"
             />
-          </GlassCard>
+          </div>
           {!filtered.length ? (
-            <GlassCard>
-              <p className="text-sm text-amber-200/70">No results found.</p>
+            <GlassCard variant="content">
+              <p className="text-sm text-[var(--kaapi-content-muted)]">No results found.</p>
             </GlassCard>
           ) : (
             <div ref={cardListRef} data-testid="catalog-grid" className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
@@ -95,47 +133,28 @@ export default function CatalogList() {
                   key={item.catalog_id}
                   to={`/catalog/${item.catalog_id}`}
                   data-testid="catalog-card"
-                  className="kaapi-motion-card liquid-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
+                  className="kaapi-motion-card block no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500"
                 >
-                  <div className="liquid-card-figure">
-                    {item.image_path ? (
-                      <>
-                        <img
-                          src={item.image_path}
-                          alt={item.bean_name}
-                          className="h-full w-full object-cover"
-                          onError={(e) => {
-                            const img = e.currentTarget
-                            img.style.display = 'none'
-                            const mono = img.nextElementSibling as HTMLElement | null
-                            if (mono?.dataset.monogram) mono.style.display = 'flex'
-                          }}
-                        />
-                        <span
-                          data-monogram="true"
-                          aria-hidden="true"
-                          className="liquid-card-monogram"
-                          style={{ display: 'none', alignItems: 'center', justifyContent: 'center' }}
-                        >
-                          {((item.roaster || item.bean_name || '?').slice(0, 2)).toUpperCase()}
-                        </span>
-                      </>
-                    ) : (
-                      <span data-monogram="true" aria-hidden="true" className="liquid-card-monogram">
-                        {((item.roaster || item.bean_name || '?').slice(0, 2)).toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  <div className="liquid-card-body">
-                    <p className="text-xs uppercase tracking-[0.16em] text-amber-300/50">Roaster</p>
-                    <h3 className="truncate font-display text-base font-bold leading-snug text-amber-100">
-                      {item.roaster}
-                    </h3>
-                    <p className="truncate text-sm leading-snug text-amber-200/60">
-                      {item.bean_name}
-                    </p>
-                    {item.roast_level && <Badge className="mt-3">{item.roast_level}</Badge>}
-                  </div>
+                  <GlassCard variant="content" padding="none" interactive className="h-full">
+                    <CatalogCardFigure item={item} />
+                    <div className="min-w-0 p-3">
+                      <p className="text-xs uppercase tracking-[0.16em] text-[var(--kaapi-content-muted)]">Roaster</p>
+                      <h3
+                        title={item.roaster}
+                        className="truncate font-display text-base font-bold leading-snug text-[var(--kaapi-content-content)]"
+                      >
+                        {item.roaster}
+                      </h3>
+                      <p title={item.bean_name} className="truncate text-sm leading-snug text-[var(--kaapi-content-muted)]">
+                        {item.bean_name}
+                      </p>
+                      {item.roast_level && (
+                        <Badge tone="neutral" emphasis="solid" className="mt-3 max-w-full">
+                          <span className="truncate">{item.roast_level}</span>
+                        </Badge>
+                      )}
+                    </div>
+                  </GlassCard>
                 </Link>
               ))}
             </div>
