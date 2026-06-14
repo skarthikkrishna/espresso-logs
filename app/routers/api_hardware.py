@@ -13,7 +13,7 @@ import uuid
 from typing import Any, List
 from urllib.parse import urlparse
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from app.config import settings
@@ -25,7 +25,12 @@ from app.deps import (
     get_llm_client,
     get_maintenance_repo,
 )
-from app.models.api import HardwareDetailOut, HardwareItemOut, MaintenanceEventOut
+from app.models.api import (
+    HardwareDetailOut,
+    HardwareImageUploadOut,
+    HardwareItemOut,
+    MaintenanceEventOut,
+)
 from app.models.household import HouseholdMember
 from app.services.image_sourcer import fetch_image_bytes, fetch_page_context, source_bean_image
 from app.services.image_store import upload_image
@@ -36,6 +41,12 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["hardware"])
 
 _CATEGORIES = ["Machine", "Grinder", "Basket", "Storage"]
+_ALLOWED_UPLOAD_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
+_MAX_UPLOAD_BYTES = 2_097_152
+_JPEG_SIGNATURES = (b"\xff\xd8\xff",)
+_PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+_WEBP_RIFF_SIGNATURE = b"RIFF"
+_WEBP_FORMAT_SIGNATURE = b"WEBP"
 
 _ACTION_TYPES_BY_CATEGORY = {
     "Machine": ["Backflush", "Descale", "Steam Wand Clean"],
@@ -52,6 +63,20 @@ def _hw_to_out(row: dict[str, Any]) -> HardwareItemOut:
         name=row.get("Name", ""),
         image_path=row.get("Local_Image_Path") or None,
     )
+
+
+def _upload_bytes_match_content_type(img_bytes: bytes, content_type: str) -> bool:
+    if content_type == "image/jpeg":
+        return img_bytes.startswith(_JPEG_SIGNATURES)
+    if content_type == "image/png":
+        return img_bytes.startswith(_PNG_SIGNATURE)
+    if content_type == "image/webp":
+        return (
+            len(img_bytes) >= 12
+            and img_bytes.startswith(_WEBP_RIFF_SIGNATURE)
+            and img_bytes[8:12] == _WEBP_FORMAT_SIGNATURE
+        )
+    return False
 
 
 def _maint_to_out(row: dict[str, Any], hardware_name: str) -> MaintenanceEventOut:
@@ -186,3 +211,37 @@ async def api_hardware_update(
         updated["Category"] = body.category
     await hardware_repo.upsert(updated)
     return _hw_to_out(updated)
+
+
+@router.post("/hardware/{hardware_id}/image", response_model=HardwareImageUploadOut)
+async def api_hardware_upload_image(
+    hardware_id: str,
+    _: HouseholdMember = Depends(current_household_membership),
+    file: UploadFile = File(...),
+    hardware_repo: _DualWriteHardwareRepo = Depends(get_hardware_repo),
+) -> HardwareImageUploadOut:
+    item = await hardware_repo.get(hardware_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Hardware item not found")
+
+    content_type = (file.content_type or "").split(";")[0].strip()
+    if content_type not in _ALLOWED_UPLOAD_CONTENT_TYPES:
+        raise HTTPException(status_code=422, detail="file must be a JPEG, PNG, or WebP image.")
+    img_bytes = await file.read()
+    if not img_bytes:
+        raise HTTPException(status_code=422, detail="file must not be empty.")
+    if len(img_bytes) > _MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="file must be 2 MB or smaller.")
+    if not _upload_bytes_match_content_type(img_bytes, content_type):
+        raise HTTPException(
+            status_code=422,
+            detail="file content does not match the declared image type.",
+        )
+
+    ext = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}[content_type]
+    obj_name = f"hardware-images/{hardware_id}-{uuid.uuid4().hex[:8]}.{ext}"
+    image_path = await upload_image(img_bytes, content_type, obj_name, settings.assets_bucket)
+    fresh = await hardware_repo.get(hardware_id)
+    if fresh is not None:
+        await hardware_repo.upsert({**fresh, "Local_Image_Path": image_path})
+    return HardwareImageUploadOut(image_path=image_path)

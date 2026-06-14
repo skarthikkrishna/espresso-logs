@@ -32,6 +32,10 @@ class HardwareItemOut(BaseModel):
     image_path: str | None = None
 
 
+class HardwareImageUploadOut(BaseModel):
+    image_path: str
+
+
 class MaintenanceEventOut(BaseModel):
     maintenance_id: str
     hardware_id: str
