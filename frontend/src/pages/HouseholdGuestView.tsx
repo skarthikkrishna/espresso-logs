@@ -3,14 +3,15 @@ import { Link, useParams, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import { getGuestHouseholdView, type GuestViewResponse } from '../api/guest'
 import StandaloneHouseholdShell from '../components/StandaloneHouseholdShell'
-import Chip from '../components/Chip'
+import { Badge } from '../components/ui'
+import { COPY } from '../copy'
 
 function guestErrorMessage(error: unknown): string {
-  if (!axios.isAxiosError(error)) return 'We could not load this guest view. Ask the household admin to share a fresh link.'
+  if (!axios.isAxiosError(error)) return COPY.guest.loadErrorAuth
   if (error.response?.status === 401 || error.response?.status === 404 || error.response?.status === 410) {
-    return 'This guest link is no longer valid. Ask the household admin to share a new one.'
+    return COPY.guest.linkInvalid
   }
-  return 'We could not load this guest view. Check your connection and try again.'
+  return COPY.guest.loadErrorNetwork
 }
 
 function StatGrid({ stats }: { stats?: Record<string, number | string | null> }) {
@@ -19,9 +20,9 @@ function StatGrid({ stats }: { stats?: Record<string, number | string | null> })
   return (
     <div className="grid gap-3 sm:grid-cols-3">
       {entries.slice(0, 6).map(([label, value]) => (
-        <div key={label} className="glass-card card-bevel p-4">
-          <p className="text-xs uppercase tracking-wide text-base-content/50">{label.replace(/_/g, ' ')}</p>
-          <p className="mt-1 text-lg font-semibold text-amber-100">{String(value)}</p>
+        <div key={label} className="kaapi-content-surface p-4">
+          <p className="text-xs uppercase tracking-wide text-[var(--kaapi-content-muted)]">{label.replace(/_/g, ' ')}</p>
+          <p className="mt-1 text-lg font-semibold text-[var(--kaapi-content-content)]">{String(value)}</p>
         </div>
       ))}
     </div>
@@ -59,11 +60,11 @@ export default function HouseholdGuestView() {
     return (
       <StandaloneHouseholdShell background="bg-state-error" align="center" labelledBy="guest-error-heading">
         <div className="w-full max-w-md">
-          <div className="glass-card card-bevel p-6 text-center space-y-4" role="alert">
-            <p className="text-xs uppercase tracking-[0.22em] text-error/80">Guest access</p>
-            <h1 id="guest-error-heading" className="font-display text-2xl text-amber-100">Guest link unavailable</h1>
-            <p className="text-sm text-base-content/75">This guest link is no longer valid. Ask the household admin to share a new one.</p>
-            <Link to="/login" className="btn btn-primary btn-bevel no-underline">Sign in</Link>
+          <div className="kaapi-content-surface p-6 text-center space-y-4" role="alert">
+            <p className="text-xs uppercase tracking-[0.22em] text-error">{COPY.guest.accessEyebrow}</p>
+            <h1 id="guest-error-heading" className="font-display text-2xl text-[var(--kaapi-content-content)]">{COPY.guest.linkUnavailableTitle}</h1>
+            <p className="text-sm text-[var(--kaapi-content-muted)]">{COPY.guest.linkInvalid}</p>
+            <Link to="/login" className="btn btn-primary btn-bevel no-underline">{COPY.guest.signIn}</Link>
           </div>
         </div>
       </StandaloneHouseholdShell>
@@ -74,9 +75,9 @@ export default function HouseholdGuestView() {
     return (
       <StandaloneHouseholdShell background="bg-guest" align="wide">
         <div className="mx-auto w-full max-w-xl p-4">
-          <div className="glass-card card-bevel p-6 text-center" role="status" aria-live="polite">
-            <span className="loading loading-spinner loading-lg text-primary" aria-label="Preparing guest view" />
-            <p className="mt-3 text-sm text-base-content/70">Preparing guest view…</p>
+          <div className="kaapi-content-surface p-6 text-center" role="status" aria-live="polite">
+            <span className="loading loading-spinner loading-lg text-primary" aria-label={COPY.guest.preparing} />
+            <p className="mt-3 text-sm text-[var(--kaapi-content-muted)]">{COPY.guest.preparingBody}</p>
           </div>
         </div>
       </StandaloneHouseholdShell>
@@ -87,11 +88,11 @@ export default function HouseholdGuestView() {
     return (
       <StandaloneHouseholdShell background="bg-state-error" align="center" labelledBy="guest-error-heading">
         <div className="w-full max-w-md">
-          <div className="glass-card card-bevel p-6 text-center space-y-4" role="alert">
-            <p className="text-xs uppercase tracking-[0.22em] text-error/80">Guest access</p>
-            <h1 id="guest-error-heading" className="font-display text-2xl text-amber-100">Guest link unavailable</h1>
-            <p className="text-sm text-base-content/75">{error}</p>
-            <Link to="/login" className="btn btn-primary btn-bevel no-underline">Sign in</Link>
+          <div className="kaapi-content-surface p-6 text-center space-y-4" role="alert">
+            <p className="text-xs uppercase tracking-[0.22em] text-error">{COPY.guest.accessEyebrow}</p>
+            <h1 id="guest-error-heading" className="font-display text-2xl text-[var(--kaapi-content-content)]">{COPY.guest.linkUnavailableTitle}</h1>
+            <p className="text-sm text-[var(--kaapi-content-muted)]">{error}</p>
+            <Link to="/login" className="btn btn-primary btn-bevel no-underline">{COPY.guest.signIn}</Link>
           </div>
         </div>
       </StandaloneHouseholdShell>
@@ -106,66 +107,66 @@ export default function HouseholdGuestView() {
     <StandaloneHouseholdShell background="bg-guest" align="wide" labelledBy="guest-heading">
       <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-2">
         <div className="alert alert-warning card-bevel">
-          <span>{data.banner || `You're viewing ${data.household.name} as a guest. Sign in or create an account to log shots.`}</span>
+          <span>{data.banner || COPY.guest.banner(data.household.name)}</span>
         </div>
 
-        <header className="glass-card card-bevel p-6 md:p-8">
-          <p className="text-xs uppercase tracking-[0.22em] text-amber-300/70">Read-only household view</p>
-          <h1 id="guest-heading" className="mt-2 font-display text-4xl text-amber-100 md:text-5xl">{data.household.name}</h1>
-          <p className="mt-3 max-w-2xl text-sm text-base-content/70">Browse shared coffee activity without account access. Write actions, settings, imports, edits, and hardware management are hidden for guests.</p>
+        <header className="kaapi-content-surface p-6 md:p-8">
+          <p className="text-xs uppercase tracking-[0.22em] text-[var(--kaapi-content-muted)]">{COPY.guest.readonlyEyebrow}</p>
+          <h1 id="guest-heading" className="mt-2 font-display text-4xl text-[var(--kaapi-content-content)] md:text-5xl">{data.household.name}</h1>
+          <p className="mt-3 max-w-2xl text-sm text-[var(--kaapi-content-muted)]">{COPY.guest.readonlyBody}</p>
           <div className="mt-5 flex flex-wrap gap-3">
-            <Link to="/login" className="btn btn-primary btn-bevel no-underline">Sign in</Link>
-            <Link to="/register" className="btn btn-outline btn-bevel no-underline">Create an account</Link>
+            <Link to="/login" className="btn btn-primary btn-bevel no-underline">{COPY.guest.signIn}</Link>
+            <Link to="/register" className="btn btn-outline btn-bevel no-underline">{COPY.guest.createAccount}</Link>
           </div>
         </header>
 
         <StatGrid stats={data.dashboard.stats} />
 
         <section className="grid gap-4 lg:grid-cols-3">
-          <article className="glass-card card-bevel p-5 lg:col-span-1">
-            <h2 className="text-sm font-medium uppercase tracking-wide text-amber-200/80">Active bags</h2>
+          <article className="kaapi-content-surface p-5 lg:col-span-1">
+            <h2 className="text-sm font-medium uppercase tracking-wide text-[var(--kaapi-content-muted)]">{COPY.guest.activeBags}</h2>
             {activeBags.length === 0 ? (
-              <p className="mt-3 text-sm text-base-content/60">No active bags are shared yet.</p>
+              <p className="mt-3 text-sm text-[var(--kaapi-content-muted)]">{COPY.guest.activeBagsEmpty}</p>
             ) : (
               <ul className="mt-3 space-y-3">
                 {activeBags.slice(0, 6).map((bag, index) => (
-                  <li key={bag.display_name || `bag-${index}`} className="rounded-xl border border-amber-900/30 p-3">
-                    <p className="text-sm font-medium text-amber-100">{bag.display_name}</p>
-                    <Chip label={bag.roast_level} className="mt-2" />
+                  <li key={bag.display_name || `bag-${index}`} className="rounded-xl border border-[var(--kaapi-content-border)] bg-[var(--kaapi-content-surface-2)] p-3">
+                    <p className="text-sm font-medium text-[var(--kaapi-content-content)]">{bag.display_name}</p>
+                    <Badge tone="neutral" emphasis="solid" className="mt-2">{bag.roast_level}</Badge>
                   </li>
                 ))}
               </ul>
             )}
           </article>
 
-          <article className="glass-card card-bevel p-5 lg:col-span-1">
-            <h2 className="text-sm font-medium uppercase tracking-wide text-amber-200/80">Recent shots</h2>
+          <article className="kaapi-content-surface p-5 lg:col-span-1">
+            <h2 className="text-sm font-medium uppercase tracking-wide text-[var(--kaapi-content-muted)]">{COPY.guest.recentShots}</h2>
             {recentShots.length === 0 ? (
-              <p className="mt-3 text-sm text-base-content/60">No shots are shared yet.</p>
+              <p className="mt-3 text-sm text-[var(--kaapi-content-muted)]">{COPY.guest.recentShotsEmpty}</p>
             ) : (
               <ul className="mt-3 space-y-3">
                 {recentShots.slice(0, 6).map((shot, index) => (
-                  <li key={`shot-${shot.date}-${index}`} className="rounded-xl border border-amber-900/30 p-3">
-                    <p className="text-sm font-medium text-amber-100">{shot.bag_display}</p>
-                    <p className="text-xs text-base-content/55">{shot.date}</p>
-                    {shot.taste_summary ? <p className="mt-2 text-sm text-base-content/70">{shot.taste_summary}</p> : null}
+                  <li key={`shot-${shot.date}-${index}`} className="rounded-xl border border-[var(--kaapi-content-border)] bg-[var(--kaapi-content-surface-2)] p-3">
+                    <p className="text-sm font-medium text-[var(--kaapi-content-content)]">{shot.bag_display}</p>
+                    <p className="text-xs text-[var(--kaapi-content-muted)]">{shot.date}</p>
+                    {shot.taste_summary ? <p className="mt-2 text-sm text-[var(--kaapi-content-muted)]">{shot.taste_summary}</p> : null}
                   </li>
                 ))}
               </ul>
             )}
           </article>
 
-          <article className="glass-card card-bevel p-5 lg:col-span-1">
-            <h2 className="text-sm font-medium uppercase tracking-wide text-amber-200/80">Catalog</h2>
+          <article className="kaapi-content-surface p-5 lg:col-span-1">
+            <h2 className="text-sm font-medium uppercase tracking-wide text-[var(--kaapi-content-muted)]">{COPY.guest.catalog}</h2>
             {beans.length === 0 ? (
-              <p className="mt-3 text-sm text-base-content/60">No beans are shared yet.</p>
+              <p className="mt-3 text-sm text-[var(--kaapi-content-muted)]">{COPY.guest.catalogEmpty}</p>
             ) : (
               <ul className="mt-3 space-y-3">
                 {beans.slice(0, 6).map((bean, index) => (
-                  <li key={`bean-${bean.roaster}-${bean.bean_name}-${index}`} className="rounded-xl border border-amber-900/30 p-3">
-                    <p className="text-sm font-medium text-amber-100">{bean.roaster}</p>
-                    <p className="text-xs text-base-content/60">{bean.bean_name}</p>
-                    <Chip label={bean.roast_level} className="mt-2" />
+                  <li key={`bean-${bean.roaster}-${bean.bean_name}-${index}`} className="rounded-xl border border-[var(--kaapi-content-border)] bg-[var(--kaapi-content-surface-2)] p-3">
+                    <p className="text-sm font-medium text-[var(--kaapi-content-content)]">{bean.roaster}</p>
+                    <p className="text-xs text-[var(--kaapi-content-muted)]">{bean.bean_name}</p>
+                    <Badge tone="neutral" emphasis="solid" className="mt-2">{bean.roast_level}</Badge>
                   </li>
                 ))}
               </ul>
