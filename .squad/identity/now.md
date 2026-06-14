@@ -1,27 +1,39 @@
 ---
-updated_at: 2026-06-07T13:23:39.220-07:00
-focus_area: PR #108 CI test failure triaged; remediation not authorized
-milestone: RCA captured for CI runtime role/RLS failure
-active_phase: Awaiting authorization for bounded CI role-separation fix
+updated_at: 2026-06-13
+focus_area: spec-043 Kaapi Kadai design coherence — comprehensive rescope and operator-co-built Warm Editorial Instrument Calm design thesis
+milestone: Full SpecKit cycle complete; all work committed locally; implementation and push held for explicit operator authorization
+action: await operator authorization, then fan out espresso-logs implementation; run all 4 local CI checks and ask before any push
 ---
 
-# Session Status: PR #108 CI Failure Triage Continuity (2026-06-07)
+# Current Team Focus — 2026-06-13
 
-## Current Team Focus
+## Active thread
 
-- PR #108 is on branch `fix/spec-039-production-readiness`.
-- The PR has a failing GitHub Actions `CI/test (pull_request)` check that has been triaged.
-- RCA: `.squad/log/20260607-131119-pr108-ci-test-failure-rca.md`.
-- Likely root cause: CI runtime tests are using the Postgres bootstrap/superuser role, which bypasses RLS; the targeted local repro passed with a non-superuser runtime role.
-- Bounded fix recommendation: separate the privileged CI bootstrap/migration role from the non-privileged CI runtime/test role, ensuring the runtime role is `NOSUPERUSER` and `NOBYPASSRLS` with only required grants.
-- No remediation has been authorized or attempted.
-- No application, frontend, or test files should be changed under the current triage-only authorization.
-- Review must not be requested until CI is green.
-- No push, deploy, review request, merge, production data access, production secrets access, or GitHub posting was performed by Ralph.
+- **spec-043 — Kaapi Kadai Design Coherence:** comprehensive rescope plus operator-co-built design thesis: **Warm Editorial Instrument Calm**.
+- Work ran on branches off `household_fixes`: coffee_tracker `spec/043-design-coherence`; espresso-logs `feat/043-design-coherence`.
+- Prior paused `investigate/household-invite-gaps` state is **SUPERSEDED** by operator decision on 2026-06-13.
+- **STATE:** all work is committed locally; nothing has been pushed; implementation has not started.
+- Both push and implementation are **HELD** for explicit operator authorization.
 
-## Open Work / Next Step
+## Done this session
 
-- Coordinator must obtain a new routing decision and explicit authorization before editing CI workflows, repository scripts, application code, frontend code, tests, or repository settings.
-- If remediation is authorized, likely owner is Tariq for CI role separation, with Maya/Alex consultation as needed for database grant safety.
-- After any authorized fix, rerun required local validation and CI; do not request review for PR #108 until all checks are green.
-- Before any future push, all required local checks must pass and the operator must explicitly approve the push.
+- Completed comprehensive spec, plan, and tasks for all 18 routes, 4 modals, shell, Chip retirement, 2 operator bugs, and workflow-completeness.
+- Rewired 7 charters to apply designer-skills at BUILD and POST-BUILD.
+- Synced design-language, charters, 8 designer-skills, and ui-design-contract into espresso-logs because the app repo was stale or missing required design governance.
+- Confirmed the design thesis: hybrid espresso-dark frame plus light content surfaces, surface contract, minimal semantic color, tactility-as-fluidity, subtle ambient treatment, and density-keyed per-page photography.
+- Full SpecKit cycle is complete: spec clarified → plan → Aria gate **APPROVED** → tasks (33) → Quinn gate **APPROVED_WITH_NOTES, GO**.
+
+## Next actions
+
+1. When the operator authorizes implementation, fan out in espresso-logs.
+2. Finn builds the 33 tasks applying frontend-design and Mobile-First.
+3. Aria runs post-build Stage-2 design-review with screenshots and recordings at 6 widths against the Fable reference, halting for fixes as needed.
+4. Quinn verifies the implementation.
+5. Open PR only after required validation.
+6. Run all 4 local CI checks and ask the operator before any push.
+
+## Continuity notes
+
+- No conflicting in-progress state remains for a future session.
+- Nothing has been pushed.
+- Implementation has not started.
