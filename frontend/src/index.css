@@ -450,6 +450,47 @@ h1, h2, .font-display {
     radial-gradient(circle at 50% 34%, rgba(245, 158, 11, 0.20), rgba(247, 234, 216, 0.10) 46%, rgba(255, 247, 237, 0) 100%);
 }
 
+/* ── spec-043 T007: shared modal footer — solid light, Button-variant actions ──
+   design-language §Surface contract + component table (Modal/dialog): modal body and
+   footer content sit on the solid light content surface; only the backdrop/shell may
+   blur. Mobile-first — actions stack with a full-width primary on top; at ≥640px they
+   become a right-aligned row (destructive pushed left). No raw DaisyUI footer buttons:
+   actions are <Button> variants, so every footer shares one bevel/shape contract. */
+.kaapi-modal-footer {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--kaapi-content-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.kaapi-modal-footer__status {
+  color: var(--kaapi-content-muted);
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+}
+.kaapi-modal-footer__actions {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.5rem;
+}
+.kaapi-modal-footer__actions > .btn {
+  width: 100%;
+}
+@media (min-width: 640px) {
+  .kaapi-modal-footer__actions {
+    flex-direction: row;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+  .kaapi-modal-footer__actions > .btn {
+    width: auto;
+  }
+  .kaapi-modal-footer__actions > .kaapi-modal-footer__destructive {
+    margin-right: auto;
+  }
+}
+
 /* ── Chrome / overlay / sheet glass surfaces (design-language §Liquid Glass) ──
    Allowed blur surfaces only. Inner operational content stays solid (above).
    Fallback depth (bg + border + shadow) is mandatory and defined on each so the

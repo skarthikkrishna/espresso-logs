@@ -8,9 +8,6 @@ interface HouseholdSwitcherProps {
   variant: 'desktop' | 'mobile'
 }
 
-const truncateHouseholdName = (name: string): string =>
-  name.length > 24 ? `${name.slice(0, 21)}…` : name
-
 const memberCountLabel = (membership: Membership): string => {
   if (membership.member_count == null) return 'Members unavailable'
   return `${membership.member_count} member${membership.member_count === 1 ? '' : 's'}`
@@ -107,7 +104,7 @@ export default function HouseholdSwitcher({ variant }: HouseholdSwitcherProps) {
           title={current.household_name}
         >
           <span className="min-w-0">
-            <span className="block truncate text-sm text-amber-100">{truncateHouseholdName(current.household_name)}</span>
+            <span className="block truncate text-sm text-amber-100">{current.household_name}</span>
             <span className="block text-xs text-base-content/55">{memberCountLabel(current)}</span>
           </span>
           <span className="badge badge-outline badge-sm capitalize">{current.role}</span>
@@ -154,13 +151,13 @@ export default function HouseholdSwitcher({ variant }: HouseholdSwitcherProps) {
         >
           <span className="min-w-0">
             <span className="block truncate text-xs uppercase tracking-[0.16em] text-base-content/45">Household</span>
-            <span className="block truncate text-sm text-amber-100">{truncateHouseholdName(current.household_name)}</span>
+            <span className="block truncate text-sm text-amber-100">{current.household_name}</span>
           </span>
         </button>
       ) : (
         <div className="min-w-0 flex-1 px-2 py-1" aria-label={`Active household ${current.household_name}`}>
           <span className="block truncate text-xs uppercase tracking-[0.16em] text-base-content/45">Household</span>
-          <span className="block truncate text-sm text-amber-100">{truncateHouseholdName(current.household_name)}</span>
+          <span className="block truncate text-sm text-amber-100">{current.household_name}</span>
         </div>
       )}
       <AccessibleDialog
