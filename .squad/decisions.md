@@ -1,5 +1,53 @@
 # Decisions Archive
 
+
+## 2026-06-13: Spec-043 T008 Hardware Image Upload Closeout
+
+### Decision: Tariq routing — implementation fan-out authorized (Spec-043)
+- **Agent:** Tariq
+- **Date:** 2026-06-13T20:49:25-07:00
+- **Status:** MERGED
+- **Classification:** IMPLEMENTATION_AUTHORIZED
+- **Source drop:** `.squad/decisions/inbox/20260613T204925-0700-spec043-implementation-routing.md`
+- **Scope:** Proceed with Spec-043 implementation fan-out from the committed espresso-logs handoff summary after Aria and Quinn gates were recorded as green.
+- **Carried constraints:** Preserve ambient-token source-of-truth notes, enforce copy allowlists at render and accessibility sinks, manage browser-matrix runtime deliberately, keep artifacts sanitized, and do not push, open a PR, deploy, or publish artifacts during implementation waves.
+- **Outcome:** This decision authorized implementation work only; it did not authorize external publication or repository push.
+
+### Decision: Alex routing — DIRECT_PERMITTED (Spec-043 T008 backend image upload)
+- **Agent:** Alex
+- **Date:** 2026-06-13T21:00:36-07:00
+- **Status:** MERGED
+- **Classification:** DIRECT_PERMITTED
+- **Source drop:** `.squad/decisions/inbox/20260613T210036-0700-spec043-t008-alex-routing.md`
+- **Scope:** Implement the bounded backend/API hardware image upload contract for T008 using existing authorization, repository, validation, and typed response patterns.
+- **Permitted work:** Add `POST /api/hardware/{id}/image`, update the hardware image field through existing abstractions, return typed image/hardware response data, and add focused tests without external storage dependencies.
+- **Out of scope:** Image-store redesign, schema migration, auth or household-model redesign, infrastructure changes, deployment, pushing, PR creation, or external artifact publication.
+- **Outcome:** T008 implementation was completed locally in the preceding application commit with backend tests added; no push, PR, or deployment occurred.
+
+### Decision: Tariq routing — DIRECT_PERMITTED (PR #108 process and CI triage items)
+- **Agent:** Tariq
+- **Date:** 2026-06-07
+- **Status:** MERGED
+- **Classification:** DIRECT_PERMITTED
+- **Source drops:** `.squad/decisions/inbox/20260607-130425-pr-routing.md`, `.squad/decisions/inbox/20260607-131119-pr108-ci-test-failure-routing.md`, `.squad/decisions/inbox/20260607-132654-tariq-route-pr108-session-close.md`, `.squad/decisions/inbox/20260607-133133-pr108-ci-triage-recovery-routing.md`, `.squad/decisions/inbox/20260607-1335-pr108-ci-routing.md`
+- **Scope:** Process-only PR workflow, CI failure triage, RCA/session closure, and bounded CI role-separation remediation routing for PR #108.
+- **Key decision:** Direct triage and bounded CI/process remediation were permitted; product, frontend, application behavior, deployment, merge, review request, production data, and secret access remained out of scope.
+- **Validation constraint:** Any eventual push still required the full local CI-equivalent check suite and explicit operator approval.
+- **Sanitization note:** Archived summary omits local filesystem paths, database connection details, external run identifiers, and other operational identifiers from the source drops.
+
+### Decision: Alex routing — DIRECT_PERMITTED (PR #109 bounded remediation)
+- **Agent:** Alex
+- **Date:** 2026-06-07
+- **Status:** MERGED
+- **Classification:** DIRECT_PERMITTED
+- **Source drops:** `.squad/decisions/inbox/20260607T142439-0700-pr109-alex-routing.md`, `.squad/decisions/inbox/20260607T143708-0700-pr109-main-conflict-routing.md`
+- **Scope:** Bounded remediation and conflict resolution for the existing PR #109 backend/API hardening work.
+- **Permitted work:** Preserve fail-closed catalog image upload validation, preserve fail-closed persistence-unavailable behavior, resolve main-branch conflicts, and run directly relevant tests/checks.
+- **Out of scope:** Unrelated API or UI behavior, schema changes, production operations, deployment, merge, or push without the required validation and operator approval.
+- **Sanitization note:** Archived summary omits repository-local absolute paths and external URLs from the source drops.
+
+---
+
 ## 2026-06-07: Spec-039 Bounded Remediation and Quinn Harness Closeout
 
 ### Decision: Tariq routing — DIRECT_PERMITTED (Spec-039 bounded remediation)
