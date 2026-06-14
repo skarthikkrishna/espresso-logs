@@ -98,6 +98,8 @@ export const COPY = {
     deleteBody: 'This permanently removes the shot from your brew log. This cannot be undone.',
     deleteError: 'We could not delete this shot. Please try again.',
     deleting: 'Deleting…',
+    moreOptions: 'More options',
+    fewerOptions: 'Fewer options',
   },
 } as const
 

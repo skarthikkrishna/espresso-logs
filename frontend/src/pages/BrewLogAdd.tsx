@@ -11,13 +11,17 @@ import CompassChart from '../components/CompassChart'
 import { getBasketDefaults } from '../utils/basketDefaults'
 import { deriveZoneBoundaries } from '../utils/zoneBoundaries'
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
-import { Button, FormField, Input, PageHeader, Select, Textarea } from '../components/ui'
+import { Button, FormField, Input, PageHeader, Select, Textarea, ActionExpander } from '../components/ui'
+import { useKaapiMotion } from '../lib/motion'
+import { COPY } from '../copy'
 
 export default function BrewLogAdd() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const queryClient = useQueryClient()
   const activeHouseholdId = useHouseholdQueryScope()
+  const routeRef = useRef<HTMLDivElement>(null)
+  const { routeEnter } = useKaapiMotion({ scope: routeRef })
   const requestedBagId = searchParams.get('bag_id')?.trim() ?? ''
   const [bagId, setBagId] = useState('')
   const [bagParamNotice, setBagParamNotice] = useState<string | null>(null)
@@ -210,17 +214,21 @@ export default function BrewLogAdd() {
     })
   }
 
+  useEffect(() => {
+    if (!invLoading && !invError && routeRef.current) routeEnter(routeRef.current)
+  }, [invLoading, invError, routeEnter])
+
   if (invLoading) return <LoadingSpinner />
   if (invError) return (
-    <div className="p-4 md:p-6 max-w-2xl">
-      <div className="glass-card card-bevel p-6 text-center">
-        <p className="text-amber-200 font-medium">Couldn't load your beans</p>
-        <p className="text-amber-400/70 text-sm mt-1">Check your connection and try again.</p>
+    <div className="p-4 md:p-6">
+      <div className="kaapi-content-surface mx-auto w-full max-w-md p-6 text-center">
+        <p className="font-medium">Couldn't load your beans</p>
+        <p className="text-[var(--kaapi-content-muted)] text-sm mt-1">Check your connection and try again.</p>
         <Button
           variant="outline"
           size="sm"
           onClick={() => refetchInventory()}
-          className="mt-3 border-amber-600 text-amber-200"
+          className="mt-3"
         >
           Retry
         </Button>
@@ -229,12 +237,16 @@ export default function BrewLogAdd() {
   )
 
   return (
-    <div className="p-4 md:p-6 max-w-2xl">
-      <PageHeader title="Add shot" />
+    <div ref={routeRef} data-testid="motion-route-boundary" className="p-4 md:p-6">
+      <div className="mx-auto w-full max-w-4xl">
+        <PageHeader title="Add shot" />
 
-      <form data-testid="brew-log-add-form" onSubmit={handleSubmit} className="space-y-4">
-        {/* Bag — full width */}
-        <FormField label="Bag" htmlFor="brew-log-bag" required>
+        <form data-testid="brew-log-add-form" onSubmit={handleSubmit} className="kaapi-content-surface mt-4 p-4 md:p-6 space-y-4">
+          <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:gap-6 lg:items-start">
+            {/* Core inputs */}
+            <div className="space-y-4 min-w-0">
+              {/* Bag — full width */}
+              <FormField label="Bag" htmlFor="brew-log-bag" required>
           <Select
             id="brew-log-bag"
             value={bagId}
@@ -253,10 +265,10 @@ export default function BrewLogAdd() {
             ))}
           </Select>
           {requestedBagId && !inventory && (
-            <p className="text-xs text-amber-200/60 mt-1">Checking selected bag from Home…</p>
+            <p className="text-xs text-[var(--kaapi-content-muted)] mt-1">Checking selected bag from Home…</p>
           )}
           {bagParamNotice && (
-            <p role="status" className="text-xs text-amber-300 mt-1">{bagParamNotice}</p>
+            <p role="status" className="text-xs text-[var(--kaapi-content-muted)] mt-1">{bagParamNotice}</p>
           )}
         </FormField>
 
@@ -340,43 +352,41 @@ export default function BrewLogAdd() {
             </FormField>
           </div>
         </div>
+          </div>
 
-        {/* Full-width Extraction compass (FR-001/FR-003) */}
-        <div className="mt-4 max-w-[560px] mx-auto w-full">
-          <div className="form-control">
-            <p id="extraction-compass-label" className="label">
-              <span className="label-text text-amber-200/70">Extraction compass</span>
-            </p>
-            <div className="glass-card card-bevel p-3 w-full" role="group" aria-labelledby="extraction-compass-label">
-              <CompassChart
-                doseG={doseG ? parseFloat(doseG) : null}
-                yieldG={yieldG ? parseFloat(yieldG) : null}
-                timeSec={timeSec ? parseFloat(timeSec) : null}
-                selectedTaste={tasteSummary}
-                onSelectZone={setTasteSummary}
-                zoneBoundaries={zoneBoundaries}
-              />
+          {/* Extraction compass — dark instrument panel (design-language: Dark panel surface) */}
+          <div className="mt-6 lg:mt-0 min-w-0">
+            <div className="form-control">
+              <p id="extraction-compass-label" className="label">
+                <span className="label-text text-sm font-medium">Extraction compass</span>
+              </p>
+              <div
+                className="rounded-[var(--bevel-radius)] border border-[var(--glass-border)] bg-[var(--kaapi-frame-surface)] p-3 w-full"
+                role="group"
+                aria-labelledby="extraction-compass-label"
+              >
+                <CompassChart
+                  doseG={doseG ? parseFloat(doseG) : null}
+                  yieldG={yieldG ? parseFloat(yieldG) : null}
+                  timeSec={timeSec ? parseFloat(timeSec) : null}
+                  selectedTaste={tasteSummary}
+                  onSelectZone={setTasteSummary}
+                  zoneBoundaries={zoneBoundaries}
+                />
+              </div>
             </div>
           </div>
         </div>
 
         {/* Advanced toggle */}
-        <button
-          type="button"
-          aria-expanded={advancedOpen}
-          aria-controls="advanced-fields"
-          onClick={() => setAdvancedOpen(v => !v)}
-          className="btn btn-ghost text-amber-200/70 w-full justify-between text-sm border border-[var(--glass-border)]"
-        >
-          {advancedOpen ? 'Fewer options' : 'More options'}
-          <svg
-            className={`w-4 h-4 transition-transform ${advancedOpen ? 'rotate-180' : ''}`}
-            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-            aria-hidden="true"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
+        <ActionExpander
+          expanded={advancedOpen}
+          onToggle={() => setAdvancedOpen(v => !v)}
+          controlsId="advanced-fields"
+          showMoreLabel={COPY.brewLog.moreOptions}
+          showFewerLabel={COPY.brewLog.fewerOptions}
+          className="w-full justify-between"
+        />
 
         {/* Advanced section — machine, grinder, grind setting, storage, notes */}
         <div id="advanced-fields" hidden={!advancedOpen} className="space-y-4">
@@ -464,6 +474,7 @@ export default function BrewLogAdd() {
           Log shot
         </Button>
       </form>
+      </div>
     </div>
   )
 }
