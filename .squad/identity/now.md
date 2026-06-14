@@ -1,39 +1,34 @@
 ---
 updated_at: 2026-06-13
-focus_area: spec-043 Kaapi Kadai design coherence — comprehensive rescope and operator-co-built Warm Editorial Instrument Calm design thesis
-milestone: Full SpecKit cycle complete; all work committed locally; implementation and push held for explicit operator authorization
-action: await operator authorization, then fan out espresso-logs implementation; run all 4 local CI checks and ask before any push
+focus_area: spec-043 Kaapi Kadai design coherence — hardware image upload work checkpoint
+milestone: T008 complete locally; no push, PR, or deploy has occurred
+action: continue remaining spec-043 implementation tasks, validate locally, and ask before any push
 ---
 
 # Current Team Focus — 2026-06-13
 
 ## Active thread
 
-- **spec-043 — Kaapi Kadai Design Coherence:** comprehensive rescope plus operator-co-built design thesis: **Warm Editorial Instrument Calm**.
-- Work ran on branches off `household_fixes`: coffee_tracker `spec/043-design-coherence`; espresso-logs `feat/043-design-coherence`.
-- Prior paused `investigate/household-invite-gaps` state is **SUPERSEDED** by operator decision on 2026-06-13.
-- **STATE:** all work is committed locally; nothing has been pushed; implementation has not started.
-- Both push and implementation are **HELD** for explicit operator authorization.
+- **spec-043 — Kaapi Kadai Design Coherence:** implementation is active on `feat/043-design-coherence`.
+- **T008 complete:** hardware image upload endpoint and tests have been implemented locally.
+- **STATE:** local work has not been pushed; no PR has been opened; no deployment has occurred.
+- **Scribe status:** decisions have been merged and the session log has been written.
 
 ## Done this session
 
-- Completed comprehensive spec, plan, and tasks for all 18 routes, 4 modals, shell, Chip retirement, 2 operator bugs, and workflow-completeness.
-- Rewired 7 charters to apply designer-skills at BUILD and POST-BUILD.
-- Synced design-language, charters, 8 designer-skills, and ui-design-contract into espresso-logs because the app repo was stale or missing required design governance.
-- Confirmed the design thesis: hybrid espresso-dark frame plus light content surfaces, surface contract, minimal semantic color, tactility-as-fluidity, subtle ambient treatment, and density-keyed per-page photography.
-- Full SpecKit cycle is complete: spec clarified → plan → Aria gate **APPROVED** → tasks (33) → Quinn gate **APPROVED_WITH_NOTES, GO**.
+- Implemented the hardware image upload endpoint for the current spec-043 workstream.
+- Added/updated tests covering the T008 behavior.
+- Completed session-close logging through Scribe.
 
 ## Next actions
 
-1. When the operator authorizes implementation, fan out in espresso-logs.
-2. Finn builds the 33 tasks applying frontend-design and Mobile-First.
-3. Aria runs post-build Stage-2 design-review with screenshots and recordings at 6 widths against the Fable reference, halting for fixes as needed.
-4. Quinn verifies the implementation.
-5. Open PR only after required validation.
-6. Run all 4 local CI checks and ask the operator before any push.
+1. Continue the remaining spec-043 implementation tasks from the current branch.
+2. Keep all public `.squad/` artifacts sanitized under the privacy gate.
+3. Run the required local validation before any push.
+4. Ask the operator explicitly before pushing.
 
 ## Continuity notes
 
-- No conflicting in-progress state remains for a future session.
-- Nothing has been pushed.
-- Implementation has not started.
+- No push, PR, or deploy has occurred.
+- T008 is complete locally.
+- Remaining work stays on the current spec-043 implementation branch.
