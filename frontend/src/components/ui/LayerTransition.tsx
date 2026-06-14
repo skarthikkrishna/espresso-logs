@@ -1,7 +1,7 @@
 import { useRef, type HTMLAttributes, type ReactNode } from 'react'
 import { gsap } from 'gsap'
 import { useGSAP } from '@gsap/react'
-import { kaapiEase, kaapiMotionTokens } from '../../lib/motion/tokens'
+import { kaapiGrammarEase, kaapiMotionGrammar } from '../../lib/motion/tokens'
 import { usePrefersReducedMotion } from '../../lib/motion'
 
 gsap.registerPlugin(useGSAP)
@@ -28,9 +28,9 @@ interface LayerTransitionProps extends HTMLAttributes<HTMLDivElement> {
  * no movement, preserving hierarchy, read order, and the focus handoff.
  */
 const enterVars: Record<LayerVariant, { from: gsap.TweenVars; duration: number; ease: string }> = {
-  route: { from: { opacity: 0, y: 10 }, duration: kaapiMotionTokens.fluid, ease: kaapiEase.out },
-  modal: { from: { opacity: 0, y: 8, scale: 0.97 }, duration: kaapiMotionTokens.modal, ease: kaapiEase.modalOpen },
-  section: { from: { opacity: 0, y: 12 }, duration: kaapiMotionTokens.base, ease: kaapiEase.out },
+  route: { from: { opacity: 0, y: 10 }, duration: kaapiMotionGrammar.route, ease: kaapiGrammarEase.emphasized },
+  modal: { from: { opacity: 0, y: 8, scale: 0.97 }, duration: kaapiMotionGrammar.enter, ease: kaapiGrammarEase.emphasized },
+  section: { from: { opacity: 0, y: 12 }, duration: kaapiMotionGrammar.enter, ease: kaapiGrammarEase.standard },
 }
 
 export default function LayerTransition({
