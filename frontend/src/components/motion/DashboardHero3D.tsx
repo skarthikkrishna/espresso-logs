@@ -6,6 +6,8 @@ interface DashboardHero3DProps {
   className?: string
   maxHeight?: number
   testId?: string
+  /** When true, fill the parent HeroVisualFrame (absolute inset-0, no own chrome). */
+  fill?: boolean
 }
 
 interface HeroSceneRefs {
@@ -16,7 +18,7 @@ interface HeroSceneRefs {
   steamB?: Mesh
 }
 
-export default function DashboardHero3D({ className = '', maxHeight = 240, testId = 'dashboard-hero-3d-canvas' }: DashboardHero3DProps) {
+export default function DashboardHero3D({ className = '', maxHeight = 240, testId = 'dashboard-hero-3d-canvas', fill = false }: DashboardHero3DProps) {
   const refs = useRef<HeroSceneRefs>({})
 
   const onInit = useCallback(({ renderer, resourceTracker, three }: ThreeSurfaceContext) => {
@@ -90,11 +92,15 @@ export default function DashboardHero3D({ className = '', maxHeight = 240, testI
 
   const { containerRef, canvasRef } = useThreeSurface({ onInit, onFrame })
 
+  const layout = fill
+    ? `absolute inset-0 h-full w-full ${className}`
+    : `relative rounded-[var(--bevel-radius)] border border-amber-400/15 ${className}`
+
   return (
     <div
       ref={containerRef}
-      className={`relative overflow-hidden rounded-[var(--bevel-radius)] border border-amber-400/15 bg-[radial-gradient(circle_at_50%_35%,rgba(245,158,11,0.16),rgba(26,18,9,0.20)_48%,rgba(8,5,3,0.58)_100%)] ${className}`}
-      style={{ maxHeight, minHeight: Math.min(maxHeight, 180) }}
+      className={`overflow-hidden bg-[radial-gradient(circle_at_50%_35%,rgba(245,158,11,0.16),rgba(26,18,9,0.20)_48%,rgba(8,5,3,0.58)_100%)] ${layout}`}
+      style={fill ? undefined : { maxHeight, minHeight: Math.min(maxHeight, 180) }}
       aria-hidden="true"
     >
       <canvas ref={canvasRef} data-testid={testId} aria-hidden="true" className="h-full w-full" />
