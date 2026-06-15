@@ -1160,3 +1160,1471 @@ select.input-styled,
     transition: none;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   spec-043 v3 — Brew-Log Detail Takeover Card
+   Scoped entirely to .kk-b-page (brew-log detail only).
+   CatalogDetail (.kk-proto-043 without .kk-b-page) is UNAFFECTED.
+   Multi-value comma-separated shadow tokens live in :root per DaisyUI constraint.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── :root — geometry, typography, and bevel shadow tokens ───────────────── */
+:root {
+  /* Takeover card geometry */
+  --kk-tc-radius: 16px;
+  --kk-tc-padding-x: 24px;
+  --kk-tc-padding-y: 32px;
+  --kk-tc-max-width: 720px;
+  --kk-tc-blur: 24px;
+
+  /* Typography scale */
+  --kk-tc-title-size: 24px;
+  --kk-tc-title-weight: 700;
+  --kk-tc-subtitle-size: 14px;
+  --kk-tc-section-header-size: 13px;
+  --kk-tc-section-header-weight: 600;
+  --kk-tc-section-header-tracking: 0.05em;
+  --kk-tc-section-header-margin-bottom: 12px;
+  --kk-tc-body-size: 15px;
+  --kk-tc-body-line-height: 1.6;
+  --kk-tc-label-size: 12px;
+  --kk-tc-value-size: 16px;
+  --kk-tc-section-gap: 32px;
+
+  /* Bevel shadow default (dark tone) — comma-separated: MUST be in :root per
+     DaisyUI @plugin "daisyui/theme" comma-truncation constraint.
+     Overridden by .kk-tc--dark / .kk-tc--beige (which are NOT inside @plugin). */
+  --kk-tc-bevel-shadow:
+    inset 1px 1px 0 0 rgba(255, 247, 237, 0.12),
+    inset -1px -1px 0 0 rgba(0, 0, 0, 0.25),
+    0 8px 32px -4px rgba(0, 0, 0, 0.5);
+
+  /* Primary action button geometry — shared, tone-agnostic */
+  --kk-tc-primary-btn-radius: 6px;
+  --kk-tc-primary-btn-padding: 8px 16px;
+
+  /* Roast gradation tokens — shared across tones */
+  --kk-tc-roast-light-bg: #f5e6d3;
+  --kk-tc-roast-light-text: #3d2314;
+  --kk-tc-roast-light-medium-bg: #d4b896;
+  --kk-tc-roast-light-medium-text: #3d2314;
+  --kk-tc-roast-medium-bg: #a67c52;
+  --kk-tc-roast-medium-text: #fff7ed;
+  --kk-tc-roast-medium-dark-bg: #6b4423;
+  --kk-tc-roast-medium-dark-text: #fff7ed;
+  --kk-tc-roast-dark-bg: #3d2314;
+  --kk-tc-roast-dark-text: #fff7ed;
+}
+
+/* ── Reset kk-proto-043 responsive constraints for brew-log detail page ──── */
+/* kk-proto-043 adds padding + max-width at breakpoints for CatalogDetail.
+   kk-b-page cancels those so the page wrapper is fully transparent and the
+   takeover card centers itself within the full main-content width. */
+.kk-b-page.kk-proto-043 {
+  padding: 0;
+  max-width: none;
+  margin: 0;
+  color: inherit;
+}
+@media (min-width: 640px) {
+  .kk-b-page.kk-proto-043 {
+    padding: 0;
+    max-width: none;
+    margin: 0;
+  }
+}
+@media (min-width: 1024px) {
+  .kk-b-page.kk-proto-043 {
+    padding: 0;
+    max-width: none;
+    margin: 0;
+  }
+}
+@media (min-width: 1280px) {
+  .kk-b-page.kk-proto-043 {
+    max-width: none;
+  }
+}
+
+/* ── #main-content: transparent when takeover card is on screen ─────────── */
+/* Prevents double-frost and lets the photo show through the page at full
+   fidelity. The card does ALL the visual frosting. Without this, main-content's
+   rgba(14,9,4,0.38) + blur(4px) would darken and pre-blur the backdrop before
+   the card's backdrop-filter samples it. */
+#main-content:has(.kk-b-page),
+#main-content:has([data-tone]) {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+
+/* ── Tone-aware scrim override via :has() — no shell edits ─────────────── */
+/* The card tone class controls the photo scrim automatically.
+   .app-bg.bg-brew-log and <main> are DOM siblings inside AppShell's flex div.
+   :has(~ main .kk-takeover-card.kk-tc--X) selects .app-bg when a subsequent
+   sibling <main> contains the given card tone. Non-detail brew-log routes
+   (list, add) have no .kk-takeover-card → default scrim applies. */
+.app-bg.bg-brew-log:has(~ main .kk-takeover-card.kk-tc--dark) {
+  background-image:
+    linear-gradient(rgba(24, 16, 10, 0.28), rgba(24, 16, 10, 0.32)),
+    /* @vite-ignore */
+    url('/static/img/hero-brew.jpg');
+}
+.app-bg.bg-brew-log:has(~ main .kk-takeover-card.kk-tc--beige) {
+  background-image:
+    linear-gradient(rgba(245, 235, 220, 0.10), rgba(245, 235, 220, 0.14)),
+    /* @vite-ignore */
+    url('/static/img/hero-brew.jpg');
+}
+
+/* ── Catalog: tone-aware scrim via :has() — minimal, let the card frost ──── */
+.app-bg.bg-catalog:has(~ main .kk-takeover-card.kk-tc--dark) {
+  background-image:
+    linear-gradient(rgba(24, 16, 10, 0.28), rgba(24, 16, 10, 0.32)),
+    /* @vite-ignore */
+    url('/static/img/hero-catalog.jpg');
+}
+.app-bg.bg-catalog:has(~ main .kk-takeover-card.kk-tc--beige) {
+  background-image:
+    linear-gradient(rgba(245, 235, 220, 0.10), rgba(245, 235, 220, 0.14)),
+    /* @vite-ignore */
+    url('/static/img/hero-catalog.jpg');
+}
+
+/* ── Nav row: back link + prototype tone toggle ──────────────────────────── */
+.kk-b-page__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 0;
+  max-width: calc(var(--kk-tc-max-width) + 32px);
+  margin: 0 auto;
+}
+
+.kk-tc-back-link {
+  font-size: 14px;
+  color: #fbbf24;
+  text-decoration: none;
+  transition: color 150ms;
+}
+.kk-tc-back-link:hover {
+  color: #fcd34d;
+}
+
+.kk-tc-tone-btn {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background: rgba(255, 247, 237, 0.12);
+  color: rgba(255, 247, 237, 0.85);
+  border: 1px solid rgba(255, 247, 237, 0.2);
+  cursor: pointer;
+  transition: background 150ms;
+}
+.kk-tc-tone-btn:hover {
+  background: rgba(255, 247, 237, 0.2);
+}
+
+/* ── Takeover card — base (applies to both tones) ───────────────────────── */
+.kk-takeover-card {
+  border-radius: var(--kk-tc-radius);
+  padding: var(--kk-tc-padding-y) var(--kk-tc-padding-x);
+  max-width: var(--kk-tc-max-width);
+  width: calc(100% - 32px);
+  margin: 16px auto 48px;
+  backdrop-filter: blur(var(--kk-tc-blur));
+  -webkit-backdrop-filter: blur(var(--kk-tc-blur));
+  background: var(--kk-tc-surface);
+  color: var(--kk-tc-text-primary);
+  box-shadow: var(--kk-tc-bevel-shadow);
+  border: var(--kk-tc-border);
+}
+
+/* ── DARK tone token set ─────────────────────────────────────────────────── */
+/* All .kk-tc--dark rules are regular CSS (NOT inside @plugin "daisyui/theme")
+   so multi-value comma-separated box-shadows work correctly. */
+.kk-takeover-card.kk-tc--dark {
+  /* Surface */
+  --kk-tc-surface: rgba(24, 16, 10, 0.72);
+  --kk-tc-surface-solid: #1a120c;
+  /* Text */
+  --kk-tc-text-primary: #fff7ed;
+  --kk-tc-text-secondary: #e8ddd4;
+  --kk-tc-text-tertiary: #c4b5a8;
+  --kk-tc-link: #fbbf24;
+  --kk-tc-link-hover: #fcd34d;
+  /* Bevel */
+  --kk-tc-bevel-shadow:
+    inset 1px 1px 0 0 rgba(255, 247, 237, 0.12),
+    inset -1px -1px 0 0 rgba(0, 0, 0, 0.25),
+    0 8px 32px -4px rgba(0, 0, 0, 0.5);
+  /* Border */
+  --kk-tc-border: 1px solid rgba(255, 247, 237, 0.08);
+  /* Section header */
+  --kk-tc-section-header-color: #e8ddd4;
+  /* Inputs */
+  --kk-tc-input-bg: rgba(45, 32, 22, 0.6);
+  --kk-tc-input-border: 1px solid rgba(255, 247, 237, 0.15);
+  --kk-tc-input-text: #fff7ed;
+  --kk-tc-input-placeholder: rgba(255, 247, 237, 0.5);
+  --kk-tc-input-focus-border: rgba(251, 191, 36, 0.6);
+  --kk-tc-input-focus-ring: 0 0 0 3px rgba(251, 191, 36, 0.15);
+  /* Chips */
+  --kk-tc-chip-bg: rgba(255, 247, 237, 0.1);
+  --kk-tc-chip-text: #e8ddd4;
+  --kk-tc-chip-border: 1px solid rgba(255, 247, 237, 0.15);
+  --kk-tc-chip-verified-bg: rgba(34, 197, 94, 0.15);
+  --kk-tc-chip-verified-text: #86efac;
+  --kk-tc-chip-ai-bg: rgba(251, 191, 36, 0.15);
+  --kk-tc-chip-ai-text: #fcd34d;
+  --kk-tc-chip-danger-bg: rgba(239, 68, 68, 0.12);
+  --kk-tc-chip-danger-text: #fca5a5;
+  /* Edit button */
+  --kk-tc-btn-edit-bg: rgba(255, 247, 237, 0.1);
+  --kk-tc-btn-edit-text: #e8ddd4;
+  --kk-tc-btn-edit-border: rgba(255, 247, 237, 0.15);
+  --kk-tc-btn-edit-hover-bg: rgba(255, 247, 237, 0.18);
+  --kk-tc-btn-edit-hover-text: #fff7ed;
+  --kk-tc-btn-edit-hover-border: rgba(255, 247, 237, 0.25);
+  --kk-tc-btn-edit-active-bg: rgba(255, 247, 237, 0.25);
+  --kk-tc-btn-edit-active-text: #fff7ed;
+  --kk-tc-btn-edit-active-border: rgba(255, 247, 237, 0.35);
+  --kk-tc-btn-focus-ring: 0 0 0 3px rgba(251, 191, 36, 0.25);
+  /* Danger button */
+  --kk-tc-btn-danger-bg: rgba(239, 68, 68, 0.12);
+  --kk-tc-btn-danger-text: #fca5a5;
+  --kk-tc-btn-danger-border: rgba(239, 68, 68, 0.2);
+  --kk-tc-btn-danger-hover-bg: rgba(239, 68, 68, 0.22);
+  --kk-tc-btn-danger-hover-text: #fecaca;
+  --kk-tc-btn-danger-hover-border: rgba(239, 68, 68, 0.35);
+  --kk-tc-btn-danger-active-bg: rgba(239, 68, 68, 0.32);
+  --kk-tc-btn-danger-active-text: #fee2e2;
+  --kk-tc-btn-danger-active-border: rgba(239, 68, 68, 0.5);
+  --kk-tc-btn-danger-focus-ring: 0 0 0 3px rgba(239, 68, 68, 0.25);
+  /* Primary action button — warm amber fill, espresso text */
+  --kk-tc-primary-btn-bg: #f59e0b;
+  --kk-tc-primary-btn-text: #451a03;
+  --kk-tc-primary-btn-border: rgba(245, 158, 11, 0.7);
+  --kk-tc-primary-btn-hover-bg: #fbbf24;
+  --kk-tc-primary-btn-hover-text: #451a03;
+  --kk-tc-primary-btn-hover-border: rgba(251, 191, 36, 0.85);
+  --kk-tc-primary-btn-active-bg: #d97706;
+  --kk-tc-primary-btn-active-text: #fffbeb;
+  --kk-tc-primary-btn-active-border: rgba(217, 119, 6, 0.9);
+  --kk-tc-primary-btn-focus-ring: 0 0 0 3px rgba(251, 191, 36, 0.35);
+  /* Roast chip border tokens — DARK tone */
+  --kk-tc-roast-light-border: transparent;
+  --kk-tc-roast-light-medium-border: transparent;
+  --kk-tc-roast-medium-border: transparent;
+  --kk-tc-roast-medium-dark-border: transparent;
+  --kk-tc-roast-dark-border: rgba(255, 247, 237, 0.15);
+  /* Monogram tile background — warm amber tint on dark surface */
+  --kk-tc-monogram-tile-bg: rgba(245, 158, 11, 0.15);
+}
+
+/* ── BEIGE tone token set ────────────────────────────────────────────────── */
+.kk-takeover-card.kk-tc--beige {
+  /* Surface */
+  --kk-tc-surface: rgba(245, 235, 220, 0.78);
+  --kk-tc-surface-solid: #f5ebdc;
+  /* Text */
+  --kk-tc-text-primary: #2d1608;
+  --kk-tc-text-secondary: #4a3728;
+  --kk-tc-text-tertiary: #6b5344;
+  --kk-tc-link: #92400e;
+  --kk-tc-link-hover: #78350f;
+  /* Bevel */
+  --kk-tc-bevel-shadow:
+    inset 1px 1px 0 0 rgba(255, 255, 255, 0.45),
+    inset -1px -1px 0 0 rgba(139, 90, 43, 0.15),
+    0 8px 32px -4px rgba(45, 22, 8, 0.2);
+  /* Border */
+  --kk-tc-border: 1px solid rgba(139, 90, 43, 0.12);
+  /* Section header */
+  --kk-tc-section-header-color: #4a3728;
+  /* Inputs */
+  --kk-tc-input-bg: rgba(235, 220, 200, 0.7);
+  --kk-tc-input-border: 1px solid rgba(139, 90, 43, 0.2);
+  --kk-tc-input-text: #2d1608;
+  --kk-tc-input-placeholder: rgba(45, 22, 8, 0.45);
+  --kk-tc-input-focus-border: rgba(146, 64, 14, 0.6);
+  --kk-tc-input-focus-ring: 0 0 0 3px rgba(146, 64, 14, 0.12);
+  /* Chips */
+  --kk-tc-chip-bg: rgba(45, 22, 8, 0.08);
+  --kk-tc-chip-text: #4a3728;
+  --kk-tc-chip-border: 1px solid rgba(45, 22, 8, 0.12);
+  --kk-tc-chip-verified-bg: rgba(22, 163, 74, 0.12);
+  --kk-tc-chip-verified-text: #166534;
+  --kk-tc-chip-ai-bg: rgba(146, 64, 14, 0.12);
+  --kk-tc-chip-ai-text: #92400e;
+  --kk-tc-chip-danger-bg: rgba(185, 28, 28, 0.1);
+  --kk-tc-chip-danger-text: #b91c1c;
+  /* Edit button */
+  --kk-tc-btn-edit-bg: rgba(45, 22, 8, 0.08);
+  --kk-tc-btn-edit-text: #4a3728;
+  --kk-tc-btn-edit-border: rgba(45, 22, 8, 0.12);
+  --kk-tc-btn-edit-hover-bg: rgba(45, 22, 8, 0.14);
+  --kk-tc-btn-edit-hover-text: #2d1608;
+  --kk-tc-btn-edit-hover-border: rgba(45, 22, 8, 0.2);
+  --kk-tc-btn-edit-active-bg: rgba(45, 22, 8, 0.2);
+  --kk-tc-btn-edit-active-text: #2d1608;
+  --kk-tc-btn-edit-active-border: rgba(45, 22, 8, 0.28);
+  --kk-tc-btn-focus-ring: 0 0 0 3px rgba(146, 64, 14, 0.15);
+  /* Danger button */
+  --kk-tc-btn-danger-bg: rgba(185, 28, 28, 0.1);
+  --kk-tc-btn-danger-text: #b91c1c;
+  --kk-tc-btn-danger-border: rgba(185, 28, 28, 0.15);
+  --kk-tc-btn-danger-hover-bg: rgba(185, 28, 28, 0.18);
+  --kk-tc-btn-danger-hover-text: #991b1b;
+  --kk-tc-btn-danger-hover-border: rgba(185, 28, 28, 0.25);
+  --kk-tc-btn-danger-active-bg: rgba(185, 28, 28, 0.26);
+  --kk-tc-btn-danger-active-text: #7f1d1d;
+  --kk-tc-btn-danger-active-border: rgba(185, 28, 28, 0.35);
+  --kk-tc-btn-danger-focus-ring: 0 0 0 3px rgba(185, 28, 28, 0.15);
+  /* Primary action button — espresso fill, cream text */
+  --kk-tc-primary-btn-bg: #92400e;
+  --kk-tc-primary-btn-text: #fffbeb;
+  --kk-tc-primary-btn-border: rgba(146, 64, 14, 0.6);
+  --kk-tc-primary-btn-hover-bg: #78350f;
+  --kk-tc-primary-btn-hover-text: #fef3c7;
+  --kk-tc-primary-btn-hover-border: rgba(120, 53, 15, 0.75);
+  --kk-tc-primary-btn-active-bg: #451a03;
+  --kk-tc-primary-btn-active-text: #fef3c7;
+  --kk-tc-primary-btn-active-border: rgba(69, 26, 3, 0.85);
+  --kk-tc-primary-btn-focus-ring: 0 0 0 3px rgba(146, 64, 14, 0.2);
+  /* Roast chip border tokens — BEIGE tone */
+  --kk-tc-roast-light-border: rgba(45, 22, 8, 0.2);
+  --kk-tc-roast-light-medium-border: rgba(45, 22, 8, 0.15);
+  --kk-tc-roast-medium-border: transparent;
+  --kk-tc-roast-medium-dark-border: transparent;
+  --kk-tc-roast-dark-border: transparent;
+  /* Monogram tile background — warm espresso tint on beige surface */
+  --kk-tc-monogram-tile-bg: rgba(120, 53, 15, 0.10);
+}
+
+/* ── Fallback: no backdrop-filter support ───────────────────────────────── */
+@supports not (backdrop-filter: blur(1px)) {
+  .kk-takeover-card.kk-tc--dark {
+    --kk-tc-surface: var(--kk-tc-surface-solid);
+  }
+  .kk-takeover-card.kk-tc--beige {
+    --kk-tc-surface: var(--kk-tc-surface-solid);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .kk-takeover-card {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .kk-takeover-card.kk-tc--dark {
+    --kk-tc-surface: var(--kk-tc-surface-solid);
+  }
+  .kk-takeover-card.kk-tc--beige {
+    --kk-tc-surface: var(--kk-tc-surface-solid);
+  }
+}
+
+/* ── Section layout — spacing only, no boxes/dividers ───────────────────── */
+.kk-tc-section {
+  margin-top: var(--kk-tc-section-gap);
+}
+.kk-tc-section:first-child {
+  margin-top: 0;
+}
+
+/* ── Title section — flex row with optional leading icon ───────────────── */
+.kk-tc-section--title {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 16px;
+}
+.kk-tc-title-icon {
+  width: 64px;
+  height: 64px;
+  min-width: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: color-mix(in srgb, var(--kk-tc-text-primary) 8%, transparent);
+}
+.kk-tc-title-icon-placeholder {
+  width: 64px;
+  height: 64px;
+  min-width: 64px;
+  border-radius: 8px;
+  background: var(--kk-tc-monogram-tile-bg, color-mix(in srgb, var(--kk-tc-text-primary) 12%, transparent));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: var(--kk-tc-text-tertiary);
+}
+.kk-tc-title-icon-monogram {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: var(--kk-tc-text-primary);
+  user-select: none;
+}
+.kk-tc-title-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* ── Typography ─────────────────────────────────────────────────────────── */
+.kk-tc-title {
+  font-family: var(--font-display);
+  font-size: var(--kk-tc-title-size);
+  font-weight: var(--kk-tc-title-weight);
+  line-height: 1.2;
+  color: var(--kk-tc-text-primary);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  margin: 0 0 6px;
+}
+.kk-tc-subtitle {
+  font-size: var(--kk-tc-subtitle-size);
+  color: var(--kk-tc-text-secondary);
+  margin: 0;
+}
+.kk-tc-section-header {
+  font-family: var(--font-body);
+  font-size: var(--kk-tc-section-header-size);
+  font-weight: var(--kk-tc-section-header-weight);
+  letter-spacing: var(--kk-tc-section-header-tracking);
+  text-transform: uppercase;
+  color: var(--kk-tc-section-header-color);
+  margin: 0 0 var(--kk-tc-section-header-margin-bottom);
+  /* No border, no background, no padding box */
+}
+.kk-tc-body {
+  font-size: var(--kk-tc-body-size);
+  line-height: var(--kk-tc-body-line-height);
+  color: var(--kk-tc-text-primary);
+  margin: 0;
+}
+.kk-tc-body-muted {
+  font-size: var(--kk-tc-body-size);
+  line-height: var(--kk-tc-body-line-height);
+  color: var(--kk-tc-text-tertiary);
+  margin: 0;
+}
+
+/* ── Tone-aware form field label — Principle 5 (AA Legibility) ──────────── */
+/* Used by ToneInput / ToneSelect / ToneTextarea in the shared tone-system library.
+   Color resolves via inherited --kk-tc-text-secondary from the enclosing card tone. */
+.kk-tc-field-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--kk-tc-text-secondary, #4a3728);
+  margin-bottom: 0.375rem;
+}
+
+/* ── Markdown prose container — AI summary styled per card tone ─────────── */
+.kk-takeover-card .kk-tc-markdown {
+  color: var(--kk-tc-text-primary);
+  font-size: var(--kk-tc-body-size, 0.9375rem);
+  line-height: 1.65;
+}
+.kk-takeover-card .kk-tc-markdown h1,
+.kk-takeover-card .kk-tc-markdown h2,
+.kk-takeover-card .kk-tc-markdown h3,
+.kk-takeover-card .kk-tc-markdown h4,
+.kk-takeover-card .kk-tc-markdown h5,
+.kk-takeover-card .kk-tc-markdown h6 {
+  font-family: var(--font-body);
+  color: var(--kk-tc-text-secondary);
+  font-weight: 500;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+  line-height: 1.35;
+}
+.kk-takeover-card .kk-tc-markdown h1 { font-size: 1.1em; }
+.kk-takeover-card .kk-tc-markdown h2 { font-size: 1.05em; }
+.kk-takeover-card .kk-tc-markdown h3 { font-size: 1em; }
+.kk-takeover-card .kk-tc-markdown h4,
+.kk-takeover-card .kk-tc-markdown h5,
+.kk-takeover-card .kk-tc-markdown h6 { font-size: 0.9375em; }
+.kk-takeover-card .kk-tc-markdown h1:first-child,
+.kk-takeover-card .kk-tc-markdown h2:first-child,
+.kk-takeover-card .kk-tc-markdown h3:first-child {
+  margin-top: 0;
+}
+.kk-takeover-card .kk-tc-markdown p {
+  margin-bottom: 1em;
+}
+.kk-takeover-card .kk-tc-markdown p:last-child {
+  margin-bottom: 0;
+}
+.kk-takeover-card .kk-tc-markdown strong,
+.kk-takeover-card .kk-tc-markdown b {
+  font-weight: 600;
+  color: var(--kk-tc-text-primary);
+}
+.kk-takeover-card .kk-tc-markdown em,
+.kk-takeover-card .kk-tc-markdown i {
+  font-style: italic;
+  color: var(--kk-tc-text-secondary);
+}
+.kk-takeover-card .kk-tc-markdown ul,
+.kk-takeover-card .kk-tc-markdown ol {
+  margin-bottom: 1em;
+  padding-left: 1.5em;
+}
+.kk-takeover-card .kk-tc-markdown li {
+  margin-bottom: 0.35em;
+  color: var(--kk-tc-text-primary);
+}
+.kk-takeover-card .kk-tc-markdown ul {
+  list-style-type: disc;
+}
+.kk-takeover-card .kk-tc-markdown ul li::marker {
+  color: var(--kk-tc-text-tertiary);
+}
+.kk-takeover-card .kk-tc-markdown ol {
+  list-style-type: decimal;
+}
+.kk-takeover-card .kk-tc-markdown ol li::marker {
+  color: var(--kk-tc-text-secondary);
+  font-weight: 500;
+}
+.kk-takeover-card .kk-tc-markdown ul ul,
+.kk-takeover-card .kk-tc-markdown ol ol,
+.kk-takeover-card .kk-tc-markdown ul ol,
+.kk-takeover-card .kk-tc-markdown ol ul {
+  margin-top: 0.35em;
+  margin-bottom: 0;
+}
+.kk-takeover-card .kk-tc-markdown a {
+  color: var(--kk-tc-link);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  transition: opacity 0.15s ease;
+}
+.kk-takeover-card .kk-tc-markdown a:hover {
+  opacity: 0.8;
+}
+.kk-takeover-card .kk-tc-markdown code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.875em;
+  background: color-mix(in srgb, var(--kk-tc-text-primary) 8%, transparent);
+  color: var(--kk-tc-text-secondary);
+  padding: 0.125em 0.375em;
+  border-radius: 4px;
+}
+.kk-takeover-card .kk-tc-markdown pre {
+  background: color-mix(in srgb, var(--kk-tc-text-primary) 6%, transparent);
+  padding: 1em;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin-bottom: 1em;
+}
+.kk-takeover-card .kk-tc-markdown pre code {
+  background: none;
+  padding: 0;
+  font-size: 0.8125em;
+}
+.kk-takeover-card .kk-tc-markdown hr {
+  border: none;
+  border-top: 1px solid color-mix(in srgb, var(--kk-tc-text-primary) 15%, transparent);
+  margin: 1.5em 0;
+}
+.kk-takeover-card .kk-tc-markdown blockquote {
+  border-left: 3px solid var(--kk-tc-text-tertiary);
+  padding-left: 1em;
+  margin-left: 0;
+  margin-bottom: 1em;
+  color: var(--kk-tc-text-secondary);
+  font-style: italic;
+}
+.kk-tc-error {
+  font-size: 13px;
+  color: var(--kk-tc-btn-danger-text);
+}
+.kk-tc-form-hint {
+  margin-bottom: 12px;
+}
+
+/* ── Parameter grid ─────────────────────────────────────────────────────── */
+.kk-tc-param-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+}
+.kk-tc-param-label {
+  font-size: var(--kk-tc-label-size);
+  font-weight: 500;
+  color: var(--kk-tc-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.kk-tc-param-value {
+  font-size: var(--kk-tc-value-size);
+  font-weight: 600;
+  color: var(--kk-tc-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Table row separator using tone-aware token */
+.kk-tc-table-row {
+  border-bottom: 1px solid color-mix(in srgb, var(--kk-tc-text-primary) 10%, transparent);
+}
+
+/* ── Action area ────────────────────────────────────────────────────────── */
+.kk-tc-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: var(--kk-tc-section-gap);
+  margin-bottom: var(--kk-tc-section-gap);
+}
+.kk-tc-actions-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.kk-tc-actions-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ── Chips ─────────────────────────────────────────────────────────────── */
+.kk-tc-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--kk-tc-chip-bg);
+  color: var(--kk-tc-chip-text);
+  border: var(--kk-tc-chip-border);
+}
+/* Eligibility tone variants — map EligibilityTone to chip visual */
+.kk-tc-chip--success {
+  background: var(--kk-tc-chip-verified-bg);
+  color: var(--kk-tc-chip-verified-text);
+  border-color: transparent;
+}
+.kk-tc-chip--brand,
+.kk-tc-chip--warning {
+  background: var(--kk-tc-chip-ai-bg);
+  color: var(--kk-tc-chip-ai-text);
+  border-color: transparent;
+}
+.kk-tc-chip--danger {
+  background: var(--kk-tc-chip-danger-bg);
+  color: var(--kk-tc-chip-danger-text);
+  border-color: transparent;
+}
+.kk-tc-chip--neutral {
+  /* inherits base chip defaults */
+}
+
+/* ── Roast-level gradient chips ─────────────────────────────────────────── */
+.kk-tc-chip--roast {
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.kk-tc-chip--roast-light {
+  background: var(--kk-tc-roast-light-bg);
+  color: var(--kk-tc-roast-light-text);
+  border-color: var(--kk-tc-roast-light-border, transparent);
+}
+.kk-tc-chip--roast-light-medium {
+  background: var(--kk-tc-roast-light-medium-bg);
+  color: var(--kk-tc-roast-light-medium-text);
+  border-color: var(--kk-tc-roast-light-medium-border, transparent);
+}
+.kk-tc-chip--roast-medium {
+  background: var(--kk-tc-roast-medium-bg);
+  color: var(--kk-tc-roast-medium-text);
+  border-color: var(--kk-tc-roast-medium-border, transparent);
+}
+.kk-tc-chip--roast-medium-dark {
+  background: var(--kk-tc-roast-medium-dark-bg);
+  color: var(--kk-tc-roast-medium-dark-text);
+  border-color: var(--kk-tc-roast-medium-dark-border, transparent);
+}
+.kk-tc-chip--roast-dark {
+  background: var(--kk-tc-roast-dark-bg);
+  color: var(--kk-tc-roast-dark-text);
+  border-color: var(--kk-tc-roast-dark-border, transparent);
+}
+
+/* ── Action buttons — intensify on hover, no color-flip ────────────────── */
+/* DaisyUI's btn/btn-outline/btn-ghost classes are NOT used here: native
+   buttons with kk-tc-btn ensure no DaisyUI state re-introduces inversion. */
+.kk-tc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+  border-style: solid;
+  border-width: 1px;
+}
+.kk-tc-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.kk-tc-btn--edit {
+  background: var(--kk-tc-btn-edit-bg);
+  color: var(--kk-tc-btn-edit-text);
+  border-color: var(--kk-tc-btn-edit-border);
+}
+.kk-tc-btn--edit:hover:not(:disabled) {
+  background: var(--kk-tc-btn-edit-hover-bg);
+  color: var(--kk-tc-btn-edit-hover-text);
+  border-color: var(--kk-tc-btn-edit-hover-border);
+}
+.kk-tc-btn--edit:active:not(:disabled) {
+  background: var(--kk-tc-btn-edit-active-bg);
+  color: var(--kk-tc-btn-edit-active-text);
+  border-color: var(--kk-tc-btn-edit-active-border);
+}
+.kk-tc-btn--edit:focus-visible {
+  outline: none;
+  box-shadow: var(--kk-tc-btn-focus-ring);
+}
+.kk-tc-btn--danger {
+  background: var(--kk-tc-btn-danger-bg);
+  color: var(--kk-tc-btn-danger-text);
+  border-color: var(--kk-tc-btn-danger-border);
+}
+.kk-tc-btn--danger:hover:not(:disabled) {
+  background: var(--kk-tc-btn-danger-hover-bg);
+  color: var(--kk-tc-btn-danger-hover-text);
+  border-color: var(--kk-tc-btn-danger-hover-border);
+}
+.kk-tc-btn--danger:active:not(:disabled) {
+  background: var(--kk-tc-btn-danger-active-bg);
+  color: var(--kk-tc-btn-danger-active-text);
+  border-color: var(--kk-tc-btn-danger-active-border);
+}
+.kk-tc-btn--danger:focus-visible {
+  outline: none;
+  box-shadow: var(--kk-tc-btn-danger-focus-ring);
+}
+
+/* ── Primary action button — warm amber (dark) / espresso (beige) ──────── */
+.kk-tc-primary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--kk-tc-primary-btn-bg);
+  color: var(--kk-tc-primary-btn-text);
+  border: 1px solid var(--kk-tc-primary-btn-border);
+  border-radius: var(--kk-tc-primary-btn-radius);
+  padding: var(--kk-tc-primary-btn-padding);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.kk-tc-primary-btn:hover:not(:disabled),
+.kk-tc-primary-btn:focus-visible:not(:disabled) {
+  background: var(--kk-tc-primary-btn-hover-bg);
+  color: var(--kk-tc-primary-btn-hover-text);
+  border-color: var(--kk-tc-primary-btn-hover-border);
+}
+.kk-tc-primary-btn:active:not(:disabled) {
+  background: var(--kk-tc-primary-btn-active-bg);
+  color: var(--kk-tc-primary-btn-active-text);
+  border-color: var(--kk-tc-primary-btn-active-border);
+}
+.kk-tc-primary-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--kk-tc-primary-btn-focus-ring);
+}
+.kk-tc-primary-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Roaster link — inherits per-tone link color ─────────────────────────── */
+.kk-tc-roaster-link {
+  font-size: 14px;
+  color: var(--kk-tc-link);
+  text-decoration: none;
+  transition: color 150ms;
+}
+.kk-tc-roaster-link:hover {
+  color: var(--kk-tc-link-hover);
+}
+
+/* ── Catalog image placeholder — adapt to takeover card surface ────────── */
+.kk-takeover-card .kk-catalog-placeholder {
+  background: var(--kk-tc-chip-bg);
+  box-shadow: none;
+}
+.kk-takeover-card .kk-catalog-placeholder__glyph,
+.kk-takeover-card .kk-catalog-placeholder__monogram {
+  color: var(--kk-tc-text-tertiary);
+}
+
+/* ── Form input legibility — per-tone via inherited tokens ─────────────── */
+/* Scoped to takeover card so other .input-styled fields are unaffected.
+   Higher specificity (0,3,0) overrides .kaapi-content-surface .input-styled
+   and .input-styled defaults (0,2,0 and 0,1,0 respectively). */
+.kk-takeover-card .input-styled,
+.kk-takeover-card .select.input-styled,
+.kk-takeover-card select.input-styled,
+.kk-takeover-card .textarea.input-styled,
+.kk-takeover-card textarea.input-styled {
+  background: var(--kk-tc-input-bg);
+  border: var(--kk-tc-input-border);
+  border-radius: 8px;
+  color: var(--kk-tc-input-text);
+}
+.kk-takeover-card .input-styled::placeholder,
+.kk-takeover-card .textarea.input-styled::placeholder,
+.kk-takeover-card textarea.input-styled::placeholder {
+  color: var(--kk-tc-input-placeholder);
+}
+.kk-takeover-card .input-styled:focus,
+.kk-takeover-card .input-styled:focus-visible,
+.kk-takeover-card .select.input-styled:focus,
+.kk-takeover-card select.input-styled:focus,
+.kk-takeover-card .textarea.input-styled:focus,
+.kk-takeover-card textarea.input-styled:focus {
+  outline: none;
+  border-color: var(--kk-tc-input-focus-border);
+  box-shadow: var(--kk-tc-input-focus-ring);
+}
+
+/* FormField label + hint text — adapt to current tone */
+.kk-takeover-card .label-text {
+  color: var(--kk-tc-text-secondary);
+}
+.kk-takeover-card .text-base-content\/50 {
+  color: var(--kk-tc-text-tertiary);
+  opacity: 1;
+}
+/* FormField error text — use per-tone danger color (not DaisyUI text-error) */
+.kk-takeover-card .text-error {
+  color: var(--kk-tc-btn-danger-text);
+}
+
+/* ── ExtractionReadout — two-column grid, no inset well on the card ──────── */
+/* Restores the BREW RATIO | EXTRACTION ZONE two-column layout from the
+   northstar. The kk-proto-043 grid rules don't apply here (no proto-043 wrapper
+   on BrewLogDetail), so all structural + typographic rules are mirrored here. */
+.kk-takeover-card .kk-extraction-readout {
+  display: grid;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin-top: 0;
+  color: var(--kk-tc-text-primary);
+  gap: 0.75rem;
+}
+@media (min-width: 640px) {
+  .kk-takeover-card .kk-extraction-readout {
+    grid-template-columns: minmax(8rem, 0.75fr) minmax(0, 1.25fr);
+    align-items: start;
+  }
+}
+.kk-takeover-card .kk-extraction-readout__metric,
+.kk-takeover-card .kk-extraction-readout__zone {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.kk-takeover-card .kk-extraction-readout__eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--kk-tc-text-tertiary);
+}
+.kk-takeover-card .kk-extraction-readout__value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: clamp(1.5rem, 6vw, 2rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--kk-tc-text-primary);
+}
+.kk-takeover-card .kk-extraction-readout__guidance {
+  color: var(--kk-tc-text-tertiary);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  margin-top: 0.25rem;
+}
+
+/* Zone chips within the takeover card — compact chip + per-tone colors */
+.kk-takeover-card .kk-zone-chip {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border: 1px solid var(--kk-tc-chip-border);
+  border-radius: var(--kaapi-content-radius);
+  background: var(--kk-tc-chip-bg);
+  color: var(--kk-tc-chip-text);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+.kk-takeover-card .kk-zone-chip--under {
+  border-color: transparent;
+  background: rgba(14, 116, 144, 0.18);
+  color: var(--kk-tc-chip-verified-text, #86efac);
+}
+.kk-takeover-card.kk-tc--beige .kk-zone-chip--under {
+  background: rgba(14, 116, 144, 0.12);
+  color: #0e7490;
+}
+.kk-takeover-card .kk-zone-chip--balanced {
+  border-color: transparent;
+  background: var(--kk-tc-chip-ai-bg);
+  color: var(--kk-tc-chip-ai-text);
+}
+.kk-takeover-card .kk-zone-chip--over {
+  border-color: transparent;
+  background: var(--kk-tc-chip-danger-bg);
+  color: var(--kk-tc-chip-danger-text);
+}
+
+/* ── Mobile responsive ──────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .kk-takeover-card {
+    --kk-tc-padding-x: 16px;
+    --kk-tc-padding-y: 24px;
+    --kk-tc-section-gap: 24px;
+    --kk-tc-title-size: 20px;
+    width: calc(100% - 24px);
+    margin: 12px auto 32px;
+  }
+  .kk-b-page__nav {
+    padding: 12px 12px 0;
+  }
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .kk-tc-btn,
+  .kk-tc-tone-btn,
+  .kk-tc-back-link {
+    transition: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   spec-043 v4 — Immersive List Shell + EntityCard
+   List pages are card-less + immersive; entity items are glass cards.
+   All tokens live in :root (geometry) and [data-tone] (color).
+   CRITICAL: --kk-tc-bevel-shadow and multi-layer box-shadows in [data-tone]
+   blocks are regular CSS (NOT @plugin "daisyui/theme") so comma-values work.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── :root — shared layout + card geometry tokens ───────────────────────── */
+:root {
+  --kk-layout-gutter: 1rem;
+  --kk-layout-section-gap: 1.5rem;
+
+  /* Immersive List Shell geometry */
+  --kk-il-frost-blur: 24px;
+  --kk-il-content-max-width: 1200px;
+  --kk-il-content-padding: var(--kk-layout-gutter);
+
+  /* EntityCard geometry */
+  --kk-ec-radius: 12px;
+  --kk-ec-blur: 20px;
+  --kk-ec-padding: 12px;
+  --kk-ec-figure-radius: 8px;
+}
+
+/* ── [data-tone="dark"] — DARK tone color tokens (list shell + entity card) */
+/* These tokens mirror .kk-takeover-card.kk-tc--dark but at lower specificity
+   (0,1,0 vs 0,2,0) so the takeover card values still win inside a detail card.
+   Outside a takeover card (list page EntityCards, ImmersiveFab portalled to
+   body), these provide the token resolution for glass surfaces. */
+[data-tone="dark"] {
+  /* Immersive frost tint */
+  --kk-il-frost-tint: rgba(24, 16, 10, 0.45);
+  --kk-il-frost-tint-solid: rgba(24, 16, 10, 0.85);
+  --kk-il-text-primary: #fff7ed;
+  --kk-il-text-secondary: #d6cbbf;
+  --kk-il-text-tertiary: #a89585;
+
+  /* Glass surface tokens — mirror dark takeover card */
+  --kk-tc-surface: rgba(24, 16, 10, 0.72);
+  --kk-tc-surface-solid: #1a120c;
+  --kk-tc-border: 1px solid rgba(255, 247, 237, 0.08);
+  --kk-tc-bevel-shadow:
+    inset 1px 1px 0 0 rgba(255, 247, 237, 0.12),
+    inset -1px -1px 0 0 rgba(0, 0, 0, 0.25),
+    0 8px 32px -4px rgba(0, 0, 0, 0.5);
+  --kk-tc-text-primary: #fff7ed;
+  --kk-tc-text-secondary: #e8ddd4;
+  --kk-tc-text-tertiary: #c4b5a8;
+  --kk-tc-monogram-tile-bg: rgba(245, 158, 11, 0.15);
+  /* Roast chip border tokens */
+  --kk-tc-roast-light-border: transparent;
+  --kk-tc-roast-light-medium-border: transparent;
+  --kk-tc-roast-medium-border: transparent;
+  --kk-tc-roast-medium-dark-border: transparent;
+  --kk-tc-roast-dark-border: rgba(255, 247, 237, 0.15);
+}
+
+/* ── [data-tone="beige"] — BEIGE tone color tokens ──────────────────────── */
+[data-tone="beige"] {
+  /* Immersive frost tint */
+  --kk-il-frost-tint: rgba(245, 235, 220, 0.55);
+  --kk-il-frost-tint-solid: rgba(245, 235, 220, 0.92);
+  --kk-il-text-primary: #2d1608;
+  --kk-il-text-secondary: #5c3d1e;
+  --kk-il-text-tertiary: #8b6b4a;
+
+  /* Glass surface tokens — mirror beige takeover card */
+  --kk-tc-surface: rgba(245, 235, 220, 0.78);
+  --kk-tc-surface-solid: #f5ebdc;
+  --kk-tc-border: 1px solid rgba(139, 90, 43, 0.12);
+  --kk-tc-bevel-shadow:
+    inset 1px 1px 0 0 rgba(255, 255, 255, 0.45),
+    inset -1px -1px 0 0 rgba(139, 90, 43, 0.15),
+    0 8px 32px -4px rgba(45, 22, 8, 0.2);
+  --kk-tc-text-primary: #2d1608;
+  --kk-tc-text-secondary: #4a3728;
+  --kk-tc-text-tertiary: #6b5344;
+  --kk-tc-monogram-tile-bg: rgba(120, 53, 15, 0.10);
+  /* Roast chip border tokens */
+  --kk-tc-roast-light-border: rgba(45, 22, 8, 0.2);
+  --kk-tc-roast-light-medium-border: rgba(45, 22, 8, 0.15);
+  --kk-tc-roast-medium-border: transparent;
+  --kk-tc-roast-medium-dark-border: transparent;
+  --kk-tc-roast-dark-border: transparent;
+}
+
+/* ── #main-content: immersive list shell frost treatment ─────────────────── */
+/* Mirror of the anti-double-frost approach for detail pages (which makes
+   #main-content transparent). For list pages, #main-content IS the frost layer:
+   it applies backdrop-filter + tint so the catalog photo blurs through.
+   Specificity (1,2,0) > existing (1,1,0) transparent rule, so list pages
+   correctly get the frost while detail pages keep their transparent behavior. */
+#main-content:has(.immersive-list-shell[data-tone="dark"]) {
+  backdrop-filter: blur(var(--kk-il-frost-blur));
+  -webkit-backdrop-filter: blur(24px);
+  background: rgba(24, 16, 10, 0.45);
+  box-shadow: none;
+}
+#main-content:has(.immersive-list-shell[data-tone="beige"]) {
+  backdrop-filter: blur(var(--kk-il-frost-blur));
+  -webkit-backdrop-filter: blur(24px);
+  background: rgba(245, 235, 220, 0.55);
+  box-shadow: none;
+}
+
+/* Solid fallback — no backdrop-filter */
+@supports not (backdrop-filter: blur(1px)) {
+  #main-content:has(.immersive-list-shell[data-tone="dark"]) {
+    background: rgba(24, 16, 10, 0.85);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  #main-content:has(.immersive-list-shell[data-tone="beige"]) {
+    background: rgba(245, 235, 220, 0.92);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* Reduced transparency preference */
+@media (prefers-reduced-transparency: reduce) {
+  #main-content:has(.immersive-list-shell[data-tone="dark"]) {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(24, 16, 10, 0.85);
+  }
+  #main-content:has(.immersive-list-shell[data-tone="beige"]) {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(245, 235, 220, 0.92);
+  }
+}
+
+/* ── Catalog: tone-aware lighter scrim for immersive list shell ──────────── */
+/* The frost (#main-content) does the visual work; a lighter photo scrim lets
+   shapes show through. Mirrors the detail-page takeover card scrim values. */
+.app-bg.bg-catalog:has(~ main .immersive-list-shell[data-tone="dark"]) {
+  background-image:
+    linear-gradient(rgba(24, 16, 10, 0.28), rgba(24, 16, 10, 0.32)),
+    /* @vite-ignore */
+    url('/static/img/hero-catalog.jpg');
+}
+.app-bg.bg-catalog:has(~ main .immersive-list-shell[data-tone="beige"]) {
+  background-image:
+    linear-gradient(rgba(245, 235, 220, 0.10), rgba(245, 235, 220, 0.14)),
+    /* @vite-ignore */
+    url('/static/img/hero-catalog.jpg');
+}
+
+/* ── Immersive List Shell layout ─────────────────────────────────────────── */
+.immersive-list-shell {
+  min-height: 100%;
+}
+
+.immersive-list-content {
+  position: relative;
+  z-index: 1;
+  max-width: var(--kk-il-content-max-width);
+  margin: 0 auto;
+  padding: 1.5rem var(--kk-il-content-padding) var(--mobile-content-bottom-padding);
+}
+
+.immersive-nav-row {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 1rem;
+}
+
+/* ── ListPageHeader ──────────────────────────────────────────────────────── */
+.list-page-header {
+  margin-bottom: var(--kk-layout-section-gap);
+}
+.list-page-header-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--kk-il-text-tertiary);
+  margin: 0 0 0.25rem;
+}
+.list-page-header-title {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 700;
+  color: var(--kk-il-text-primary);
+  line-height: 1.1;
+  margin: 0 0 0.5rem;
+}
+.list-page-header-section {
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--kk-il-text-secondary);
+  margin: 0;
+}
+
+/* ── EntityCard — glass card for list items ─────────────────────────────── */
+/* Principle 3 (Intentional Translucence): backdrop-filter confined to card.
+   Principle 2 (Single Surface): no nested glass sub-cards.
+   Principle 8 (INTENSIFY states): hover brightens, active scales down. */
+.entity-card {
+  display: block;
+  text-decoration: none;
+  border-radius: var(--kk-ec-radius);
+  overflow: hidden;
+  background: var(--kk-tc-surface);
+  backdrop-filter: blur(var(--kk-ec-blur));
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--kk-tc-bevel-shadow);
+  border: var(--kk-tc-border);
+  color: var(--kk-tc-text-primary);
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+  height: 100%;
+}
+.entity-card:hover {
+  filter: brightness(1.05);
+  box-shadow: var(--kk-tc-bevel-shadow), 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+.entity-card:focus-visible {
+  outline: 2px solid var(--kk-tc-text-primary);
+  outline-offset: 2px;
+}
+.entity-card:active {
+  transform: scale(0.98);
+  filter: brightness(0.95);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .entity-card {
+    background: var(--kk-tc-surface-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .entity-card {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--kk-tc-surface-solid);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entity-card {
+    transition: none;
+  }
+}
+
+.entity-card-figure {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--kk-tc-text-primary) 8%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.entity-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Full-figure monogram fill — shown when no imageUrl is provided.
+   Transparent background so the card's glass surface reads as one continuous
+   surface across figure and body — no two-tone tinted-panel split. The large
+   centred monogram letter (--kk-tc-text-primary) sits directly on the card
+   glass and is AA-legible on both tones (cream on dark glass; espresso on
+   beige glass). --kk-tc-monogram-tile-bg is intentionally NOT used here
+   to avoid the off-tone amber/brown block; that token is preserved for the
+   detail-page TitleIcon (.kk-tc-title-icon-placeholder) which is unaffected. */
+.entity-card-monogram-fill {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+/* Strip the figure's image-placeholder tint when a monogram fill is active,
+   so the whole card is one even glass surface (no figure-vs-body tonal split). */
+.entity-card-figure:has(.entity-card-monogram-fill) {
+  background: transparent;
+}
+
+.entity-card-monogram {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 8vw, 5rem);
+  font-weight: 700;
+  color: var(--kk-tc-text-primary);
+  line-height: 1;
+  user-select: none;
+}
+
+.entity-card-body {
+  padding: var(--kk-ec-padding);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.entity-card-eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--kk-tc-text-tertiary);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entity-card-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--kk-tc-text-primary);
+  line-height: 1.25;
+  margin: 0 0 0.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entity-card-chip-slot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.25rem;
+}
+
+/* ── EntityCard responsive grid ─────────────────────────────────────────── */
+.entity-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+@media (min-width: 768px) {
+  .entity-card-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+}
+
+/* ── Immersive search input — glass pill on the frost ───────────────────── */
+.immersive-search-wrapper {
+  margin-bottom: 1.5rem;
+}
+.immersive-search-input {
+  background: var(--kk-tc-surface);
+  backdrop-filter: blur(var(--kk-ec-blur));
+  -webkit-backdrop-filter: blur(20px);
+  border: var(--kk-tc-border);
+  border-radius: 9999px;
+  padding: 0.75rem 1rem;
+  color: var(--kk-tc-text-primary);
+  width: 100%;
+  max-width: 400px;
+  font-size: 0.9375rem;
+  display: block;
+}
+.immersive-search-input::placeholder {
+  color: var(--kk-tc-text-tertiary);
+}
+.immersive-search-input:focus {
+  outline: 2px solid var(--kk-tc-text-primary);
+  outline-offset: 2px;
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .immersive-search-input {
+    background: var(--kk-tc-surface-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .immersive-search-input {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--kk-tc-surface-solid);
+  }
+}
+
+/* ── ImmersiveEmptyState ─────────────────────────────────────────────────── */
+.immersive-empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+.immersive-empty-state-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.6;
+  display: block;
+}
+.immersive-empty-state-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--kk-il-text-primary);
+  margin: 0 0 0.5rem;
+}
+.immersive-empty-state-description {
+  color: var(--kk-il-text-secondary);
+  margin: 0 0 1.5rem;
+}
+
+/* ── Immersive error card — subtle glass for fetch errors ───────────────── */
+.immersive-error-card {
+  background: var(--kk-tc-surface);
+  backdrop-filter: blur(var(--kk-ec-blur));
+  -webkit-backdrop-filter: blur(20px);
+  border: var(--kk-tc-border);
+  box-shadow: var(--kk-tc-bevel-shadow);
+  border-radius: var(--kk-ec-radius);
+  padding: 1.5rem;
+  text-align: center;
+  max-width: 400px;
+  margin: 2rem auto 0;
+}
+.immersive-error-message {
+  font-weight: 500;
+  color: var(--kk-il-text-primary);
+  margin: 0 0 0.375rem;
+}
+.immersive-error-detail {
+  font-size: 0.875rem;
+  color: var(--kk-il-text-secondary);
+  margin: 0 0 1rem;
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .immersive-error-card {
+    background: var(--kk-tc-surface-solid);
+  }
+}
+
+/* ── ImmersiveFab — floating action button via createPortal to body ──────── */
+/* Uses data-tone directly on the element (portalled outside [data-tone] tree)
+   so --kk-tc-* tokens resolve via [data-tone] inheritance from itself. */
+.immersive-fab {
+  position: fixed;
+  bottom: var(--mobile-fab-offset);
+  right: max(1rem, env(safe-area-inset-right));
+  z-index: 50;
+
+  background: var(--kk-tc-surface);
+  backdrop-filter: blur(var(--kk-tc-blur));
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: var(--kk-tc-bevel-shadow);
+  border: var(--kk-tc-border);
+
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+
+  color: var(--kk-tc-text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.immersive-fab:hover {
+  filter: brightness(1.05);
+  transform: scale(1.05);
+}
+.immersive-fab:active {
+  transform: scale(0.95);
+}
+.immersive-fab:focus-visible {
+  outline: 2px solid var(--kk-tc-text-primary);
+  outline-offset: 2px;
+}
+@media (min-width: 768px) {
+  .immersive-fab {
+    bottom: 1.5rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .immersive-fab {
+    transition: none;
+  }
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .immersive-fab {
+    background: var(--kk-tc-surface-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .immersive-fab {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--kk-tc-surface-solid);
+  }
+}

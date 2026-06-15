@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import axios from 'axios'
-import { Link, useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getCatalogDetail, createInventoryBag, updateCatalogItem, uploadCatalogImage } from '../api/catalog'
 import { updateInventoryBagStatus } from '../api/inventory'
@@ -14,13 +14,36 @@ import {
 } from '../api/queryKeys'
 import type { CatalogDetail as CatalogDetailData, CatalogItem, InventoryBag } from '../types/entities'
 import LoadingSpinner from '../components/LoadingSpinner'
-import { Badge, Button, FormField, GlassCard, Input, PageHeader, SectionHeading, Select } from '../components/ui'
 import { ROAST_LEVELS } from '../utils/roastLevels'
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
+import { ToneProvider } from '../contexts/ToneContext'
 import { useKaapiMotion } from '../lib/motion'
 import { COPY } from '../copy'
+import {
+  BackLink,
+  FormSection,
+  RoastChip,
+  Section,
+  SectionHeader,
+  TakeoverCard,
+  TitleBlock,
+  TitleIcon,
+  ToneButton,
+  ToneInput,
+  TonePageWrapper,
+  ToneSelect,
+  ToneToggle,
+} from '../components/tone-system'
 
 export default function CatalogDetail() {
+  return (
+    <ToneProvider>
+      <CatalogDetailPage />
+    </ToneProvider>
+  )
+}
+
+function CatalogDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -110,11 +133,9 @@ export default function CatalogDetail() {
 
   if (isLoading) return <LoadingSpinner />
   if (isError) return (
-    <div className="p-4">
-      <GlassCard variant="content" padding="lg" className="text-center">
-        <p className="font-medium">{COPY.catalog.detailLoadError}</p>
-        <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-3">Retry</Button>
-      </GlassCard>
+    <div className="p-6 text-center">
+      <p className="font-medium">{COPY.catalog.detailLoadError}</p>
+      <button type="button" className="mt-3 rounded-md border px-3 py-1.5 text-sm font-medium" onClick={() => refetch()}>Retry</button>
     </div>
   )
   if (!data) return null
@@ -145,151 +166,113 @@ export default function CatalogDetail() {
     return fallback
   }
 
-  const monogram = ((item.roaster || item.bean_name || '?').slice(0, 2)).toUpperCase()
-
-  const imageBlock = (
-    <div className="relative shrink-0">
-      {item.image_path && item.image_path !== brokenImageSrc ? (
-        <img
-          src={item.image_path}
-          alt={item.bean_name}
-          className="h-24 w-24 rounded-lg border border-[var(--kaapi-content-border)] object-cover"
-          onError={() => setBrokenImageSrc(item.image_path ?? null)}
-        />
-      ) : (
-        <div
-          data-testid="catalog-image-placeholder"
-          className="kk-catalog-placeholder flex h-24 w-24 flex-col items-center justify-center rounded-lg border border-[var(--kaapi-content-border)] bg-[var(--kaapi-content-surface-2)] font-display text-xl text-[var(--kaapi-content-muted)]"
-        >
-          <span className="kk-catalog-placeholder__glyph" aria-hidden="true">☕</span>
-          <span className="kk-catalog-placeholder__monogram">{monogram}</span>
-        </div>
-      )}
-      {editing && (
-        <>
-          <Button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={imageUploading || editSaving}
-            size="xs"
-            className="absolute -bottom-2 -right-2"
-            aria-label={COPY.catalog.replaceImage}
-          >
-            {imageUploading ? <span className="loading loading-spinner loading-xs" /> : 'Replace'}
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            data-testid="catalog-image-input"
-            onChange={async (e) => {
-              const f = e.target.files?.[0]
-              if (!f || !id) return
-              setImageUploading(true)
-              setImageError(null)
-              try {
-                const { image_path } = await uploadCatalogImage(id, f)
-                // Clear any prior broken-image marker so the new src gets a fresh load attempt.
-                setBrokenImageSrc(null)
-                // Write the new image_path directly into both caches so the
-                // detail preview and the catalog-list thumbnail update immediately
-                // without waiting for a background refetch to complete.
-                queryClient.setQueryData<Awaited<ReturnType<typeof getCatalogDetail>>>(
-                  catalogDetailQueryKey(id, activeHouseholdId),
-                  (old) => old ? { ...old, item: { ...old.item, image_path } } : old
-                )
-                // Use the exact list key (not a prefix match) to avoid invoking
-                // the updater with CatalogDetail objects from ['catalog', id] queries.
-                queryClient.setQueryData<CatalogItem[]>(
-                  catalogListQueryKey(activeHouseholdId),
-                  (old) => old?.map((c) => c.catalog_id === id ? { ...c, image_path } : c)
-                )
-                // Invalidate non-catalog consumers immediately; for catalog queries
-                // use refetchType:'inactive' so they only refetch on next mount —
-                // this prevents a stale Cloud Run instance from returning old data
-                // and overwriting the optimistic cache entries above.
-                queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(id, activeHouseholdId), refetchType: 'inactive' })
-                queryClient.invalidateQueries({ queryKey: catalogListQueryKey(activeHouseholdId), refetchType: 'inactive' })
-                queryClient.invalidateQueries({ queryKey: inventoryQueryKey(activeHouseholdId) })
-                queryClient.invalidateQueries({ queryKey: dashboardQueryKey(activeHouseholdId) })
-                queryClient.invalidateQueries({ queryKey: brewLogListQueryKey(activeHouseholdId) })
-              } catch {
-                setImageError('Failed to upload image. Please try again.')
-              } finally {
-                setImageUploading(false)
-                if (fileInputRef.current) fileInputRef.current.value = ''
-              }
-            }}
-          />
-        </>
-      )}
-    </div>
-  )
+  const imageOverlay = editing ? (
+    <>
+      <ToneButton
+        variant="edit"
+        className="absolute -bottom-2 -right-2"
+        style={{ padding: '3px 8px', fontSize: '11px' }}
+        onClick={() => fileInputRef.current?.click()}
+        disabled={imageUploading || editSaving}
+        aria-label={COPY.catalog.replaceImage}
+      >
+        {imageUploading ? <span className="loading loading-spinner loading-xs" /> : 'Replace'}
+      </ToneButton>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        data-testid="catalog-image-input"
+        onChange={async (e) => {
+          const f = e.target.files?.[0]
+          if (!f || !id) return
+          setImageUploading(true)
+          setImageError(null)
+          try {
+            const { image_path } = await uploadCatalogImage(id, f)
+            // Clear any prior broken-image marker so the new src gets a fresh load attempt.
+            setBrokenImageSrc(null)
+            // Write the new image_path directly into both caches so the
+            // detail preview and the catalog-list thumbnail update immediately
+            // without waiting for a background refetch to complete.
+            queryClient.setQueryData<Awaited<ReturnType<typeof getCatalogDetail>>>(
+              catalogDetailQueryKey(id, activeHouseholdId),
+              (old) => old ? { ...old, item: { ...old.item, image_path } } : old
+            )
+            // Use the exact list key (not a prefix match) to avoid invoking
+            // the updater with CatalogDetail objects from ['catalog', id] queries.
+            queryClient.setQueryData<CatalogItem[]>(
+              catalogListQueryKey(activeHouseholdId),
+              (old) => old?.map((c) => c.catalog_id === id ? { ...c, image_path } : c)
+            )
+            // Invalidate non-catalog consumers immediately; for catalog queries
+            // use refetchType:'inactive' so they only refetch on next mount —
+            // this prevents a stale Cloud Run instance from returning old data
+            // and overwriting the optimistic cache entries above.
+            queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(id, activeHouseholdId), refetchType: 'inactive' })
+            queryClient.invalidateQueries({ queryKey: catalogListQueryKey(activeHouseholdId), refetchType: 'inactive' })
+            queryClient.invalidateQueries({ queryKey: inventoryQueryKey(activeHouseholdId) })
+            queryClient.invalidateQueries({ queryKey: dashboardQueryKey(activeHouseholdId) })
+            queryClient.invalidateQueries({ queryKey: brewLogListQueryKey(activeHouseholdId) })
+          } catch {
+            setImageError('Failed to upload image. Please try again.')
+          } finally {
+            setImageUploading(false)
+            if (fileInputRef.current) fileInputRef.current.value = ''
+          }
+        }}
+      />
+    </>
+  ) : null
 
   return (
-    <div ref={routeRef} data-testid="catalog-detail" className="kk-proto-043 p-4 md:p-6 space-y-6 max-w-3xl">
-      <Link to="/catalog" className="text-sm text-amber-400 hover:text-amber-300 inline-block">
-        ← Back
-      </Link>
+    <TonePageWrapper ref={routeRef} testId="catalog-detail">
 
-      {/* Frame header — espresso-dark chrome carries identity; operational content sits on light cards below. */}
-      <div className="kk-proto-header-zone">
-        <PageHeader title={item.bean_name} subtitle={item.roaster} />
-        {item.roast_level && (
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Badge tone="neutral" emphasis="solid" className="kk-chip kk-chip--neutral">{item.roast_level}</Badge>
-          </div>
-        )}
-        {!editing && (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              size="xs"
-              onClick={() => {
-                setEditRoaster(item.roaster)
-                setEditBeanName(item.bean_name)
-                setEditRoastLevel(item.roast_level)
-                setEditProductUrl(item.product_url ?? '')
-                setEditError(null)
-                setImageError(null)
-                setEditing(true)
-              }}
-            >
-              Edit
-            </Button>
-          </div>
-        )}
+      {/* ── Nav row: back link + tone toggle ─────────────────────────────── */}
+      <div className="kk-b-page__nav">
+        <BackLink to="/catalog" />
+        <ToneToggle />
       </div>
 
-      {/* Identity / edit surface */}
-      {editing ? (
-        <div className="kaapi-content-surface p-4 md:p-5 space-y-4">
-          <div className="flex items-start gap-4">
-            {imageBlock}
-            <div className="min-w-0 flex-1 space-y-3">
-              <FormField label="Roaster" htmlFor="catalog-edit-roaster">
-                <Input
+      {/* ── Single takeover card — ALL catalog content unified ──────────────── */}
+      <TakeoverCard>
+
+        {/* 1. Title section — bean icon left, name + roaster stacked right */}
+        <Section isTitle>
+          <TitleIcon
+            src={item.image_path && item.image_path !== brokenImageSrc ? item.image_path : null}
+            alt={item.bean_name}
+            monogram={item.bean_name?.charAt(0)?.toUpperCase()}
+            onError={() => setBrokenImageSrc(item.image_path ?? null)}
+          >
+            {imageOverlay}
+          </TitleIcon>
+          <TitleBlock title={item.bean_name} subtitle={item.roaster} />
+        </Section>
+
+        {/* 2. Identity section — roast chip + edit / edit form inline */}
+        <Section>
+          {editing ? (
+            <div className="space-y-4">
+              <FormSection>
+                <ToneInput
                   id="catalog-edit-roaster"
+                  label="Roaster"
                   type="text"
-                  inputSize="sm"
                   value={editRoaster}
                   onChange={(e) => setEditRoaster(e.target.value)}
                 />
-              </FormField>
-              <FormField label="Bean name" htmlFor="catalog-edit-bean-name">
-                <Input
+                <ToneInput
                   id="catalog-edit-bean-name"
+                  label="Bean name"
                   type="text"
-                  inputSize="sm"
                   value={editBeanName}
                   onChange={(e) => setEditBeanName(e.target.value)}
                 />
-              </FormField>
-              <FormField label="Roast level" htmlFor="catalog-edit-roast-level">
-                <Select
+                <ToneSelect
                   id="catalog-edit-roast-level"
-                  selectSize="sm"
+                  label="Roast level"
                   value={editRoastLevel}
                   onChange={(e) => setEditRoastLevel(e.target.value)}
                 >
@@ -297,255 +280,250 @@ export default function CatalogDetail() {
                   {ROAST_LEVELS.map((r) => (
                     <option key={r} value={r}>{r}</option>
                   ))}
-                </Select>
-              </FormField>
-              <FormField label="Product URL (optional)" htmlFor="catalog-edit-product-url">
-                <Input
+                </ToneSelect>
+                <ToneInput
                   id="catalog-edit-product-url"
+                  label="Product URL (optional)"
                   type="url"
-                  inputSize="sm"
                   value={editProductUrl}
                   onChange={(e) => setEditProductUrl(e.target.value)}
                   placeholder="https://..."
                 />
-              </FormField>
-            </div>
-          </div>
-          {imageError && <p className="text-xs text-error">{imageError}</p>}
-          {editError && <p className="text-xs text-error">{editError}</p>}
-          <div className="flex justify-end gap-2 pt-1">
-            <Button
-              onClick={() => { setEditing(false); setEditError(null); setImageError(null) }}
-              variant="ghost"
-              size="xs"
-            >
-              Cancel
-            </Button>
-            <Button
-              disabled={editSaving || imageUploading || !editRoaster.trim() || !editBeanName.trim() || !editRoastLevel}
-              onClick={async () => {
-                if (!id) return
-                setEditSaving(true)
-                setEditError(null)
-                try {
-                  await updateCatalogItem(id, {
-                    roaster: editRoaster.trim(),
-                    bean_name: editBeanName.trim(),
-                    roast_level: editRoastLevel,
-                    product_url: editProductUrl.trim() || null,
-                  })
-                  setEditing(false)
-                  await queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(id, activeHouseholdId) })
-                  invalidateAllCatalogConsumers()
-                } catch {
-                  setEditError('Failed to save. Please try again.')
-                } finally {
-                  setEditSaving(false)
-                }
-              }}
-              variant="primary"
-              size="xs"
-            >
-              {editSaving ? <span className="loading loading-spinner loading-xs" /> : 'Save'}
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <GlassCard variant="content" className="flex items-start gap-4">
-          {imageBlock}
-          <div className="min-w-0 flex-1">
-            {item.product_url ? (
-              <a
-                href={item.product_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-sm btn-outline btn-bevel"
-              >
-                {COPY.catalog.viewOnRoaster}
-              </a>
-            ) : (
-              <p className="text-sm text-[var(--kaapi-content-muted)]">{COPY.catalog.noRoasterLink}</p>
-            )}
-          </div>
-        </GlassCard>
-      )}
-
-      {/* Bags */}
-      <section className="space-y-3">
-        <SectionHeading
-          title={COPY.catalog.bags}
-          testId="catalog-section-heading"
-          actions={(
-            <Button onClick={openAddBagForm} size="xs">
-              {COPY.catalog.addBag}
-            </Button>
-          )}
-        />
-
-        {addingBag && (
-          <div className="kaapi-content-surface space-y-3 p-4">
-            <div className="flex flex-wrap gap-3">
-              <div className="min-w-[140px] flex-1">
-                <FormField label="Roast date" htmlFor="add-bag-roast-date">
-                  <Input
-                    id="add-bag-roast-date"
-                    type="date"
-                    inputSize="sm"
-                    value={bagRoastDate}
-                    onChange={(e) => setBagRoastDate(e.target.value)}
-                  />
-                </FormField>
+              </FormSection>
+              {imageError && <p className="text-xs kk-tc-error">{imageError}</p>}
+              {editError && <p className="text-xs kk-tc-error">{editError}</p>}
+              <div className="flex justify-end gap-2 pt-1">
+                <ToneButton
+                  variant="edit"
+                  onClick={() => { setEditing(false); setEditError(null); setImageError(null) }}
+                >
+                  Cancel
+                </ToneButton>
+                <ToneButton
+                  variant="edit"
+                  disabled={editSaving || imageUploading || !editRoaster.trim() || !editBeanName.trim() || !editRoastLevel}
+                  onClick={async () => {
+                    if (!id) return
+                    setEditSaving(true)
+                    setEditError(null)
+                    try {
+                      await updateCatalogItem(id, {
+                        roaster: editRoaster.trim(),
+                        bean_name: editBeanName.trim(),
+                        roast_level: editRoastLevel,
+                        product_url: editProductUrl.trim() || null,
+                      })
+                      setEditing(false)
+                      await queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(id, activeHouseholdId) })
+                      invalidateAllCatalogConsumers()
+                    } catch {
+                      setEditError('Failed to save. Please try again.')
+                    } finally {
+                      setEditSaving(false)
+                    }
+                  }}
+                >
+                  {editSaving ? <span className="loading loading-spinner loading-xs" /> : 'Save'}
+                </ToneButton>
               </div>
-              {lockedCatalogRoast ? (
-                <div className="min-w-[140px] flex-1">
-                  <FormField label="Roast level" htmlFor="add-bag-roast-level-locked">
-                    <Input
-                      id="add-bag-roast-level-locked"
-                      type="text"
-                      inputSize="sm"
-                      value={lockedCatalogRoast}
-                      readOnly
-                      disabled
-                      aria-describedby="add-bag-roast-level-locked-note"
-                      className="opacity-60"
-                    />
-                  </FormField>
-                  <p id="add-bag-roast-level-locked-note" className="mt-1 text-xs text-[var(--kaapi-content-muted)]">
-                    {COPY.catalog.roastLockedPrefix} {lockedCatalogRoast}
-                  </p>
-                </div>
+            </div>
+          ) : (
+            <div>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                {item.roast_level && (
+                  <RoastChip level={item.roast_level} />
+                )}
+                <ToneButton
+                  variant="edit"
+                  onClick={() => {
+                    setEditRoaster(item.roaster)
+                    setEditBeanName(item.bean_name)
+                    setEditRoastLevel(item.roast_level)
+                    setEditProductUrl(item.product_url ?? '')
+                    setEditError(null)
+                    setImageError(null)
+                    setEditing(true)
+                  }}
+                >
+                  Edit
+                </ToneButton>
+              </div>
+              {item.product_url ? (
+                <a
+                  href={item.product_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="kk-tc-roaster-link"
+                >
+                  {COPY.catalog.viewOnRoaster}
+                </a>
               ) : (
-                <div className="min-w-[140px] flex-1">
-                  <FormField label="Roast level" htmlFor="add-bag-roast-level">
-                    <Select
-                      id="add-bag-roast-level"
-                      selectSize="sm"
-                      value={bagRoastLevel}
-                      onChange={(e) => setBagRoastLevel(e.target.value)}
-                      required
-                    >
-                      <option value="">{COPY.catalog.selectPlaceholder}</option>
-                      {ROAST_LEVELS.map((r) => (
-                        <option key={r} value={r}>{r}</option>
-                      ))}
-                    </Select>
-                  </FormField>
-                </div>
+                <p className="kk-tc-body-muted">{COPY.catalog.noRoasterLink}</p>
               )}
             </div>
-            {bagError && <p className="text-xs text-error">{bagError}</p>}
-            <div className="flex justify-end gap-2">
-              <Button
-                onClick={resetAddBagForm}
-                variant="ghost"
-                size="xs"
-              >
-                Cancel
-              </Button>
-              <Button
-                disabled={bagSaving || !bagRoastDate || !addBagRoastLevel}
-                onClick={async () => {
-                  setBagSaving(true)
-                  setBagError(null)
-                  try {
-                    await createInventoryBag(id!, { roast_date: bagRoastDate, roast_level: addBagRoastLevel })
-                    resetAddBagForm()
-                    queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(id!, activeHouseholdId) })
-                    queryClient.invalidateQueries({ queryKey: inventoryQueryKey(activeHouseholdId) })
-                    queryClient.invalidateQueries({ queryKey: dashboardQueryKey(activeHouseholdId) })
-                    queryClient.invalidateQueries({ queryKey: brewLogListQueryKey(activeHouseholdId) })
-                  } catch (err) {
-                    setBagError(errorMessage(err, 'Failed to add bag. Please try again.'))
-                  } finally {
-                    setBagSaving(false)
-                  }
-                }}
-                variant="primary"
-                size="xs"
-              >
-                {bagSaving ? <span className="loading loading-spinner loading-xs" /> : 'Save bag'}
-              </Button>
-            </div>
-          </div>
-        )}
+          )}
+        </Section>
 
-        {bags.length === 0 ? (
-          <GlassCard variant="content">
-            <p className="text-sm text-[var(--kaapi-content-muted)]">{COPY.catalog.noBags}</p>
-          </GlassCard>
-        ) : (
-          <div ref={cardListRef} data-testid="motion-card-list" className="space-y-2">
-            {bags.map((bag) => {
-              const nextStatus = bag.status === 'Active' ? 'Finished' : 'Active'
-              const pending = bagStatusMutation.isPending && bagStatusMutation.variables?.bagId === bag.bag_id
-              const actionLabel = bag.status === 'Active' ? 'Finish bag' : 'Reactivate'
-              return (
-                <GlassCard key={bag.bag_id} variant="content" padding="sm" className="kaapi-motion-card flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    {bag.roast_date && (
-                      <p data-testid="bag-roast-date" className="mt-0.5 text-sm text-[var(--kaapi-content-content)]">{bag.roast_date}</p>
-                    )}
-                    <p data-testid="bag-status" className="text-sm capitalize text-[var(--kaapi-content-muted)]">{bag.status}</p>
-                    {statusErrors[bag.bag_id] && (
-                      <p className="mt-1 text-xs text-error">{statusErrors[bag.bag_id]}</p>
-                    )}
+        {/* 3. Actions section — Add Bag primary button or inline add-bag form */}
+        {!editing && (
+          <Section>
+            {addingBag ? (
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-3">
+                  <div className="min-w-[140px] flex-1">
+                    <ToneInput
+                      id="add-bag-roast-date"
+                      label="Roast date"
+                      type="date"
+                      value={bagRoastDate}
+                      onChange={(e) => setBagRoastDate(e.target.value)}
+                    />
                   </div>
-                  <Button
-                    type="button"
-                    disabled={pending}
-                    onClick={() => bagStatusMutation.mutate({ bagId: bag.bag_id, status: nextStatus })}
-                    variant="outline"
-                    size="xs"
+                  {lockedCatalogRoast ? (
+                    <div className="min-w-[140px] flex-1">
+                      <ToneInput
+                        id="add-bag-roast-level-locked"
+                        label="Roast level"
+                        type="text"
+                        value={lockedCatalogRoast}
+                        readOnly
+                        disabled
+                        aria-describedby="add-bag-roast-level-locked-note"
+                        className="opacity-60"
+                      />
+                      <p id="add-bag-roast-level-locked-note" className="kk-tc-body-muted mt-1 text-xs">
+                        {COPY.catalog.roastLockedPrefix} {lockedCatalogRoast}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="min-w-[140px] flex-1">
+                      <ToneSelect
+                        id="add-bag-roast-level"
+                        label="Roast level"
+                        value={bagRoastLevel}
+                        onChange={(e) => setBagRoastLevel(e.target.value)}
+                      >
+                        <option value="">{COPY.catalog.selectPlaceholder}</option>
+                        {ROAST_LEVELS.map((r) => (
+                          <option key={r} value={r}>{r}</option>
+                        ))}
+                      </ToneSelect>
+                    </div>
+                  )}
+                </div>
+                {bagError && <p className="text-xs kk-tc-error">{bagError}</p>}
+                <div className="flex justify-end gap-2">
+                  <ToneButton variant="edit" onClick={resetAddBagForm}>
+                    Cancel
+                  </ToneButton>
+                  <ToneButton
+                    variant="edit"
+                    disabled={bagSaving || !bagRoastDate || !addBagRoastLevel}
+                    onClick={async () => {
+                      setBagSaving(true)
+                      setBagError(null)
+                      try {
+                        await createInventoryBag(id!, { roast_date: bagRoastDate, roast_level: addBagRoastLevel })
+                        resetAddBagForm()
+                        queryClient.invalidateQueries({ queryKey: catalogDetailQueryKey(id!, activeHouseholdId) })
+                        queryClient.invalidateQueries({ queryKey: inventoryQueryKey(activeHouseholdId) })
+                        queryClient.invalidateQueries({ queryKey: dashboardQueryKey(activeHouseholdId) })
+                        queryClient.invalidateQueries({ queryKey: brewLogListQueryKey(activeHouseholdId) })
+                      } catch (err) {
+                        setBagError(errorMessage(err, 'Failed to add bag. Please try again.'))
+                      } finally {
+                        setBagSaving(false)
+                      }
+                    }}
                   >
-                    {pending ? 'Saving…' : actionLabel}
-                  </Button>
-                </GlassCard>
-              )
-            })}
-          </div>
+                    {bagSaving ? <span className="loading loading-spinner loading-xs" /> : 'Save bag'}
+                  </ToneButton>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-3">
+                <ToneButton variant="primary" onClick={openAddBagForm}>
+                  {COPY.catalog.addBag}
+                </ToneButton>
+              </div>
+            )}
+          </Section>
         )}
-      </section>
 
-      {/* Brew history */}
-      <section className="space-y-3">
-        <SectionHeading title={COPY.catalog.brewHistory} testId="catalog-section-heading" />
-        {recent_shots.length === 0 ? (
-          <GlassCard variant="content">
-            <p className="text-sm text-[var(--kaapi-content-muted)]">{COPY.catalog.noShots}</p>
-          </GlassCard>
-        ) : (
-          <GlassCard variant="content" padding="none">
+        {/* 4. Bags inventory section */}
+        <Section>
+          <SectionHeader>{COPY.catalog.bags}</SectionHeader>
+          {bags.length === 0 ? (
+            <p className="kk-tc-body-muted">{COPY.catalog.noBags}</p>
+          ) : (
+            <div ref={cardListRef} data-testid="motion-card-list" className="space-y-2">
+              {bags.map((bag) => {
+                const nextStatus = bag.status === 'Active' ? 'Finished' : 'Active'
+                const pending = bagStatusMutation.isPending && bagStatusMutation.variables?.bagId === bag.bag_id
+                const actionLabel = bag.status === 'Active' ? 'Finish bag' : 'Reactivate'
+                return (
+                  <div key={bag.bag_id} className="kaapi-motion-card flex items-center justify-between gap-3 py-2">
+                    <div className="min-w-0">
+                      {bag.roast_date && (
+                        <p data-testid="bag-roast-date" className="kk-tc-body">{bag.roast_date}</p>
+                      )}
+                      <p data-testid="bag-status" className="kk-tc-body-muted capitalize">{bag.status}</p>
+                      {statusErrors[bag.bag_id] && (
+                        <p className="mt-1 text-xs kk-tc-error">{statusErrors[bag.bag_id]}</p>
+                      )}
+                    </div>
+                    <ToneButton
+                      variant="edit"
+                      disabled={pending}
+                      onClick={() => bagStatusMutation.mutate({ bagId: bag.bag_id, status: nextStatus })}
+                    >
+                      {pending ? 'Saving…' : actionLabel}
+                    </ToneButton>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </Section>
+
+        {/* 5. Brew history section */}
+        <Section>
+          <SectionHeader>{COPY.catalog.brewHistory}</SectionHeader>
+          {recent_shots.length === 0 ? (
+            <p className="kk-tc-body-muted">{COPY.catalog.noShots}</p>
+          ) : (
             <div className="overflow-x-auto">
-              <table className="table table-sm md:table-md w-full text-[var(--kaapi-content-content)]">
-                <thead className="text-xs text-[var(--kaapi-content-muted)]">
+              <table className="w-full text-sm">
+                <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>{COPY.catalog.doseYield}</th>
-                    <th>{COPY.catalog.time}</th>
+                    <th className="kk-tc-param-label pb-2 text-left">Date</th>
+                    <th className="kk-tc-param-label pb-2 text-left">{COPY.catalog.doseYield}</th>
+                    <th className="kk-tc-param-label pb-2 text-left">{COPY.catalog.time}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {recent_shots.slice(0, 10).map((shot) => (
                     <tr
                       key={shot.shot_id}
-                      className="cursor-pointer border-t border-[var(--kaapi-content-border)] transition-colors hover:bg-[var(--kaapi-content-surface-2)]"
+                      className="cursor-pointer kk-tc-table-row transition-colors hover:opacity-80"
                       onClick={() => navigate(`/brew-log/${shot.shot_id}?back=/catalog/${id}`)}
                     >
-                      <td className="text-xs md:py-3 md:text-sm">{shot.date}</td>
-                      <td className="font-mono text-xs md:py-3 md:text-sm">
+                      <td className="kk-tc-body py-2 text-xs md:text-sm">{shot.date}</td>
+                      <td className="kk-tc-body py-2 font-mono text-xs md:text-sm">
                         {shot.dose_in_g != null && shot.yield_out_g != null
                           ? `${shot.dose_in_g}g → ${shot.yield_out_g}g`
                           : '—'}
                       </td>
-                      <td className="text-xs md:py-3 md:text-sm">{shot.time_sec != null ? `${shot.time_sec}s` : '—'}</td>
+                      <td className="kk-tc-body py-2 text-xs md:text-sm">{shot.time_sec != null ? `${shot.time_sec}s` : '—'}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </GlassCard>
-        )}
-      </section>
-    </div>
+          )}
+        </Section>
+
+      </TakeoverCard>
+    </TonePageWrapper>
   )
 }

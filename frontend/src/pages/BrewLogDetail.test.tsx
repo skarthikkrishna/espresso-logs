@@ -217,6 +217,32 @@ describe('BrewLogDetail — detail presentation anchors', () => {
   })
 })
 
+describe('BrewLogDetail — title monogram icon', () => {
+  it('derives monogram from the bean portion after the " — " separator', () => {
+    // baseShot.bag_display = 'Verve Coffee — Seabright' → bean = 'Seabright' → 'S'
+    renderWithPaginatedCache(baseShot)
+
+    const placeholder = screen.getByTestId('catalog-image-placeholder')
+    expect(placeholder).toBeInTheDocument()
+    expect(placeholder.querySelector('.kk-tc-title-icon-monogram')).toHaveTextContent('S')
+  })
+
+  it('falls back to first letter of full string when no " — " separator', () => {
+    renderWithPaginatedCache({ ...baseShot, bag_display: 'Yirgacheffe' })
+
+    const placeholder = screen.getByTestId('catalog-image-placeholder')
+    expect(placeholder.querySelector('.kk-tc-title-icon-monogram')).toHaveTextContent('Y')
+  })
+
+  it('renders ☕ fallback placeholder when bag_display is empty', () => {
+    renderWithPaginatedCache({ ...baseShot, bag_display: '' })
+
+    const placeholder = screen.getByTestId('catalog-image-placeholder')
+    expect(placeholder.querySelector('.kk-tc-title-icon-monogram')).toBeNull()
+    expect(placeholder).toHaveTextContent('☕')
+  })
+})
+
 describe('BrewLogDetail — historical corrections', () => {
   it('submits only changed typo-safe fields and preserves existing AI feedback', async () => {
     const shotWithFeedback = { ...baseShot, ai_feedback: 'Existing AI feedback' }
