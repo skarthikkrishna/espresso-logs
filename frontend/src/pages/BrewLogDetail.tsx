@@ -223,7 +223,7 @@ export default function BrewLogDetail() {
   }
 
   return (
-    <div ref={routeRef} data-testid="brew-log-detail" className="kk-proto-043 p-4 md:p-6 space-y-6 max-w-2xl">
+    <div ref={routeRef} data-testid="brew-log-detail" className="kk-proto-043 p-4 space-y-6">
       {/* AC-15: ← Back text confirmed */}
       <Link to={backTarget} className="text-sm text-amber-400 hover:text-amber-300 inline-block">
         ← Back
@@ -267,7 +267,7 @@ export default function BrewLogDetail() {
 
       {correctionOpen && (
         <GlassCard variant="content">
-          <h2 className="text-sm font-semibold mb-1">{COPY.brewLogDetail.correctFormTitle}</h2>
+          <h2 className="kk-section-header text-sm font-semibold mb-1">{COPY.brewLogDetail.correctFormTitle}</h2>
           <p className="text-xs text-[var(--kaapi-content-muted)] mb-3">
             {COPY.brewLogDetail.correctFormHint}
           </p>
@@ -355,7 +355,7 @@ export default function BrewLogDetail() {
 
       {/* Shot parameters */}
       <GlassCard variant="content">
-        <h2 className="text-sm font-semibold mb-3">{COPY.brewLogDetail.shotParameters}</h2>
+        <h2 className="kk-section-header text-sm font-semibold mb-3">{COPY.brewLogDetail.shotParameters}</h2>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
           {shot.dose_in_g != null && (
             <>
@@ -398,7 +398,7 @@ export default function BrewLogDetail() {
 
       {(shot.dose_in_g != null || shot.yield_out_g != null || shot.time_sec != null) && (
         <GlassCard variant="content">
-          <SectionHeading title={COPY.brewLogDetail.extractionShape} />
+          <SectionHeading title={COPY.brewLogDetail.extractionShape} className="kk-section-header" />
           <ExtractionReadout
             doseG={shot.dose_in_g}
             yieldG={shot.yield_out_g}
@@ -410,7 +410,7 @@ export default function BrewLogDetail() {
       {/* Hardware */}
       {(shot.machine_name || shot.grinder_name || shot.basket_name) && (
         <GlassCard variant="content">
-          <h2 className="text-sm font-semibold mb-3">Hardware</h2>
+          <h2 className="kk-section-header text-sm font-semibold mb-3">Hardware</h2>
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             {shot.machine_name && (
               <>
@@ -437,14 +437,14 @@ export default function BrewLogDetail() {
       {/* Notes */}
       {shot.user_notes && (
         <GlassCard variant="content" data-testid="notes-section">
-          <h2 className="text-sm font-semibold mb-2">Notes</h2>
+          <h2 className="kk-section-header text-sm font-semibold mb-2">Notes</h2>
           <p className="text-sm">{shot.user_notes}</p>
         </GlassCard>
       )}
 
       {/* AI feedback */}
       <GlassCard variant="content">
-        <h2 className="text-sm font-semibold mb-3">{COPY.brewLogDetail.aiFeedback}</h2>
+        <h2 className="kk-section-header text-sm font-semibold mb-3">{COPY.brewLogDetail.aiFeedback}</h2>
         {visibleFeedback ? (
           <p className="text-sm">{visibleFeedback}</p>
         ) : (

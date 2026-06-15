@@ -185,6 +185,20 @@
   --viz-metric-text: var(--kaapi-content-content);
   --viz-metric-muted: var(--kaapi-content-muted);
   --viz-frame-bg: linear-gradient(135deg, #f7ead8 0%, #fff7ed 52%, #ead8c0 100%);
+
+  /* spec-043 v2 prototype: warm translucent surface (merged cream+glass system).
+     CRITICAL: --kaapi-warm-translucent-shadow is a comma-separated multi-layer
+     value — must live in :root, NOT inside @plugin "daisyui/theme" which truncates
+     comma-separated values to the last entry. */
+  --kaapi-warm-translucent: rgba(255, 247, 237, 0.94);
+  --kaapi-warm-translucent-blur: blur(8px);
+  --kaapi-warm-translucent-shadow: 0 12px 32px rgba(18, 11, 6, 0.22), 0 2px 6px rgba(18, 11, 6, 0.14), inset 0 1px 0 rgba(255,255,255,0.60);
+  --kaapi-warm-translucent-border: rgba(120, 53, 15, 0.12);
+  --section-header-text: var(--kaapi-content-content);
+  --section-header-size: 0.8125rem;
+  --section-header-weight: 700;
+  --section-header-tracking: 0.04em;
+  --section-header-gap: 0.75rem;
 }
 
 /* ── Custom font families (Tailwind v4 @theme creates utility classes) ─── */
@@ -676,19 +690,73 @@ input[type="file"]::file-selector-button {
   letter-spacing: 0.14em;
 }
 
+/* spec-043 v2: warm translucent surface — cream base with 6% alpha, merged system.
+   Baseline (always): 94% opaque cream guarantees ~12:1 text contrast over any bg.
+   Progressive blur is additive only — text stays legible without it. */
 .kk-proto-043 .kaapi-content-surface,
-.kk-proto-043 .glass-card.glass-card--content {
-  background: var(--kaapi-content-surface);
+.kk-proto-043 .glass-card.glass-card--content,
+.kk-proto-043 .kk-warm-surface {
+  background: var(--kaapi-warm-translucent);
   color: var(--kaapi-content-content);
-  border: 1px solid var(--kaapi-content-border);
+  border: 1px solid var(--kaapi-warm-translucent-border);
   border-radius: var(--kaapi-content-radius);
-  box-shadow: var(--kaapi-content-shadow);
-  backdrop-filter: none;
+  box-shadow: var(--kaapi-warm-translucent-shadow);
   -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
+/* Progressive: backdrop-filter on capable browsers */
+@supports (backdrop-filter: blur(1px)) {
+  .kk-proto-043 .kaapi-content-surface,
+  .kk-proto-043 .glass-card.glass-card--content,
+  .kk-proto-043 .kk-warm-surface {
+    -webkit-backdrop-filter: var(--kaapi-warm-translucent-blur);
+    backdrop-filter: var(--kaapi-warm-translucent-blur);
+  }
+}
+
+/* Reduced transparency: solid fallback, no blur */
+@media (prefers-reduced-transparency: reduce) {
+  .kk-proto-043 .kaapi-content-surface,
+  .kk-proto-043 .glass-card.glass-card--content,
+  .kk-proto-043 .kk-warm-surface {
+    background: var(--kaapi-content-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Cards are static on warm surface — no hover shadow lift */
 .kk-proto-043 .glass-card.glass-card--content.card-bevel:hover {
-  box-shadow: var(--kaapi-content-shadow);
+  box-shadow: var(--kaapi-warm-translucent-shadow);
+}
+
+/* spec-043 v2 §4.3: Section headers on warm content surfaces.
+   .kk-section-header may be the SectionHeading wrapper <div> OR a plain <h2>.
+   When it is the wrapper div: target the child h2 and hide the dark-chrome accent.
+   When it is the h2 itself: style directly. */
+.kk-proto-043 .kk-section-header h2 {
+  font-family: var(--font-body);
+  font-size: var(--section-header-size);
+  font-weight: var(--section-header-weight);
+  letter-spacing: var(--section-header-tracking);
+  text-transform: none;
+  color: var(--section-header-text);
+}
+
+/* Hide the decorative amber accent bar — designed for dark chrome, orphans on cream */
+.kk-proto-043 .kk-section-header h2 > span[aria-hidden] {
+  display: none;
+}
+
+.kk-proto-043 h2.kk-section-header {
+  font-family: var(--font-body);
+  font-size: var(--section-header-size);
+  font-weight: var(--section-header-weight);
+  letter-spacing: var(--section-header-tracking);
+  text-transform: none;
+  color: var(--section-header-text);
+  margin-bottom: var(--section-header-gap);
 }
 
 .kk-proto-043 .btn-bevel {
@@ -746,6 +814,22 @@ input[type="file"]::file-selector-button {
   color: var(--kaapi-content-content);
 }
 
+.kk-proto-043 .btn-ghost:focus-visible {
+  outline: none;
+  box-shadow: var(--btn-focus-ring);
+}
+
+.kk-proto-043 .btn-ghost:active:not(:disabled) {
+  background: var(--btn-ghost-bg-hover);
+  color: var(--kaapi-content-content);
+}
+
+.kk-proto-043 .btn-ghost:disabled,
+.kk-proto-043 .btn-ghost[disabled] {
+  opacity: var(--btn-disabled-opacity);
+  cursor: not-allowed;
+}
+
 .kk-proto-043 .kk-btn-outline-danger {
   min-height: 44px;
   background: var(--btn-outline-bg);
@@ -760,6 +844,24 @@ input[type="file"]::file-selector-button {
   border-color: rgba(185, 28, 28, 0.50);
   transform: translateY(-1px);
   box-shadow: var(--btn-surface-shadow-hover);
+}
+
+.kk-proto-043 .kk-btn-outline-danger:focus-visible {
+  outline: none;
+  box-shadow: var(--btn-surface-shadow-rest), var(--btn-focus-ring);
+}
+
+.kk-proto-043 .kk-btn-outline-danger:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: var(--btn-surface-shadow-active);
+}
+
+.kk-proto-043 .kk-btn-outline-danger:disabled,
+.kk-proto-043 .kk-btn-outline-danger[disabled] {
+  transform: none;
+  box-shadow: none;
+  opacity: var(--btn-disabled-opacity);
+  cursor: not-allowed;
 }
 
 .kk-proto-043 .kk-chip {
@@ -888,11 +990,48 @@ input[type="file"]::file-selector-button {
   }
 }
 
+/* spec-043 v2 §5: Desktop responsiveness — constrained centered reading column.
+   Mobile default: full-width, 1rem padding (handled in BrewLogDetail className).
+   Tablet/Desktop: centered column, intentional side margins and max-width. */
+@media (min-width: 640px) {
+  .kk-proto-043 {
+    padding: 1.5rem 2rem;
+    max-width: 40rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  .kk-proto-043 {
+    padding: 2rem 3rem;
+    max-width: 48rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  /* Increase vertical card gap at desktop for intentional breathing room */
+  .kk-proto-043 .space-y-6 > * + * {
+    margin-top: 2rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .kk-proto-043 {
+    max-width: 52rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .kk-proto-043 .btn-bevel,
   .kk-proto-043 .btn-ghost,
   .kk-proto-043 .kk-btn-outline-danger {
     transition: none;
+    transform: none;
+  }
+  .kk-proto-043 .btn-bevel:hover:not(:disabled),
+  .kk-proto-043 .btn-bevel:active:not(:disabled),
+  .kk-proto-043 .kk-btn-outline-danger:hover:not(:disabled),
+  .kk-proto-043 .kk-btn-outline-danger:active:not(:disabled) {
     transform: none;
   }
 }

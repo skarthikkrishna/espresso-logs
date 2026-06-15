@@ -235,12 +235,6 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
         <rect x={PADDING.left} y={PADDING.top} width={chartW} height={chartH}
               fill="url(#meshSlate)" pointerEvents="none" />
 
-        {/* Outer boundary rect */}
-        <rect data-testid="compass-boundary"
-              x={PADDING.left} y={PADDING.top} width={chartW} height={chartH}
-              fill="none" stroke="rgba(200,134,10,0.25)" strokeWidth="0.75"
-              pointerEvents="none" />
-
         {aurora && (
           <rect data-testid="aurora-overlay"
                 x={PADDING.left} y={PADDING.top} width={chartW} height={chartH}
