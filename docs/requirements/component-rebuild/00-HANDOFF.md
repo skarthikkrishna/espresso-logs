@@ -1,7 +1,41 @@
 # spec-043 Component-System Rebuild — Continuation Handoff
 
 > **Read this first.** This document lets a new session resume the rebuild cold, without context loss.
-> Last updated: 2026-06-15. Branch: `feat/043-design-coherence` (off `household_fixes`). Nothing pushed.
+> Last updated: **2026-06-15 (PAUSED)**. Branch: `feat/043-design-coherence` (off `household_fixes`). Nothing pushed.
+
+---
+
+## ⛔ PAUSED 2026-06-15 — RESTART HERE
+
+The operator **paused** the rollout. Detail pages are GREEN; the two immersive **list/summary pages are RED** (need rework). **Do NOT proceed to new pages until the RED items are fixed and re-approved.**
+
+| Page | Status |
+|---|---|
+| Brew-log detail, Catalog detail (glass takeover) | 🟢 GREEN — approved, committed `71f60d2` |
+| **Catalog summary** (`/catalog`, CatalogList.tsx) | 🔴 RED — see below |
+| **Home / Dashboard** (`/`, Dashboard.tsx) | 🔴 RED — see below |
+| Foundation (`tone-system/` library + ToneContext) | 🟢 good — RED is about the immersive list pages, not the library |
+| Rollout phases p2b–p10 | ⏸️ not started — blocked behind the RED fixes |
+
+### RED to-do list (exact fixes — precise values in `07-dashboard-and-beige-fixes.md`)
+**Both list pages — immersive shell:**
+1. **BEIGE "light mode" reads GREY.** Raise the `ImmersiveListShell` beige frost from `rgba(245,235,220,0.55)` → **`rgba(245,235,220,0.78)`** (matches the detail-page natural beige). Apply to `--kk-il-frost-tint` in `[data-tone="beige"]` AND the `#main-content:has(.immersive-list-shell[data-tone="beige"])` background. One reusable fix → corrects BOTH pages.
+2. **EntityCards faint on DARK tone** — boost dark-tone tokens (surface 0.72→0.78, border 0.08→0.12, inner highlight 0.12→0.15, tighter shadow + subtle ring).
+
+**Home/Dashboard only:**
+3. **REMOVE the 2D coffee-graphics hero viz** entirely (`DashboardHeroMotion`/`HeroVisualFrame`/`DashboardHero3D`/`DashboardHeroFallback` from `Dashboard.tsx`) — operator dislikes it. Decide a replacement hero treatment (or none). (NOTE: `07-...fixes.md` §B "integrate the viz" is MOOT — the viz is being removed.)
+4. **Page reads monochromatic** — restore color/contrast (the beige fix + card presence + ensure RoastChips / warm accents show).
+5. **Bag monograms show "RE"** (bug) — all Active-Bags EntityCards show "RE" instead of per-bag initials; fix the monogram derivation in `Dashboard.tsx`.
+6. **"Log a shot" primary CTA is weak** plain text — make it a proper primary `ToneButton`.
+
+### Restart procedure
+1. Apply `07-dashboard-and-beige-fixes.md` §A (beige frost) + §E (EntityCard dark presence). Skip its §B (viz integration — superseded by removal).
+2. Remove the hero viz from `Dashboard.tsx`; fix the monogram bug + the "Log a shot" CTA; restore color/contrast.
+3. Visual-check BOTH tones on home + catalog summary (beige natural not grey; not monochromatic; cards present) before re-showing the operator.
+4. Only after both pages are re-approved 🟢, resume the rollout (p2b–p10 per `03-rollout-checklist.md`).
+5. Dashboard build is committed as a WIP/RED checkpoint at the pause (see §7). Catalog summary's earlier-approved code is in `71f60d2` but now needs the beige fix.
+
+---
 
 ---
 

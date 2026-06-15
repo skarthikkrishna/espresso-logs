@@ -37,6 +37,8 @@ export interface EntityCardProps {
   chip?: ReactNode
   /** Badge slot — e.g. count badge for home-page cards */
   badge?: ReactNode
+  /** Meta footer slot — secondary info below chip, e.g. days-since + dose→yield. */
+  meta?: ReactNode
   className?: string
   /** CSS class forwarded to the anchor for GSAP stagger targeting.
    *  Defaults to "kaapi-motion-card" to integrate with useKaapiMotion. */
@@ -51,6 +53,7 @@ export function EntityCard({
   imageUrl,
   chip,
   badge,
+  meta,
   className = '',
   motionClassName = 'kaapi-motion-card',
   'data-testid': testId,
@@ -92,6 +95,11 @@ export function EntityCard({
         {chip && (
           <div className="entity-card-chip-slot">
             {chip}
+          </div>
+        )}
+        {meta && (
+          <div className="entity-card__meta">
+            {meta}
           </div>
         )}
       </div>

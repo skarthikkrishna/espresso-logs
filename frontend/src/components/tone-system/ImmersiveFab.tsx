@@ -30,10 +30,11 @@ interface ImmersiveFabProps {
   /** If provided, renders an <a> tag instead of <button>. */
   href?: string
   className?: string
+  'data-testid'?: string
 }
 
 export const ImmersiveFab = forwardRef<HTMLButtonElement, ImmersiveFabProps>(
-  ({ icon, label, onClick, onMouseDown, className = '' }, ref) => {
+  ({ icon, label, onClick, onMouseDown, className = '', 'data-testid': testId }, ref) => {
     const { tone } = useTone()
     return createPortal(
       <button
@@ -41,6 +42,7 @@ export const ImmersiveFab = forwardRef<HTMLButtonElement, ImmersiveFabProps>(
         type="button"
         aria-label={label}
         data-tone={tone}
+        data-testid={testId}
         className={['immersive-fab', className].filter(Boolean).join(' ')}
         onClick={onClick}
         onMouseDown={onMouseDown}

@@ -26,6 +26,8 @@ interface ListPageHeaderProps {
   className?: string
   /** Optional data-testid forwarded to the section label element. */
   sectionTestId?: string
+  /** Optional data-testid forwarded to the h1 title element. */
+  titleTestId?: string
   children?: ReactNode
 }
 
@@ -35,6 +37,7 @@ export function ListPageHeader({
   section,
   className = '',
   sectionTestId,
+  titleTestId,
   children,
 }: ListPageHeaderProps) {
   return (
@@ -42,7 +45,7 @@ export function ListPageHeader({
       {eyebrow && (
         <p className="list-page-header-eyebrow">{eyebrow}</p>
       )}
-      <h1 className="list-page-header-title">{title}</h1>
+      <h1 className="list-page-header-title" data-testid={titleTestId}>{title}</h1>
       {section && (
         <p
           className="list-page-header-section"

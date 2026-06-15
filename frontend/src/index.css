@@ -2275,6 +2275,21 @@ select.input-styled,
     url('/static/img/hero-catalog.jpg');
 }
 
+/* ── Dashboard: tone-aware lighter scrim for immersive list shell ────────── */
+/* Mirrors the catalog scrim pattern. */
+.app-bg.bg-dashboard:has(~ main .immersive-list-shell[data-tone="dark"]) {
+  background-image:
+    linear-gradient(rgba(24, 16, 10, 0.28), rgba(24, 16, 10, 0.32)),
+    /* @vite-ignore */
+    url('/static/img/hero-dashboard.jpg');
+}
+.app-bg.bg-dashboard:has(~ main .immersive-list-shell[data-tone="beige"]) {
+  background-image:
+    linear-gradient(rgba(245, 235, 220, 0.10), rgba(245, 235, 220, 0.14)),
+    /* @vite-ignore */
+    url('/static/img/hero-dashboard.jpg');
+}
+
 /* ── Immersive List Shell layout ─────────────────────────────────────────── */
 .immersive-list-shell {
   min-height: 100%;
@@ -2627,4 +2642,288 @@ select.input-styled,
     -webkit-backdrop-filter: none;
     background: var(--kk-tc-surface-solid);
   }
+}
+
+/* ── HeroVisualFrame: tone-aware border/shadow in immersive shell ────────── */
+/* The frame is a solid, never-blurred viz surface (by design). When it sits
+   inside ImmersiveListShell, it needs subtle tone-aware treatment so it reads
+   on the frosted background in both tones. */
+.immersive-list-shell[data-tone="dark"] .hero-visual-frame {
+  border-color: rgba(255, 248, 240, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+.immersive-list-shell[data-tone="beige"] .hero-visual-frame {
+  border-color: rgba(92, 64, 51, 0.12);
+  box-shadow: 0 4px 16px rgba(92, 64, 51, 0.15);
+}
+
+/* ── Dashboard hero section — hero content on frost (no card wrapper) ─────── */
+.dashboard-hero-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1rem 0 1.5rem;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+/* ── Dashboard sections wrapper (active bags + recent shots) ──────────────── */
+.dashboard-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.dashboard-section-heading {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--kk-il-text-secondary);
+  margin: 0 0 0.75rem;
+}
+
+/* ── StatTile ────────────────────────────────────────────────────────────── */
+/* Glass mini-surface for hero stats. Tone tokens resolve via [data-tone]. */
+.stat-tile-row {
+  display: flex;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+  min-width: 96px;
+  text-align: center;
+
+  background: var(--kk-tc-surface);
+  border: var(--kk-tc-border);
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.stat-tile__value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--kk-tc-text-primary);
+  line-height: 1.2;
+}
+
+.stat-tile__label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--kk-il-text-secondary);
+  margin-top: 0.25rem;
+}
+
+/* StatTile skeleton */
+.stat-tile--skeleton {
+  pointer-events: none;
+}
+
+.stat-tile__skeleton-value {
+  display: block;
+  width: 2rem;
+  height: 1.5rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--kk-tc-text-primary) 12%, transparent);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.stat-tile__skeleton-label {
+  display: block;
+  width: 3.5rem;
+  height: 0.625rem;
+  border-radius: 3px;
+  margin-top: 0.375rem;
+  background: color-mix(in srgb, var(--kk-tc-text-primary) 8%, transparent);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .stat-tile {
+    background: var(--kk-tc-surface-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .stat-tile {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--kk-tc-surface-solid);
+  }
+}
+
+/* ── EntityCard meta slot ────────────────────────────────────────────────── */
+.entity-card__meta {
+  font-size: 0.6875rem;
+  color: var(--kk-tc-text-secondary);
+  margin-top: 0.375rem;
+  line-height: 1.4;
+}
+
+/* EntityCard loading skeleton */
+.entity-card--skeleton {
+  pointer-events: none;
+  min-height: 7rem;
+  background: var(--kk-tc-surface);
+  border: var(--kk-tc-border);
+  border-radius: 12px;
+  padding: 0.75rem;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.entity-card--skeleton .entity-card__skeleton-line {
+  height: 0.75rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--kk-tc-text-primary) 10%, transparent);
+  margin-bottom: 0.5rem;
+}
+
+/* ── ShotRow ─────────────────────────────────────────────────────────────── */
+/* Compact glass row — lighter treatment than EntityCard. */
+.shot-row-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.shot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  gap: 0.75rem;
+
+  background: var(--kk-tc-surface);
+  border: var(--kk-tc-border);
+  border-radius: 12px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.shot-row:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--kk-tc-text-primary) 15%, transparent);
+}
+
+.shot-row:active {
+  transform: scale(0.99);
+}
+
+.shot-row:focus-visible {
+  outline: 2px solid var(--kk-tc-text-primary);
+  outline-offset: 2px;
+}
+
+.shot-row__bag {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--kk-tc-text-primary);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shot-row__date {
+  font-size: 0.75rem;
+  color: var(--kk-il-text-secondary);
+  flex-shrink: 0;
+}
+
+.shot-row__chip {
+  flex-shrink: 0;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.6875rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--kk-tc-text-primary) 8%, transparent);
+  color: var(--kk-il-text-secondary);
+  border: 1px solid color-mix(in srgb, var(--kk-tc-text-primary) 12%, transparent);
+}
+
+.shot-row__arrow {
+  color: var(--kk-il-text-secondary);
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+/* ShotRow skeleton */
+.shot-row--skeleton {
+  pointer-events: none;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.shot-row__skeleton-bag {
+  display: block;
+  flex: 1;
+  height: 0.875rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--kk-tc-text-primary) 12%, transparent);
+  min-width: 0;
+  max-width: 12rem;
+}
+
+.shot-row__skeleton-date {
+  display: block;
+  width: 4rem;
+  height: 0.75rem;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--kk-tc-text-primary) 8%, transparent);
+  flex-shrink: 0;
+}
+
+.shot-row__skeleton-chip {
+  display: block;
+  width: 5rem;
+  height: 1.5rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--kk-tc-text-primary) 8%, transparent);
+  flex-shrink: 0;
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .shot-row {
+    background: var(--kk-tc-surface-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .shot-row {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--kk-tc-surface-solid);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shot-row {
+    transition: none;
+  }
+}
+
+/* ── Shared pulse keyframe (if not already defined by Tailwind) ──────────── */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
 }

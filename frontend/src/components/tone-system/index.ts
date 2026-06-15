@@ -45,3 +45,9 @@ export type { EntityCardProps } from './EntityCard'
 export { ListPageHeader } from './ListPageHeader'
 export { ImmersiveEmptyState } from './ImmersiveEmptyState'
 export { ImmersiveFab } from './ImmersiveFab'
+
+// Summary page atoms
+export { StatTile, StatTileSkeleton } from './StatTile'
+export type { StatTileProps } from './StatTile'
+export { ShotRow, ShotRowSkeleton } from './ShotRow'
+export type { ShotRowProps } from './ShotRow'

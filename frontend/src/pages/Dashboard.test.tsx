@@ -3,6 +3,10 @@
  *
  * Ensures the FAB (Add shot button) is rendered via createPortal to document.body,
  * preventing backdrop-filter on #main-content from breaking fixed positioning.
+ *
+ * Updated for the immersive shell rebuild: Dashboard now uses ImmersiveListShell,
+ * ImmersiveFab, EntityCard (Link), and ShotRow. The navigation test now checks
+ * link href instead of navigate-mock (EntityCard renders as <a>).
  */
 
 import React from 'react'
@@ -101,13 +105,17 @@ describe('Dashboard — portal regression', () => {
     expect(document.body).toContainElement(fab) // IS portalled to body
   })
 
-  it('navigates active bag cards to Add Brew with a reload-safe bag_id query param', async () => {
+  it('bag card href encodes the reload-safe bag_id query param', async () => {
     renderWithQuery(<Dashboard />)
 
-    const [activeBagCardText] = await screen.findAllByText('Test Roaster — Test Bean')
-    fireEvent.click(activeBagCardText)
-
-    expect(navigateMock).toHaveBeenCalledWith('/brew-log/add?bag_id=bag-1')
+    await screen.findByTestId('dashboard-fab')
+    // EntityCard renders as <a href="..."> — verify the correct URL is encoded
+    const allLinks = screen.getAllByRole('link')
+    const bagCardLink = allLinks.find(
+      (link) => link.getAttribute('href')?.startsWith('/brew-log/add'),
+    )
+    expect(bagCardLink).toBeDefined()
+    expect(bagCardLink!.getAttribute('href')).toBe('/brew-log/add?bag_id=bag-1')
   })
 })
 
@@ -153,7 +161,7 @@ describe('Dashboard — spec-043 T020 motion', () => {
     expect(screen.getByTestId('motion-route-boundary')).toBeInTheDocument()
   })
 
-  it('wires capped pointer-depth onto the hero card (4px desktop lift, reset on leave)', async () => {
+  it('wires capped pointer-depth onto the hero zone (4px desktop lift, reset on leave)', async () => {
     renderWithQuery(<Dashboard />)
 
     await screen.findByTestId('dashboard-fab')
@@ -164,3 +172,75 @@ describe('Dashboard — spec-043 T020 motion', () => {
     expect(hero.style.transform).toBe('')
   })
 })
+
+describe('Dashboard — immersive shell structure', () => {
+  it('renders the active bags section heading with its testid', async () => {
+    renderWithQuery(<Dashboard />)
+
+    await screen.findByTestId('dashboard-fab')
+    expect(screen.getByTestId('dashboard-active-bags-heading')).toBeInTheDocument()
+  })
+
+  it('renders bag as EntityCard link pointing to brew-log/add', async () => {
+    const { container } = renderWithQuery(<Dashboard />)
+
+    await screen.findByTestId('dashboard-fab')
+    // EntityCard title is in .entity-card-title
+    const entityCardTitle = container.querySelector('.entity-card-title')
+    expect(entityCardTitle).toHaveTextContent('Test Roaster — Test Bean')
+  })
+
+  it('renders recent shot as ShotRow link pointing to brew-log/:id', async () => {
+    renderWithQuery(<Dashboard />)
+
+    await screen.findByTestId('dashboard-fab')
+    // ShotRow renders as <a href="/brew-log/shot-1">
+    const allLinks = screen.getAllByRole('link')
+    const shotLink = allLinks.find((link) => link.getAttribute('href') === '/brew-log/shot-1')
+    expect(shotLink).toBeDefined()
+  })
+
+  it('shows the hero-card testid on the hero zone element (not a GlassCard)', async () => {
+    renderWithQuery(<Dashboard />)
+
+    await screen.findByTestId('dashboard-fab')
+    const hero = screen.getByTestId('dashboard-hero-card')
+    // Hero zone is a <section>, not a glass-card div
+    expect(hero.tagName).toBe('SECTION')
+    // No nested glass-card class on the hero zone
+    expect(hero).not.toHaveClass('glass-card')
+  })
+
+  it('renders three StatTiles with their labels', async () => {
+    const { container } = renderWithQuery(<Dashboard />)
+
+    await screen.findByTestId('dashboard-fab')
+    // stat-tile__label elements
+    const labels = Array.from(container.querySelectorAll('.stat-tile__label')).map(
+      (el) => el.textContent,
+    )
+    expect(labels).toContain('Active bags')
+    expect(labels).toContain('Recent')
+    expect(labels).toContain('Household')
+  })
+})
+
+describe('Dashboard — empty / fresh household state', () => {
+  it('shows fresh-household empty state when no bags and no shots', async () => {
+    vi.mocked(getDashboard).mockResolvedValue([])
+    vi.mocked(listBrewLog).mockResolvedValue({
+      items: [],
+      page: 1,
+      per_page: 100,
+      total_count: 0,
+      has_next: false,
+      sync_alert: false,
+    })
+    renderWithQuery(<Dashboard />)
+
+    await screen.findByTestId('dashboard-fab')
+    expect(screen.getByTestId('dashboard-empty-state')).toBeInTheDocument()
+    expect(screen.getByTestId('fresh-household-empty-dashboard')).toBeInTheDocument()
+  })
+})
+
