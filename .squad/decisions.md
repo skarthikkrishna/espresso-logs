@@ -2354,3 +2354,79 @@ Operator reviewed the card-less immersive catalog list. "Otherwise, great job so
 - These are component-level (reusable) changes, not page one-offs.
 - No push/PR/deploy. No sensitive identifiers in this drop.
 
+---
+spec_id: spec-043
+agent: Coordinator (operator feedback — dashboard + beige tone)
+created_at: 2026-06-15T15:40:00-07:00
+status: dashboard-fixes + immersive-beige-tone-fix
+privacy_gate: reviewed
+---
+
+# spec-043 dashboard review + the immersive beige "light mode" grey issue
+
+Operator reviewed the dashboard live and agreed with the coordinator's assessments, plus a key new system-level finding.
+
+## Operator-confirmed issues (dashboard)
+1. **Hero viz clashes.** The `HeroVisualFrame`/`DashboardHeroMotion` renders as a BRIGHT white/cream panel floating on the dark immersive frost — reads as a jarring bright rectangle, not part of the frost. (Coordinator + Quinn + operator agree; Aria's review said "coheres as-is" — OVERRIDDEN by operator. The palette is warm/on-brand per Aria, but the bright-contained-panel floats. Fix: integrate it — likely a tone-aware viz surface so it doesn't pop as bright white on the dark tone.)
+2. **Bag monograms wrong.** All Active-Bags EntityCards show a large "RE" monogram instead of per-bag initials (likely deriving from "REady to brew" or the wrong field). BUG — fix the monogram derivation for dashboard bag cards.
+3. **"Log a shot" primary CTA is weak** — renders as faint plain text on the frost; should be a proper primary button.
+4. **EntityCards faint on the dark tone** — blend too much; increase glass presence on dark without losing the blended feel.
+
+## NEW system-level finding (operator verbatim)
+"the home page and catalog summary page have still the grey tone for the 'light mode' - The brew and catalog detail page are a lot more natural and neutral with beige."
+- ROOT CAUSE: the `ImmersiveListShell` BEIGE frost (~55% beige `rgba(245,235,220,0.55)`) over the blurred dark route photo lets the dark bleed through → reads GREY/muddy. The detail takeover card beige (~78% `rgba(245,235,220,0.78)`) is more opaque → clean, natural beige.
+- FIX: raise/adjust the immersive shell BEIGE frost so the "light mode" reads as a clean, natural, neutral beige matching the detail pages (accept less photo show-through in beige/light mode; the dark tone's atmospheric bleed is fine). This is a REUSABLE component fix → fixes BOTH home + catalog summary at once.
+
+## Routing
+- Aria fix-spec: (A) immersive shell BEIGE tonality → natural beige matching detail (exact value); (B) hero viz integration (tone-aware so it doesn't float as bright white on dark); (E) EntityCard presence on dark.
+- Finn: implement Aria's A/B/E + (C) bag monogram bug + (D) "Log a shot" primary CTA.
+- Re-verify visually BOTH tones (esp. beige no longer grey, hero viz integrated) before re-showing operator.
+- No push. No sensitive identifiers in this drop.
+---
+spec_id: spec-043
+agent: Coordinator (operator PAUSE — RED pages)
+created_at: 2026-06-15T15:55:00-07:00
+status: PAUSED — home + catalog summary RED; rollout halted
+privacy_gate: reviewed
+---
+
+# spec-043 — PAUSE: home + catalog summary marked RED, rollout halted
+
+Operator is out of time and is pausing the rebuild here. "Pause the work, identify all feedback and
+mark the home page and catalog summary page as red - We're not proceeding beyond this. Add this to
+your document so that we can restart from here later."
+
+## Final operator feedback (this review)
+- "I really dislike the random visualization on the home page with the 2d coffee graphics. Let's get rid of it." → **REMOVE the hero viz entirely** (HeroVisualFrame / DashboardHeroMotion / DashboardHero3D / DashboardHeroFallback) from the dashboard. This SUPERSEDES the earlier "integrate the viz" fix (B) — it is now a removal, not an integration.
+- "the home page suddenly has gone completely monochromatic, I don't know why" → the dashboard reads washed-out/monochrome (the grey beige + faint cards + lack of color/contrast). Restore color/contrast.
+
+## Page status
+- **GREEN (approved, committed 71f60d2):** Brew-log detail, Catalog detail (glass takeover cards).
+- **RED (need rework — DO NOT proceed past these):** Home/Dashboard, Catalog summary (immersive list shell).
+- Foundation (tone-system library + ToneContext) = good; the RED is about the immersive list pages.
+- Rollout PAUSED — no further pages (p2b–p10 not started).
+
+## Consolidated OPEN feedback for the RED pages (the restart to-do list)
+### Catalog summary (`/catalog`, CatalogList.tsx) — RED
+1. BEIGE "light mode" reads GREY/muddy (immersive shell beige frost ~55% over dark photo). Fix: raise immersive beige opacity to match the detail pages' natural beige (~78%). Reusable ImmersiveListShell fix → also fixes home. [Aria fix-spec §A: files/rebuild-plan/aria-dashboard-fixes.md]
+2. Glass EntityCards too faint on the DARK tone — increase card presence. [Aria fix-spec §E]
+
+### Home/Dashboard (`/`, Dashboard.tsx) — RED
+1. **REMOVE the 2D coffee-graphics hero viz** entirely (operator dislikes it). Replace with nothing / a simpler hero, TBD on restart.
+2. Page reads **monochromatic** — restore color/contrast (the beige fix + card presence + ensure roast chips / warm accents show).
+3. BEIGE "light mode" grey (same immersive beige fix as catalog).
+4. **Bag monograms show "RE"** (bug) — all Active-Bags cards show "RE" instead of per-bag initials; fix the monogram derivation.
+5. **"Log a shot" primary CTA is weak** plain text — make it a proper primary button.
+6. EntityCards faint on dark (same as catalog).
+
+## Restart point (how to resume later)
+1. Apply Aria's fix-spec `files/rebuild-plan/aria-dashboard-fixes.md` (promoted to docs): §A immersive BEIGE frost → natural beige; §E EntityCard dark presence. (Ignore its §B viz-integration — the viz is being REMOVED, not integrated.)
+2. Remove the hero viz from Dashboard.tsx (+ decide a replacement hero treatment).
+3. Fix the bag monogram bug + the "Log a shot" primary CTA.
+4. Re-verify BOTH tones (beige natural not grey; not monochromatic; cards present) on home + catalog summary.
+5. Only then resume the rollout (p2b–p10 per Tariq's checklist).
+
+## State
+- Dashboard build (Finn-7) is UNCOMMITTED — will be committed as WIP/RED checkpoint at this pause. No push.
+- Aria fix-spec (aria-4) was in flight for §A/§E (still useful); §B (viz integration) is moot.
+- No sensitive identifiers in this drop.

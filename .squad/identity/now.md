@@ -1,45 +1,65 @@
 ---
-updated_at: 2026-06-15
-focus_area: spec-043 component-system rebuild — foundation + catalog summary DONE; rollout phases pending
-milestone: foundation built + committed locally (71f60d2, NOT pushed); p2b–p10 rollout phases ready for intake
-action: continue rollout per docs/requirements/component-rebuild/00-HANDOFF.md (Aria-design new components → Finn build → localhost gate)
+updated_at: 2026-06-15T16:05:00Z
+focus_area: spec-043 component-rebuild PAUSED (2026-06-15) — home/dashboard + catalog-summary RED; detail pages GREEN
+milestone: foundation committed (71f60d2, GREEN); dashboard WIP committed (1c07b78, RED); rollout halted pending RED rework
+action: restart per docs/requirements/component-rebuild/00-HANDOFF.md ⛔ PAUSED section (fix RED pages: beige-grey frost, EntityCard presence, hero viz removal, bag monogram bug, CTA strength)
 ---
 
-# Current Team Focus — 2026-06-15
+# Current Team Focus — 2026-06-15 (PAUSED)
 
-## Active thread
+## ⛔ STATUS: PAUSED — spec-043 rollout halted; home/dashboard + catalog-summary marked RED
 
-- **spec-043 — Kaapi Kadai Component-System Rebuild:** work remains local on `feat/043-design-coherence`.
-- **Current state:** foundation and catalog summary are DONE and committed locally at `71f60d2`. The two-page prototype (Brew-log detail + Catalog detail) was approved by the operator. Plan was approved (2026-06-15T11:05:00). Foundation built (Phase 0/1/2a). Four detail-page regressions fixed. Catalog summary migrated. All reusable components built to spec.
-- **Immersive shell vision:** LIST/summary pages are card-less with blurred background; DETAIL pages + entity CARDS use the glass takeover-card treatment.
-- **Push state:** no push, PR, or deploy has occurred. Single PR to `household_fixes` (NOT main). Pushes require explicit operator approval after local CI-equivalent validation.
+- **Branch:** `feat/043-design-coherence` off `household_fixes` (local only, no push).
+- **Pause reason:** Operator ran out of time after identifying critical issues on home/dashboard + catalog-summary pages. Both pages need rework before rollout continues.
+- **Pause date/time:** 2026-06-15T16:05:00Z.
 
-## Done this session
+## Pages status
 
-- Prototype-first two-page redo (Catalog detail + Brew-log detail) approved by operator (v3 "almost perfect").
-- P2 universal light/dark toggle seed: ToneContext + localStorage persistence (dark + beige tones, AA-compliant, tone-aware components).
-- Plan authoring + approval: spec approach (c), single PR, phase-gated localhost review, tone persistence, shell deferred.
-- Foundation (Phase 0/1/2a) built: ~84 `--kk-tc-*` tokens, tone classes, shared reusable component library, 4-layer architecture.
-- Foundation fixes: 4 detail-page regressions fixed (monogram style, bean-icon consistency, section-header hierarchy, extraction-readout spacing).
-- Catalog summary migrated: monogram full-bleed fill, 2-line header (title + descriptor).
-- Reference docs promoted to `docs/requirements/component-rebuild/`: handoff, surface map, principles northstar, technical architecture, rollout checklist, northstar screenshots.
-- All 13 decision drops merged into `.squad/decisions.md`; inbox cleared.
+### ✅ GREEN (approved, committed at 71f60d2)
+- **Brew-log detail:** glass takeover card, tone-aware, approved "almost perfect."
+- **Catalog detail:** glass takeover card, tone-aware, approved.
+- **Foundation (Phase 0/1/2a):** Tone system library + ToneContext + reusable components + shared EntityCard. Ready for production. Zero one-offs.
 
-## Next actions (phases p2b–p10, per rollout checklist)
+### 🔴 RED (need rework — DO NOT proceed past)
+- **Home/Dashboard** (`/`, Dashboard.tsx):
+  1. Remove 2D coffee-graphics hero viz entirely (operator dislikes it).
+  2. Restore color/contrast (page reads monochromatic after immersive beige tone introduced).
+  3. BEIGE "light mode" reads GREY/muddy (immersive beige frost ~55% too transparent over blurred photo). Fix: raise opacity to match detail-page natural beige (~78%).
+  4. Bag monograms show "RE" (bug: should show per-bag initials).
+  5. "Log a shot" primary CTA weak (plain text, should be button).
+  6. EntityCards faint on dark tone (increase glass presence).
 
-1. **Phase p2b–p4:** Hardware detail + Hardware list (new card-less LIST shell) → Household detail → Household list (new LIST shell) → Brew-log add (form-focused detail) → Compass Chart extraction viz post-review.
-2. **Phase p5–p7:** Roast detail + Roast list → Grinder detail + Grinder list → Home dashboard (new LIST shell).
-3. **Phase p8–p10:** Settings → onboarding → edge-case coverage + one-off retirement + ESLint no-one-off gate verification.
+- **Catalog summary** (`/catalog`, CatalogList.tsx):
+  1. BEIGE "light mode" reads GREY/muddy (same immersive beige frost issue as home). Fix: raise opacity to natural beige (~78%).
+  2. EntityCards faint on dark tone (increase glass presence).
 
-**Per-phase loop (NEW operator-approved workflow):**
-- For each page, identify NEW components (not in anchors).
-- **Aria designs each new component** (principled opinion + templatization).
-- Finn extends shared library + migrates page.
-- Show on localhost → operator approval → proceed.
+### 🚫 NOT STARTED (rollout phases p2b–p10 paused)
+- Hardware detail/list, Household detail/list, Brew-log add, Roast detail/list, Grinder detail/list, Settings, Onboarding, edge-case coverage.
+
+## Root causes (operator findings)
+
+1. **Immersive BEIGE frost transparency:** ~55% `rgba(245,235,220,0.55)` over blurred dark photo lets dark bleed through → GREY muddy read. Detail takeover cards' ~78% `rgba(245,235,220,0.78)` are clean + natural. **Reusable component fix** (ImmersiveListShell) → fixes BOTH home + catalog simultaneously.
+2. **Hero viz visual clash:** 2D coffee graphics render as bright white/cream panel floating on dark tone → jarring, not immersive. Operator decision: remove entirely. (Aria fix-spec §B viz-integration is now moot.)
+3. **Monochromatic appearance:** Faint cards + low-contrast text + lack of warm accents (roast chips, etc.) on beige tone → reads washed-out. Restore contrast + ensure warm elements show.
+4. **Bag monogram bug:** Data derivation pulling "REady to brew" or wrong field instead of per-bag initials.
+
+## Open RED feedback consolidated (restart to-do list)
+
+**Catalog summary — RED:**
+1. Raise immersive beige opacity to natural beige (~78%) → fixes muddy GREY read. [Aria fix-spec §A, now docs/rebuild-plan]
+2. Increase EntityCard glass presence on dark tone. [Aria fix-spec §E, now docs/rebuild-plan]
+
+**Home/Dashboard — RED:**
+1. REMOVE hero viz entirely (DashboardHero3D, DashboardHeroMotion, DashboardHeroFallback, HeroVisualFrame).
+2. Restore color/contrast (beige opacity fix + card presence + warm accents visible).
+3. BEIGE opacity fix (same as catalog summary). [Aria fix-spec §A]
+4. Bag monogram bug fix (show per-bag initials, not "RE").
+5. "Log a shot" CTA → make it a proper primary button.
+6. EntityCard dark-tone presence. [Aria fix-spec §E]
 
 ## Continuation point
 
-**READ THIS FIRST:** `docs/requirements/component-rebuild/00-HANDOFF.md`
+**READ THIS FIRST:** `docs/requirements/component-rebuild/00-HANDOFF.md` — scroll to ⛔ **PAUSED** section.
 
 This file has:
 - Full foundation summary + phase descriptions.
@@ -48,15 +68,20 @@ This file has:
 - Maya technical architecture (4-layer hierarchy, shell definitions, ToneContext spec).
 - Tariq phase sequencing (p2b–p10, gating criteria).
 - Quinn northstar screenshots (8 images for visual regression baseline).
+- Aria fix-spec for §A (beige opacity) + §E (EntityCard dark presence) archived at `docs/requirements/component-rebuild/07-dashboard-and-beige-fixes.md`.
+
+## Restart workflow
+
+1. Apply Aria fix-spec fixes (docs/rebuild-plan §A + §E): immersive BEIGE frost opacity + EntityCard dark presence.
+2. Remove hero viz from Dashboard.tsx.
+3. Fix bag monogram derivation + "Log a shot" CTA button.
+4. Re-verify BOTH tones (beige natural not grey; color/contrast restored; cards present) on localhost.
+5. Get operator approval before resuming rollout (p2b–p10 per Tariq checklist).
 
 ## Continuity notes
 
-- Do NOT skip the 00-HANDOFF.md. Next session resumes from there.
+- Do NOT skip the 00-HANDOFF.md. Next session resumes from the ⛔ PAUSED section.
 - Single PR to `household_fixes` (NOT main). Commits accumulate locally on feat/043-design-coherence.
-- Phase-gated localhost review required after each deployable phase.
-- Tone persistence → localStorage `.kk-tone-preference` (seed for P2 site-wide light/dark mode).
-- App-shell (nav + GSAP motion) left AS-IS (no tone extension into shell; deferred to P2).
-- HeroVisualFrame / CompassChart: post-build Aria design-review required (screenshot principle-review vs northstar; if clash, return fix recommendations).
-- Foundation is principle-grounded per Aria northstar; zero one-offs; 100% reusable-component mandate enforced by per-page/per-endpoint coverage checklist + future ESLint no-one-off gate.
+- Nothing has been pushed. All work is local.
 - Before any push: run all four local CI-equivalent checks (`ruff check`, `ruff format --check`, `mypy --strict`, pytest). All four must pass. Then ask operator explicitly for push approval.
 - No push, PR, or deploy authorized until explicit operator approval.
