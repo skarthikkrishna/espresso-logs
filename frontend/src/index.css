@@ -154,6 +154,37 @@
   --motion-depth-hover-max-mobile: 2px;
   --motion-scroll-depth-max: 18px;
   --motion-scroll-depth-max-mobile: 8px;
+
+  /* spec-043 prototype redo tokens — only consumed by .kk-proto-043 scoped rules. */
+  --kaapi-content-radius: var(--bevel-radius);
+  --kaapi-content-surface-shadow-hover: 0 22px 52px rgba(18, 11, 6, 0.30), 0 4px 12px rgba(18, 11, 6, 0.20), inset 0 1px 0 rgba(255,255,255,0.76);
+  --btn-surface-shadow-rest: 0 8px 18px rgba(45, 22, 8, 0.18), 0 2px 5px rgba(45, 22, 8, 0.16), inset 0 1px 0 rgba(255,255,255,0.24);
+  --btn-surface-shadow-hover: 0 10px 22px rgba(45, 22, 8, 0.22), 0 3px 8px rgba(45, 22, 8, 0.18), inset 0 1px 0 rgba(255,255,255,0.30);
+  --btn-surface-shadow-active: inset 0 2px 5px rgba(45, 22, 8, 0.24), 0 1px 2px rgba(45, 22, 8, 0.18);
+  --btn-focus-ring: 0 0 0 3px rgba(180, 83, 9, 0.36);
+  --btn-outline-bg: rgba(255, 247, 237, 0.92);
+  --btn-outline-bg-hover: rgba(180, 83, 9, 0.10);
+  --btn-outline-border: rgba(120, 53, 15, 0.34);
+  --btn-outline-border-hover: rgba(180, 83, 9, 0.50);
+  --btn-ghost-bg-hover: rgba(45, 22, 8, 0.08);
+  --page-header-scrim: linear-gradient(90deg, rgba(18, 11, 6, 0.76) 0%, rgba(18, 11, 6, 0.54) 54%, rgba(18, 11, 6, 0.10) 100%);
+  --page-header-title: #fff7ed;
+  --page-header-meta: #fbbf24;
+  --chip-on-cream-bg: rgba(247, 234, 216, 0.92);
+  --chip-on-cream-border: rgba(120, 53, 15, 0.24);
+  --chip-on-cream-text: #2d1608;
+  --chip-success-bg: rgba(16, 185, 129, 0.14);
+  --chip-success-text: #065f46;
+  --chip-info-bg: rgba(14, 116, 144, 0.14);
+  --chip-info-text: #155e75;
+  --chip-warning-bg: rgba(146, 64, 14, 0.14);
+  --chip-warning-text: #92400e;
+  --chip-danger-bg: rgba(185, 28, 28, 0.12);
+  --chip-danger-text: #b91c1c;
+  --viz-metric-bg: var(--kaapi-content-surface-2);
+  --viz-metric-text: var(--kaapi-content-content);
+  --viz-metric-muted: var(--kaapi-content-muted);
+  --viz-frame-bg: linear-gradient(135deg, #f7ead8 0%, #fff7ed 52%, #ead8c0 100%);
 }
 
 /* ── Custom font families (Tailwind v4 @theme creates utility classes) ─── */
@@ -614,6 +645,256 @@ input[type="file"]::file-selector-button {
   opacity: var(--btn-disabled-opacity);
   cursor: not-allowed;
   transition: none;
+}
+
+/* ── spec-043 prototype redo: scoped to Catalog detail + Brew-log detail only ── */
+.kk-proto-043 {
+  color: var(--kaapi-content-content);
+}
+
+.kk-proto-043 .kk-proto-header-zone {
+  max-width: min(100%, 46rem);
+  padding: 1rem;
+  border-radius: var(--kaapi-content-radius);
+  background: var(--page-header-scrim);
+}
+
+.kk-proto-043 .kk-proto-header-zone > .mb-6 {
+  margin-bottom: 0;
+}
+
+.kk-proto-043 .kk-proto-header-zone h1 {
+  max-width: 18ch;
+  color: var(--page-header-title);
+  line-height: 0.95;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.kk-proto-043 .kk-proto-header-zone p {
+  color: var(--page-header-meta);
+  letter-spacing: 0.14em;
+}
+
+.kk-proto-043 .kaapi-content-surface,
+.kk-proto-043 .glass-card.glass-card--content {
+  background: var(--kaapi-content-surface);
+  color: var(--kaapi-content-content);
+  border: 1px solid var(--kaapi-content-border);
+  border-radius: var(--kaapi-content-radius);
+  box-shadow: var(--kaapi-content-shadow);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.kk-proto-043 .glass-card.glass-card--content.card-bevel:hover {
+  box-shadow: var(--kaapi-content-shadow);
+}
+
+.kk-proto-043 .btn-bevel {
+  min-height: 44px;
+  box-shadow: var(--btn-surface-shadow-rest);
+  transition:
+    transform var(--motion-duration-micro) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-micro) var(--motion-ease-standard),
+    background-color var(--motion-duration-micro) var(--motion-ease-standard),
+    border-color var(--motion-duration-micro) var(--motion-ease-standard),
+    color var(--motion-duration-micro) var(--motion-ease-standard),
+    opacity var(--motion-duration-instant) var(--motion-ease-standard);
+}
+
+.kk-proto-043 .btn-bevel:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--btn-surface-shadow-hover);
+}
+
+.kk-proto-043 .btn-bevel:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: var(--btn-surface-shadow-active);
+}
+
+.kk-proto-043 .btn-bevel:focus-visible {
+  outline: none;
+  box-shadow: var(--btn-surface-shadow-rest), var(--btn-focus-ring);
+}
+
+.kk-proto-043 .btn-bevel:disabled,
+.kk-proto-043 .btn-bevel[disabled] {
+  transform: none;
+  box-shadow: none;
+}
+
+.kk-proto-043 .btn-outline.btn-bevel {
+  background: var(--btn-outline-bg);
+  color: var(--kaapi-content-content);
+  border-color: var(--btn-outline-border);
+}
+
+.kk-proto-043 .btn-outline.btn-bevel:hover:not(:disabled) {
+  background: var(--btn-outline-bg-hover);
+  color: var(--kaapi-content-content);
+  border-color: var(--btn-outline-border-hover);
+}
+
+.kk-proto-043 .btn-ghost {
+  min-height: 44px;
+  color: var(--kaapi-content-muted);
+}
+
+.kk-proto-043 .btn-ghost:hover:not(:disabled) {
+  background: var(--btn-ghost-bg-hover);
+  color: var(--kaapi-content-content);
+}
+
+.kk-proto-043 .kk-btn-outline-danger {
+  min-height: 44px;
+  background: var(--btn-outline-bg);
+  color: var(--kaapi-content-error);
+  border: 1px solid rgba(185, 28, 28, 0.34);
+  box-shadow: var(--btn-surface-shadow-rest);
+}
+
+.kk-proto-043 .kk-btn-outline-danger:hover:not(:disabled) {
+  background: var(--chip-danger-bg);
+  color: var(--kaapi-content-error);
+  border-color: rgba(185, 28, 28, 0.50);
+  transform: translateY(-1px);
+  box-shadow: var(--btn-surface-shadow-hover);
+}
+
+.kk-proto-043 .kk-chip {
+  border-color: var(--chip-on-cream-border);
+  background: var(--chip-on-cream-bg);
+  color: var(--chip-on-cream-text);
+}
+
+.kk-proto-043 .kk-chip--success {
+  border-color: rgba(16, 185, 129, 0.28);
+  background: var(--chip-success-bg);
+  color: var(--chip-success-text);
+}
+
+.kk-proto-043 .kk-chip--info {
+  border-color: rgba(14, 116, 144, 0.28);
+  background: var(--chip-info-bg);
+  color: var(--chip-info-text);
+}
+
+.kk-proto-043 .kk-chip--warning {
+  border-color: rgba(146, 64, 14, 0.28);
+  background: var(--chip-warning-bg);
+  color: var(--chip-warning-text);
+}
+
+.kk-proto-043 .kk-chip--danger {
+  border-color: rgba(185, 28, 28, 0.28);
+  background: var(--chip-danger-bg);
+  color: var(--chip-danger-text);
+}
+
+.kk-proto-043 .kk-catalog-placeholder {
+  background: var(--viz-frame-bg);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.72);
+}
+
+.kk-proto-043 .kk-catalog-placeholder__glyph {
+  font-family: var(--font-body);
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--kaapi-content-muted);
+}
+
+.kk-proto-043 .kk-catalog-placeholder__monogram {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  letter-spacing: 0.16em;
+  color: var(--kaapi-content-muted);
+}
+
+.kk-proto-043 .kk-extraction-readout {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  padding: 0.875rem;
+  border: 1px solid var(--kaapi-content-border);
+  border-radius: var(--kaapi-content-radius);
+  background: var(--viz-metric-bg);
+  color: var(--viz-metric-text);
+}
+
+.kk-proto-043 .kk-extraction-readout__metric,
+.kk-proto-043 .kk-extraction-readout__zone {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.kk-proto-043 .kk-extraction-readout__eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--viz-metric-muted);
+}
+
+.kk-proto-043 .kk-extraction-readout__value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: clamp(1.5rem, 6vw, 2rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--viz-metric-text);
+}
+
+.kk-proto-043 .kk-zone-chip {
+  width: fit-content;
+  border: 1px solid var(--chip-on-cream-border);
+  border-radius: var(--kaapi-content-radius);
+  background: var(--chip-on-cream-bg);
+  color: var(--chip-on-cream-text);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.kk-proto-043 .kk-zone-chip--under {
+  border-color: rgba(14, 116, 144, 0.30);
+  background: rgba(103, 232, 249, 0.18);
+  color: #155e75;
+}
+
+.kk-proto-043 .kk-zone-chip--balanced {
+  border-color: rgba(217, 119, 6, 0.34);
+  background: rgba(245, 158, 11, 0.18);
+  color: #92400e;
+}
+
+.kk-proto-043 .kk-zone-chip--over {
+  border-color: rgba(185, 28, 28, 0.30);
+  background: rgba(185, 28, 28, 0.12);
+  color: #b91c1c;
+}
+
+.kk-proto-043 .kk-extraction-readout__guidance {
+  color: var(--kaapi-content-muted);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+
+@media (min-width: 640px) {
+  .kk-proto-043 .kk-extraction-readout {
+    grid-template-columns: minmax(8rem, 0.75fr) minmax(0, 1.25fr);
+    align-items: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kk-proto-043 .btn-bevel,
+  .kk-proto-043 .btn-ghost,
+  .kk-proto-043 .kk-btn-outline-danger {
+    transition: none;
+    transform: none;
+  }
 }
 
 /* ── Border suppression — remove DaisyUI btn-primary/btn-secondary border on all

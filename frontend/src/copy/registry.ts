@@ -529,6 +529,12 @@ export const COPY = {
     saveCorrections: 'Save corrections',
     shotParameters: 'Shot parameters',
     extractionShape: 'Extraction shape',
+    extractionReadout: {
+      ratioLabel: 'Brew ratio',
+      zoneLabel: 'Extraction zone',
+      timeNeeded: 'Time needed for zone',
+      unavailable: 'Zone unavailable',
+    },
     aiFeedback: 'AI feedback',
     noFeedback: 'No feedback available yet.',
   },

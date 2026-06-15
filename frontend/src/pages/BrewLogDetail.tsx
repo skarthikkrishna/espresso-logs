@@ -17,7 +17,7 @@ import { brewLogListQueryKey, dashboardQueryKey } from '../api/queryKeys'
 import type { BrewLogPage } from '../api/brewLog'
 import LoadingSpinner from '../components/LoadingSpinner'
 import AccessibleDialog from '../components/AccessibleDialog'
-import ExtractionBrewVizMotion from '../components/motion/ExtractionBrewVizMotion'
+import ExtractionReadout from '../components/ExtractionReadout'
 import { Badge, Button, GlassCard, FormField, Input, PageHeader, SectionHeading, Select, Textarea } from '../components/ui'
 import type { BrewLogEntry } from '../types/entities'
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
@@ -223,20 +223,21 @@ export default function BrewLogDetail() {
   }
 
   return (
-    <div ref={routeRef} data-testid="brew-log-detail" className="p-4 md:p-6 space-y-6 max-w-2xl">
+    <div ref={routeRef} data-testid="brew-log-detail" className="kk-proto-043 p-4 md:p-6 space-y-6 max-w-2xl">
       {/* AC-15: ← Back text confirmed */}
       <Link to={backTarget} className="text-sm text-amber-400 hover:text-amber-300 inline-block">
         ← Back
       </Link>
 
-      <div>
+      <div className="kk-proto-header-zone">
         <PageHeader title={shot.bag_display} subtitle={shot.date} />
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <Badge tone="neutral" emphasis="solid">{shot.roast_level}</Badge>
+          <Badge tone="neutral" emphasis="solid" className="kk-chip kk-chip--neutral">{shot.roast_level}</Badge>
           {shot.shot_eligibility && (
             <Badge
               tone={eligibilityBadgeTone(shot.shot_eligibility)}
               emphasis="solid"
+              className={`kk-chip kk-chip--${eligibilityBadgeTone(shot.shot_eligibility)}`}
               data-testid="eligibility-badge"
             >
               {shot.shot_eligibility}
@@ -251,6 +252,7 @@ export default function BrewLogDetail() {
             <Button
               variant="danger"
               size="xs"
+              className="kk-btn-outline-danger"
               data-testid="delete-shot-trigger"
               onClick={() => {
                 setDeleteError(null)
@@ -394,13 +396,13 @@ export default function BrewLogDetail() {
         </dl>
       </GlassCard>
 
-      {shot.dose_in_g != null && shot.yield_out_g != null && shot.time_sec != null && (
+      {(shot.dose_in_g != null || shot.yield_out_g != null || shot.time_sec != null) && (
         <GlassCard variant="content">
           <SectionHeading title={COPY.brewLogDetail.extractionShape} />
-          <ExtractionBrewVizMotion
-            doseGrams={shot.dose_in_g}
-            yieldGrams={shot.yield_out_g}
-            timeSeconds={shot.time_sec}
+          <ExtractionReadout
+            doseG={shot.dose_in_g}
+            yieldG={shot.yield_out_g}
+            timeSec={shot.time_sec}
           />
         </GlassCard>
       )}

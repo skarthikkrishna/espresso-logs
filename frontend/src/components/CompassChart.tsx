@@ -1,9 +1,8 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { getZoneGuidance } from '../utils/zoneGuidance'
 import type { ZoneBoundaries } from '../utils/zoneBoundaries'
+import { DEFAULT_COMPASS_BOUNDARIES, getBrewRatio } from '../utils/extractionCompass'
 import { COPY } from '../copy'
-
-const DEFAULT_BOUNDARIES: ZoneBoundaries = { timeMin: 15, timeMax: 60, ratioInnerThird: 1.67, ratioOuterThird: 2.33 }
 
 export interface CompassChartProps {
   doseG?: number | null
@@ -20,12 +19,12 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
   const chartW = W - PADDING.left - PADDING.right   // 235
   const chartH = H - PADDING.top - PADDING.bottom   // 148
 
-  const { timeMin, timeMax, ratioInnerThird, ratioOuterThird } = zoneBoundaries ?? DEFAULT_BOUNDARIES
+  const { timeMin, timeMax } = zoneBoundaries ?? DEFAULT_COMPASS_BOUNDARIES
 
   // Brew ratio X-axis — the correct espresso extraction metric (yield ÷ dose)
   const RATIO_MIN = 1.0
   const RATIO_MAX = 3.0
-  const ratio = (yieldG != null && doseG != null && doseG > 0) ? yieldG / doseG : null
+  const ratio = getBrewRatio(doseG, yieldG)
   const xScale = (r: number) => PADDING.left + ((r - RATIO_MIN) / (RATIO_MAX - RATIO_MIN)) * chartW
   // timeMax → top (slow), timeMin → bottom (fast)
   const yScale = (s: number) => PADDING.top + ((timeMax - s) / (timeMax - timeMin)) * chartH
@@ -57,6 +56,18 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
     { id: 'sour',              taste: 'Sour',                 x: x1,           y: y2,          w: x2 - x1,                h: H - PADDING.bottom - y2             },
     { id: 'astringent-sour',   taste: 'Astringent & sour',    x: x2,           y: y2,          w: W - PADDING.right - x2, h: H - PADDING.bottom - y2, tspan: true },
   ]
+
+  const zonePalette: Record<string, { fill: string; stroke: string }> = {
+    'Weak & sour': { fill: 'rgba(103, 232, 249, 0.18)', stroke: 'rgba(103, 232, 249, 0.42)' },
+    'Sour': { fill: 'rgba(103, 232, 249, 0.22)', stroke: 'rgba(103, 232, 249, 0.48)' },
+    'Astringent & sour': { fill: 'rgba(14, 116, 144, 0.22)', stroke: 'rgba(14, 116, 144, 0.50)' },
+    'Weak & sweet': { fill: 'rgba(20, 184, 166, 0.18)', stroke: 'rgba(20, 184, 166, 0.42)' },
+    'Sweet & balanced': { fill: 'rgba(245, 158, 11, 0.24)', stroke: 'rgba(245, 158, 11, 0.56)' },
+    'Bitter & astringent': { fill: 'rgba(220, 38, 38, 0.20)', stroke: 'rgba(220, 38, 38, 0.48)' },
+    'Weak & bitter': { fill: 'rgba(180, 83, 9, 0.18)', stroke: 'rgba(180, 83, 9, 0.42)' },
+    'Bitter': { fill: 'rgba(217, 119, 6, 0.22)', stroke: 'rgba(217, 119, 6, 0.50)' },
+    'Harsh & bitter': { fill: 'rgba(185, 28, 28, 0.22)', stroke: 'rgba(185, 28, 28, 0.52)' },
+  }
 
   const dotX = ratio != null ? xScale(Math.min(RATIO_MAX, Math.max(RATIO_MIN, ratio))) : null
   const dotY = timeSec != null ? yScale(Math.min(timeMax, Math.max(timeMin, timeSec))) : null
@@ -136,23 +147,23 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
         <defs>
           <radialGradient id="meshAmber" gradientUnits="userSpaceOnUse"
             cx={PADDING.left + chartW / 2} cy={PADDING.top + chartH / 2} r="90">
-            <stop offset="0%"   stopColor="rgba(217,119,6,0.55)" />
+            <stop offset="0%"   stopColor="rgba(245,158,11,0.22)" />
             <stop offset="100%" stopColor="rgba(217,119,6,0)" />
           </radialGradient>
           <radialGradient id="meshRust" gradientUnits="userSpaceOnUse"
             cx={PADDING.left} cy={PADDING.top} r="100">
-            <stop offset="0%"   stopColor="rgba(185,28,28,0.35)" />
+            <stop offset="0%"   stopColor="rgba(185,28,28,0.16)" />
             <stop offset="100%" stopColor="rgba(185,28,28,0)" />
           </radialGradient>
           <radialGradient id="meshCerulean" gradientUnits="userSpaceOnUse"
             cx={PADDING.left + chartW} cy={PADDING.top + chartH} r="100">
-            <stop offset="0%"   stopColor="rgba(14,165,233,0.30)" />
-            <stop offset="100%" stopColor="rgba(14,165,233,0)" />
+            <stop offset="0%"   stopColor="rgba(103,232,249,0.14)" />
+            <stop offset="100%" stopColor="rgba(103,232,249,0)" />
           </radialGradient>
           <radialGradient id="meshSlate" gradientUnits="userSpaceOnUse"
             cx={PADDING.left + chartW} cy={PADDING.top + chartH / 2} r="80">
-            <stop offset="0%"   stopColor="rgba(71,85,105,0.28)" />
-            <stop offset="100%" stopColor="rgba(71,85,105,0)" />
+            <stop offset="0%"   stopColor="rgba(15,118,110,0.12)" />
+            <stop offset="100%" stopColor="rgba(15,118,110,0)" />
           </radialGradient>
 
           {aurora && (
@@ -173,10 +184,12 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
         {zones.map(z => {
           const sel = z.taste === selectedTaste
           const isDotZone = z.taste === activeZoneTaste
+          const palette = zonePalette[z.taste]
           return (
             <g key={z.id} style={{ cursor: 'pointer' }} onClick={() => onSelectZone?.(z.taste)}>
               {/* Transparent hit target */}
               <rect x={z.x} y={z.y} width={z.w} height={z.h} fill="rgba(0,0,0,0)" />
+              <rect x={z.x} y={z.y} width={z.w} height={z.h} fill={palette.fill} stroke={palette.stroke} strokeWidth="0.5" />
 
               {/* Agreement: dot zone AND selected */}
               {sel && isDotZone && (
@@ -263,9 +276,9 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
 
         {/* Axes */}
         <line x1={PADDING.left} y1={PADDING.top} x2={PADDING.left} y2={PADDING.top + chartH}
-              stroke="rgba(200,134,10,0.3)" strokeWidth="1" />
+              stroke="rgba(200,134,10,0.24)" strokeWidth="1" />
         <line x1={PADDING.left} y1={PADDING.top + chartH} x2={PADDING.left + chartW} y2={PADDING.top + chartH}
-              stroke="rgba(200,134,10,0.3)" strokeWidth="1" />
+              stroke="rgba(200,134,10,0.24)" strokeWidth="1" />
 
         {/* Zone boundary labels annotating the x1 and x2 gridlines — derived from grid, not zoneBoundaries */}
         <text x={x1} y={PADDING.top + chartH + 12} textAnchor="middle" fill="rgba(245,230,211,0.45)" fontSize={9}
@@ -294,17 +307,17 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
           <g>
             <circle
               cx={dotX} cy={dotY} r="8"
-              fill="none" stroke="#d97706" strokeWidth="1"
+              fill="none" stroke="#f59e0b" strokeWidth="1"
               className="compass-ping"
               style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
             />
             <circle
               cx={dotX} cy={dotY} r="8"
-              fill="none" stroke="#d97706" strokeWidth="1.5" opacity="0.8"
+              fill="none" stroke="#d97706" strokeWidth="1.5" opacity="0.88"
             />
             <circle
               cx={dotX} cy={dotY} r="5"
-              fill="rgba(255,255,255,0.88)"
+              fill="#fff7ed"
             />
             {timeOutOfRange && (
               <text x={dotX} y={timeSec! < timeMin ? dotY + 16 : dotY - 16}

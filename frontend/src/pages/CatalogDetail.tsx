@@ -159,9 +159,10 @@ export default function CatalogDetail() {
       ) : (
         <div
           data-testid="catalog-image-placeholder"
-          className="flex h-24 w-24 items-center justify-center rounded-lg border border-[var(--kaapi-content-border)] bg-[var(--kaapi-content-surface-2)] font-display text-xl text-[var(--kaapi-content-muted)]"
+          className="kk-catalog-placeholder flex h-24 w-24 flex-col items-center justify-center rounded-lg border border-[var(--kaapi-content-border)] bg-[var(--kaapi-content-surface-2)] font-display text-xl text-[var(--kaapi-content-muted)]"
         >
-          {monogram}
+          <span className="kk-catalog-placeholder__glyph" aria-hidden="true">☕</span>
+          <span className="kk-catalog-placeholder__monogram">{monogram}</span>
         </div>
       )}
       {editing && (
@@ -227,17 +228,17 @@ export default function CatalogDetail() {
   )
 
   return (
-    <div ref={routeRef} data-testid="catalog-detail" className="p-4 md:p-6 space-y-6 max-w-3xl">
+    <div ref={routeRef} data-testid="catalog-detail" className="kk-proto-043 p-4 md:p-6 space-y-6 max-w-3xl">
       <Link to="/catalog" className="text-sm text-amber-400 hover:text-amber-300 inline-block">
         ← Back
       </Link>
 
       {/* Frame header — espresso-dark chrome carries identity; operational content sits on light cards below. */}
-      <div>
+      <div className="kk-proto-header-zone">
         <PageHeader title={item.bean_name} subtitle={item.roaster} />
         {item.roast_level && (
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Badge tone="neutral" emphasis="solid">{item.roast_level}</Badge>
+            <Badge tone="neutral" emphasis="solid" className="kk-chip kk-chip--neutral">{item.roast_level}</Badge>
           </div>
         )}
         {!editing && (
