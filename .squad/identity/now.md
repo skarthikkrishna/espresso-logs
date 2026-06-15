@@ -1,41 +1,62 @@
 ---
-updated_at: 2026-06-14
-focus_area: spec-043 Kaapi Kadai design coherence — prototype-first redo for Catalog detail + Brew-log detail
-milestone: broad T009–T020 build rejected locally; no push, PR, or deploy has occurred
-action: run principle-led two-page redesign loop before any global rollout
+updated_at: 2026-06-15
+focus_area: spec-043 component-system rebuild — foundation + catalog summary DONE; rollout phases pending
+milestone: foundation built + committed locally (71f60d2, NOT pushed); p2b–p10 rollout phases ready for intake
+action: continue rollout per docs/requirements/component-rebuild/00-HANDOFF.md (Aria-design new components → Finn build → localhost gate)
 ---
 
-# Current Team Focus — 2026-06-14
+# Current Team Focus — 2026-06-15
 
 ## Active thread
 
-- **spec-043 — Kaapi Kadai Design Coherence:** work remains local on `feat/043-design-coherence`.
-- **Current state:** the broad T009–T020 design implementation was committed locally, then rejected by the operator after built-UI inspection as an incoherent half-migration.
-- **Primary cause:** the post-build `design-review` skill pass and Quinn verification net were planned but did not run before operator inspection; prior gates were pre-build predictions, not built-product certification.
-- **Corrected focus:** prototype-first redo on exactly two pages — Catalog detail and Brew-log detail — before any app-wide rollout.
-- **Push state:** no push, PR, or deploy has occurred. Pushes require explicit operator approval.
+- **spec-043 — Kaapi Kadai Component-System Rebuild:** work remains local on `feat/043-design-coherence`.
+- **Current state:** foundation and catalog summary are DONE and committed locally at `71f60d2`. The two-page prototype (Brew-log detail + Catalog detail) was approved by the operator. Plan was approved (2026-06-15T11:05:00). Foundation built (Phase 0/1/2a). Four detail-page regressions fixed. Catalog summary migrated. All reusable components built to spec.
+- **Immersive shell vision:** LIST/summary pages are card-less with blurred background; DETAIL pages + entity CARDS use the glass takeover-card treatment.
+- **Push state:** no push, PR, or deploy has occurred. Single PR to `household_fixes` (NOT main). Pushes require explicit operator approval after local CI-equivalent validation.
 
 ## Done this session
 
-- Recorded the operator rejection of the current spec-043 built UI.
-- Captured Tariq's RCA finding that the failure was primarily process sequencing: design-review and Quinn verification evidence did not precede inspection.
-- Established the corrected prototype-first sequence and the two operator mandates that bind all future design work.
-- Refreshed this continuity file so STEP 0 no longer points agents at stale T008 hardware-image-upload work.
+- Prototype-first two-page redo (Catalog detail + Brew-log detail) approved by operator (v3 "almost perfect").
+- P2 universal light/dark toggle seed: ToneContext + localStorage persistence (dark + beige tones, AA-compliant, tone-aware components).
+- Plan authoring + approval: spec approach (c), single PR, phase-gated localhost review, tone persistence, shell deferred.
+- Foundation (Phase 0/1/2a) built: ~84 `--kk-tc-*` tokens, tone classes, shared reusable component library, 4-layer architecture.
+- Foundation fixes: 4 detail-page regressions fixed (monogram style, bean-icon consistency, section-header hierarchy, extraction-readout spacing).
+- Catalog summary migrated: monogram full-bleed fill, 2-line header (title + descriptor).
+- Reference docs promoted to `docs/requirements/component-rebuild/`: handoff, surface map, principles northstar, technical architecture, rollout checklist, northstar screenshots.
+- All 13 decision drops merged into `.squad/decisions.md`; inbox cleared.
 
-## Next actions
+## Next actions (phases p2b–p10, per rollout checklist)
 
-1. Aria authors a principle-led component, transparency, and button contract using the `design-tokens` and `ui-design-contract` skills.
-2. Finn implements only the Catalog detail and Brew-log detail prototype using the `frontend-design` and `ui-design-contract` skills.
-3. Aria runs a post-build `design-review` with Playwright against the app running at `http://localhost:8000` for only those two pages.
-4. Present the prototype evidence to the operator and stop for explicit approval or redirection.
-5. Only after operator approval: roll out globally, retire or compatibility-wrap legacy `.glass-card` / `.card-bevel` duplicates, reconcile spec-043, and run the Quinn verification net.
-6. Before any push, run required local validation and ask the operator explicitly for push approval.
+1. **Phase p2b–p4:** Hardware detail + Hardware list (new card-less LIST shell) → Household detail → Household list (new LIST shell) → Brew-log add (form-focused detail) → Compass Chart extraction viz post-review.
+2. **Phase p5–p7:** Roast detail + Roast list → Grinder detail + Grinder list → Home dashboard (new LIST shell).
+3. **Phase p8–p10:** Settings → onboarding → edge-case coverage + one-off retirement + ESLint no-one-off gate verification.
+
+**Per-phase loop (NEW operator-approved workflow):**
+- For each page, identify NEW components (not in anchors).
+- **Aria designs each new component** (principled opinion + templatization).
+- Finn extends shared library + migrates page.
+- Show on localhost → operator approval → proceed.
+
+## Continuation point
+
+**READ THIS FIRST:** `docs/requirements/component-rebuild/00-HANDOFF.md`
+
+This file has:
+- Full foundation summary + phase descriptions.
+- V2 surface map (62 endpoints, per-page coverage matrix).
+- Aria principles northstar (12 principles, palette snapshot, AA specs).
+- Maya technical architecture (4-layer hierarchy, shell definitions, ToneContext spec).
+- Tariq phase sequencing (p2b–p10, gating criteria).
+- Quinn northstar screenshots (8 images for visual regression baseline).
 
 ## Continuity notes
 
-- The prior "continue remaining spec-043 implementation tasks" instruction is obsolete and must not be followed.
-- T009–T020 are not a design-approved baseline; they are rejected local work requiring a prototype-first redo path.
-- Design work must be **principle-led, not rule-checklist-driven**: readability emerges from transparency, blur, color, contrast, and positioning together; blur may aid legibility when justified by the design language and the Clutter & Comprehension Diagnostic.
-- Agents must surface unknowns and never guess. Each design/implementation worker must emit an Assumptions/Open-Questions log and stop/escalate any decision not determined by the contract.
-- No global rollout starts until the two-page prototype is approved by the operator.
-- All work is local; no PR, deploy, or push has occurred.
+- Do NOT skip the 00-HANDOFF.md. Next session resumes from there.
+- Single PR to `household_fixes` (NOT main). Commits accumulate locally on feat/043-design-coherence.
+- Phase-gated localhost review required after each deployable phase.
+- Tone persistence → localStorage `.kk-tone-preference` (seed for P2 site-wide light/dark mode).
+- App-shell (nav + GSAP motion) left AS-IS (no tone extension into shell; deferred to P2).
+- HeroVisualFrame / CompassChart: post-build Aria design-review required (screenshot principle-review vs northstar; if clash, return fix recommendations).
+- Foundation is principle-grounded per Aria northstar; zero one-offs; 100% reusable-component mandate enforced by per-page/per-endpoint coverage checklist + future ESLint no-one-off gate.
+- Before any push: run all four local CI-equivalent checks (`ruff check`, `ruff format --check`, `mypy --strict`, pytest). All four must pass. Then ask operator explicitly for push approval.
+- No push, PR, or deploy authorized until explicit operator approval.

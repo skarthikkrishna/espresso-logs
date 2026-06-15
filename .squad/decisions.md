@@ -1807,3 +1807,550 @@ Decision drop generated 2026-06-05T14:00 PDT
 - **Rationale:** Bounded process/git correction for an already validated local work unit; no product scope or code behavior changed by the branch correction itself.
 - **Scope:** Create `fix/spec-039-production-readiness` from `origin/main`, cherry-pick the validated implementation and routing-drop commits, preserve local commits, and stop before any push.
 - **Outcome:** New branch `fix/spec-039-production-readiness` was created from `origin/main`; validated work was cherry-picked; Ralph resolved the `.squad/identity/now.md` conflict; an empty duplicate cherry-pick was skipped; no push, deploy, PR creation, production data access, or secrets access occurred.
+---
+
+---
+node_id: decision-spec043-aria-stage1-prototype-redo
+node_type: routing_decision
+spec_id: spec-043
+title: "Aria Stage-1 routing — prototype-first redo contract"
+created_at: 2026-06-14T16:12:35.074-07:00
+status: recorded
+owner: aria
+---
+
+# Aria Stage-1 routing — spec-043 prototype-first redo
+
+Decision: DIRECT_PERMITTED for Stage-1 design-contract authoring only.
+
+Scope confirmed: Catalog detail, Brew-log detail, and shared primitives used by those two pages. No application code, CSS, route implementation, session-close artifacts, or app-wide rollout are authorized by this decision.
+
+Rationale: the prior built UI was rejected as an incoherent half-migration. The corrective next step is a principle-led Aria contract that Finn can build from, with explicit assumptions and operator questions instead of silent invention.
+
+Contract artifact: written to the coordinator-provided session-state prototype folder as `aria-contract.md`.
+
+Binding handoff points for Finn:
+
+- readability is a system across surface, transparency, blur, color, contrast, density, and positioning;
+- use the ordered diagnostic: surface contract, layer discipline, scrim, density, color, de-redundancy;
+- retune `.btn-bevel` into a modern tactile button foundation instead of keeping heavy dark bevel shadows;
+- keep one canonical solid warm content surface for operational content;
+- preserve glass only as intentional chrome, overlay, modal, or sheet treatment;
+- stop and escalate uncovered cases rather than inventing unreviewed visual rules.
+
+Privacy gate check: this decision contains no credentials, service account identifiers, infrastructure identifiers, user PII, or operational topology details.
+
+---
+
+---
+spec_id: spec-043
+agent: Finn
+created_at: 2026-06-14T20:26:00-07:00
+status: implemented-local
+privacy_gate: reviewed
+---
+
+# spec-043 prototype redo — frontend implementation note
+
+Implemented the scoped prototype redo for Catalog detail and Brew-log detail only.
+
+- Catalog detail now uses the `kk-proto-043` scoped wrapper, a header readability zone, scoped prototype button/surface/chip treatments, and an intentional warm catalog placeholder with monogram secondary.
+- Brew-log detail now uses the same scoped wrapper and header treatment, an outline-danger Delete trigger, and a compact static extraction readout replacing the detail-page 3D extraction visualization.
+- `/brew-log/add` CompassChart keeps its existing layout, math, labels, click behavior, and guidance behavior; only the diagnostic color palette was harmonized.
+- New reusable extraction helpers preserve the existing default Compass ratio and zone behavior for detail readout use.
+
+Validation run locally in `frontend/`:
+
+1. `npm run lint` — passed
+2. `npm run build` — passed
+3. `npm test` — passed
+
+No sensitive operational identifiers or private data are included in this decision drop.
+
+---
+
+# Decision Drop — spec-043 Aria extraction visualization addendum
+
+Date: 2026-06-14T20:15:59.428-07:00
+Owner: Aria
+Scope: spec-043 prototype-first redo visual design addendum
+
+## Decision
+
+Appended `## 12. Stage-1 Addendum — operator decisions + extraction viz specs` to the Aria Stage-1 contract in the session-state artifact.
+
+Recorded operator decisions:
+
+1. Catalog demo imagery uses an intentional generic placeholder; no fake/demo asset sourcing.
+2. Extraction visualization is split: keep `/brew-log/add` CompassChart but harmonize colors; remove the Brew-log detail 3D lamp and replace with a compact readout.
+3. Long names wrap; no truncation.
+4. Delete uses readable outline-danger emphasis.
+5. Button feel remains the lighter-modern bevel for live operator judgement.
+6. Stage-2 approval is operator live localhost judgement, with screenshots still produced as evidence.
+
+## Visualization specs
+
+- **CompassChart:** keep the dark instrument-panel concept. Replace rainbow zone coloring with a diverging diagnostic palette: cool cyan/teal for under-extracted/sour, amber/gold for balanced/target, and restrained rust/red for over-extracted/bitter. Labels, gridlines, selected zone, and the live shot marker are specified for AA legibility on the dark panel.
+- **Brew-log detail:** do not render `ExtractionBrewVizMotion` / `ExtractionBrewViz3D` / `ExtractionBrewVizFallback` on the detail page. Replace with a compact static readout showing brew ratio (`yield / dose` formatted as `1:X.X`) and an extraction zone label derived from existing Compass zone logic.
+
+## Implementation boundary
+
+Prototype scope is Catalog detail + Brew-log detail + CompassChart color harmonization on `/brew-log/add` only. No other add-page changes and no other routes are authorized by this addendum.
+
+## Open questions surfaced
+
+1. Should the compact detail readout include the one-sentence `getZoneGuidance()` text, or only ratio + zone chip?
+2. If Brew-log detail has machine name but not roast level, should implementation use machine-specific time boundaries plus default ratio boundaries, or default both axes?
+
+---
+
+---
+spec_id: spec-043
+agent: Coordinator (directive capture)
+created_at: 2026-06-14T21:15:39-07:00
+status: operator-feedback-redirection
+privacy_gate: reviewed
+---
+
+# spec-043 prototype redo — operator review at the approval gate (REDIRECTION, not approval)
+
+Operator reviewed prototype commit `982e0b0` (Catalog detail + Brew-log detail) on local
+`http://localhost:8000`. Verdict: promising but not approved — another Aria→Finn prototype
+pass is required. Feedback captured verbatim, organized by page, so it survives chat truncation.
+
+## Catalog detail (screenshot eb6f42)
+
+- "The Roaster/Bean/Edit together do not need such a big card." — card is oversized for its content.
+- "I quite like how nice the card background looks." — KEEP the card background treatment.
+- "The Roast Level and Edit chip look incongruent to the frosted glass." — chips clash with the frosted surface.
+- "The roaster image and roaster link should've actually been on the main card. I don't know why they even split?" — un-split: roaster image + link belong on the main card.
+- "Add Bag and Finish Bag are not aligned." — alignment bug between the two buttons.
+- "Finish Bag button hover and highlight focus is nice, but the button squircle seems still like an alpha stage design." — hover/focus good; squircle shape looks unfinished.
+
+## Brew-log detail — extraction compass (screenshot 52f15a)
+
+- "The grid lines border is not required for the extraction compass — the rest of the compass is nicer." — remove the compass grid-line border; rest of compass is good.
+- "Hover over the more options is different here than hover over the finish bag button on the catalog detail page." — hover states are INCONSISTENT across pages; unify them.
+- "The card doesn't seem to have changed from before and it still seems incongruent from the rest of the page." — this card was not actually updated; still clashes.
+- "I'm beginning to think you might not be able to land my vision without some level of frosted/opaque/liquid glass type translucence. I was really hoping that we'd be able to land something with the color palette tonality, but you're not getting there." — pure solid color-tonality is NOT landing; translucence is wanted back.
+
+## Brew-log detail — the promising view (screenshot 597aaf)
+
+- "This actually shows me some promise towards the vision that we set out to." — closest to target so far.
+- "I still don't know if there is value in keeping frosted glass and the beige cards separate — can you show me something together? Like cream/beige, but with the slightest hint of translucence?" — KEY ASK: merge the two; cream/beige WITH a faint translucence, not separate systems.
+- "The font, color on the card, everything else is quite spot on." — typography + color on this card are correct; keep.
+- "The orange line above the brew ratio seems unnecessary? Was there text in white hidden behind it?" — investigate the orange line above brew ratio; possibly white text hidden behind it.
+- "You're being inconsistent with section/card headers — AI Summary feels like the summary text, not like a section header." — section/card header hierarchy is inconsistent; "AI Summary" reads as body, not a header.
+- "While the mobile view looks great, the page isn't responsively resizing to a desktop friendly size when I go full desktop. There's so much wasted space." — desktop responsiveness broken; mobile-good layout does not scale up; wasted space at full width.
+
+## Cross-cutting design hypothesis from operator
+
+- "If you choose to just have a frosted overlay on top of the bg-image, then you can actually avoid having cards and borders to make the page feel more open and expansive."
+  → Explore: a single frosted overlay over the background image MAY remove the need for cards/borders entirely, yielding a more open, expansive page.
+
+## Synthesized direction for the next prototype pass
+
+1. Bring back intentional translucence — pure solid cream tonality alone is not landing the vision.
+2. Prototype a MERGED surface: cream/beige with the slightest hint of translucence (one system, not frosted-glass-vs-beige split).
+3. Evaluate the frosted-overlay-on-bg-image option that lets the page drop cards/borders for openness.
+4. Fix concrete defects: oversized Roaster/Bean card; un-split roaster image+link onto main card; Add Bag/Finish Bag alignment; button squircle shape; compass grid-line border; cross-page hover-state consistency; orange line above brew ratio; section/card header hierarchy.
+5. Fix desktop responsiveness — the layout must scale from mobile to full desktop without wasted space.
+6. KEEP what works: catalog card background, the promising-view typography + color, Finish Bag hover/focus.
+
+## Notes
+
+- This is operator redirection at the prototype approval gate. No global rollout. Scope stays Catalog detail + Brew-log detail.
+- No push, PR, or deploy authorized. No sensitive identifiers in this drop.
+
+---
+
+---
+spec_id: spec-043
+agent: Coordinator (directive capture)
+created_at: 2026-06-14T23:00:00-07:00
+status: operator-correction
+privacy_gate: reviewed
+---
+
+# spec-043 — operator correction: Option B built wrong + Option A defects
+
+Operator reviewed the first Option B build (card-less attempt) live. Verdict: **implemented wrong.**
+Also gave actionable Option A defects. Captured verbatim so nothing is lost.
+
+## Option B was NOT what was asked — try again
+
+Operator, verbatim:
+- "Option B was not implemented correctly at all. The cardless approach would have leaned in with a frosted glass on the background image of the page, and had no card. This provides a bland, gray card on top of the image but is still a card nonetheless. I want you to try Option B again."
+
+### Root cause of the miss
+Aria's first Option B contract (§4.1) specified `.kk-proto-043.kk-b-overlay` as a CONTAINED pane: warm tint fill + `border-radius` + big `box-shadow` + centered `max-width` (42–54rem). Rendered, that is a discrete, bland, gray-ish CARD floating on the photo — still a card. That is the exact thing the operator did not want.
+
+### Corrected Option B vision (binding)
+1. The frosted glass is a **PAGE-LEVEL / FULL-BLEED** treatment over the route **background image** — NOT a contained pane.
+2. **No card at all:** no card box-shadow, no rounded floating panel, no narrow centered max-width that creates a visible card boundary on the page.
+3. Content sits **directly on the frosted page**.
+4. **Lean IN to liquid/frosted glass:** the route image must be genuinely visible THROUGH the frost (glass quality), not hidden behind an opaque, muddy cream/gray fill. The "bland gray" came from ~82% cream over the heavy dark route scrim = muddy. Fix it — reduce muddiness, let the image read as frosted glass, keep text legible via the system (blur + tint + localized scrim behind text + positioning), not via a card.
+
+## Option A defects (A itself was "a decent attempt", coherent + quality — keep that)
+
+Operator, verbatim:
+- "option A was a decent attempt and I appreciate the coherence and quality of work shown there except, surprisingly the top card - The buttons and chips were too cluttered together, and the hover color flip on the delete and edit shot buttons completely ruined the look and was illegible"
+
+Two concrete fixes (these ALSO apply to Option B's top action area / shared button language):
+1. **Top action area too cluttered** — the buttons and chips at the top are cramped together. Needs spacing / arrangement / hierarchy.
+2. **Delete & Edit shot buttons: hover color-flip is illegible** — the hover state inverts colors and "completely ruined the look and was illegible." Redesign these hover states to stay legible (no jarring inversion / contrast loss).
+
+## Next step
+- Aria re-specs Option B with the corrected full-bleed frosted-glass-on-page understanding + fixes the two button/clutter defects (shared with A's header).
+- Finn rebuilds Option B from the clean Option A baseline (commit 1eb24bd), discarding the first wrong-B implementation.
+- Option A is preserved at commit 1eb24bd. No push/PR/deploy. No sensitive identifiers in this drop.
+
+---
+
+---
+spec_id: spec-043
+agent: Coordinator (directive capture)
+created_at: 2026-06-15T05:00:00-07:00
+status: operator-correction
+privacy_gate: reviewed
+---
+
+# spec-043 — operator correction on Option B r2: the "takeover single card"
+
+Operator reviewed Option B r2 (full-bleed 62% cream frosted page) live. Verdict: progress in the
+right direction, but not there. Provided a reference image. Captured verbatim + analysis.
+
+## Operator feedback (verbatim)
+- "This is progress in the right direction, but still not all the way there."
+- "I'm saying either go beige or dark, frosted glass - Don't do white/gray for the background."
+- "The hero card for the brew log title is still not nice."
+- "I would rather that the entire page background have no card."
+- "And going back to the no gray thing, I'm adding a coffee_tracker/tmp/sample.jpeg to help you understand what I mean by a takeover single card. Notice that all text falls into a nice, single beveled frosted glass card rather than segregation."
+
+## Reference image
+Operator-provided reference preserved at:
+`~/.copilot/session-state/b1b751a3-2959-4b2a-b35f-1bb5c589aed4/files/spec043-prototype-v2/reference-takeover-card.jpeg`
+(source: coffee_tracker/tmp/sample.jpeg — ephemeral)
+
+### Coordinator analysis of the reference
+A landing-page composition ("Where Leavés Breathe"). Key structural cues the operator is pointing at:
+1. **ONE single large frosted-glass "takeover" card** holds ALL content — nav, headline, body
+   paragraph, secondary text, attribution, two inset image thumbnails, and social icons — unified
+   in a single surface. No segregation into multiple cards/wells/boxes.
+2. **Dark frosted glass** — a smoky/charcoal translucent panel; the forest photo is frosted/blurred
+   THROUGH it and sharp BELOW it. Light/white text on the dark glass. NOT white/gray, NOT beige (in
+   this particular example).
+3. **Beveled, soft-rounded** card with a subtle light rim/bevel; the bottom edge is an organic
+   sweeping curve (liquid-glass character), revealing the sharp background photo below the card.
+4. Content differentiated by typography + spacing WITHIN the one card — not by sub-cards.
+
+## What r2 got wrong (to fix)
+- r2's 62% cream over a lightened scrim reads as washed-out white/gray — REJECTED. Commit to a real
+  tone: **beige frosted glass OR dark frosted glass**, never the muddy white/gray middle.
+- r2 still has a separate "hero card" for the brew-log title — REMOVE; the title is just the top of
+  the single takeover card.
+- r2 segregates content with inset wells (extraction readout, form) + hairline dividers — REMOVE the
+  segregation; ALL content lives in ONE unified frosted-glass takeover card. Differentiate by
+  typography/spacing only (forms still get usable input styling, but not a "well card").
+
+## Binding direction for the next pass
+- A SINGLE beveled frosted-glass "takeover" card/surface that IS the page content area (full-bleed),
+  holding ALL brew-log detail content unified — no segregation, no separate hero, no sub-wells.
+- Tone: beige OR dark frosted glass (operator to confirm which) — never white/gray.
+- Lean into the liquid-glass character (bevel, soft rim, photo frosted through the glass).
+
+## Open fork (asked to operator)
+beige frosted glass vs dark frosted glass (reference shows dark). Awaiting operator's pick.
+
+## Status
+- Option A preserved at commit 1eb24bd. Option B r2 uncommitted in working tree. No push/PR/deploy.
+- No sensitive identifiers in this drop.
+
+---
+
+---
+spec_id: spec-043
+agent: Coordinator (directive capture + palette snapshot)
+created_at: 2026-06-15T07:10:00-07:00
+status: operator-approved-direction + P2-intent + rollout-plan
+privacy_gate: reviewed
+---
+
+# spec-043 — v3 takeover card APPROVED; P2 universal light/dark toggle; palette snapshot; catalog replication plan
+
+## Operator verdict on v3 (Brew-log detail takeover card)
+- "This is so good! Almost a perfect rendition of what I was looking for!"
+- Nitpick (DONE): "Roaster — Bean / 2026-06-13 should be the first thing on the top." → title block moved to top of card.
+
+## NEW directive 1 — P2: universal light/dark mode toggle
+- "I love the beige/dark button on the top right - I would like it to be universally applicable for the website as a light/dark mode toggle. So keep that in mind, and keep a snapshot of all the palettes, colors and tones you used. We can refine that when we build light mode in the UI in the future as a P2."
+- INTENT: the prototype tone toggle (`.kk-tc--dark` / `.kk-tc--beige`) becomes the seed for a SITE-WIDE light/dark mode toggle. Future P2 work. Preserve the palette snapshot below.
+
+## NEW directive 2 — replicate on Catalog detail, show first
+- "replicate this design for the catalog detail page, show me first"
+- Build the takeover-card design on Catalog detail (`/catalog/:id`), present to operator for approval. No global rollout yet.
+
+## NEW directive 3 — then unify globally (GATED on directive-2 approval)
+- "and then when I approve it, then you can go change all base components and unify implementation"
+- ONLY after the operator approves the Catalog-detail replication: change base components + unify the implementation app-wide. NOT before.
+
+## Earlier Catalog-detail complaints to FOLD INTO the replication (from 2026-06-14T21-15-39 drop, screenshot eb6f42)
+- Roaster/Bean/Edit card is oversized for its content.
+- Roast Level + Edit chips look incongruent to the frosted glass.
+- Roaster image + roaster link should be on the MAIN card — they were wrongly split out; un-split.
+- "Add Bag" and "Finish Bag" buttons are not aligned.
+- Finish Bag button squircle shape looks alpha-stage (hover/focus itself was liked).
+- (KEEP: the catalog card background was liked.)
+
+---
+
+## PALETTE / TONE SNAPSHOT (v3 takeover card — source of truth: frontend/src/index.css)
+
+### Shared geometry + typography (`:root`)
+- radius 16px · padding 32px/24px · max-width 720px · blur 24px
+- title 24px/700 · subtitle 14px · section-header 13px/600 tracking 0.05em · body 15px/1.6 · label 12px · value 16px · section-gap 32px
+
+### DARK tone (`.kk-tc--dark` — smoky charcoal espresso glass, light text; default, matches operator reference)
+- surface `rgba(24,16,10,0.72)` · solid-fallback `#1a120c`
+- text primary `#fff7ed` · secondary `#e8ddd4` · tertiary `#c4b5a8`
+- link `#fbbf24` · link-hover `#fcd34d`
+- bevel `inset 1px 1px 0 0 rgba(255,247,237,0.12), inset -1px -1px 0 0 rgba(0,0,0,0.25), 0 8px 32px -4px rgba(0,0,0,0.5)`
+- border `1px solid rgba(255,247,237,0.08)` · section-header `#e8ddd4`
+- input: bg `rgba(45,32,22,0.6)` border `rgba(255,247,237,0.15)` text `#fff7ed` placeholder `rgba(255,247,237,0.5)` focus-border `rgba(251,191,36,0.6)` focus-ring `0 0 0 3px rgba(251,191,36,0.15)`
+- chip: bg `rgba(255,247,237,0.1)` text `#e8ddd4` border `rgba(255,247,237,0.15)`; verified bg `rgba(34,197,94,0.15)`/text `#86efac`; ai bg `rgba(251,191,36,0.15)`/text `#fcd34d`; danger bg `rgba(239,68,68,0.12)`/text `#fca5a5`
+- edit btn: rest bg `rgba(255,247,237,0.1)`/text `#e8ddd4`/border `rgba(255,247,237,0.15)`; hover bg `rgba(255,247,237,0.18)`/text `#fff7ed`/border `rgba(255,247,237,0.25)`; active bg `rgba(255,247,237,0.25)`; focus-ring `0 0 0 3px rgba(251,191,36,0.25)`
+- danger btn: rest bg `rgba(239,68,68,0.12)`/text `#fca5a5`/border `rgba(239,68,68,0.2)`; hover bg `rgba(239,68,68,0.22)`/text `#fecaca`/border `rgba(239,68,68,0.35)`; active bg `rgba(239,68,68,0.32)`/text `#fee2e2`/border `rgba(239,68,68,0.5)`; focus-ring `0 0 0 3px rgba(239,68,68,0.25)`
+
+### BEIGE tone (`.kk-tc--beige` — committed warm cream glass, dark text; NOT washed-out)
+- surface `rgba(245,235,220,0.78)` · solid-fallback `#f5ebdc`
+- text primary `#2d1608` · secondary `#4a3728` · tertiary `#6b5344`
+- link `#92400e` · link-hover `#78350f`
+- bevel `inset 1px 1px 0 0 rgba(255,255,255,0.45), inset -1px -1px 0 0 rgba(139,90,43,0.15), 0 8px 32px -4px rgba(45,22,8,0.2)`
+- border `1px solid rgba(139,90,43,0.12)` · section-header `#4a3728`
+- input: bg `rgba(235,220,200,0.7)` border `rgba(139,90,43,0.2)` text `#2d1608` placeholder `rgba(45,22,8,0.45)` focus-border `rgba(146,64,14,0.6)` focus-ring `0 0 0 3px rgba(146,64,14,0.12)`
+- chip: bg `rgba(45,22,8,0.08)` text `#4a3728` border `rgba(45,22,8,0.12)`; verified bg `rgba(22,163,74,0.12)`/text `#166534`; ai bg `rgba(146,64,14,0.12)`/text `#92400e`; danger bg `rgba(185,28,28,0.1)`/text `#b91c1c`
+- edit btn: rest bg `rgba(45,22,8,0.08)`/text `#4a3728`/border `rgba(45,22,8,0.12)`; hover bg `rgba(45,22,8,0.14)`/text `#2d1608`/border `rgba(45,22,8,0.2)`; active bg `rgba(45,22,8,0.2)`; focus-ring `0 0 0 3px rgba(146,64,14,0.15)`
+- danger btn: rest bg `rgba(185,28,28,0.1)`/text `#b91c1c`/border `rgba(185,28,28,0.15)`; hover bg `rgba(185,28,28,0.18)`/text `#991b1b`/border `rgba(185,28,28,0.25)`; active bg `rgba(185,28,28,0.26)`/text `#7f1d1d`/border `rgba(185,28,28,0.35)`; focus-ring `0 0 0 3px rgba(185,28,28,0.15)`
+
+### Glass mechanics
+- frosting via `backdrop-filter: blur(24px)` on the CARD; `@supports not (backdrop-filter)` → solid surface fallback; `prefers-reduced-transparency` → solid.
+- tone-aware route scrim via `.app-bg.bg-brew-log:has(~ main .kk-takeover-card.kk-tc--{tone})` — no shell edits.
+- when takeover card mounted, `#main-content:has(.kk-b-page)` made transparent to avoid double-frost.
+
+Full per-line values + AA proofs: aria-contract-v3-takeover-card.md §15 (session files). Real source of truth: frontend/src/index.css (:root + .kk-tc--dark + .kk-tc--beige blocks).
+
+## Status
+- Brew-log detail v3 (with title-on-top) built locally, uncommitted. Option A safe at 1eb24bd.
+- Next: Aria adapts takeover card → Catalog detail (reusing the SAME tone tokens, addressing earlier catalog complaints) → Finn builds → operator review. No push/PR/deploy. No sensitive identifiers in this drop.
+
+---
+
+---
+spec_id: spec-043
+agent: Coordinator (directive capture)
+created_at: 2026-06-15T08:40:03-07:00
+status: operator-feedback-refinement
+privacy_gate: reviewed
+---
+
+# spec-043 — operator side-by-side review (catalog vs brew-log detail): 4 refinements
+
+Operator reviewed Catalog detail and Brew-log detail side by side. Verdict: "directionally correct
+and I'm supremely impressed. Good job!" Four gaps to fix (verbatim + analysis).
+
+## 1. AI Summary renders Markdown as plaintext (BUG)
+- Verbatim: "AI Summary on Brew Details seems to be a Markdown format being returned by the LLM but we're printing it out as plaintext"
+- The LLM (Gemini/Claude) returns Markdown; the Brew-log detail AI Summary section prints it as raw plaintext (so `**bold**`, bullets, headings show as literal markup).
+- Fix: render the AI summary as Markdown, styled to fit the takeover-card prose (use `--kk-tc-text-*` tokens; safe rendering — no raw HTML injection). Apply on both tones.
+
+## 2. Catalog detail typography/spacing not consistent with Brew-log detail
+- Verbatim: "Catalog detail doesn't replicate Brew Log Details in terms of reusing font sizing, spacing and typography to identify section headers, text, and sections in general."
+- Catalog must reuse the SAME takeover type/section system as brew-log: `.kk-tc-title`, `.kk-tc-subtitle`, `.kk-tc-section`, `.kk-tc-section-header`, body/label/value sizes, section-gap — so section headers, body text, and section rhythm read identically across both pages.
+
+## 3. Bean icon placement
+- Verbatim: "Shouldn't the Bean Icon be next to the roaster and bean name? And not the Light/Edit?"
+- Currently the bean image sits in the identity row alongside the Roast Level chip + Edit button. Operator wants the bean icon NEXT TO the title (roaster + bean name), not next to the roast-level/edit controls. Move the bean icon to the title block.
+
+## 4. Roast Level chip — espresso gradation
+- Verbatim: "For Bean Roast Level, I think you can do espresso gradation of the chip from beige to dark espresso brown right? To provide a bit of balance and color?"
+- Make the roast-level chip color a gradation mapped to roast level: light roast → beige, progressively darker → dark espresso brown for dark roast. Adds tasteful balance/color. Specify the per-roast-level color mapping for BOTH tones (must stay legible/AA on each glass tone). This is design token work → Aria designs the gradient mapping.
+
+## Routing
+- Aria: spec #4 (roast-level beige→espresso gradient mapping, both tones, AA), confirm #3 layout (bean icon in title block), codify #2 (catalog reuses brew-log type/section tokens), and the #1 markdown prose styling on the card.
+- Finn: implement all 4 (incl. a safe Markdown renderer for #1 — add react-markdown or equivalent if not already present; do NOT render raw HTML).
+- Scope: Catalog detail + Brew-log detail (the AI summary #1 is on brew-log). Still prototype phase; global base-component unify remains gated. No push/PR/deploy. No sensitive identifiers in this drop.
+
+---
+
+---
+spec_id: spec-043
+agent: Coordinator (directive capture)
+created_at: 2026-06-15T10:30:11-07:00
+status: operator-directive-phase-transition
+privacy_gate: reviewed
+---
+
+# spec-043 → component-system rebuild: operator directive to "take it forward"
+
+Operator approved the two-page takeover prototype ("this is perfect") and authorized the
+global, principle-grounded reusable-component rebuild across the whole app.
+
+## Nitpick (fold into rebuild, not a one-off patch)
+- "I would like the Roast Level capitalization to be in sync with the rest of the website. 'Light' is better than 'LIGHT'."
+- Source: `.kk-tc-chip` forces `text-transform: uppercase` (frontend/src/index.css). → Establish a PRINCIPLED casing rule (chips/labels render canonical casing; no forced uppercase unless a defined system rule). Fix as part of the reusable chip component.
+
+## The directive (verbatim, binding)
+- "Build reusable components where each action is grounded in principle not an edge-case or template. Focus is 100% on re-usability of components. Not a single UI component on a single page should be a one-off coded entity."
+- "If you think it would be more effective, have a checklist per page and per API endpoint and API method to make sure that components are not orphaned, isolated or one-offs."
+- "Your design needs to incorporate every single thing that works here, every principle that we have refined, and then apply it to the map of every single API route and resource we just built under V2."
+- Spec choice offered: "re-use the existing spec 043 as is, or recreate it from scratch (while archiving the existing version - don't just overwrite) or just tell me that the product spec is largely fine and only the technical specification requires changes."
+- "take a screenshot using Playwright of the two pages as they are right now, and keep checking against this guided northstar of principles."
+- "kill the server and get started on the plan review and rebuilding."
+
+## Interpretation / scope
+- This authorizes the previously-gated GLOBAL ROLLOUT + base-component UNIFY phase — but with a hard mandate: reusability-first, principle-grounded, zero one-offs, full coverage of the V2 surface map (62 endpoints, all pages).
+- DELIVER A PLAN FOR OPERATOR REVIEW FIRST (spec-approach recommendation + reusable component architecture + principles northstar + per-page/per-endpoint reusability checklist). Do NOT rebuild before the operator approves the plan.
+
+## Orchestration (this session)
+- Maya: technical architecture + spec-approach recommendation (reuse / recreate+archive / product-fine-technical-only).
+- Aria: codify the principles northstar → reusable component design-system contract (every refined principle, incl. casing rule).
+- Quinn: capture northstar Playwright screenshots of brew-log detail + catalog detail, both tones, mobile+desktop (e2e bypass harness), against the current approved build.
+- Tariq (next, after Maya+Aria): per-page + per-endpoint/method reusability checklist + rollout sequencing across the V2 map.
+- Coordinator synthesizes → plan for operator review.
+
+## Status
+- All design work + V2 map remain uncommitted on the design branch. Option A safe at 1eb24bd. No push/PR/deploy. No sensitive identifiers in this drop.
+
+---
+
+---
+spec_id: spec-043
+agent: Coordinator (operator approval)
+created_at: 2026-06-15T11:05:00-07:00
+status: PLAN APPROVED — rebuild authorized
+privacy_gate: reviewed
+---
+
+# spec-043 component-system rebuild — PLAN APPROVED by operator
+
+Operator reviewed the synthesized plan (Maya architecture + Aria principles northstar +
+Tariq per-page/per-endpoint checklist + Quinn northstar screenshots) and APPROVED proceeding,
+with these binding refinements:
+
+## Approved decisions
+1. **Spec approach (c):** product spec is fine; only the technical/engineering spec changes (lives in coffee_tracker). No recreate/archive of spec-043.
+2. **Single PR to `household_fixes`** (NOT main; NOT 11 separate PRs). Commits accumulate on the branch (feat/043-design-coherence off household_fixes).
+3. **Phase-gated localhost review:** after each phase, if it yields a deployable/viewable entity, show operator on localhost → get approval → proceed. Token/library phases (no visual diff) need no gate; first gate is the anchor pages rendering identically.
+4. **Tone persistence: YES** — persist the dark/beige choice to `localStorage`. This is the seed for the P2 site-wide light/dark mode.
+5. **Hardware:** split into List + Detail routes.
+6. **Guest view:** default tone, no special handling (non-issue).
+7. **App-shell / nav chrome:** leave AS-IS (DaisyUI styling + existing GSAP motion — `LayerTransition`, `useKaapiMotion`). Do NOT extend the tone system into the GSAP-animated shell now; full shell toning is deferred to the P2 light/dark work. (Operator flagged scope-creep risk; this avoids it — GSAP=animation, tone=surface color, orthogonal.)
+8. **HeroVisualFrame / CompassChart: NOT exempt.** After the UI is built to spec, Aria runs a screenshot principle-review of these viz components against the northstar; if they clash with the vision, she returns clean fix recommendations for the operator.
+
+## Execution
+- Foundation first: Phase 0 (promote ~84 `--kk-tc-*` tokens + tone classes to a global token layer, no visual diff) + Phase 1 (build the shared, reusable component library per Maya's 4-layer architecture + a Tone provider with localStorage persistence) + Phase 2a (re-point the 2 approved anchor pages to consume ONLY the shared library — must render IDENTICALLY to the northstar screenshots; casing fix folded into the shared Chip).
+- Then phase-by-phase rollout across the V2 map per Tariq's sequencing, each deployable phase gated by operator localhost approval.
+- Grounded in Aria's 12-principle northstar; enforced by per-page/per-endpoint coverage matrices + an ESLint no-one-off gate; legacy one-off systems retired in the final cleanup phase.
+
+## Northstar references
+- Visual: files/northstar-screenshots/ (8). Principles: files/rebuild-plan/aria-principles-northstar.md. Architecture: files/rebuild-plan/maya-technical-plan.md. Checklist: files/rebuild-plan/tariq-rollout-checklist.md. Surface map: docs/requirements/surface-api-map.md.
+
+No push/PR/deploy yet. Option A safe at 1eb24bd. No sensitive identifiers in this drop.
+
+---
+
+---
+spec_id: spec-043
+agent: Coordinator (directive capture)
+created_at: 2026-06-15T11:26:48-07:00
+status: process-refinement
+privacy_gate: reviewed
+---
+
+# spec-043 rebuild — operator process refinement: new components get Aria design + localhost preview
+
+Operator added a binding workflow rule for the rollout phases (verbatim):
+
+"There will be new components that crop up in other pages that aren't on these two pages. When
+you encounter those, maybe work through your design agent for that page, have an opinion about
+how that new component should behave and be templatized, and then show me how that page would
+look on localhost before you proceed."
+
+## Encoded per-page rollout loop (Phase 2b onward)
+For each page being migrated:
+1. Identify components on it NOT already in the shared library (new vs the two anchors).
+2. For EACH new component, **Aria designs it first**: a principled opinion on behavior + how it
+   templatizes into the shared, reusable library (grounded in the 12-principle northstar; never a one-off).
+3. Finn extends the shared library with the new component(s), then migrates the page to shared components.
+4. **Show the page on localhost → get operator approval → only then proceed** to the next page/phase.
+
+## Notes
+- Reinforces the existing reusability mandate (no one-offs) + the design-through-Squad-agent pattern + phase-gated localhost approval.
+- Applies to rollout phases; the in-flight foundation (Phase 0/1/2a, anchors only) introduces no new components.
+- No sensitive identifiers in this drop.
+
+---
+
+---
+spec_id: spec-043
+agent: Coordinator (operator review — foundation regressions + new north-star)
+created_at: 2026-06-15T12:10:33-07:00
+status: foundation-fixes + design-northstar-addition
+privacy_gate: reviewed
+---
+
+# spec-043 foundation review: 4 detail-page fixes + the list-vs-detail glass north-star
+
+Operator reviewed the foundation (anchors on the new tone-system library) on localhost. Found
+regressions + gave a major new design north-star. Verbatim + analysis.
+
+## Foundation detail-page issues (fix before rollout)
+1. **Catalog detail lost the monogram style on the tile.** "Catalog detail page lost the monogram style on the tile." → The extracted `TitleIcon` placeholder regressed; restore the monogram/placeholder design from the northstar.
+2. **Brew detail should also have the monogram/bean image next to the title.** "the brew detail page should also probably have the monogram/bean image next to the title?" → Consistency: apply the TitleBlock-with-icon to brew-log detail too.
+3. **Section header hierarchy broken in markdown.** "Section headers don't seem like before… shot analysis header from AI in markdown looks bigger than the AI summary section heading." (screenshot dd9ee7: "AI FEEDBACK" eyebrow vs a large serif "Shot Analysis & Recommendation" from the LLM markdown) → MarkdownProse heading scale must sit UNDER the section-header hierarchy; the section header is the anchor.
+4. **Extraction readout messed up (was the highlight).** "Extraction details, which were the highlight before completely looks messed up." (screenshot bb5ac4: "Brew ratio1:1.9" jammed; "Extraction zoneSweet & balancedIdeal extraction" — zone chip + label/value lost spacing) → restore ParamGrid/ParamPair label-value spacing + zone-chip margins to the northstar.
+
+## NEW design north-star / primitive (#5 — binding, verbatim)
+"The detail view of anything - Hardware, household, brew log, catalog bean etc and any cards on the UI, catalog cards, hardware cards, home page cards, etc should follow the glass design you have going on. For the 'main' or summary pages just listing things - it should continue to feel immersive and blended by just adding a blur on the background and having everything without a card (like it is today in prod, but with the aesthetic guidelines of our new workstream)."
+
+### Interpretation (Aria to codify; flag ambiguities)
+- **Detail views** (brew-log, catalog bean, hardware, household, …) → the GLASS takeover card treatment.
+- **Entity CARDS anywhere** (catalog cards, hardware cards, home/dashboard cards) → GLASS treatment.
+- **Main / summary / LIST pages** (pages that just list things) → NO page-level card; immersive + blended via a BLUR on the background, content directly on it (card-less), per the new aesthetic. "Like it is today in prod" but with our workstream's guidelines.
+- Reconciliation: the earlier rejected Option-B "card-less full-bleed frosted page" was mis-scoped to DETAIL pages; it is actually the correct model for LIST/summary pages. Not wasted.
+- This refines the shell architecture (Maya shells A–E + Tariq assignments): a distinct card-less immersive LIST shell vs the glass DETAIL/card shell. Update for the list-phase rollout.
+
+## Process improvement (coordinator)
+- The foundation "identical render" claim was verified only via lint/build/tests, not visually — regressions (#1,#4) slipped through. ADD a visual parity check (Quinn screenshots vs northstar / Aria screenshot review) BEFORE re-showing the operator, every phase.
+
+## Routing
+- Aria: fix-spec for #1–#4 (grounded in northstar screenshots) + codify #5 north-star into the principles northstar + define the card-less immersive LIST shell.
+- Finn: implement #1–#4 in the tone-system components.
+- Quinn: visual screenshot verification vs northstar before re-checkpoint.
+- Maya/Tariq: fold #5 into shell architecture + sequencing for the list phases.
+- No push/PR/deploy. Option A safe at 1eb24bd. No sensitive identifiers in this drop.
+
+---
+
+---
+spec_id: spec-043
+agent: Coordinator (operator feedback — catalog summary)
+created_at: 2026-06-15T13:40:00-07:00
+status: catalog-summary-refinements
+privacy_gate: reviewed
+---
+
+# spec-043 catalog summary (list page) — operator refinements
+
+Operator reviewed the card-less immersive catalog list. "Otherwise, great job so far." Two refinements
+(both on REUSABLE tone-system components → propagate to all future list pages / entity cards):
+
+1. **Monogram fills the entire figure space** (verbatim: "The monogram - Can it take over the entire image space instead of being a small tile?"). EntityCard's no-image fallback: the monogram should fill the whole figure/image area (large, tone-aware warm treatment), NOT a small centered tile. (The old CatalogCardFigure filled the figure with a large `font-display` monogram — reinstate that fill behavior in the new EntityCard, tone-aware.)
+
+2. **Two-line list header, drop the third heading** (verbatim: "I don't need 3 separate headings on the page. You can just say Catalog (keep it the way it is), put Beans/Inventory where it says Coffee Library and get rid of that Coffee Library phrase altogether."). On the ListPageHeader for catalog: keep the "Catalog" title as-is; remove the top "BEANS / INVENTORY" eyebrow AND the "COFFEE LIBRARY" section label; render "BEANS / INVENTORY" in the position where "COFFEE LIBRARY" was (below the title). Net: "Catalog" + "BEANS / INVENTORY" (2 lines). Principle for list pages: 2-line header (title + one descriptor), not 3.
+
+## Routing
+- Finn: implement both on the reusable components (EntityCard figure monogram-fill; ListPageHeader/CatalogList 2-line header). Re-verify visually + localhost.
+- These are component-level (reusable) changes, not page one-offs.
+- No push/PR/deploy. No sensitive identifiers in this drop.
+
