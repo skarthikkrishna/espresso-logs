@@ -1553,6 +1553,10 @@ select.input-styled,
 .kk-tc-tone-btn:hover {
   background: var(--kk-tc-tone-btn-hover-bg, rgba(30, 16, 7, 0.80));
 }
+.kk-tc-tone-btn:focus-visible {
+  outline: 2px solid var(--kk-tc-tone-btn-text, rgba(255, 247, 237, 0.95));
+  outline-offset: 2px;
+}
 
 /* ── Takeover card — base (applies to both tones) ───────────────────────── */
 .kk-takeover-card {
