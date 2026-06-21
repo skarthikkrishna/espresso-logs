@@ -10,14 +10,14 @@ import { COPY } from '../copy'
 import { useKaapiMotion } from '../lib/motion'
 import { ToneProvider } from '../contexts/ToneContext'
 import {
+  AddBeanAction,
   EntityCard,
   ImmersiveEmptyState,
-  ImmersiveFab,
   ImmersiveListShell,
   ListPageHeader,
   RoastChip,
-  ToneButton,
   ToneToggle,
+  ToneButton,
 } from '../components/tone-system'
 
 export default function CatalogList() {
@@ -92,9 +92,7 @@ export default function CatalogList() {
               title={COPY.catalog.emptyTitle}
               description={COPY.catalog.emptyBody}
               action={
-                <ToneButton variant="primary" onClick={() => setModalOpen(true)}>
-                  {COPY.catalog.addCoffee}
-                </ToneButton>
+               <AddBeanAction variant="empty" onAdd={() => setModalOpen(true)} />
               }
             />
           </div>
@@ -131,16 +129,11 @@ export default function CatalogList() {
           </>
         )}
 
-        <ImmersiveFab
+        <AddBeanAction
+          variant="fab"
           ref={fabRef}
-          label="Add bean"
-          onClick={() => setModalOpen(true)}
+          onAdd={() => setModalOpen(true)}
           onMouseDown={() => fabRef.current && pressFeedback(fabRef.current)}
-          icon={(
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          )}
         />
 
         {modalOpen && (

@@ -47,11 +47,15 @@ export function ShotRow({
       data-testid={testId}
       className={['shot-row', 'kaapi-motion-card', className].filter(Boolean).join(' ')}
     >
-      <span className="shot-row__bag">{bagName}</span>
-      <span className="shot-row__date">{date}</span>
-      {doseYield && (
-        <span className="shot-row__chip">{doseYield}</span>
-      )}
+      <span className="shot-row__body">
+        <span className="shot-row__bag">{bagName}</span>
+        <span className="shot-row__date">{date}</span>
+        {doseYield && (
+          <span className="shot-row__chip-line">
+            <span className="shot-row__chip">{doseYield}</span>
+          </span>
+        )}
+      </span>
       <svg
         className="shot-row__arrow"
         xmlns="http://www.w3.org/2000/svg"

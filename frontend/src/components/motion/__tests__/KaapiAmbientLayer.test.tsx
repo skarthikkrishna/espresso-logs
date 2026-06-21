@@ -1,10 +1,13 @@
 /**
  * T006 — KaapiAmbientLayer: shared, non-interactive, always-painted ambient.
  *
- * jsdom has no WebGL, so `useWebGLSupport` reports unsupported and the layer
- * renders ONLY its static token-gradient fallback — exactly the degraded path that
- * must never be blank. This verifies the contract: aria-hidden, non-interactive,
- * deepest layer, non-empty static fallback, and no canvas when WebGL is absent.
+ * The animated WebGL canvas is disabled for energy/battery efficiency (Safari
+ * flagged the always-on rAF loop as a significant drain). The layer now renders
+ * ONLY the static token-gradient — the designed fallback for reduced-motion /
+ * no-WebGL — as the permanent ambient visual.
+ *
+ * Contract: aria-hidden, non-interactive, deepest layer, static gradient always
+ * painted, animated canvas never mounted.
  */
 
 import { render, screen } from '@testing-library/react'
@@ -29,7 +32,7 @@ describe('KaapiAmbientLayer', () => {
     expect(fallback.style.background).toContain('--kaapi-ambient-static-gradient')
   })
 
-  it('renders no WebGL canvas when WebGL is unavailable (jsdom)', () => {
+  it('never mounts the animated WebGL canvas (disabled for battery/energy)', () => {
     render(<KaapiAmbientLayer />)
     const layer = screen.getByTestId('kaapi-ambient')
     expect(layer.querySelector('canvas')).toBeNull()

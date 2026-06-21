@@ -18,6 +18,10 @@
  * transparent so the card glass surface reads as one continuous surface; the
  * monogram letter (--kk-tc-text-primary) is AA-legible on both tones.
  *
+ * Text-first layout (Aria Item 4): entity-card-body renders ABOVE
+ * entity-card-figure so bean name leads and monogram is the visual anchor
+ * below — data hierarchy first, decoration second.
+ *
  * GSAP stagger: motionClassName defaults to "kaapi-motion-card" so the
  * staggerCards() hook targets this element without extra config.
  */
@@ -58,7 +62,15 @@ export function EntityCard({
   motionClassName = 'kaapi-motion-card',
   'data-testid': testId,
 }: EntityCardProps) {
-  const monogram = (eyebrow ?? title).slice(0, 2).toUpperCase()
+  // Derive monogram from the card title (up to 2 significant words), not the eyebrow.
+  // "Roaster — Bean" → "RB", "Ethiopia Yirgacheffe" → "EY", "Monkeyman" → "M".
+  const monogram = title
+    .replace(/[\u2013\u2014]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w.charAt(0).toUpperCase())
+    .join('')
 
   return (
     <Link
@@ -66,23 +78,9 @@ export function EntityCard({
       data-testid={testId}
       className={['entity-card', motionClassName, className].filter(Boolean).join(' ')}
     >
-      {/* Figure — image or full-figure monogram fill */}
-      <div className="entity-card-figure">
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={title}
-            className="entity-card-image"
-          />
-        ) : (
-          <div className="entity-card-monogram-fill" aria-hidden="true">
-            <span className="entity-card-monogram">{monogram}</span>
-          </div>
-        )}
-        {badge && <div className="entity-card-badge">{badge}</div>}
-      </div>
-
-      {/* Text body */}
+      {/* Text body — data hierarchy leads (Aria Item 4: name/roast first,
+          decoration second). Body renders above figure so bean name is the
+          first thing the eye lands on; monogram is the visual anchor below. */}
       <div className="entity-card-body">
         {eyebrow && (
           <p className="entity-card-eyebrow" title={eyebrow}>
@@ -102,6 +100,22 @@ export function EntityCard({
             {meta}
           </div>
         )}
+      </div>
+
+      {/* Figure — monogram/image as visual decoration below text */}
+      <div className="entity-card-figure">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={title}
+            className="entity-card-image"
+          />
+        ) : (
+          <div className="entity-card-monogram-fill" aria-hidden="true">
+            <span className="entity-card-monogram">{monogram}</span>
+          </div>
+        )}
+        {badge && <div className="entity-card-badge">{badge}</div>}
       </div>
     </Link>
   )

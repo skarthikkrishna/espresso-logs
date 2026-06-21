@@ -70,7 +70,7 @@ export default function Sidebar() {
           aria-hidden="true"
           data-testid="brand-mark"
         />
-        <span className="text-xl font-display font-bold text-amber-400">{COPY.shell.brand}</span>
+        <span className="kk-sidebar-brand text-xl font-display font-bold">{COPY.shell.brand}</span>
       </div>
 
       <HouseholdSwitcher variant="desktop" />
@@ -82,10 +82,8 @@ export default function Sidebar() {
             to={item.path}
             end={item.path === '/'}
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-[var(--motion-duration-micro)] ${
-                isActive
-                  ? 'border border-amber-600/30 bg-amber-600/20 text-amber-400'
-                  : 'text-amber-100/70 hover:bg-amber-900/30 hover:text-amber-200'
+              `kk-sidebar-nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-[var(--motion-duration-micro)] ${
+                isActive ? 'kk-sidebar-nav-link--active' : ''
               }`
             }
           >
@@ -98,21 +96,21 @@ export default function Sidebar() {
       <NavLink
         to="/profile"
         className={({ isActive }) =>
-          `m-3 flex min-h-16 items-center gap-3 rounded-xl border border-amber-900/30 px-3 py-3 no-underline transition-colors ${
-            isActive ? 'bg-amber-600/20 text-amber-100' : 'text-amber-100/75 hover:bg-amber-900/25 hover:text-amber-100'
+          `kk-sidebar-profile m-3 flex min-h-16 items-center gap-3 rounded-xl border px-3 py-3 no-underline transition-colors ${
+            isActive ? 'kk-sidebar-profile--active' : ''
           }`
         }
       >
         {user?.picture_url ? (
           <img src={user.picture_url} alt="" className="h-10 w-10 rounded-full object-cover" />
         ) : (
-          <span className="grid h-10 w-10 place-items-center rounded-full bg-amber-500/20 text-sm font-semibold text-amber-200" aria-hidden="true">
+          <span className="grid h-10 w-10 place-items-center rounded-full bg-amber-500/20 text-sm font-semibold text-amber-300" aria-hidden="true">
             {monogramFor(displayName)}
           </span>
         )}
         <span className="min-w-0">
           <span className="block truncate text-sm font-medium">{displayName}</span>
-          <span className="block text-xs text-base-content/50">Profile</span>
+          <span className="kk-sidebar-profile-label block text-xs">Profile</span>
         </span>
       </NavLink>
 

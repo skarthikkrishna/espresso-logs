@@ -96,8 +96,8 @@ describe('CatalogList — immersive shell structure', () => {
   it('renders ToneToggle button', async () => {
     renderWithQuery(<CatalogList />)
     await screen.findByTestId('catalog-grid')
-    // ToneToggle renders a button with a label about tone switching
-    const toneBtn = screen.getByRole('button', { name: /switch to/i })
+    // ToneToggle label = CURRENT state: "Dark mode" (default) or "Light mode"
+    const toneBtn = screen.getByRole('button', { name: /dark mode|light mode/i })
     expect(toneBtn).toBeInTheDocument()
   })
 })

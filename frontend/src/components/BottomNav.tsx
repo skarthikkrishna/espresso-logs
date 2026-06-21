@@ -59,13 +59,20 @@ export default function BottomNav() {
 
   return (
     <>
-      {activeMembership ? (
-        <div data-testid="mobile-household-strip" className="mobile-household-strip nav-shell fixed bottom-[var(--mobile-bottom-nav-height)] left-0 right-0 z-50 border-t px-2 py-1 lg:hidden">
-          <div className="flex min-h-12 items-center gap-2">
+      <nav
+        data-testid="bottom-nav"
+        className="nav-shell mobile-nav household-bottom-safe fixed bottom-0 left-0 right-0 z-50 flex flex-col border-t lg:hidden"
+        aria-label={COPY.shell.primaryNav}
+      >
+        {/* Household context row — merged from separate strip (Aria Item 7).
+            Reduces bottom chrome from two stacked elements to one cohesive bar.
+            Profile accessible via this row instead of a separate floating button. */}
+        {activeMembership ? (
+          <div className="kk-nav-context-row">
             <HouseholdSwitcher variant="mobile" />
             <button
               type="button"
-              className="btn btn-ghost min-h-11 px-3 text-amber-100"
+              className="kk-nav-profile-btn"
               aria-haspopup="dialog"
               aria-expanded={accountOpen}
               onClick={() => setAccountOpen(true)}
@@ -73,29 +80,26 @@ export default function BottomNav() {
               Profile
             </button>
           </div>
-        </div>
-      ) : null}
+        ) : null}
 
-      <nav
-        data-testid="bottom-nav"
-        className="nav-shell household-bottom-safe fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t px-1 pt-2 lg:hidden"
-        aria-label={COPY.shell.primaryNav}
-      >
-        {NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            end={item.path === '/'}
-            className={({ isActive }) =>
-              `flex min-h-11 flex-col items-center gap-0.5 rounded-lg px-2 py-1 text-xs transition-colors ${
-                isActive ? 'text-amber-400' : 'text-amber-100/60'
-              }`
-            }
-          >
-            {item.icon}
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
+        {/* Primary nav items */}
+        <div className="flex items-center justify-around px-1 pt-2">
+          {NAV_ITEMS.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.path === '/'}
+              className={({ isActive }) =>
+                `kk-mobile-nav-link flex min-h-11 flex-col items-center gap-0.5 rounded-lg px-2 py-1 text-xs transition-colors ${
+                isActive ? 'kk-mobile-nav-link--active' : ''
+                }`
+              }
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
+        </div>
       </nav>
 
       <AccessibleDialog

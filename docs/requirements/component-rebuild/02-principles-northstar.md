@@ -420,6 +420,7 @@ The design system exists to make the **operator's intent enforceable**. Readabil
 | 10 | Responsive/A11y | `--kk-tc-max-width`, `@media prefers-*` |
 | 11 | Markdown Prose | `.kk-tc-markdown` |
 | 12 | No One-Offs | Reuse existing tokens/classes |
+| 13 | Affordance Matches Interactivity | `cursor: pointer`, `.entity-card:hover`, `.stat-tile` (no hover) |
 
 ---
 
@@ -455,11 +456,41 @@ Principle(s): __________________
 
 ---
 
+## PRINCIPLE 13: Visual Affordance Matches Interactivity
+
+### Statement
+Non-interactive elements must NOT present actionable affordances — no hover brightness/shadow lift, no pointer cursor, no elevation/bevel that implies tap. Interactive elements MUST look actionable — cursor pointer, hover/active state progression, bevel/shadow that signals "I am a control." The visual affordance and the semantic interactivity must be aligned; if it's not actionable, it must not look like it is.
+
+### Components/Tokens
+| Token/Class | Purpose |
+|-------------|---------|
+| `cursor: pointer` | ONLY on elements with `<a>`, `<button>`, or click handlers |
+| `.entity-card:hover` | Interactive card affordance (brightness lift, shadow expansion) |
+| `.stat-tile` | **NO** hover effects, **NO** pointer cursor — informational only |
+| `.shot-row:hover` | Interactive row affordance (subtle background shift) |
+
+### Application Rule
+- Elements rendered as `<div>` or `<span>` without navigation/action handlers must NOT have hover transitions, cursor pointer, or shadow lift
+- Elements rendered as `<a>`, `<button>`, or with `onClick` handlers MUST have cursor pointer and visible hover/active state
+- Card-like surfaces that are visually similar but differ in interactivity must be visually distinguishable:
+  - **Interactive cards:** blur + bevel + hover + pointer + shadow lift
+  - **Informational tiles:** solid surface + static treatment + default cursor
+- When StatTile and EntityCard appear in the same view, StatTile must NOT share the card chrome that EntityCard uses
+
+### Violation Examples
+- `<div>` with `border-radius + border + shadow` but no click handler, styled identically to a clickable card ❌
+- StatTile rendering with `backdrop-filter: blur()` and bevel shadow next to tappable EntityCards ❌
+- Button with `cursor: default` ❌
+- Interactive link with no hover/active feedback ❌
+
+---
+
 ## Document History
 
 | Date | Author | Change |
 |------|--------|--------|
 | 2026-06-15 | Aria | Initial northstar codification from spec-043 session refinements |
+| 2026-06-19 | Aria | Added PRINCIPLE 13: Visual Affordance Matches Interactivity |
 
 ---
 

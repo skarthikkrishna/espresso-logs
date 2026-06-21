@@ -118,6 +118,43 @@ describe('EntityCard', () => {
     expect(container.querySelector('.entity-card-monogram')).toBeInTheDocument()
   })
 
+  it('derives monogram from title words, not from eyebrow', () => {
+    const { container } = render(
+      <Wrapper>
+        <EntityCard href="/catalog/1" title="Roaster Bean" eyebrow="Ready to brew" />
+      </Wrapper>
+    )
+    // eyebrow "Ready to brew" → old buggy code gave "RE"; title "Roaster Bean" → "RB"
+    expect(container.querySelector('.entity-card-monogram')?.textContent).toBe('RB')
+  })
+
+  it('splits on em-dash/en-dash for monogram — "Roaster — Bean" → "RB"', () => {
+    const { container } = render(
+      <Wrapper>
+        <EntityCard href="/catalog/1" title={"Roaster \u2014 Bean"} eyebrow="Ready to brew" />
+      </Wrapper>
+    )
+    expect(container.querySelector('.entity-card-monogram')?.textContent).toBe('RB')
+  })
+
+  it('uses only the first two words for monogram', () => {
+    const { container } = render(
+      <Wrapper>
+        <EntityCard href="/catalog/1" title="Ethiopia Yirgacheffe Natural" />
+      </Wrapper>
+    )
+    expect(container.querySelector('.entity-card-monogram')?.textContent).toBe('EY')
+  })
+
+  it('produces a single-letter monogram for a one-word title', () => {
+    const { container } = render(
+      <Wrapper>
+        <EntityCard href="/catalog/1" title="Monkeyman" />
+      </Wrapper>
+    )
+    expect(container.querySelector('.entity-card-monogram')?.textContent).toBe('M')
+  })
+
   it('forwards data-testid to the link element', () => {
     render(
       <Wrapper>

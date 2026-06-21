@@ -152,13 +152,13 @@ export default function HouseholdSwitcher({ variant }: HouseholdSwitcherProps) {
         >
           <span className="min-w-0">
             <span className="block truncate text-xs uppercase tracking-[0.16em] text-base-content/45">Household</span>
-            <span className="block truncate text-sm text-amber-100">{current.household_name}</span>
+            <span className="block truncate text-sm kk-household-name">{current.household_name}</span>
           </span>
         </button>
       ) : (
         <div className="min-w-0 flex-1 px-2 py-1" aria-label={`Active household ${current.household_name}`}>
           <span className="block truncate text-xs uppercase tracking-[0.16em] text-base-content/45">Household</span>
-          <span className="block truncate text-sm text-amber-100">{current.household_name}</span>
+          <span className="block truncate text-sm kk-household-name">{current.household_name}</span>
         </div>
       )}
       <AccessibleDialog

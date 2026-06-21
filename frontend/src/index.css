@@ -72,10 +72,13 @@
   --kaapi-content-input-text: #2d1608;
   --kaapi-content-input-placeholder: #6b4a2f;
 
-  /* Mobile bottom stack */
-  --mobile-bottom-nav-height: 4.25rem;
-  --mobile-household-strip-height: 3.25rem;
-  --mobile-bottom-stack-height: calc(var(--mobile-bottom-nav-height) + var(--mobile-household-strip-height) + env(safe-area-inset-bottom));
+  /* Mobile bottom stack — Aria Item 7: household strip merged into nav bar.
+     Nav now includes a context row (~2.75rem for WCAG touch targets) above
+     the primary nav items (~3.5rem), eliminating the separate strip element.
+     Stack savings: was 7.5rem + safe-area → now 6.25rem + safe-area. */
+  --mobile-bottom-nav-height: 6.25rem; /* context row + nav items; was 4.25rem */
+  --mobile-household-strip-height: 0rem; /* no longer a separate element */
+  --mobile-bottom-stack-height: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom));
   --mobile-fab-offset: calc(var(--mobile-bottom-stack-height) + 1rem);
   --mobile-content-bottom-padding: calc(var(--mobile-bottom-stack-height) + 5.5rem);
 
@@ -100,7 +103,7 @@
   /* Solid, light, elevated warm operational content surfaces — AA-safe without
      help from photography, blur, ambient darkness, or translucency.
      #2d1608 text on #fff7ed ≈ 13:1; --kaapi-content-muted on surface ≈ 5.6:1. */
-  --kaapi-content-surface: #fff7ed;
+  --kaapi-content-surface: #faf5ef;  /* spec-043 v5: warm linen eggshell (was #fff7ed orange-50 — too stark) */
   --kaapi-content-surface-2: #f7ead8;
   --kaapi-content-border: rgba(120, 53, 15, 0.18);
   --kaapi-content-content: #2d1608;
@@ -115,14 +118,13 @@
   --kaapi-content-warning: #92400e;
   --kaapi-content-shadow: 0 18px 44px rgba(18, 11, 6, 0.28), 0 2px 8px rgba(18, 11, 6, 0.18), inset 0 1px 0 rgba(255,255,255,0.72);
 
-  /* Restrained semantic cool accents — info/status, taste zones, chart depth,
-     extraction glint only (see design-language §Semantic colour usage guide). */
-  --kaapi-accent-teal: #14b8a6;
-  --kaapi-accent-teal-content: #041f1d;
-  --kaapi-accent-cyan: #67e8f9;
+  /* Restrained accent slots. Teal hue is quarantined to --color-info only. */
+  --kaapi-accent-teal: #734a37;
+  --kaapi-accent-teal-content: #fffaf3;
+  --kaapi-accent-cyan: #d26946;
   --kaapi-accent-violet: #a78bfa;
-  --kaapi-depth-teal: #0f766e;
-  --kaapi-glint-cool: #cffafe;
+  --kaapi-depth-teal: #4b2f23;
+  --kaapi-glint-cool: #be9757;
 
   /* Shared app-shell ambient depth tokens + static fallback (KaapiAmbientLayer,
      T006). Subtle calm depth only — never fog/smoke/particle spectacle. */
@@ -130,9 +132,9 @@
   --kaapi-ambient-vignette: rgba(6, 4, 2, 0.58);
   --kaapi-ambient-warm-fog: rgba(180, 83, 9, 0.18);
   --kaapi-ambient-deep-fog: rgba(45, 31, 14, 0.72);
-  --kaapi-ambient-cool-glint: rgba(207, 250, 254, 0.18);
-  --kaapi-ambient-depth-teal: rgba(15, 118, 110, 0.16);
-  --kaapi-ambient-static-gradient: radial-gradient(circle at 18% 22%, rgba(180, 83, 9, 0.18), transparent 34%), radial-gradient(circle at 78% 18%, rgba(207, 250, 254, 0.10), transparent 28%), radial-gradient(circle at 55% 82%, rgba(15, 118, 110, 0.12), transparent 36%), linear-gradient(135deg, #120b06 0%, #1a1209 42%, #22160b 72%, #0f0905 100%);
+  --kaapi-ambient-cool-glint: rgba(190, 151, 87, 0.14);
+  --kaapi-ambient-depth-teal: rgba(115, 74, 55, 0.16);
+  --kaapi-ambient-static-gradient: radial-gradient(circle at 18% 22%, rgba(180, 83, 9, 0.18), transparent 34%), radial-gradient(circle at 78% 18%, rgba(190, 151, 87, 0.10), transparent 28%), radial-gradient(circle at 55% 82%, rgba(115, 74, 55, 0.12), transparent 36%), linear-gradient(135deg, #120b06 0%, #1a1209 42%, #22160b 72%, #0f0905 100%);
 
   /* Named motion / fluidity grammar (wired into primitives + ambient in T006).
      Values per handoff: instant 100 / micro 160 / enter 340 / route 560 /
@@ -190,10 +192,32 @@
      CRITICAL: --kaapi-warm-translucent-shadow is a comma-separated multi-layer
      value — must live in :root, NOT inside @plugin "daisyui/theme" which truncates
      comma-separated values to the last entry. */
-  --kaapi-warm-translucent: rgba(255, 247, 237, 0.94);
+  --kaapi-warm-translucent: rgba(250, 245, 239, 0.94);  /* spec-043 v5: updated to match #faf5ef eggshell surface */
   --kaapi-warm-translucent-blur: blur(8px);
   --kaapi-warm-translucent-shadow: 0 12px 32px rgba(18, 11, 6, 0.22), 0 2px 6px rgba(18, 11, 6, 0.14), inset 0 1px 0 rgba(255,255,255,0.60);
   --kaapi-warm-translucent-border: rgba(120, 53, 15, 0.12);
+
+  /* spec-043 v6: Warm coffee palette — amber CTA + copper accent.
+     Teal is quarantined to info/status semantics. Extends --kk-tc-* / --kk-il-*;
+     does NOT fork a parallel system. Multi-value values (none here) must stay in
+     :root per the DaisyUI @plugin comma-truncation constraint (documented above).
+     Light mode token set: */
+  --kaapi-palette-bg:              #faf5ef;
+  --kaapi-palette-surface:         #faf5ef;
+  --kaapi-palette-surface-elevated:#f5ece4;
+  --kaapi-palette-text-primary:    #2d1608;
+  --kaapi-palette-text-secondary:  #5c3d1e;
+  --kaapi-palette-text-muted:      #8b6b4a;
+  --kaapi-palette-border:          rgba(120, 53, 15, 0.14);
+  --kaapi-palette-accent-warm:     #734a37;
+  --kaapi-palette-accent-cool:     #0e7490;
+  --kaapi-palette-sidebar-bg:      #f5ebdc;     /* light: warm cream */
+  --kaapi-palette-sidebar-text:    #5c3d1e;     /* light: bark */
+  --kaapi-palette-sidebar-border:  rgba(115, 74, 55, 0.15);
+  /* Dark mode sidebar tokens (light-mode overrides live in html:has() blocks): */
+  --kaapi-palette-sidebar-bg-dark:    #2d1608;  /* dark: espresso */
+  --kaapi-palette-sidebar-text-dark:  #f5e6d3;  /* dark: warm cream */
+  --kaapi-palette-sidebar-border-dark:rgba(245, 230, 211, 0.08);
   --section-header-text: var(--kaapi-content-content);
   --section-header-size: 0.8125rem;
   --section-header-weight: 700;
@@ -255,9 +279,7 @@ h1, h2, .font-display {
   inset: 0;
   z-index: -1;
   background-image:
-    linear-gradient(rgba(6, 4, 2, 0.46), rgba(8, 5, 2, 0.60)),
-    /* @vite-ignore */
-    url('/static/img/hero-dashboard.jpg');
+    linear-gradient(rgba(6, 4, 2, 0.46), rgba(8, 5, 2, 0.60));
   background-size: cover;
   background-position: center 40%;
   /*
@@ -277,30 +299,60 @@ h1, h2, .font-display {
 /* Per-page background overrides — dense app routes keyed to deeper scrims */
 .app-bg.bg-dashboard {
   background-image:
-    linear-gradient(rgba(6, 4, 2, 0.46), rgba(8, 5, 2, 0.60)),
-    /* @vite-ignore */
-    url('/static/img/hero-dashboard.jpg');
+    linear-gradient(rgba(6, 4, 2, 0.46), rgba(8, 5, 2, 0.60));
   background-position: center 40%;
 }
 .app-bg.bg-brew-log {
   background-image:
-    linear-gradient(rgba(8, 5, 2, 0.52), rgba(8, 5, 2, 0.66)),
-    /* @vite-ignore */
-    url('/static/img/hero-brew.jpg');
+    linear-gradient(rgba(8, 5, 2, 0.52), rgba(8, 5, 2, 0.66));
   background-position: center 40%;
 }
 .app-bg.bg-catalog {
   background-image:
-    linear-gradient(rgba(8, 5, 2, 0.48), rgba(8, 5, 2, 0.62)),
-    /* @vite-ignore */
-    url('/static/img/hero-catalog.jpg');
+    linear-gradient(rgba(8, 5, 2, 0.48), rgba(8, 5, 2, 0.62));
   background-position: center 55%;
 }
 .app-bg.bg-hardware {
   background-image:
-    linear-gradient(rgba(8, 5, 2, 0.50), rgba(8, 5, 2, 0.66)),
-    /* @vite-ignore */
-    url('/static/img/hero-hardware.jpg');
+    linear-gradient(rgba(8, 5, 2, 0.50), rgba(8, 5, 2, 0.66));
+  background-position: center 20%;
+}
+
+/* ── Background photo blur — Option B (::before pseudo, inset -12px) ────────
+   Photo lives on ::before so filter:blur(5px) never touches .app-bg itself.
+   Preserves the GPU compositor layer (will-change:transform on .app-bg) and
+   ensures #main-content's backdrop-filter samples .app-bg unfiltered.
+   inset:-12px extends the pseudo 12px past each viewport edge, hiding the
+   blurred boundary off-screen on all four sides (no edge halo). */
+.app-bg::before {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  /* @vite-ignore */
+  background-image: url('/static/img/hero-dashboard.jpg');
+  background-size: cover;
+  background-position: center 40%;
+  filter: blur(5px);
+  z-index: -1;
+}
+.app-bg.bg-dashboard::before {
+  /* @vite-ignore */
+  background-image: url('/static/img/hero-dashboard.jpg');
+  background-position: center 40%;
+}
+.app-bg.bg-brew-log::before {
+  /* @vite-ignore */
+  background-image: url('/static/img/hero-brew.jpg');
+  background-position: center 40%;
+}
+.app-bg.bg-catalog::before {
+  /* @vite-ignore */
+  background-image: url('/static/img/hero-catalog.jpg');
+  background-position: center 55%;
+}
+.app-bg.bg-hardware::before {
+  /* @vite-ignore */
+  background-image: url('/static/img/hero-hardware.jpg');
   background-position: center 20%;
 }
 
@@ -584,8 +636,12 @@ h1, h2, .font-display {
 }
 
 .nav-shell {
-  background: rgba(26, 18, 9, 0.93);
-  border-color: rgba(217, 119, 6, 0.18);
+  /* spec-043 v6 — warm sidebar; teal is reserved for info/status semantics only.
+     Dark default is espresso chrome; light/beige switches to warm cream.
+     Light-mode override lives in html:has([data-tone="beige"]) .nav-shell rules below. */
+  background: var(--kaapi-palette-sidebar-bg-dark);
+  border-color: var(--kaapi-palette-sidebar-border-dark);
+  color: var(--kaapi-palette-sidebar-text-dark);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
@@ -596,6 +652,152 @@ h1, h2, .font-display {
 
 .household-bottom-safe {
   padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+}
+
+/* ── Nav-shell tone-awareness (spec-043 v6 warm palette) ───────────────────
+   Desktop sidebar is solid in both tones:
+   - Default/dark: espresso #2d1608 with cream text
+   - Light/beige: warm cream #f5ebdc with bark text and copper active state
+   Mobile bottom nav follows the same warm palette when the current page is beige.
+
+   Mechanism: CSS :has() detects [data-tone="beige"] anywhere in the document.
+   Token hardcoding is intentional: .nav-shell sits outside any [data-tone]
+   ancestor, so --kk-tc-* custom properties would not resolve.
+   AA verification:
+   #6b5344 "Profile" on #f5ebdc ≈ 6.04:1 ✓ AA
+   #c9b89e "Profile" on #2d1608 ≈ 8.96:1 ✓ AA
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* Light-mode desktop sidebar surface + text */
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) {
+  background: var(--kaapi-palette-sidebar-bg);
+  border-color: var(--kaapi-palette-sidebar-border);
+  color: var(--kaapi-palette-sidebar-text);
+}
+
+/* Light-mode desktop sidebar: inactive nav links */
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) a,
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) button:not(.kk-sidebar-household-btn) {
+  color: #5c3d1e;
+}
+
+/* Light-mode desktop sidebar: active nav link (React Router aria-current="page") */
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) a[aria-current="page"] {
+  color: #734a37;
+}
+
+/* Light-mode desktop sidebar: brand wordmark legibility on warm cream */
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) .kk-sidebar-brand {
+  color: #b45309;
+}
+
+/* Light-mode mobile bottom nav + household strip → same warm palette */
+html:has([data-tone="beige"]) .nav-shell.mobile-nav,
+html:has([data-tone="beige"]) .mobile-household-strip {
+  background: #f5ebdc;
+  border-color: rgba(115, 74, 55, 0.15);
+}
+
+/* Safe-area zone adopts the surface color — eliminates the dark afterthought gap */
+html:has([data-tone="beige"]) .nav-shell.mobile-nav {
+  padding-bottom: env(safe-area-inset-bottom, 0.5rem);
+}
+
+/* Inactive mobile nav items */
+html:has([data-tone="beige"]) .nav-shell.mobile-nav a,
+html:has([data-tone="beige"]) .nav-shell.mobile-nav button {
+  color: #5c3d1e;
+}
+
+/* Active mobile nav item (React Router sets aria-current="page" on the active NavLink) */
+html:has([data-tone="beige"]) .nav-shell.mobile-nav a[aria-current="page"] {
+  color: #734a37;
+}
+
+/* Household strip buttons in beige */
+html:has([data-tone="beige"]) .mobile-household-strip button,
+html:has([data-tone="beige"]) .mobile-household-strip a {
+  color: #5c3d1e;
+}
+
+/* Household name WCAG AA on warm sidebar. Use token-matched fixed values because
+   nav-shell sits outside any [data-tone] ancestor.
+   Dark:  #f5e6d3 on #2d1608  → AAA ✓
+   Beige: #5c3d1e on #f5ebdc  → AAA ✓
+   Selector updated: household name now lives inside .nav-shell.mobile-nav
+   (merged from separate .mobile-household-strip — Aria Item 7). */
+.kk-household-name {
+  color: #f5e6d3;
+}
+html:has([data-tone="beige"]) .nav-shell.mobile-nav .kk-household-name {
+  color: #5c3d1e;
+}
+
+.kk-sidebar-brand {
+  color: #fbbf24;
+}
+
+.kk-sidebar-nav-link {
+  color: #f5e6d3;
+  border: 1px solid transparent;
+}
+
+.kk-sidebar-nav-link:hover {
+  background: rgba(251, 191, 36, 0.10);
+  color: #f5e6d3;
+}
+
+.kk-sidebar-nav-link--active {
+  background: rgba(251, 191, 36, 0.18);
+  border-color: rgba(251, 191, 36, 0.24);
+  box-shadow: inset 3px 0 0 #fbbf24;
+  color: #fbbf24;
+}
+
+.kk-sidebar-profile {
+  color: #f5e6d3;
+  border-color: rgba(245, 230, 211, 0.10);
+}
+
+.kk-sidebar-profile:hover,
+.kk-sidebar-profile--active {
+  background: rgba(245, 230, 211, 0.05);
+  color: #f5e6d3;
+}
+
+.kk-sidebar-profile-label {
+  color: #c9b89e;
+}
+
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) .kk-sidebar-nav-link {
+  color: #5c3d1e;
+}
+
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) .kk-sidebar-nav-link:hover {
+  background: rgba(146, 64, 14, 0.07);
+  color: #5c3d1e;
+}
+
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) .kk-sidebar-nav-link--active {
+  background: rgba(115, 74, 55, 0.10);
+  border-color: rgba(115, 74, 55, 0.24);
+  box-shadow: inset 3px 0 0 #734a37;
+  color: #734a37;
+}
+
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) .kk-sidebar-profile {
+  color: #5c3d1e;
+  border-color: rgba(115, 74, 55, 0.16);
+}
+
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) .kk-sidebar-profile:hover,
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) .kk-sidebar-profile--active {
+  background: rgba(115, 74, 55, 0.05);
+  color: #5c3d1e;
+}
+
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) .kk-sidebar-profile-label {
+  color: #6b5344;
 }
 
 /* Sentence-case override for DaisyUI file-input placeholder text */
@@ -1175,7 +1377,7 @@ select.input-styled,
   --kk-tc-padding-x: 24px;
   --kk-tc-padding-y: 32px;
   --kk-tc-max-width: 720px;
-  --kk-tc-blur: 24px;
+  --kk-tc-blur: 20px;
 
   /* Typography scale */
   --kk-tc-title-size: 24px;
@@ -1202,6 +1404,9 @@ select.input-styled,
   /* Primary action button geometry — shared, tone-agnostic */
   --kk-tc-primary-btn-radius: 6px;
   --kk-tc-primary-btn-padding: 8px 16px;
+
+  /* spec-043 v5: --kk-il-header-shadow-light REMOVED — legibility now from darker scrim
+     (#rgba(45,22,8,0.22) light-mode frost) and eggshell card surfaces, not shadow hack. */
 
   /* Roast gradation tokens — shared across tones */
   --kk-tc-roast-light-bg: #f5e6d3;
@@ -1267,29 +1472,21 @@ select.input-styled,
    (list, add) have no .kk-takeover-card → default scrim applies. */
 .app-bg.bg-brew-log:has(~ main .kk-takeover-card.kk-tc--dark) {
   background-image:
-    linear-gradient(rgba(24, 16, 10, 0.28), rgba(24, 16, 10, 0.32)),
-    /* @vite-ignore */
-    url('/static/img/hero-brew.jpg');
+    linear-gradient(rgba(24, 16, 10, 0.28), rgba(24, 16, 10, 0.32));
 }
 .app-bg.bg-brew-log:has(~ main .kk-takeover-card.kk-tc--beige) {
   background-image:
-    linear-gradient(rgba(245, 235, 220, 0.10), rgba(245, 235, 220, 0.14)),
-    /* @vite-ignore */
-    url('/static/img/hero-brew.jpg');
+    linear-gradient(rgba(245, 235, 220, 0.10), rgba(245, 235, 220, 0.14));
 }
 
 /* ── Catalog: tone-aware scrim via :has() — minimal, let the card frost ──── */
 .app-bg.bg-catalog:has(~ main .kk-takeover-card.kk-tc--dark) {
   background-image:
-    linear-gradient(rgba(24, 16, 10, 0.28), rgba(24, 16, 10, 0.32)),
-    /* @vite-ignore */
-    url('/static/img/hero-catalog.jpg');
+    linear-gradient(rgba(24, 16, 10, 0.28), rgba(24, 16, 10, 0.32));
 }
 .app-bg.bg-catalog:has(~ main .kk-takeover-card.kk-tc--beige) {
   background-image:
-    linear-gradient(rgba(245, 235, 220, 0.10), rgba(245, 235, 220, 0.14)),
-    /* @vite-ignore */
-    url('/static/img/hero-catalog.jpg');
+    linear-gradient(rgba(245, 235, 220, 0.10), rgba(245, 235, 220, 0.14));
 }
 
 /* ── Nav row: back link + prototype tone toggle ──────────────────────────── */
@@ -1304,27 +1501,57 @@ select.input-styled,
 
 .kk-tc-back-link {
   font-size: 14px;
-  color: #fbbf24;
+  color: var(--kk-tc-back-link-color, #fbbf24); /* token: dark=amber, light=bark brown */
   text-decoration: none;
-  transition: color 150ms;
+  display: inline-flex;
+  align-items: center;
+  /* Glass pill chip — photo-independent AA fix (spec-043 nav-control-contrast) */
+  background: var(--kk-tc-back-link-chip-bg, rgba(20, 12, 6, 0.68));
+  border: 1px solid var(--kk-tc-back-link-chip-border, rgba(255, 247, 237, 0.20));
+  border-radius: 9999px;
+  padding: 8px 16px;
+  min-height: 44px;
+  backdrop-filter: var(--kk-tc-back-link-chip-blur, blur(16px));
+  -webkit-backdrop-filter: var(--kk-tc-back-link-chip-blur, blur(16px));
+  text-shadow: var(--kk-tc-nav-text-shadow, none);
+  transition: color 150ms, background 150ms;
 }
 .kk-tc-back-link:hover {
-  color: #fcd34d;
+  color: var(--kk-tc-back-link-hover, #fcd34d);
+}
+.kk-tc-back-link:focus-visible {
+  outline: 2px solid var(--kk-tc-back-link-color, #fbbf24);
+  outline-offset: 2px;
+}
+
+/* Bug-fix (P0): toolbar is the position-containment boundary for the toggle
+   button/label. overflow:hidden prevents any emoji or text bleed outside the
+   element box; inline-flex keeps the pill tight to its content. */
+.kk-tc-tone-toolbar {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
 }
 
 .kk-tc-tone-btn {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
-  padding: 4px 12px;
+  /* Bug-fix (P0): 44px min touch target per WCAG 2.5.8 / iOS HIG (was 32px) */
+  padding: 8px 16px;
+  min-height: 44px;
   border-radius: 9999px;
-  background: rgba(255, 247, 237, 0.12);
-  color: rgba(255, 247, 237, 0.85);
-  border: 1px solid rgba(255, 247, 237, 0.2);
+  background: var(--kk-tc-tone-btn-bg, rgba(20, 12, 6, 0.68));
+  color: var(--kk-tc-tone-btn-text, rgba(255, 247, 237, 0.95));
+  border: 1px solid var(--kk-tc-tone-btn-border, rgba(255, 247, 237, 0.20));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  text-shadow: var(--kk-tc-tone-btn-text-shadow, none);
   cursor: pointer;
   transition: background 150ms;
 }
 .kk-tc-tone-btn:hover {
-  background: rgba(255, 247, 237, 0.2);
+  background: var(--kk-tc-tone-btn-hover-bg, rgba(30, 16, 7, 0.80));
 }
 
 /* ── Takeover card — base (applies to both tones) ───────────────────────── */
@@ -1346,22 +1573,12 @@ select.input-styled,
 /* All .kk-tc--dark rules are regular CSS (NOT inside @plugin "daisyui/theme")
    so multi-value comma-separated box-shadows work correctly. */
 .kk-takeover-card.kk-tc--dark {
-  /* Surface */
-  --kk-tc-surface: rgba(24, 16, 10, 0.72);
-  --kk-tc-surface-solid: #1a120c;
   /* Text */
   --kk-tc-text-primary: #fff7ed;
   --kk-tc-text-secondary: #e8ddd4;
   --kk-tc-text-tertiary: #c4b5a8;
   --kk-tc-link: #fbbf24;
   --kk-tc-link-hover: #fcd34d;
-  /* Bevel */
-  --kk-tc-bevel-shadow:
-    inset 1px 1px 0 0 rgba(255, 247, 237, 0.12),
-    inset -1px -1px 0 0 rgba(0, 0, 0, 0.25),
-    0 8px 32px -4px rgba(0, 0, 0, 0.5);
-  /* Border */
-  --kk-tc-border: 1px solid rgba(255, 247, 237, 0.08);
   /* Section header */
   --kk-tc-section-header-color: #e8ddd4;
   /* Inputs */
@@ -1422,26 +1639,30 @@ select.input-styled,
   --kk-tc-roast-dark-border: rgba(255, 247, 237, 0.15);
   /* Monogram tile background — warm amber tint on dark surface */
   --kk-tc-monogram-tile-bg: rgba(245, 158, 11, 0.15);
+  /* Back-link tokens — amber on dark surfaces (AA ~5.5:1) */
+  --kk-tc-back-link-color: #fbbf24;
+  --kk-tc-back-link-hover: #fcd34d;
+  /* Back-link glass pill — Option C (spec-043 nav-control-contrast) */
+  --kk-tc-back-link-chip-bg: rgba(20, 12, 6, 0.68);
+  --kk-tc-back-link-chip-border: rgba(255, 247, 237, 0.20);
+  --kk-tc-back-link-chip-blur: blur(16px);
+  --kk-tc-nav-text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+  /* Tone-btn glass values — Option C */
+  --kk-tc-tone-btn-bg: rgba(20, 12, 6, 0.68);
+  --kk-tc-tone-btn-text: rgba(255, 247, 237, 0.95);
+  --kk-tc-tone-btn-border: rgba(255, 247, 237, 0.20);
+  --kk-tc-tone-btn-hover-bg: rgba(30, 16, 7, 0.80);
+  --kk-tc-tone-btn-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
 }
 
 /* ── BEIGE tone token set ────────────────────────────────────────────────── */
 .kk-takeover-card.kk-tc--beige {
-  /* Surface */
-  --kk-tc-surface: rgba(245, 235, 220, 0.78);
-  --kk-tc-surface-solid: #f5ebdc;
   /* Text */
   --kk-tc-text-primary: #2d1608;
   --kk-tc-text-secondary: #4a3728;
   --kk-tc-text-tertiary: #6b5344;
   --kk-tc-link: #92400e;
   --kk-tc-link-hover: #78350f;
-  /* Bevel */
-  --kk-tc-bevel-shadow:
-    inset 1px 1px 0 0 rgba(255, 255, 255, 0.45),
-    inset -1px -1px 0 0 rgba(139, 90, 43, 0.15),
-    0 8px 32px -4px rgba(45, 22, 8, 0.2);
-  /* Border */
-  --kk-tc-border: 1px solid rgba(139, 90, 43, 0.12);
   /* Section header */
   --kk-tc-section-header-color: #4a3728;
   /* Inputs */
@@ -1502,6 +1723,20 @@ select.input-styled,
   --kk-tc-roast-dark-border: transparent;
   /* Monogram tile background — warm espresso tint on beige surface */
   --kk-tc-monogram-tile-bg: rgba(120, 53, 15, 0.10);
+  /* Back-link tokens — bark brown on light surfaces (AA ~7:1, reuses --color-secondary) */
+  --kk-tc-back-link-color: #92400e;
+  --kk-tc-back-link-hover: #78350f;
+  /* Back-link glass pill — Option C beige (spec-043 nav-control-contrast) */
+  --kk-tc-back-link-chip-bg: rgba(245, 235, 220, 0.90);
+  --kk-tc-back-link-chip-border: rgba(45, 22, 8, 0.18);
+  --kk-tc-back-link-chip-blur: blur(16px);
+  --kk-tc-nav-text-shadow: none;
+  /* Tone-btn glass values — Option C beige */
+  --kk-tc-tone-btn-bg: rgba(245, 235, 220, 0.90);
+  --kk-tc-tone-btn-text: #4a3728;
+  --kk-tc-tone-btn-border: rgba(45, 22, 8, 0.18);
+  --kk-tc-tone-btn-hover-bg: rgba(245, 235, 220, 0.96);
+  --kk-tc-tone-btn-text-shadow: none;
 }
 
 /* ── Fallback: no backdrop-filter support ───────────────────────────────── */
@@ -1571,7 +1806,7 @@ select.input-styled,
 .kk-tc-title-stack {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--kk-card-gap-text-text);
   min-width: 0;
 }
 
@@ -1584,7 +1819,7 @@ select.input-styled,
   color: var(--kk-tc-text-primary);
   text-wrap: balance;
   overflow-wrap: anywhere;
-  margin: 0 0 6px;
+  margin: 0;
 }
 .kk-tc-subtitle {
   font-size: var(--kk-tc-subtitle-size);
@@ -1957,6 +2192,27 @@ select.input-styled,
   cursor: not-allowed;
 }
 
+/* ── Ghost / tertiary action button — text-only, no fill, no border ─────── */
+/* Hierarchy: primary (solid fill) > edit/secondary (border) > ghost (text). */
+.kk-tc-btn--ghost {
+  background: transparent;
+  color: var(--kk-tc-btn-ghost-text, var(--kk-tc-text-secondary));
+  border: none;
+}
+.kk-tc-btn--ghost:hover:not(:disabled) {
+  background: var(--kk-tc-btn-ghost-hover-bg, rgba(255, 247, 237, 0.08));
+  color: var(--kk-tc-btn-ghost-hover-text, var(--kk-tc-text-primary));
+}
+.kk-tc-btn--ghost:focus-visible {
+  outline: none;
+  box-shadow: var(--kk-tc-btn-focus-ring);
+}
+/* Beige-tone ghost hover — warm espresso tint instead of cream */
+[data-tone="beige"] .kk-tc-btn--ghost:hover:not(:disabled),
+.kk-tc--beige .kk-tc-btn--ghost:hover:not(:disabled) {
+  background: rgba(45, 22, 8, 0.06);
+}
+
 /* ── Roaster link — inherits per-tone link color ─────────────────────────── */
 .kk-tc-roaster-link {
   font-size: 14px;
@@ -2125,6 +2381,14 @@ select.input-styled,
   }
 }
 
+/* ── Mobile back-link legibility bump (Point 7) ──────────────────────────── */
+@media (max-width: 639px) {
+  .kk-tc-back-link {
+    font-size: 15px;
+    font-weight: 500;
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    spec-043 v4 — Immersive List Shell + EntityCard
    List pages are card-less + immersive; entity items are glass cards.
@@ -2148,13 +2412,17 @@ select.input-styled,
   --kk-ec-blur: 20px;
   --kk-ec-padding: 12px;
   --kk-ec-figure-radius: 8px;
+  --kk-ec-max-width: 220px;  /* spec-043 v5: cap individual card width on wide viewports */
+
+  /* Canonical content-spacing tokens (spec-043) */
+  --kk-card-gap-eyebrow-title: 0.25rem;
+  --kk-card-gap-text-text: 0.25rem;
+  --kk-card-gap-text-chip: 0.375rem;
+  --kk-card-gap-chip-text: 0.375rem;
+  --kk-card-gap-chip-inline: 0.375rem;
 }
 
-/* ── [data-tone="dark"] — DARK tone color tokens (list shell + entity card) */
-/* These tokens mirror .kk-takeover-card.kk-tc--dark but at lower specificity
-   (0,1,0 vs 0,2,0) so the takeover card values still win inside a detail card.
-   Outside a takeover card (list page EntityCards, ImmersiveFab portalled to
-   body), these provide the token resolution for glass surfaces. */
+/* ── [data-tone="dark"] — DARK tone color tokens (single surface source) */
 [data-tone="dark"] {
   /* Immersive frost tint */
   --kk-il-frost-tint: rgba(24, 16, 10, 0.45);
@@ -2163,10 +2431,12 @@ select.input-styled,
   --kk-il-text-secondary: #d6cbbf;
   --kk-il-text-tertiary: #a89585;
 
-  /* Glass surface tokens — mirror dark takeover card */
-  --kk-tc-surface: rgba(24, 16, 10, 0.72);
-  --kk-tc-surface-solid: #1a120c;
-  --kk-tc-border: 1px solid rgba(255, 247, 237, 0.08);
+  /* Glass surface tokens */
+  --kk-tc-surface: rgba(40, 22, 8, 0.72);
+  --kk-tc-surface-solid: #281608;
+  --kk-tc-border: 1px solid rgba(245, 230, 211, 0.10);
+  --kk-tc-blur: 8px;
+  --kk-ec-blur: 8px;
   --kk-tc-bevel-shadow:
     inset 1px 1px 0 0 rgba(255, 247, 237, 0.12),
     inset -1px -1px 0 0 rgba(0, 0, 0, 0.25),
@@ -2174,6 +2444,26 @@ select.input-styled,
   --kk-tc-text-primary: #fff7ed;
   --kk-tc-text-secondary: #e8ddd4;
   --kk-tc-text-tertiary: #c4b5a8;
+  --kk-tc-btn-edit-bg: transparent;
+  --kk-tc-btn-edit-text: #fbbf24;
+  --kk-tc-btn-edit-border: rgba(251, 191, 36, 0.32);
+  --kk-tc-btn-edit-hover-bg: rgba(251, 191, 36, 0.10);
+  --kk-tc-btn-edit-hover-text: #fcd34d;
+  --kk-tc-btn-edit-hover-border: rgba(251, 191, 36, 0.44);
+  --kk-tc-btn-edit-active-bg: rgba(251, 191, 36, 0.16);
+  --kk-tc-btn-edit-active-text: #fcd34d;
+  --kk-tc-btn-edit-active-border: rgba(251, 191, 36, 0.54);
+  --kk-tc-btn-focus-ring: 0 0 0 3px rgba(251, 191, 36, 0.25);
+  --kk-tc-primary-btn-bg: #fbbf24;
+  --kk-tc-primary-btn-text: #2d1608;
+  --kk-tc-primary-btn-border: rgba(251, 191, 36, 0.85);
+  --kk-tc-primary-btn-hover-bg: #fcd34d;
+  --kk-tc-primary-btn-hover-text: #2d1608;
+  --kk-tc-primary-btn-hover-border: rgba(252, 211, 77, 0.95);
+  --kk-tc-primary-btn-active-bg: #f59e0b;
+  --kk-tc-primary-btn-active-text: #2d1608;
+  --kk-tc-primary-btn-active-border: rgba(245, 158, 11, 0.95);
+  --kk-tc-primary-btn-focus-ring: 0 0 0 3px rgba(251, 191, 36, 0.35);
   --kk-tc-monogram-tile-bg: rgba(245, 158, 11, 0.15);
   /* Roast chip border tokens */
   --kk-tc-roast-light-border: transparent;
@@ -2181,21 +2471,35 @@ select.input-styled,
   --kk-tc-roast-medium-border: transparent;
   --kk-tc-roast-medium-dark-border: transparent;
   --kk-tc-roast-dark-border: rgba(255, 247, 237, 0.15);
+  /* Back-link tokens */
+  --kk-tc-back-link-color: #fbbf24;
+  --kk-tc-back-link-hover: #fcd34d;
+  /* Back-link glass pill — Option C (spec-043 nav-control-contrast) */
+  --kk-tc-back-link-chip-bg: rgba(20, 12, 6, 0.68);
+  --kk-tc-back-link-chip-border: rgba(255, 247, 237, 0.20);
+  --kk-tc-back-link-chip-blur: blur(16px);
+  --kk-tc-nav-text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+  /* Tone-btn glass values — Option C */
+  --kk-tc-tone-btn-bg: rgba(20, 12, 6, 0.68);
+  --kk-tc-tone-btn-text: rgba(255, 247, 237, 0.95);
+  --kk-tc-tone-btn-border: rgba(255, 247, 237, 0.20);
+  --kk-tc-tone-btn-hover-bg: rgba(30, 16, 7, 0.80);
+  --kk-tc-tone-btn-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
 }
-
-/* ── [data-tone="beige"] — BEIGE tone color tokens ──────────────────────── */
 [data-tone="beige"] {
   /* Immersive frost tint */
-  --kk-il-frost-tint: rgba(245, 235, 220, 0.55);
+  --kk-il-frost-tint: transparent; /* was rgba(245, 235, 220, 0.55) — transparent frost lets blurred photo show through */
   --kk-il-frost-tint-solid: rgba(245, 235, 220, 0.92);
   --kk-il-text-primary: #2d1608;
   --kk-il-text-secondary: #5c3d1e;
   --kk-il-text-tertiary: #8b6b4a;
 
-  /* Glass surface tokens — mirror beige takeover card */
+  /* Glass surface tokens */
   --kk-tc-surface: rgba(245, 235, 220, 0.78);
   --kk-tc-surface-solid: #f5ebdc;
   --kk-tc-border: 1px solid rgba(139, 90, 43, 0.12);
+  --kk-tc-blur: 20px;
+  --kk-ec-blur: 20px;
   --kk-tc-bevel-shadow:
     inset 1px 1px 0 0 rgba(255, 255, 255, 0.45),
     inset -1px -1px 0 0 rgba(139, 90, 43, 0.15),
@@ -2203,6 +2507,26 @@ select.input-styled,
   --kk-tc-text-primary: #2d1608;
   --kk-tc-text-secondary: #4a3728;
   --kk-tc-text-tertiary: #6b5344;
+  --kk-tc-btn-edit-bg: transparent;
+  --kk-tc-btn-edit-text: #734a37;
+  --kk-tc-btn-edit-border: rgba(115, 74, 55, 0.38);
+  --kk-tc-btn-edit-hover-bg: rgba(115, 74, 55, 0.08);
+  --kk-tc-btn-edit-hover-text: #5c3d1e;
+  --kk-tc-btn-edit-hover-border: rgba(115, 74, 55, 0.50);
+  --kk-tc-btn-edit-active-bg: rgba(115, 74, 55, 0.12);
+  --kk-tc-btn-edit-active-text: #5c3d1e;
+  --kk-tc-btn-edit-active-border: rgba(115, 74, 55, 0.60);
+  --kk-tc-btn-focus-ring: 0 0 0 3px rgba(115, 74, 55, 0.20);
+  --kk-tc-primary-btn-bg: #b45309;
+  --kk-tc-primary-btn-text: #fffaf3;
+  --kk-tc-primary-btn-border: rgba(180, 83, 9, 0.72);
+  --kk-tc-primary-btn-hover-bg: #92400e;
+  --kk-tc-primary-btn-hover-text: #fffaf3;
+  --kk-tc-primary-btn-hover-border: rgba(146, 64, 14, 0.86);
+  --kk-tc-primary-btn-active-bg: #78350f;
+  --kk-tc-primary-btn-active-text: #fffaf3;
+  --kk-tc-primary-btn-active-border: rgba(120, 53, 15, 0.92);
+  --kk-tc-primary-btn-focus-ring: 0 0 0 3px rgba(180, 83, 9, 0.25);
   --kk-tc-monogram-tile-bg: rgba(120, 53, 15, 0.10);
   /* Roast chip border tokens */
   --kk-tc-roast-light-border: rgba(45, 22, 8, 0.2);
@@ -2210,36 +2534,48 @@ select.input-styled,
   --kk-tc-roast-medium-border: transparent;
   --kk-tc-roast-medium-dark-border: transparent;
   --kk-tc-roast-dark-border: transparent;
+  /* Back-link tokens */
+  --kk-tc-back-link-color: #92400e;
+  --kk-tc-back-link-hover: #78350f;
+  /* Back-link glass pill — Option C beige (spec-043 nav-control-contrast) */
+  --kk-tc-back-link-chip-bg: rgba(245, 235, 220, 0.90);
+  --kk-tc-back-link-chip-border: rgba(45, 22, 8, 0.18);
+  --kk-tc-back-link-chip-blur: blur(16px);
+  --kk-tc-nav-text-shadow: none;
+  /* Tone toggle — beige-tone overrides (spec-043: cream chip surface for photo-independent AA) */
+  --kk-tc-tone-btn-bg: rgba(245, 235, 220, 0.90);
+  --kk-tc-tone-btn-text: #4a3728;
+  --kk-tc-tone-btn-border: rgba(45, 22, 8, 0.18);
+  --kk-tc-tone-btn-hover-bg: rgba(245, 235, 220, 0.96);
+  --kk-tc-tone-btn-text-shadow: none;
 }
-
-/* ── #main-content: immersive list shell frost treatment ─────────────────── */
 /* Mirror of the anti-double-frost approach for detail pages (which makes
    #main-content transparent). For list pages, #main-content IS the frost layer:
    it applies backdrop-filter + tint so the catalog photo blurs through.
    Specificity (1,2,0) > existing (1,1,0) transparent rule, so list pages
    correctly get the frost while detail pages keep their transparent behavior. */
 #main-content:has(.immersive-list-shell[data-tone="dark"]) {
-  backdrop-filter: blur(var(--kk-il-frost-blur));
-  -webkit-backdrop-filter: blur(24px);
-  background: rgba(24, 16, 10, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: rgba(45, 22, 8, 0.40);
   box-shadow: none;
 }
 #main-content:has(.immersive-list-shell[data-tone="beige"]) {
-  backdrop-filter: blur(var(--kk-il-frost-blur));
-  -webkit-backdrop-filter: blur(24px);
-  background: rgba(245, 235, 220, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: rgba(245, 235, 220, 0.24);
   box-shadow: none;
 }
 
 /* Solid fallback — no backdrop-filter */
 @supports not (backdrop-filter: blur(1px)) {
   #main-content:has(.immersive-list-shell[data-tone="dark"]) {
-    background: rgba(24, 16, 10, 0.85);
+    background: rgba(18, 11, 6, 0.88);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
   #main-content:has(.immersive-list-shell[data-tone="beige"]) {
-    background: rgba(245, 235, 220, 0.92);
+    background: rgba(45, 22, 8, 0.15);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
@@ -2250,12 +2586,12 @@ select.input-styled,
   #main-content:has(.immersive-list-shell[data-tone="dark"]) {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    background: rgba(24, 16, 10, 0.85);
+    background: rgba(18, 11, 6, 0.88);
   }
   #main-content:has(.immersive-list-shell[data-tone="beige"]) {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    background: rgba(245, 235, 220, 0.92);
+    background: rgba(45, 22, 8, 0.12);
   }
 }
 
@@ -2264,30 +2600,22 @@ select.input-styled,
    shapes show through. Mirrors the detail-page takeover card scrim values. */
 .app-bg.bg-catalog:has(~ main .immersive-list-shell[data-tone="dark"]) {
   background-image:
-    linear-gradient(rgba(24, 16, 10, 0.28), rgba(24, 16, 10, 0.32)),
-    /* @vite-ignore */
-    url('/static/img/hero-catalog.jpg');
+    linear-gradient(rgba(24, 16, 10, 0.28), rgba(24, 16, 10, 0.32));
 }
 .app-bg.bg-catalog:has(~ main .immersive-list-shell[data-tone="beige"]) {
   background-image:
-    linear-gradient(rgba(245, 235, 220, 0.10), rgba(245, 235, 220, 0.14)),
-    /* @vite-ignore */
-    url('/static/img/hero-catalog.jpg');
+    linear-gradient(rgba(180, 170, 160, 0.18), rgba(180, 170, 160, 0.22));
 }
 
 /* ── Dashboard: tone-aware lighter scrim for immersive list shell ────────── */
 /* Mirrors the catalog scrim pattern. */
 .app-bg.bg-dashboard:has(~ main .immersive-list-shell[data-tone="dark"]) {
   background-image:
-    linear-gradient(rgba(24, 16, 10, 0.28), rgba(24, 16, 10, 0.32)),
-    /* @vite-ignore */
-    url('/static/img/hero-dashboard.jpg');
+    linear-gradient(160deg, rgba(26, 15, 8, 0.30), rgba(12, 7, 4, 0.50));
 }
 .app-bg.bg-dashboard:has(~ main .immersive-list-shell[data-tone="beige"]) {
   background-image:
-    linear-gradient(rgba(245, 235, 220, 0.10), rgba(245, 235, 220, 0.14)),
-    /* @vite-ignore */
-    url('/static/img/hero-dashboard.jpg');
+    linear-gradient(160deg, rgba(245, 235, 220, 0.18), rgba(232, 210, 180, 0.28));
 }
 
 /* ── Immersive List Shell layout ─────────────────────────────────────────── */
@@ -2338,6 +2666,8 @@ select.input-styled,
   margin: 0;
 }
 
+/* spec-043 v5: text-shadow removed — legibility from darker scrim + eggshell surfaces */
+
 /* ── EntityCard — glass card for list items ─────────────────────────────── */
 /* Principle 3 (Intentional Translucence): backdrop-filter confined to card.
    Principle 2 (Single Surface): no nested glass sub-cards.
@@ -2349,7 +2679,7 @@ select.input-styled,
   overflow: hidden;
   background: var(--kk-tc-surface);
   backdrop-filter: blur(var(--kk-ec-blur));
-  -webkit-backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(var(--kk-ec-blur));
   box-shadow: var(--kk-tc-bevel-shadow);
   border: var(--kk-tc-border);
   color: var(--kk-tc-text-primary);
@@ -2392,7 +2722,7 @@ select.input-styled,
 }
 
 .entity-card-figure {
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 10;  /* spec-043 v5: was 4/3 — 17% shorter figure; cards less dominant */
   overflow: hidden;
   background: color-mix(in srgb, var(--kk-tc-text-primary) 8%, transparent);
   display: flex;
@@ -2425,14 +2755,17 @@ select.input-styled,
 }
 
 /* Strip the figure's image-placeholder tint when a monogram fill is active,
-   so the whole card is one even glass surface (no figure-vs-body tonal split). */
+   so the whole card is one even glass surface (no figure-vs-body tonal split).
+   3:2 aspect ratio reduces the dominant empty figure area for monogram-only cards
+   (was 4:3 from parent); photo cards keep 4:3 via the base .entity-card-figure rule. */
 .entity-card-figure:has(.entity-card-monogram-fill) {
   background: transparent;
+  aspect-ratio: 3 / 2;
 }
 
 .entity-card-monogram {
   font-family: var(--font-display);
-  font-size: clamp(3rem, 8vw, 5rem);
+  font-size: clamp(2rem, 6vw, 3.5rem);  /* spec-043 v5: was clamp(3rem, 8vw, 5rem) — ~30% smaller, less dominant */
   font-weight: 700;
   color: var(--kk-tc-text-primary);
   line-height: 1;
@@ -2443,7 +2776,7 @@ select.input-styled,
   padding: var(--kk-ec-padding);
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--kk-card-gap-text-text);
 }
 
 .entity-card-eyebrow {
@@ -2464,7 +2797,7 @@ select.input-styled,
   font-weight: 700;
   color: var(--kk-tc-text-primary);
   line-height: 1.25;
-  margin: 0 0 0.25rem;
+  margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2472,10 +2805,11 @@ select.input-styled,
 
 .entity-card-chip-slot {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
-  gap: 0.375rem;
-  margin-top: 0.25rem;
+  gap: var(--kk-card-gap-chip-inline);
+  margin-top: var(--kk-card-gap-text-chip);
+  min-height: 1.75rem;
 }
 
 /* ── EntityCard responsive grid ─────────────────────────────────────────── */
@@ -2486,7 +2820,9 @@ select.input-styled,
 }
 @media (min-width: 768px) {
   .entity-card-grid {
-    grid-template-columns: repeat(3, 1fr);
+    /* spec-043 v5: auto-fill capped at 220px — prevents oversized 350px cards at 1200px viewport */
+    grid-template-columns: repeat(auto-fill, minmax(180px, var(--kk-ec-max-width)));
+    justify-content: start;
     gap: 1rem;
   }
 }
@@ -2498,7 +2834,7 @@ select.input-styled,
 .immersive-search-input {
   background: var(--kk-tc-surface);
   backdrop-filter: blur(var(--kk-ec-blur));
-  -webkit-backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(var(--kk-ec-blur));
   border: var(--kk-tc-border);
   border-radius: 9999px;
   padding: 0.75rem 1rem;
@@ -2556,7 +2892,7 @@ select.input-styled,
 .immersive-error-card {
   background: var(--kk-tc-surface);
   backdrop-filter: blur(var(--kk-ec-blur));
-  -webkit-backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(var(--kk-ec-blur));
   border: var(--kk-tc-border);
   box-shadow: var(--kk-tc-bevel-shadow);
   border-radius: var(--kk-ec-radius);
@@ -2689,39 +3025,39 @@ select.input-styled,
 }
 
 /* ── StatTile ────────────────────────────────────────────────────────────── */
-/* Glass mini-surface for hero stats. Tone tokens resolve via [data-tone]. */
+/* Principle 13 (Affordance Matches Interactivity): StatTiles are informational
+   only — no card chrome (border, border-radius, solid bg) that implies
+   tappability. Typography-only treatment distinguishes them from EntityCards.
+   Equal-width grid + left-alignment preserved for clean grouped stat layout. */
 .stat-tile-row {
-  display: flex;
-  justify-content: flex-start;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.75rem;
-  flex-wrap: wrap;
 }
 
 .stat-tile {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 0.75rem 1rem;
-  min-width: 96px;
-  text-align: center;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 0.5rem 0;
+  text-align: left;
 
-  background: var(--kk-tc-surface);
-  border: var(--kk-tc-border);
-  border-radius: 12px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  cursor: default;
 }
 
 .stat-tile__value {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.5rem;          /* 24px per Aria Item 2 spec */
+  font-weight: 600;           /* semibold per Aria Item 2; was 700 (bold) */
   color: var(--kk-tc-text-primary);
   line-height: 1.2;
 }
 
 .stat-tile__label {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;         /* 12px per Aria Item 2; was 0.6875rem (11px) */
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2753,26 +3089,11 @@ select.input-styled,
   animation: pulse 1.5s ease-in-out infinite;
 }
 
-@supports not (backdrop-filter: blur(1px)) {
-  .stat-tile {
-    background: var(--kk-tc-surface-solid);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-}
-@media (prefers-reduced-transparency: reduce) {
-  .stat-tile {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    background: var(--kk-tc-surface-solid);
-  }
-}
-
 /* ── EntityCard meta slot ────────────────────────────────────────────────── */
 .entity-card__meta {
   font-size: 0.6875rem;
   color: var(--kk-tc-text-secondary);
-  margin-top: 0.375rem;
+  margin-top: var(--kk-card-gap-chip-text);
   line-height: 1.4;
 }
 
@@ -2804,7 +3125,7 @@ select.input-styled,
 
 .shot-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   padding: 0.75rem 1rem;
   gap: 0.75rem;
@@ -2812,8 +3133,9 @@ select.input-styled,
   background: var(--kk-tc-surface);
   border: var(--kk-tc-border);
   border-radius: 12px;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  box-shadow: var(--kk-tc-bevel-shadow);
+  backdrop-filter: blur(var(--kk-ec-blur));
+  -webkit-backdrop-filter: blur(var(--kk-ec-blur));
 
   text-decoration: none;
   color: inherit;
@@ -2822,7 +3144,7 @@ select.input-styled,
 
 .shot-row:hover {
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--kk-tc-text-primary) 15%, transparent);
+  box-shadow: var(--kk-tc-bevel-shadow), 0 2px 8px color-mix(in srgb, var(--kk-tc-text-primary) 15%, transparent);
 }
 
 .shot-row:active {
@@ -2834,11 +3156,16 @@ select.input-styled,
   outline-offset: 2px;
 }
 
+.shot-row__body {
+  display: grid;
+  gap: var(--kk-card-gap-text-text);
+  min-width: 0;
+}
+
 .shot-row__bag {
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--kk-tc-text-primary);
-  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2848,7 +3175,6 @@ select.input-styled,
 .shot-row__date {
   font-size: 0.75rem;
   color: var(--kk-il-text-secondary);
-  flex-shrink: 0;
 }
 
 .shot-row__chip {
@@ -2862,9 +3188,19 @@ select.input-styled,
   border: 1px solid color-mix(in srgb, var(--kk-tc-text-primary) 12%, transparent);
 }
 
+.shot-row__chip-line {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--kk-card-gap-chip-inline);
+  margin-top: var(--kk-card-gap-text-chip);
+  min-height: 1.5rem;
+}
+
 .shot-row__arrow {
   color: var(--kk-il-text-secondary);
   flex-shrink: 0;
+  margin-top: 0.25rem;
   opacity: 0.7;
 }
 
@@ -2918,6 +3254,430 @@ select.input-styled,
 }
 @media (prefers-reduced-motion: reduce) {
   .shot-row {
+    transition: none;
+  }
+}
+
+/* ── Canonical entity wrappers: BagCard + ShotCard ───────────────────────── */
+.bag-card-row,
+.shot-card-list {
+  background: var(--kk-tc-surface);
+  color: var(--kk-tc-text-primary);
+  border: var(--kk-tc-border);
+  border-radius: 14px;
+  box-shadow: var(--kk-tc-bevel-shadow);
+  backdrop-filter: blur(var(--kk-ec-blur));
+  -webkit-backdrop-filter: blur(var(--kk-ec-blur));
+}
+
+.bag-card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+}
+
+.bag-card-stack {
+  display: grid;
+  gap: 0.875rem;
+}
+
+.bag-card-compact {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 6.25rem;
+  padding: 0.9375rem 1rem;
+  text-decoration: none;
+  color: var(--kk-tc-text-primary);
+  background: var(--kk-tc-surface);
+  border: var(--kk-tc-border);
+  border-radius: 16px;
+  box-shadow: var(--kk-tc-bevel-shadow);
+  backdrop-filter: blur(var(--kk-ec-blur));
+  -webkit-backdrop-filter: blur(var(--kk-ec-blur));
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+[data-tone="dark"] .bag-card-compact {
+  color: var(--kk-tc-text-primary);
+}
+
+.bag-card-compact:hover {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+}
+
+.bag-card-compact:active {
+  filter: brightness(0.96);
+  transform: scale(0.99);
+}
+
+.bag-card-compact:focus-visible {
+  outline: 2px solid var(--kk-tc-text-primary);
+  outline-offset: 2px;
+}
+
+.bag-card-compact__body {
+  min-width: 0;
+}
+
+.bag-card-compact__eyebrow {
+  color: var(--kk-tc-text-secondary);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  line-height: 1.2;
+  margin: 0 0 var(--kk-card-gap-eyebrow-title);
+  text-transform: uppercase;
+}
+
+.bag-card-compact__title {
+  color: inherit;
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.bag-card-compact__details {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  flex-wrap: wrap;
+  gap: var(--kk-card-gap-chip-text);
+  margin-top: var(--kk-card-gap-text-chip);
+  min-height: 1.5rem;
+}
+
+.bag-card-compact__chip-line {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--kk-card-gap-chip-inline);
+  min-height: 1.5rem;
+}
+
+.bag-card-compact__meta {
+  color: var(--kk-tc-text-secondary);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+
+.bag-card-compact__monogram {
+  display: grid;
+  flex: 0 0 3.5rem;
+  width: 3.5rem;
+  height: 3.5rem;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--kk-tc-monogram-tile-bg);
+  color: #734a37;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+[data-tone="dark"] .bag-card-compact__monogram {
+  color: #f5e6d3;
+}
+
+.bag-card-row__body,
+.shot-card-list__identity {
+  min-width: 0;
+}
+
+.bag-card-row__title,
+.shot-card-list__title {
+  color: inherit;
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.bag-card-row__meta,
+.shot-card-list__hardware {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  color: var(--kk-tc-text-secondary);
+  font-size: 0.8125rem;
+}
+
+.bag-card-row__chip-line {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--kk-card-gap-chip-inline);
+  margin-top: var(--kk-card-gap-text-chip);
+  min-height: 1.5rem;
+}
+
+.bag-card-row__status {
+  text-transform: capitalize;
+}
+
+.bag-card-row__action {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.bag-card-reference {
+  color: var(--kk-tc-link, #734a37);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.shot-card-list {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  gap: 0.875rem;
+  padding: 0.875rem;
+  text-decoration: none;
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+.shot-card-list:hover {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+}
+
+.shot-card-list:focus-visible,
+.bag-card-reference:focus-visible {
+  outline: 2px solid var(--kk-tc-text-primary);
+  outline-offset: 2px;
+}
+
+.shot-card-list__header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.shot-card-list__eyebrow {
+  color: var(--kk-tc-text-secondary);
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  margin: 0 0 var(--kk-card-gap-eyebrow-title);
+  text-transform: uppercase;
+}
+
+.shot-card-list__chip {
+  border-radius: 9999px;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  color: var(--kk-tc-text-secondary);
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+}
+
+.shot-card-list__chip--mono {
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+
+.shot-card-list__chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--kk-card-gap-chip-inline);
+  margin-top: var(--kk-card-gap-text-chip);
+  min-height: 1.5rem;
+}
+
+.shot-card-list__hardware {
+  gap: 0.75rem;
+}
+
+.shot-card-detail-header__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kk-card-gap-chip-inline);
+  margin-top: var(--kk-card-gap-text-chip);
+  margin-bottom: var(--kk-card-gap-chip-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shot-card-list {
+    transition: none;
+  }
+}
+
+/* ── Dashboard Layout B: summary row + two equal panels ──────────────────── */
+.dashboard-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.dashboard-page-header {
+  margin-bottom: 1.375rem;
+}
+
+.dashboard-home .list-page-header-title {
+  color: var(--kk-il-text-primary);
+  margin-bottom: 0;
+}
+
+.dashboard-columns {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (min-width: 768px) {
+  .dashboard-columns {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.dashboard-panel {
+  background: var(--kk-tc-surface);
+  border: var(--kk-tc-border);
+  backdrop-filter: blur(var(--kk-ec-blur));
+  -webkit-backdrop-filter: blur(var(--kk-ec-blur));
+  border-radius: 18px;
+  box-shadow: var(--kk-tc-bevel-shadow);
+  padding: 1.5rem;
+  min-height: 100%;
+}
+
+.dashboard-panel .kk-tc-section-header {
+  font-family: var(--font-display);
+  font-size: 1.4375rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  text-transform: none;
+  color: var(--kk-tc-text-primary);
+  margin-bottom: 1rem;
+}
+
+.dashboard-panel .entity-card-grid {
+  grid-template-columns: 1fr;
+}
+
+.dashboard-panel .entity-card,
+.dashboard-panel .shot-row {
+  box-shadow: none;
+}
+
+.dashboard-panel .bag-card-stack,
+.dashboard-panel .shot-row-list {
+  gap: 0.75rem;
+}
+
+.dashboard-panel .bag-card-compact,
+.dashboard-panel .shot-row {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0.75rem 0;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.dashboard-panel .bag-card-compact {
+  color: var(--kk-tc-text-primary);
+}
+
+.dashboard-panel .bag-card-compact:hover,
+.dashboard-panel .shot-row:hover {
+  box-shadow: none;
+}
+
+.dashboard-panel .bag-card-compact__eyebrow {
+  margin-bottom: var(--kk-card-gap-eyebrow-title);
+}
+
+.dashboard-panel .bag-card-compact__monogram {
+  background: color-mix(in srgb, var(--kk-tc-text-primary) 6%, transparent);
+  color: var(--kk-tc-text-secondary);
+  box-shadow: none;
+}
+
+.dashboard-panel .shot-row-list {
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+}
+
+.dashboard-fab {
+  background: #d26946;
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 18px rgba(210, 105, 70, 0.45), 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.dashboard-stats-panel {
+  background: var(--kk-tc-surface);
+  border: var(--kk-tc-border);
+  backdrop-filter: blur(var(--kk-ec-blur));
+  -webkit-backdrop-filter: blur(var(--kk-ec-blur));
+  border-radius: 14px;
+  box-shadow: var(--kk-tc-bevel-shadow);
+  padding: 1rem 1.125rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+/* ── Nav context row — household merged into nav (Aria Item 7) ──────────── */
+/* Was a separate .mobile-household-strip fixed above the nav bar.
+   Now a compact row within the same nav element — reduces bottom chrome
+   from two stacked elements to one cohesive bar.
+   Inherits tone-aware background from the parent .nav-shell.mobile-nav rules. */
+.kk-nav-context-row {
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+html:has([data-tone="beige"]) .kk-nav-context-row {
+  border-bottom-color: rgba(115, 74, 55, 0.14);
+}
+
+.kk-nav-profile-btn {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.375rem 0.75rem;
+  min-height: 2.75rem; /* 44px WCAG touch target */
+  border-radius: 9999px;
+  background: transparent;
+  color: currentColor;
+  opacity: 0.7;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.kk-nav-profile-btn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+html:has([data-tone="beige"]) .kk-nav-profile-btn:hover {
+  background: rgba(146, 64, 14, 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kk-nav-profile-btn {
     transition: none;
   }
 }

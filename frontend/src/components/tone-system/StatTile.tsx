@@ -1,9 +1,11 @@
 /**
- * StatTile — glass mini-tile for stat displays on summary surfaces.
+ * StatTile — informational stat display for summary surfaces.
  *
- * Principle 1 (Dual-Tone Surface): background/border/text resolve via
- * --kk-tc-* tokens from the enclosing [data-tone] element.
- * Principle 2 (Single Surface): each tile is one glass surface; no nested blur.
+ * Principle 13 (Affordance Matches Interactivity): StatTile is display-only.
+ * No card chrome (border, border-radius, background) that implies tappability.
+ * Typography-only treatment distinguishes it from EntityCards on the same view.
+ * Principle 6 (Typography-led): value + label hierarchy communicated through
+ * type scale and spacing alone.
  * Principle 12 (No One-Offs): reusable for Dashboard hero and any future
  * summary page that needs a stat number + label.
  *

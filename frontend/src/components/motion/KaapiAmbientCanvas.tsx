@@ -35,8 +35,8 @@ const FRAG = `
   uniform float uTime;
   uniform vec3 uClear;
   uniform vec3 uWarm;
-  uniform vec3 uCool;
-  uniform vec3 uTeal;
+  uniform vec3 uGold;
+  uniform vec3 uCopper;
 
   float blob(vec2 uv, vec2 c, float r) {
     return smoothstep(r, 0.0, distance(uv, c));
@@ -46,13 +46,13 @@ const FRAG = `
     vec2 uv = vUv;
     float t = uTime * 0.05;
     vec2 warmC = vec2(0.30 + 0.05 * sin(t * 0.7), 0.34 + 0.04 * cos(t * 0.5));
-    vec2 coolC = vec2(0.74 + 0.04 * cos(t * 0.6), 0.24 + 0.05 * sin(t * 0.8));
-    vec2 tealC = vec2(0.55 + 0.05 * sin(t * 0.4), 0.82 + 0.03 * cos(t * 0.6));
+    vec2 goldC = vec2(0.74 + 0.04 * cos(t * 0.6), 0.24 + 0.05 * sin(t * 0.8));
+    vec2 copperC = vec2(0.55 + 0.05 * sin(t * 0.4), 0.82 + 0.03 * cos(t * 0.6));
 
     vec3 col = uClear;
     col = mix(col, uWarm, blob(uv, warmC, 0.46) * 0.55);
-    col = mix(col, uTeal, blob(uv, tealC, 0.50) * 0.38);
-    col = mix(col, uCool, blob(uv, coolC, 0.34) * 0.22);
+    col = mix(col, uCopper, blob(uv, copperC, 0.50) * 0.38);
+    col = mix(col, uGold, blob(uv, goldC, 0.34) * 0.22);
 
     float vig = smoothstep(1.15, 0.25, distance(uv, vec2(0.5)));
     col *= mix(0.80, 1.0, vig);
@@ -63,8 +63,8 @@ const FRAG = `
 const FALLBACK_COLORS = {
   clear: '#120b06',
   warm: 'rgb(180, 83, 9)',
-  cool: 'rgb(207, 250, 254)',
-  teal: 'rgb(15, 118, 110)',
+  gold: 'rgb(190, 151, 87)',
+  copper: 'rgb(115, 74, 55)',
 }
 
 function readColor(styles: CSSStyleDeclaration, name: string, fallback: string): THREE.Color {
@@ -116,8 +116,8 @@ export default function KaapiAmbientCanvas() {
           uTime: { value: 0 },
           uClear: { value: readColor(rootStyles, '--kaapi-ambient-clear', FALLBACK_COLORS.clear) },
           uWarm: { value: readColor(rootStyles, '--kaapi-ambient-warm-fog', FALLBACK_COLORS.warm) },
-          uCool: { value: readColor(rootStyles, '--kaapi-ambient-cool-glint', FALLBACK_COLORS.cool) },
-          uTeal: { value: readColor(rootStyles, '--kaapi-ambient-depth-teal', FALLBACK_COLORS.teal) },
+          uGold: { value: readColor(rootStyles, '--kaapi-ambient-cool-glint', FALLBACK_COLORS.gold) },
+          uCopper: { value: readColor(rootStyles, '--kaapi-ambient-depth-teal', FALLBACK_COLORS.copper) },
         },
       }),
     )

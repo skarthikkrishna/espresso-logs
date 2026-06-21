@@ -1,8 +1,9 @@
 /**
- * StatTile tests — glass mini-tile, tone-aware, dual-tone coherence.
+ * StatTile tests — informational stat display (Principle 13: affordance matches
+ * interactivity). StatTile is display-only; no card chrome, no hover/pointer.
  *
- * Principles verified: P1 (token-based styling), P2 (single glass surface),
- * P12 (reusable for any summary page).
+ * Principles verified: P13 (typography-only, no false affordance),
+ * P6 (typography-led), P12 (reusable for any summary page).
  */
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
@@ -41,7 +42,7 @@ describe('StatTile', () => {
     expect(screen.getByText('—')).toBeInTheDocument()
   })
 
-  it('applies stat-tile class for glass styling', () => {
+  it('applies stat-tile class for informational typography styling', () => {
     const { container } = render(
       <Wrapper>
         <StatTile value={5} label="Households" />

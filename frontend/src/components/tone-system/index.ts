@@ -24,6 +24,10 @@ export { TitleBlock } from './TitleBlock'
 export { TitleIcon } from './TitleIcon'
 
 // Data display
+export { BagCard } from './BagCard'
+export type { BagCardVariant } from './BagCard'
+export { ShotCard } from './ShotCard'
+export type { ShotCardVariant } from './ShotCard'
 export { Chip } from './Chip'
 export { RoastChip } from './RoastChip'
 export { ParamGrid, ParamPair } from './ParamGrid'
@@ -31,6 +35,12 @@ export { MarkdownProse } from './MarkdownProse'
 
 // Action
 export { ToneButton } from './ToneButton'
+export { LogShotAction } from './actions/LogShotAction'
+export type { LogShotActionVariant } from './actions/LogShotAction'
+export { AddBagAction } from './actions/AddBagAction'
+export type { AddBagActionVariant } from './actions/AddBagAction'
+export { AddBeanAction } from './actions/AddBeanAction'
+export type { AddBeanActionVariant } from './actions/AddBeanAction'
 
 // Form atoms
 export { FormSection } from './FormSection'

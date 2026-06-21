@@ -32,6 +32,13 @@ describe('ToneButton', () => {
     expect(btn.className).toContain('kk-tc-primary-btn')
   })
 
+  it('renders "ghost" variant with kk-tc-btn--ghost class', () => {
+    render(<ToneButton variant="ghost">Skip</ToneButton>)
+    const btn = screen.getByRole('button')
+    expect(btn.className).toContain('kk-tc-btn')
+    expect(btn.className).toContain('kk-tc-btn--ghost')
+  })
+
   it('passes disabled state to the button element', () => {
     render(<ToneButton disabled>Disabled</ToneButton>)
     expect(screen.getByRole('button')).toBeDisabled()

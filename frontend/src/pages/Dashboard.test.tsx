@@ -166,8 +166,10 @@ describe('Dashboard — spec-043 T020 motion', () => {
 
     await screen.findByTestId('dashboard-fab')
     const hero = screen.getByTestId('dashboard-hero-card')
+    // Depth motion is disabled on the hero for energy/battery (useKaapiDepth removed).
+    // Pointer events must NOT produce any transform on the hero section.
     fireEvent.pointerEnter(hero)
-    expect(hero.style.transform).toBe('translate3d(0, -4px, 0)')
+    expect(hero.style.transform).toBe('')
     fireEvent.pointerLeave(hero)
     expect(hero.style.transform).toBe('')
   })

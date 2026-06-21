@@ -23,21 +23,17 @@ import type { BrewLogEntry } from '../types/entities'
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
 import { ToneProvider } from '../contexts/ToneContext'
 import { useKaapiMotion } from '../lib/motion'
-import { eligibilityBadgeTone } from '../utils/eligibility'
 import { COPY, LOCKED_LABELS } from '../copy/registry'
 import {
   BackLink,
-  Chip,
   FormSection,
   MarkdownProse,
   ParamGrid,
   ParamPair,
-  RoastChip,
   Section,
   SectionHeader,
+  ShotCard,
   TakeoverCard,
-  TitleBlock,
-  TitleIcon,
   ToneButton,
   ToneInput,
   TonePageWrapper,
@@ -59,14 +55,6 @@ type CorrectionForm = {
 }
 
 const ELIGIBILITY_OPTIONS = ['Reject', 'Passable', 'Good Espresso', 'God Shot'] as const
-
-/** Extracts a monogram letter from a bag display name (bean portion after " — "). */
-function extractBeanMonogram(bagDisplay: string | null | undefined): string | undefined {
-  if (!bagDisplay) return undefined
-  const parts = bagDisplay.split(' — ')
-  const beanName = parts.length > 1 ? parts[1] : parts[0]
-  return beanName?.charAt(0)?.toUpperCase() || undefined
-}
 
 function isBrewLogEntry(value: unknown): value is BrewLogEntry {
   if (!value || typeof value !== 'object') return false
@@ -152,8 +140,6 @@ function BrewLogDetailPage() {
     queryFn: () => getBrewLogFeedback(shotId),
     enabled: !!id,
   })
-
-  const beanMonogram = extractBeanMonogram(shot?.bag_display)
 
   const correctionMutation = useMutation({
     mutationFn: (payload: BrewLogCorrectionPayload) => updateBrewLogEntry(shotId, payload),
@@ -274,25 +260,10 @@ function BrewLogDetailPage() {
       {/* ── Single takeover card — ALL brew-log content unified ─────────────── */}
       <TakeoverCard>
 
-        {/* Title section — first thing at the top of the card */}
-        <Section isTitle>
-          <TitleIcon monogram={beanMonogram} />
-          <TitleBlock title={shot.bag_display} subtitle={shot.date} />
-        </Section>
+        <ShotCard shot={shot} variant="detail-header" />
 
-        {/* Action area: chips row + buttons row */}
+        {/* Action area: buttons only; shot identity chips live in ShotCard detail-header. */}
         <div className="kk-tc-actions">
-          <div className="kk-tc-actions-chips">
-            <RoastChip level={shot.roast_level} />
-            {shot.shot_eligibility && (
-              <Chip
-                variant={eligibilityBadgeTone(shot.shot_eligibility)}
-                data-testid="eligibility-badge"
-              >
-                {shot.shot_eligibility}
-              </Chip>
-            )}
-          </div>
           {!correctionOpen && (
             <div className="kk-tc-actions-buttons">
               <ToneButton variant="edit" onClick={openCorrectionForm}>

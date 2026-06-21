@@ -1,8 +1,8 @@
 /**
  * TakeoverCard — the single frosted-glass reading surface.
  *
- * Principle 1 (Dual-Tone Surface): reads tone from ToneContext and applies
- * `.kk-tc--dark` or `.kk-tc--beige` modifier; never mixes tokens.
+ * Principle 1 (Dual-Tone Surface): reads tone from ToneContext, sets
+ * data-tone for canonical surface tokens, and applies the matching modifier.
  * Principle 3 (Intentional Translucence): backdrop-filter is on this element
  * only — no child elements duplicate the blur.
  * Principle 2 (Single Surface): all page content nests inside ONE instance.
@@ -19,7 +19,7 @@ interface TakeoverCardProps {
 export function TakeoverCard({ children, className = '' }: TakeoverCardProps) {
   const { tone } = useTone()
   return (
-    <div className={['kk-takeover-card', `kk-tc--${tone}`, className].filter(Boolean).join(' ')}>
+    <div data-tone={tone} className={['kk-takeover-card', `kk-tc--${tone}`, className].filter(Boolean).join(' ')}>
       {children}
     </div>
   )

@@ -20,7 +20,9 @@ import { ToneProvider } from '../contexts/ToneContext'
 import { useKaapiMotion } from '../lib/motion'
 import { COPY } from '../copy'
 import {
+  AddBagAction,
   BackLink,
+  BagCard,
   FormSection,
   RoastChip,
   Section,
@@ -442,9 +444,7 @@ function CatalogDetailPage() {
               </div>
             ) : (
               <div className="flex flex-wrap items-center gap-3">
-                <ToneButton variant="primary" onClick={openAddBagForm}>
-                  {COPY.catalog.addBag}
-                </ToneButton>
+                <AddBagAction variant="hero" catalogId={id} onAdd={openAddBagForm} />
               </div>
             )}
           </Section>
@@ -462,24 +462,25 @@ function CatalogDetailPage() {
                 const pending = bagStatusMutation.isPending && bagStatusMutation.variables?.bagId === bag.bag_id
                 const actionLabel = bag.status === 'Active' ? 'Finish bag' : 'Reactivate'
                 return (
-                  <div key={bag.bag_id} className="kaapi-motion-card flex items-center justify-between gap-3 py-2">
-                    <div className="min-w-0">
-                      {bag.roast_date && (
-                        <p data-testid="bag-roast-date" className="kk-tc-body">{bag.roast_date}</p>
-                      )}
-                      <p data-testid="bag-status" className="kk-tc-body-muted capitalize">{bag.status}</p>
-                      {statusErrors[bag.bag_id] && (
-                        <p className="mt-1 text-xs kk-tc-error">{statusErrors[bag.bag_id]}</p>
-                      )}
-                    </div>
-                    <ToneButton
-                      variant="edit"
-                      disabled={pending}
-                      onClick={() => bagStatusMutation.mutate({ bagId: bag.bag_id, status: nextStatus })}
-                    >
-                      {pending ? 'Saving…' : actionLabel}
-                    </ToneButton>
-                  </div>
+                  <BagCard
+                    key={bag.bag_id}
+                    bag={bag}
+                    variant="row"
+                    action={(
+                      <>
+                        {statusErrors[bag.bag_id] ? (
+                          <p className="text-xs kk-tc-error">{statusErrors[bag.bag_id]}</p>
+                        ) : null}
+                        <ToneButton
+                          variant="edit"
+                          disabled={pending}
+                          onClick={() => bagStatusMutation.mutate({ bagId: bag.bag_id, status: nextStatus })}
+                        >
+                          {pending ? 'Saving…' : actionLabel}
+                        </ToneButton>
+                      </>
+                    )}
+                  />
                 )
               })}
             </div>
