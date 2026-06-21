@@ -1,4 +1,4 @@
-<!-- Synced from coffee_tracker/.claude/skills — canonical source; do not edit here. Synced 2026-06-13 (spec-043). -->
+<!-- Synced copy — canonical source in the governance hub repo. Do not edit here directly. -->
 ---
 name: brief-to-tasks
 description: Break a design brief into an ordered checklist of independently buildable tasks using vertical slices. Saves as a markdown checklist. Use when user wants to break down work, create tasks from a brief, plan implementation order, or mentions "tasks" or "breakdown".

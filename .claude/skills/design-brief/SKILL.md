@@ -1,4 +1,4 @@
-<!-- Synced from coffee_tracker/.claude/skills — canonical source; do not edit here. Synced 2026-06-13 (spec-043). -->
+<!-- Synced copy — canonical source in the governance hub repo. Do not edit here directly. -->
 ---
 name: design-brief
 description: Create a design brief through an interactive interview, codebase exploration, and experience design decisions. Saved as a markdown file in the project. Use when user wants to write a design brief, plan a new feature or page, define a UI direction, or mentions "brief".

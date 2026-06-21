@@ -1,4 +1,4 @@
-<!-- Synced from coffee_tracker/.claude/skills — canonical source; do not edit here. Synced 2026-06-13 (spec-043). -->
+<!-- Synced copy — canonical source in the governance hub repo. Do not edit here directly. -->
 ---
 name: design-review
 description: Run a structured design critique against the brief and codebase. Checks visual hierarchy, consistency, responsiveness, accessibility, and aesthetic fidelity. Use when user wants a design review, critique, QA pass, polish pass, or mentions "review" after building.

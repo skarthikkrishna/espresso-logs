@@ -1,4 +1,4 @@
-<!-- Synced from coffee_tracker/.claude/skills — canonical source; do not edit here. Synced 2026-06-13 (spec-043). -->
+<!-- Synced copy — canonical source in the governance hub repo. Do not edit here directly. -->
 ---
 name: information-architecture
 description: Define the structural layer of a product or site before visual design begins. Covers navigation, content hierarchy, page structure, URL patterns, and user flows. Use when user wants to plan site structure, define navigation, map user flows, organize content, or mentions "IA" or "information architecture".

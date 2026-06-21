@@ -1,4 +1,4 @@
-<!-- SYNCED COPY — canonical source: coffee_tracker/docs/requirements/design-language.md. Do not edit here; edit the canonical file and re-sync. Last synced: 2026-06-13 (spec-043 thesis reconciliation). -->
+<!-- SYNCED COPY — canonical source in the governance hub repo. Do not edit here; edit the canonical file and re-sync. Last synced: 2026-06-13 (spec-043). -->
 # Design Language — Coffee Tracker
 
 > **Purpose.** The single authoritative reference for the visual aesthetic, component conventions,

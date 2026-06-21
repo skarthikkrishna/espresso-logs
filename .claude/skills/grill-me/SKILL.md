@@ -1,4 +1,4 @@
-<!-- Synced from coffee_tracker/.claude/skills — canonical source; do not edit here. Synced 2026-06-13 (spec-043). -->
+<!-- Synced copy — canonical source in the governance hub repo. Do not edit here directly. -->
 ---
 name: grill-me
 description: Interview the user relentlessly about a plan or design until reaching shared understanding, resolving each branch of the decision tree. Use when user wants to stress-test a plan, get grilled on their design, challenge an approach, or mentions "grill me".

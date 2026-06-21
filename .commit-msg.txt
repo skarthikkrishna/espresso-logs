@@ -1,0 +1,25 @@
+chore(squad): fix governance drift — delete charter fork, scrub private-repo refs, add drift guard
+
+Folded into spec-043 design-coherence work per operator directive (pivot from
+separate chore branch to inline fix on feat/043).
+
+Deleted 23 forked governance files: 9 charter files, 9 history files,
+AGENTS.md, .squad/routing.md, .squad/team.md, .squad/ceremonies.md,
+.squad/archive/handoff-038-summary.md — all are owned exclusively by the
+governance hub repo and must not exist in this public satellite repo.
+
+Scrubbed 33 retained files: replaced all `coffee_tracker` refs with
+`governance-hub` or `governance hub`, `tf-infra` with `the infra repo`,
+`coffee_tracker_runtime` with `app_runtime` (comment/doc occurrences only —
+no live DDL changed), and removed all `/Users/krishna/...` local filesystem
+paths. Includes .claude/skills/* sync headers, .github/copilot-instructions.md,
+.squad/decisions.md, .squad/log/*, .squad/orchestration-log/*, alembic comments,
+docs/requirements/*, tests/doubles.py, scripts/spec040-privacy-audit.sh.
+
+Added .github/workflows/governance-drift-check.yml: CI guard that fails if
+.squad/agents/*/charter.md, AGENTS.md, or tracked .squad/hub.local are present.
+
+Added .squad/hub.local to .gitignore (file exists locally but must never be
+committed — it contains the private hub repo name for local tooling only).
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>

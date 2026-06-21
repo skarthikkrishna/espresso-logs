@@ -1,4 +1,4 @@
-<!-- Synced from coffee_tracker/.squad/skills — canonical source; do not edit here. Synced 2026-06-13 (spec-043). -->
+<!-- Synced copy — canonical source in the governance hub repo. Do not edit here directly. -->
 ---
 name: "UI Design Contract"
 description: "Operational checklist for applying Coffee Tracker's canonical UI design language, token contract, browser coverage, and visual artifact privacy rules."

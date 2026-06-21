@@ -28,8 +28,8 @@ The operator's directive is explicitly architectural, not behavioral:
 
 | Artifact | Repo | Change |
 |----------|------|--------|
-| `specs/043/spec.md` (product/functional) | `coffee_tracker` | **No change.** User stories, ACs, entity behavior unchanged. |
-| `specs/043/plan.md` (engineering architecture) | `coffee_tracker` | **Major update.** New section: "§ Reusable Component Architecture" covering token promotion, component layers, page-shell pattern, migration strategy. Replaces the prototype-scoped implementation approach. |
+| `specs/043/spec.md` (product/functional) | `governance hub` | **No change.** User stories, ACs, entity behavior unchanged. |
+| `specs/043/plan.md` (engineering architecture) | `governance hub` | **Major update.** New section: "§ Reusable Component Architecture" covering token promotion, component layers, page-shell pattern, migration strategy. Replaces the prototype-scoped implementation approach. |
 | `docs/requirements/design-language.md` | `espresso-logs` | **Update.** Promote the `--kk-tc-*` tone system from takeover-scoped to site-wide design tokens. Add component taxonomy. |
 | `frontend/src/index.css` | `espresso-logs` | **Refactor.** Remove `.kk-b-page` scoping. Promote tokens to `:root`-level tone modifiers (or `[data-tone]` attribute selectors). |
 | `frontend/src/components/ui/` | `espresso-logs` | **Expand.** New shared components derived from takeover primitives. Retire/wrap legacy components. |

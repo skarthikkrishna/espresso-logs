@@ -1,4 +1,4 @@
-<!-- Synced from coffee_tracker/.claude/skills — canonical source; do not edit here. Synced 2026-06-13 (spec-043). -->
+<!-- Synced copy — canonical source in the governance hub repo. Do not edit here directly. -->
 ---
 name: design-tokens
 description: Generate a design tokens file (CSS variables or Tailwind config) based on a chosen aesthetic philosophy, with light and dark mode palettes, spacing scale, type ramp, and component-level tokens. Use when starting a new project, establishing a visual system, setting up tokens, or mentions "tokens" or "design system".

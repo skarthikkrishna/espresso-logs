@@ -1,0 +1,40 @@
+name: Governance Drift Check
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check-no-charter-fork:
+    name: Ensure no forked governance files are tracked
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fail if charter files are present
+        run: |
+          if ls .squad/agents/*/charter.md 2>/dev/null | grep -q .; then
+            echo "ERROR: Forked charter files detected in espresso-logs."
+            echo "Charters are owned by the governance hub repo. Remove them before merging."
+            ls .squad/agents/*/charter.md
+            exit 1
+          fi
+          echo "OK: no charter files present"
+
+      - name: Fail if AGENTS.md is present
+        run: |
+          if [ -f AGENTS.md ]; then
+            echo "ERROR: AGENTS.md detected in espresso-logs."
+            echo "AGENTS.md is owned by the governance hub repo. Remove it before merging."
+            exit 1
+          fi
+          echo "OK: AGENTS.md not present"
+
+      - name: Fail if hub.local is tracked
+        run: |
+          if git ls-files --error-unmatch .squad/hub.local 2>/dev/null; then
+            echo "ERROR: .squad/hub.local must not be tracked — it contains private repo references."
+            echo "Add it to .gitignore."
+            exit 1
+          fi
+          echo "OK: .squad/hub.local is not tracked"

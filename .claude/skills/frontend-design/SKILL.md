@@ -1,4 +1,4 @@
-<!-- Synced from coffee_tracker/.claude/skills — canonical source; do not edit here. Synced 2026-06-13 (spec-043). -->
+<!-- Synced copy — canonical source in the governance hub repo. Do not edit here directly. -->
 ---
 name: frontend-design
 description: Build distinctive, production-grade frontend interfaces with high design quality, guided by named aesthetic philosophies. Use when building components, pages, or applications. Generates working code with exceptional attention to aesthetic details and creative choices that avoid generic AI output.

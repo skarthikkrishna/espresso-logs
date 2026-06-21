@@ -53,7 +53,7 @@ The DARK/BEIGE toggle is persisted to `localStorage` — it is the **seed for a 
 
 ## 2. Current status (DONE)
 
-- ✅ **Plan approved** (spec approach **(c)**: product spec fine, only the technical/engineering spec changes — which live in the `coffee_tracker` repo; no recreate/archive of spec-043).
+- ✅ **Plan approved** (spec approach **(c)**: product spec fine, only the technical/engineering spec changes — which live in the `governance hub` repo; no recreate/archive of spec-043).
 - ✅ **Phase 0** — ~84 `--kk-tc-*` tone tokens promoted from prototype-scope to **global** (`frontend/src/index.css`).
 - ✅ **Phase 1** — shared library `frontend/src/components/tone-system/` (TakeoverCard, TonePageWrapper, Section, SectionHeader, TitleBlock, TitleIcon, Chip, RoastChip, ToneButton, ToneToggle, MarkdownProse, ParamGrid, FormSection, ToneInput/Select/Textarea, BackLink, **ImmersiveListShell, EntityCard, ListPageHeader, ImmersiveEmptyState, ImmersiveFab**) + `frontend/src/contexts/ToneContext.tsx` (localStorage persistence, key `kaapi-tone-preference`, default `dark`).
 - ✅ **Phase 2a (detail anchors)** — `BrewLogDetail.tsx` + `CatalogDetail.tsx` compose exclusively from tone-system; render identical to the northstar + operator fixes (catalog & brew-log monograms, markdown heading scale, two-column extraction readout, "Light" casing).
