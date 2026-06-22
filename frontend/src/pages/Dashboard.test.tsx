@@ -74,6 +74,7 @@ beforeEach(() => {
     {
       bag_id: 'bag-1',
       display_name: 'Test Roaster — Test Bean',
+      image_path: '/static/catalog/test-bean.jpg',
       roast_level: 'Medium',
     },
   ])
@@ -83,6 +84,7 @@ beforeEach(() => {
         shot_id: 'shot-1',
         date: '2025-07-29',
         bag_display: 'Test Roaster — Test Bean',
+        image_path: '/static/catalog/test-bean.jpg',
       },
     ],
     page: 1,
@@ -183,23 +185,65 @@ describe('Dashboard — immersive shell structure', () => {
     expect(screen.getByTestId('dashboard-active-bags-heading')).toBeInTheDocument()
   })
 
+  it('uses fit rails with View all links instead of horizontal carousel scrollers', async () => {
+    const { container } = renderWithQuery(<Dashboard />)
+
+    await screen.findByTestId('dashboard-fab')
+    expect(container.querySelector('.dashboard-carousel')).toBeNull()
+    expect(container.querySelectorAll('.dashboard-fit-rail')).toHaveLength(2)
+    const viewAllLinks = screen.getAllByRole('link', { name: 'View all →' })
+    expect(viewAllLinks[0]).toHaveAttribute('href', '/catalog')
+    expect(viewAllLinks[1]).toHaveAttribute('href', '/brew-log')
+  })
+
   it('renders bag as EntityCard link pointing to brew-log/add', async () => {
     const { container } = renderWithQuery(<Dashboard />)
 
     await screen.findByTestId('dashboard-fab')
-    // EntityCard title is in .entity-card-title
+    expect(container.querySelector('.entity-card-eyebrow')).toHaveTextContent('Test Roaster')
+    // EntityCard title is the bean name; CSS clamps this node to two lines.
     const entityCardTitle = container.querySelector('.entity-card-title')
-    expect(entityCardTitle).toHaveTextContent('Test Roaster — Test Bean')
+    expect(entityCardTitle).toHaveTextContent('Test Bean')
   })
 
-  it('renders recent shot as ShotRow link pointing to brew-log/:id', async () => {
+  it('renders recent shot as ShotCard link pointing to brew-log/:id', async () => {
     renderWithQuery(<Dashboard />)
 
     await screen.findByTestId('dashboard-fab')
-    // ShotRow renders as <a href="/brew-log/shot-1">
+    // ShotCard renders as <a href="/brew-log/shot-1">
     const allLinks = screen.getAllByRole('link')
     const shotLink = allLinks.find((link) => link.getAttribute('href') === '/brew-log/shot-1')
     expect(shotLink).toBeDefined()
+  })
+
+  it('forces Home bag and shot cards to monogram media instead of bean images', async () => {
+    const { container } = renderWithQuery(<Dashboard />)
+
+    await screen.findByTestId('dashboard-fab')
+    expect(screen.queryByRole('img')).toBeNull()
+    expect(container.querySelectorAll('.entity-card-monogram').length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('caps Recent shots to the five newest items on Home', async () => {
+    vi.mocked(listBrewLog).mockResolvedValue({
+      items: Array.from({ length: 6 }, (_, index) => ({
+        shot_id: `shot-${index + 1}`,
+        date: `2025-07-${29 - index}`,
+        bag_display: `Test Roaster — Test Bean ${index + 1}`,
+        image_path: '/static/catalog/test-bean.jpg',
+      })),
+      page: 1,
+      per_page: 6,
+      total_count: 6,
+      has_next: false,
+      sync_alert: false,
+    })
+
+    renderWithQuery(<Dashboard />)
+
+    await screen.findByTestId('dashboard-fab')
+    expect(screen.getByText('Test Bean 5')).toBeInTheDocument()
+    expect(screen.queryByText('Test Bean 6')).toBeNull()
   })
 
   it('shows the hero-card testid on the hero zone element (not a GlassCard)', async () => {
@@ -209,8 +253,9 @@ describe('Dashboard — immersive shell structure', () => {
     const hero = screen.getByTestId('dashboard-hero-card')
     // Hero zone is a <section>, not a glass-card div
     expect(hero.tagName).toBe('SECTION')
-    // No nested glass-card class on the hero zone
+    // The zone is a plain heading/list section; each bag/shot owns its own card surface.
     expect(hero).not.toHaveClass('glass-card')
+    expect(hero).not.toHaveClass('dashboard-panel')
   })
 
   it('renders three StatTiles with their labels', async () => {
@@ -245,4 +290,3 @@ describe('Dashboard — empty / fresh household state', () => {
     expect(screen.getByTestId('fresh-household-empty-dashboard')).toBeInTheDocument()
   })
 })
-

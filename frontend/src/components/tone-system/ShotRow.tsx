@@ -1,10 +1,10 @@
 /**
- * ShotRow — compact glass row for recent-shot summaries.
+ * ShotRow — compact solid row for recent-shot summaries.
  *
  * Principle 1 (Dual-Tone Surface): background/border/text resolve via
  * --kk-tc-* tokens from the enclosing [data-tone] element.
- * Principle 2 (Single Surface): lighter glass treatment than EntityCard —
- * single-line density. No nested blur.
+ * Principle 2 (Single Surface): lighter-density treatment than EntityCard.
+ * No nested blur.
  * Principle 8 (INTENSIFY states): hover translateY(-1px) + shadow. No colour
  * inversion.
  * Principle 10 (Responsive/Accessibility): rendered as <a> for semantic

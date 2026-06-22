@@ -456,6 +456,8 @@ export const COPY = {
   dashboard: {
     loadError: "Couldn't load dashboard",
     recent: 'Recent',
+    summaryAria: 'Dashboard summary',
+    viewAll: 'View all →',
     manageCatalog: 'Manage catalog',
     emptyTitle: 'No coffee data yet',
     emptyBody: 'Add your first bag or import a CSV to start this household with clean data.',
@@ -492,7 +494,11 @@ export const COPY = {
   },
   brewLogList: {
     loadError: 'Failed to load brew log.',
+    loading: 'Loading brew log',
+    retryBody: 'Check your connection and try again.',
     syncAlert: 'Your brew log history may be incomplete. Contact support or run the sync check.',
+    syncAlertTitle: 'Sync check warning',
+    shotSaved: 'Shot saved!',
     emptyTitle: 'No shots logged yet.',
     emptyBody:
       'Your recent brews will appear here once you start logging shots. Fresh households start empty.',

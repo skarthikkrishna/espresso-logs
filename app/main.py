@@ -184,7 +184,7 @@ async def run_startup_backfill() -> None:
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
     logger.info("Coffee Tracker starting up (env=%s)", settings.app_env)
     if _E2E_AUTH_BYPASS:
-        logger.warning("⚠️  E2E_AUTH_BYPASS is ACTIVE — authentication is bypassed for all requests")
+        logger.warning("⚠️  E2E_AUTH_BYPASS is ACTIVE — /api/e2e helpers are mounted")
     if settings.allowlist_emails:
         logger.warning(
             "ALLOWLIST_EMAILS is set but is no longer enforced in M5. "
@@ -250,6 +250,7 @@ async def setup_guard_middleware(
         whitelisted = (
             request.method == "POST" and path == "/auth/register",
             path.startswith("/static/"),
+            _E2E_AUTH_BYPASS and path.startswith("/api/e2e/"),
             path in {"/", "/welcome", "/health"},
         )
         if not any(whitelisted):

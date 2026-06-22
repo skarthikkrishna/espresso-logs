@@ -52,8 +52,7 @@ describe('Pagination — current page', () => {
 
   it('44×44 minimums are applied to page controls', () => {
     render(<Pagination page={1} pageCount={3} onPageChange={() => {}} />)
-    expect(screen.getByRole('button', { name: '1' })).toHaveClass('min-h-[2.75rem]')
-    expect(screen.getByRole('button', { name: '1' })).toHaveClass('min-w-[2.75rem]')
+    expect(screen.getByRole('button', { name: '1' })).toHaveClass('tone-pagination__page')
   })
 })
 

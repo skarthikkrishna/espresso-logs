@@ -72,7 +72,7 @@ describe('CatalogList — portal regression', () => {
   it('FAB renders in document.body, not inside component container', async () => {
     const { container } = renderWithQuery(<CatalogList />)
 
-    const fab = await screen.findByRole('button', { name: /add bean/i })
+    const fab = await screen.findByRole('button', { name: /add coffee/i })
 
     expect(fab).toBeInTheDocument()             // sanity: element exists
     expect(container).not.toContainElement(fab) // NOT inside component root
@@ -96,8 +96,7 @@ describe('CatalogList — immersive shell structure', () => {
   it('renders ToneToggle button', async () => {
     renderWithQuery(<CatalogList />)
     await screen.findByTestId('catalog-grid')
-    // ToneToggle label = CURRENT state: "Dark mode" (default) or "Light mode"
-    const toneBtn = screen.getByRole('button', { name: /dark mode|light mode/i })
+    const toneBtn = screen.getByRole('button', { name: /switch to (light|dark) tone/i })
     expect(toneBtn).toBeInTheDocument()
   })
 })
@@ -164,4 +163,3 @@ describe('CatalogList — empty catalog', () => {
     expect(empty).toBeInTheDocument()
   })
 })
-

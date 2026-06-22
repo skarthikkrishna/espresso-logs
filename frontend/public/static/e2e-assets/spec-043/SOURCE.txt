@@ -1,0 +1,14 @@
+Spec 043 evidence-only imagery. Not production assets; leave uncommitted unless a reviewer explicitly requests evidence fixtures.
+
+Source: https://loremflickr.com/600/800/<tags>?lock=<id>
+License note: LoremFlickr returns public Flickr imagery; use here is limited to local evidence capture placeholders under the repository E2E assets folder.
+
+Mappings:
+- SPEC043_CAT_SEY_NANO / SPEC043_BAG_SEY_ACTIVE: sey-bag.jpg from https://loremflickr.com/600/800/coffee,bag?lock=431
+- SPEC043_CAT_ONYX_GEISHA / SPEC043_BAG_ONYX_ACTIVE: onyx-bag.jpg from https://loremflickr.com/600/800/coffee,beans?lock=432
+- SPEC043_CAT_HYDRANGEA / SPEC043_BAG_HYDRANGEA_RESTING: hydrangea-bag.jpg from https://loremflickr.com/600/800/roastery?lock=433
+- SPEC043_CAT_HEART / SPEC043_BAG_HEART_FINISHED: heart-bag.jpg from https://loremflickr.com/600/800/espresso?lock=434
+- SPEC043_HW_MACHINE: espresso-machine.jpg from https://loremflickr.com/600/800/espresso,machine?lock=435
+- SPEC043_HW_GRINDER: coffee-grinder.jpg from https://loremflickr.com/600/800/coffee,grinder?lock=436
+- SPEC043_HW_BASKET: filter-basket.jpg from https://loremflickr.com/600/800/espresso,portafilter?lock=437
+- SPEC043_HW_STORAGE: storage-canister.jpg from https://loremflickr.com/600/800/coffee,roaster?lock=438

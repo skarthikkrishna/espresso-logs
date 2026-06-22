@@ -17,7 +17,7 @@ export interface InventoryBag {
   roast_date?: string;
   roast_level?: string;
   catalog_id: string; // route key only — NEVER displayed
-  status: 'Active' | 'Finished';
+  status: 'Active' | 'Resting' | 'Finished';
   storage_method?: string;
 }
 
@@ -41,6 +41,7 @@ export interface BrewLogEntry {
   shot_id: string; // route key only — NEVER displayed
   date: string;
   bag_display: string; // "Roaster — Bean name"
+  image_path?: string;
   roast_level?: string;
   machine_name?: string;
   grinder_name?: string;
@@ -59,6 +60,7 @@ export interface BrewLogEntry {
 export interface DashboardBag {
   bag_id: string; // route key only — NEVER displayed
   display_name: string;
+  image_path?: string;
   roast_level?: string;
   days_since_last_shot?: number;
   last_shot?: {

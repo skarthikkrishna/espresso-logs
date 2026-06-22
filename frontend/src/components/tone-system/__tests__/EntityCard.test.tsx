@@ -64,6 +64,16 @@ describe('EntityCard', () => {
     expect(screen.getByText('Medium')).toBeInTheDocument()
   })
 
+  it('renders the canonical date line below the title when provided', () => {
+    const { container } = render(
+      <Wrapper>
+        <EntityCard href="/catalog/1" title="Test Bean" date={<time dateTime="2026-06-10">2026-06-10</time>} />
+      </Wrapper>
+    )
+
+    expect(container.querySelector('.entity-card-title + .entity-card-date')).toHaveTextContent('2026-06-10')
+  })
+
   it('applies default kaapi-motion-card class for GSAP stagger (P12)', () => {
     const { container } = render(
       <Wrapper>
@@ -103,6 +113,17 @@ describe('EntityCard', () => {
     const img = screen.getByRole('img')
     expect(img).toHaveAttribute('src', '/img/bean.jpg')
     expect(img).toHaveAttribute('alt', 'Test Bean')
+  })
+
+  it('forces monogram media when requested even if imageUrl is provided', () => {
+    const { container } = render(
+      <Wrapper>
+        <EntityCard href="/catalog/1" title="Test Bean" imageUrl="/img/bean.jpg" media="monogram" />
+      </Wrapper>
+    )
+
+    expect(screen.queryByRole('img')).toBeNull()
+    expect(container.querySelector('.entity-card-monogram')).toHaveTextContent('TB')
   })
 
   it('renders full-figure monogram fill when imageUrl is absent', () => {

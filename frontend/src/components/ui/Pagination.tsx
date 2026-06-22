@@ -1,6 +1,6 @@
 import type { HTMLAttributes } from 'react'
-import Button from './Button'
 import { COPY } from '../../copy'
+import { ToneButton } from '../tone-system/ToneButton'
 
 interface PaginationProps extends Omit<HTMLAttributes<HTMLElement>, 'onChange'> {
   page: number
@@ -14,8 +14,8 @@ const ELLIPSIS = '…'
 /**
  * spec-043 T005 — shared Pagination primitive.
  *
- * Built entirely from {@link Button} so it inherits the Smooth Bevel/focus contract
- * (current, disabled, focus-visible, and page-change states all come from Button).
+ * Built entirely from {@link ToneButton} so it inherits the tone-system
+ * Smooth Bevel/focus contract.
  * Rendered in normal document flow — never fixed or sticky — so it sits below the
  * list it pages. A windowed page list keeps the control compact and overflow-free at
  * 360px. Previous/Next labels come from the operator copy registry; numbered controls
@@ -56,47 +56,45 @@ export default function Pagination({
   return (
     <nav
       aria-label={COPY.pagination.label}
-      className={`flex flex-wrap items-center justify-center gap-1.5 ${className}`}
+      className={['tone-pagination', className].filter(Boolean).join(' ')}
       {...props}
     >
-      <Button
-        variant="outline"
+      <ToneButton
+        variant="edit"
         onClick={() => onPageChange(clampedPage - 1)}
         disabled={clampedPage <= 1}
-        className="min-h-[2.75rem]"
       >
         {COPY.pagination.previous}
-      </Button>
+      </ToneButton>
 
-      <ul className="flex flex-wrap items-center gap-1.5">
+      <ul className="tone-pagination__pages">
         {pages.map((entry, index) =>
           entry === ELLIPSIS ? (
-            <li key={`gap-${index}`} aria-hidden="true" className="px-1 text-sm opacity-70">
+            <li key={`gap-${index}`} aria-hidden="true" className="tone-pagination__ellipsis">
               {ELLIPSIS}
             </li>
           ) : (
             <li key={entry}>
-              <Button
+              <ToneButton
                 variant={entry === clampedPage ? 'primary' : 'ghost'}
                 onClick={() => onPageChange(entry)}
                 aria-current={entry === clampedPage ? 'page' : undefined}
-                className="min-h-[2.75rem] min-w-[2.75rem] px-0"
+                className="tone-pagination__page"
               >
                 {entry}
-              </Button>
+              </ToneButton>
             </li>
           ),
         )}
       </ul>
 
-      <Button
-        variant="outline"
+      <ToneButton
+        variant="edit"
         onClick={() => onPageChange(clampedPage + 1)}
         disabled={clampedPage >= pageCount}
-        className="min-h-[2.75rem]"
       >
         {COPY.pagination.next}
-      </Button>
+      </ToneButton>
     </nav>
   )
 }

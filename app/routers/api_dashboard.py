@@ -45,10 +45,12 @@ async def api_dashboard(
     for bag in active_bags:
         bag_id = bag["Bag_ID"]
         display_name = bag.get("Beans", bag_id)
+        image_path = None
         cat_id = bag.get("Catalog_ID")
         if cat_id and cat_id in all_catalog:
             cat = all_catalog[cat_id]
             display_name = f"{cat['Roaster']} — {cat['Bean_Name']}"
+            image_path = cat.get("Local_Image_Path") or None
 
         shots = sorted(
             shots_by_bag.get(bag_id, []),
@@ -80,6 +82,7 @@ async def api_dashboard(
             DashboardBagOut(
                 bag_id=bag_id,
                 display_name=display_name,
+                image_path=image_path,
                 roast_level=bag.get("RoastLevel"),
                 days_since_last_shot=days,
                 last_shot=last_shot_data,

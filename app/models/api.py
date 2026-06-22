@@ -49,6 +49,7 @@ class BrewLogEntryOut(BaseModel):
     shot_id: str
     date: str
     bag_display: str
+    image_path: str | None = None
     roast_level: str | None = None
     machine_name: str | None = None
     grinder_name: str | None = None
@@ -76,6 +77,7 @@ class BrewLogPageOut(BaseModel):
 class DashboardBagOut(BaseModel):
     bag_id: str
     display_name: str
+    image_path: str | None = None
     roast_level: str | None = None
     days_since_last_shot: int | None = None
     last_shot: dict[str, Any] | None = None

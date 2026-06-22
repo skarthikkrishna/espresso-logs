@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { listBrewLog } from '../api/brewLog'
 import { getDashboard } from '../api/dashboard'
@@ -41,9 +41,9 @@ export default function Dashboard() {
   })
 
   const { data: recentShots = [] } = useQuery({
-    queryKey: brewLogListQueryKey(activeHouseholdId, 1, 8),
-    queryFn: () => listBrewLog(1, 8),
-    select: (page: BrewLogPage) => page.items.slice(0, 8),
+    queryKey: brewLogListQueryKey(activeHouseholdId, 1, 5),
+    queryFn: () => listBrewLog(1, 5),
+    select: (page: BrewLogPage) => page.items.slice(0, 5),
   })
 
   useEffect(() => {
@@ -69,15 +69,15 @@ export default function Dashboard() {
         </div>
         <ListPageHeader title={COPY.nav.home} titleTestId="dashboard-heading" className="dashboard-page-header" />
         <div className="dashboard-layout">
-          <div className="dashboard-stats-panel" aria-label="Dashboard summary">
+          <div className="dashboard-stats-panel" aria-label={COPY.dashboard.summaryAria}>
             <StatTileSkeleton />
             <StatTileSkeleton />
             <StatTileSkeleton />
           </div>
-          <div className="dashboard-columns">
-            <section data-testid="dashboard-hero-card" className="dashboard-panel dashboard-panel--active">
+          <div className="dashboard-rails">
+            <section data-testid="dashboard-hero-card" className="dashboard-card-section dashboard-card-section--active">
               <SectionHeader testId="dashboard-active-bags-heading">Active bags</SectionHeader>
-              <div className="entity-card-grid">
+              <div className="dashboard-fit-rail dashboard-fit-rail--bags entity-card-grid">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="entity-card--skeleton" aria-hidden="true">
                     <div className="entity-card__skeleton-line" style={{ width: '75%' }} />
@@ -86,10 +86,10 @@ export default function Dashboard() {
                 ))}
               </div>
             </section>
-            <section className="dashboard-panel dashboard-panel--recent">
+            <section className="dashboard-card-section dashboard-card-section--recent">
               <SectionHeader>Recent shots</SectionHeader>
-              <div className="shot-row-list">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div className="dashboard-fit-rail dashboard-fit-rail--shots shot-row-list">
+                {[1, 2, 3, 4, 5].map((i) => (
                   <ShotRowSkeleton key={i} />
                 ))}
               </div>
@@ -122,6 +122,7 @@ export default function Dashboard() {
   const hasBags = Boolean(bags?.length)
   const hasRecentShots = recentShots.length > 0
   const showFreshEmpty = !hasBags && !hasRecentShots
+  const allBagsRoute = '/catalog'
 
   return (
     <ToneProvider>
@@ -144,19 +145,21 @@ export default function Dashboard() {
             </ToneButton>
           </div>
 
-          <div className="dashboard-stats-panel" aria-label="Dashboard summary">
+          <div className="dashboard-stats-panel" aria-label={COPY.dashboard.summaryAria}>
             <StatTile value={bags?.length ?? 0} label="Active bags" />
             <StatTile value={recentShots.length} label="Recent" />
             <StatTile value={householdCount} label="Household" />
           </div>
 
-          <div className="dashboard-columns">
+          <div ref={cardListRef} className="dashboard-rails" data-testid="motion-card-list">
             <section
               data-testid="dashboard-hero-card"
-              className="dashboard-panel dashboard-panel--active"
+              className="dashboard-card-section dashboard-card-section--active"
             >
-              <SectionHeader testId="dashboard-active-bags-heading">Active bags</SectionHeader>
-              <div ref={cardListRef} data-testid="motion-card-list">
+              <div className="dashboard-section-header-row">
+                <SectionHeader testId="dashboard-active-bags-heading">Active bags</SectionHeader>
+                <Link className="dashboard-view-all-link" to={allBagsRoute}>{COPY.dashboard.viewAll}</Link>
+              </div>
               {showFreshEmpty ? (
                 <div data-testid="dashboard-empty-state">
                   <div data-testid="fresh-household-empty-dashboard">
@@ -176,13 +179,14 @@ export default function Dashboard() {
                   </div>
                 </div>
               ) : hasBags ? (
-                <div className="bag-card-stack">
+                <div className="bag-card-stack dashboard-fit-rail dashboard-fit-rail--bags dashboard-entity-card-stack">
                   {bags?.map((bag) => {
                     return (
                       <BagCard
                         key={bag.bag_id}
                         bag={bag}
                         variant="card"
+                        media="monogram"
                       />
                     )
                   })}
@@ -196,20 +200,23 @@ export default function Dashboard() {
                   }
                 />
               )}
-              </div>
             </section>
-            <section className="dashboard-panel dashboard-panel--recent">
-              <SectionHeader>Recent shots</SectionHeader>
+            <section className="dashboard-card-section dashboard-card-section--recent">
+              <div className="dashboard-section-header-row">
+                <SectionHeader>Recent shots</SectionHeader>
+                <Link className="dashboard-view-all-link" to="/brew-log">{COPY.dashboard.viewAll}</Link>
+              </div>
 
               {!hasRecentShots ? (
                 <ImmersiveEmptyState title={COPY.dashboard.noShots} />
               ) : (
-                <div className="shot-row-list">
+                <div className="shot-row-list dashboard-fit-rail dashboard-fit-rail--shots dashboard-entity-card-stack">
                   {recentShots.map((shot: BrewLogEntry) => (
                     <ShotCard
                       key={shot.shot_id}
                       shot={shot}
-                      variant="row"
+                      variant="summary"
+                      media="monogram"
                     />
                   ))}
                 </div>

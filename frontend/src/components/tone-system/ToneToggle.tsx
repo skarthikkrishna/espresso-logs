@@ -1,5 +1,5 @@
 /**
- * ToneToggle — the DARK / BEIGE tone toggle button.
+ * ToneToggle — the Light / Dark tone toggle button.
  *
  * Principle 1 (Dual-Tone Surface): the visible entry-point for switching tone;
  * reads and writes via ToneContext (localStorage-persisted).
@@ -16,9 +16,9 @@ export function ToneToggle() {
         type="button"
         className="kk-tc-tone-btn"
         onClick={toggleTone}
-        aria-label={`Switch to ${tone === 'dark' ? 'beige' : 'dark'} tone`}
+        aria-label={`Switch to ${tone === 'dark' ? 'light' : 'dark'} tone`}
       >
-        {tone === 'dark' ? '☕ Beige' : '🌑 Dark'}
+        {tone === 'dark' ? '☀️ Light' : '🌑 Dark'}
       </button>
     </div>
   )

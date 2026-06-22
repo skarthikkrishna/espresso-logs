@@ -11,11 +11,19 @@
 import type { ReactNode } from 'react'
 import type { EligibilityTone } from '../../utils/eligibility'
 
-type ChipVariant = EligibilityTone | 'default'
+type StatusChipVariant = 'status-active' | 'status-resting' | 'status-finished'
+type ChipVariant = EligibilityTone | StatusChipVariant | 'default'
+export type BagStatusValue = 'Active' | 'Resting' | 'Finished'
 
 interface ChipProps {
   variant?: ChipVariant
   children: ReactNode
+  'data-testid'?: string
+}
+
+interface MetricChipProps {
+  children: ReactNode
+  mono?: boolean
   'data-testid'?: string
 }
 
@@ -30,5 +38,31 @@ export function Chip({ variant = 'default', children, 'data-testid': testId }: C
     >
       {children}
     </span>
+  )
+}
+
+export function MetricChip({ children, mono = false, 'data-testid': testId }: MetricChipProps) {
+  return (
+    <span
+      className={['kk-tc-metric-chip', mono ? 'kk-tc-metric-chip--mono' : ''].filter(Boolean).join(' ')}
+      data-testid={testId}
+    >
+      {children}
+    </span>
+  )
+}
+
+function bagStatusVariant(status: string): StatusChipVariant {
+  const normalized = status.toLowerCase()
+  if (normalized === 'active') return 'status-active'
+  if (normalized === 'resting') return 'status-resting'
+  return 'status-finished'
+}
+
+export function StatusChip({ status, 'data-testid': testId }: { status: BagStatusValue | string; 'data-testid'?: string }) {
+  return (
+    <Chip variant={bagStatusVariant(status)} data-testid={testId}>
+      {status}
+    </Chip>
   )
 }

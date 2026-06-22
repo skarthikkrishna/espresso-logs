@@ -6,7 +6,7 @@
  */
 
 import React from 'react'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
@@ -84,7 +84,7 @@ describe('BrewLogList — portal regression', () => {
   it('FAB renders in document.body, not inside component container', async () => {
     const { container } = renderWithQuery(<BrewLogList />)
 
-    const fab = await screen.findByRole('button', { name: /add shot/i })
+    const fab = await screen.findByRole('button', { name: /log a shot/i })
 
     expect(fab).toBeInTheDocument()             // sanity: element exists
     expect(container).not.toContainElement(fab) // NOT inside component root
@@ -103,11 +103,86 @@ describe('BrewLogList — detail prefetch cache key', () => {
       expect(getBrewLogDetail).toHaveBeenCalledWith('shot-1')
       expect(queryClient.getQueryState(['brew-log-detail', 'shot-1'])).toBeDefined()
     })
+
     expect(queryClient.getQueryState(['brew-log', 'shot-1'])).toBeUndefined()
     expect(queryClient.getQueryState(brewLogListQueryKey(undefined, 1, 100))).toBeDefined()
   })
 })
 
+describe('BrewLogList — canonical state cards preserve fetch states', () => {
+  it('renders the loading state as a live busy ToneStateCard with row skeletons', () => {
+    // Intent: the canonical migration must keep loading announced to assistive
+    // tech and must preserve row-shaped skeletons; a spinner-only replacement
+    // or non-live generic render would fail this.
+    vi.mocked(listBrewLog).mockReturnValue(new Promise(() => {}))
+    const { container } = renderWithQuery(<BrewLogList />)
+
+    const loading = screen.getByRole('status')
+    expect(loading).toHaveAttribute('data-state', 'loading')
+    expect(loading).toHaveAttribute('aria-busy', 'true')
+    expect(loading).toHaveTextContent('Loading brew log')
+    expect(container.querySelectorAll('.shot-row--skeleton')).toHaveLength(3)
+  })
+
+  it('renders fetch failures as an assertive error card with retry action', async () => {
+    // Intent: a failed list fetch must remain visible, assertive, and
+    // recoverable after the canonical ToneStateCard swap.
+    vi.mocked(listBrewLog).mockRejectedValueOnce(new Error('network down'))
+    renderWithQuery(<BrewLogList />)
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveAttribute('data-state', 'error')
+    expect(alert).toHaveAttribute('aria-live', 'assertive')
+    expect(alert).toHaveTextContent('Failed to load brew log.')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+
+    await waitFor(() => {
+      expect(listBrewLog).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  it('renders an empty fresh household state without pagination chrome', async () => {
+    // Intent: an empty household is a valid data state, not an error; the
+    // migration must keep the fresh-household empty copy/action and avoid
+    // showing irrelevant pagination controls.
+    vi.mocked(listBrewLog).mockResolvedValue({
+      items: [],
+      page: 1,
+      per_page: 100,
+      total_count: 0,
+      has_next: false,
+      sync_alert: false,
+    })
+    renderWithQuery(<BrewLogList />)
+
+    const emptyState = await screen.findByTestId('fresh-household-empty-brew-log')
+    expect(emptyState).toHaveTextContent('No shots logged yet.')
+    expect(within(emptyState).getByRole('button', { name: /log a shot/i })).toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: /pagination/i })).not.toBeInTheDocument()
+  })
+
+  it('fetches the requested page and renders returned shots through canonical shot cards', async () => {
+    // Intent: list migration must preserve paged data fetching and render the
+    // returned shot identity, not a static/presence-only placeholder.
+    routerState.search = new URLSearchParams('page=2')
+    vi.mocked(listBrewLog).mockResolvedValue({
+      items: [{ shot_id: 'shot-2', date: '2025-07-30', bag_display: 'Second Roaster — Bean' }],
+      page: 2,
+      per_page: 100,
+      total_count: 200,
+      has_next: false,
+      sync_alert: false,
+    })
+    renderWithQuery(<BrewLogList />)
+
+    const entry = await screen.findByTestId('brew-log-entry')
+    expect(listBrewLog).toHaveBeenCalledWith(2, 100)
+    expect(entry).toHaveTextContent('Second Roaster')
+    expect(entry).toHaveTextContent('Bean')
+    expect(screen.getByRole('button', { name: '2' })).toHaveAttribute('aria-current', 'page')
+  })
+})
 // ---------------------------------------------------------------------------
 // Pagination controls — AC #2 (shared Pagination primitive)
 // ---------------------------------------------------------------------------
@@ -127,7 +202,7 @@ describe('BrewLogList — pagination controls', () => {
     // Pagination primitive returns null at pageCount <= 1. Re-adding always-on
     // controls (or miscomputing pageCount) would fail this.
     renderWithQuery(<BrewLogList />) // default beforeEach data: total_count = 1
-    await screen.findByText('Test Roaster — Test Bean')
+    await screen.findByText('Test Bean')
 
     expect(screen.queryByRole('navigation', { name: /pagination/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /next/i })).not.toBeInTheDocument()
@@ -138,7 +213,7 @@ describe('BrewLogList — pagination controls', () => {
     // cannot request negative offsets or page 0.
     vi.mocked(listBrewLog).mockResolvedValue(multiPage)
     renderWithQuery(<BrewLogList />)
-    await screen.findByText('Roaster — Bean')
+    await screen.findByText('Bean')
 
     expect(screen.getByRole('button', { name: /previous/i })).toBeDisabled()
   })
@@ -149,7 +224,7 @@ describe('BrewLogList — pagination controls', () => {
     routerState.search = new URLSearchParams('page=2')
     vi.mocked(listBrewLog).mockResolvedValue({ ...multiPage, page: 2, has_next: false })
     renderWithQuery(<BrewLogList />)
-    await screen.findByText('Roaster — Bean')
+    await screen.findByText('Bean')
 
     expect(screen.getByRole('button', { name: /next/i })).toBeDisabled()
   })
@@ -159,7 +234,7 @@ describe('BrewLogList — pagination controls', () => {
     // so users can reach later history.
     vi.mocked(listBrewLog).mockResolvedValue(multiPage)
     renderWithQuery(<BrewLogList />)
-    await screen.findByText('Roaster — Bean')
+    await screen.findByText('Bean')
 
     expect(screen.getByRole('button', { name: /next/i })).not.toBeDisabled()
   })
@@ -169,7 +244,7 @@ describe('BrewLogList — pagination controls', () => {
     // removing the nav aria-label would break this assertion.
     vi.mocked(listBrewLog).mockResolvedValue(multiPage)
     renderWithQuery(<BrewLogList />)
-    await screen.findByText('Roaster — Bean')
+    await screen.findByText('Bean')
 
     expect(screen.getByRole('navigation', { name: /pagination/i })).toBeInTheDocument()
   })
@@ -179,7 +254,7 @@ describe('BrewLogList — pagination controls', () => {
     // current page; removing the attribute would silently break accessibility.
     vi.mocked(listBrewLog).mockResolvedValue(multiPage)
     renderWithQuery(<BrewLogList />)
-    await screen.findByText('Roaster — Bean')
+    await screen.findByText('Bean')
 
     const current = screen.getByRole('button', { name: '1' })
     expect(current).toHaveAttribute('aria-current', 'page')
@@ -204,7 +279,7 @@ describe('BrewLogList — sync-gap alert banner', () => {
       sync_alert: true,
     })
     renderWithQuery(<BrewLogList />)
-    await screen.findByText('Roaster — Bean')
+    await screen.findByText('Bean')
 
     expect(screen.getByRole('alert')).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent(/incomplete/i)
@@ -214,7 +289,7 @@ describe('BrewLogList — sync-gap alert banner', () => {
     // Intent: the alert must only appear when the operator explicitly flags drift;
     // it must not appear on every page load.
     renderWithQuery(<BrewLogList />)
-    await screen.findByText('Test Roaster — Test Bean')
+    await screen.findByText('Test Bean')
 
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })

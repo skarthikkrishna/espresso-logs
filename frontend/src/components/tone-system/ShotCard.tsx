@@ -1,21 +1,21 @@
 import type { MouseEventHandler } from 'react'
-import { Link } from 'react-router-dom'
 import { COPY } from '../../copy'
 import type { BrewLogEntry } from '../../types/entities'
 import { eligibilityBadgeTone } from '../../utils/eligibility'
-import { Chip } from './Chip'
+import { Chip, MetricChip } from './Chip'
+import { EntityCard, type EntityCardMediaMode } from './EntityCard'
 import { RoastChip } from './RoastChip'
 import { Section } from './Section'
-import { ShotRow } from './ShotRow'
 import { TitleBlock } from './TitleBlock'
 import { TitleIcon } from './TitleIcon'
 
-export type ShotCardVariant = 'row' | 'list-card' | 'detail-header'
+export type ShotCardVariant = 'summary' | 'row' | 'list-card' | 'detail-header'
 
 interface ShotCardProps {
   shot: BrewLogEntry
   variant: ShotCardVariant
   href?: string
+  media?: EntityCardMediaMode
   onMouseEnter?: MouseEventHandler<HTMLAnchorElement>
   className?: string
   'data-testid'?: string
@@ -33,28 +33,37 @@ function beanMonogram(bagDisplay: string): string | undefined {
   return beanName?.charAt(0)?.toUpperCase() || undefined
 }
 
+function splitRoasterBean(displayName: string): { roaster?: string; bean: string } {
+  const [roaster, ...beanParts] = displayName.split(/\s+[—–-]\s+/)
+  const bean = beanParts.join(' — ').trim()
+  return bean ? { roaster: roaster.trim(), bean } : { bean: displayName }
+}
+
+function renderExtractionChips(shot: BrewLogEntry) {
+  const shotDoseYield = doseYield(shot)
+  return (
+    <>
+      {shot.shot_eligibility ? (
+        <Chip variant={eligibilityBadgeTone(shot.shot_eligibility)}>{shot.shot_eligibility}</Chip>
+      ) : null}
+      {shotDoseYield ? <MetricChip mono>{shotDoseYield}</MetricChip> : null}
+      {shot.time_sec != null ? <MetricChip>{shot.time_sec}s</MetricChip> : null}
+      {shot.grind_setting ? <MetricChip>{COPY.brewLogList.grind} {shot.grind_setting}</MetricChip> : null}
+    </>
+  )
+}
+
 export function ShotCard({
   shot,
   variant,
   href,
+  media = 'image',
   onMouseEnter,
   className = '',
   'data-testid': testId,
 }: ShotCardProps) {
   const destination = href ?? `/brew-log/${encodeURIComponent(shot.shot_id)}`
-
-  if (variant === 'row') {
-    return (
-      <ShotRow
-        href={destination}
-        bagName={shot.bag_display}
-        date={shot.date}
-        doseYield={doseYield(shot)}
-        className={className}
-        data-testid={testId}
-      />
-    )
-  }
+  const titleParts = splitRoasterBean(shot.bag_display)
 
   if (variant === 'detail-header') {
     return (
@@ -76,35 +85,19 @@ export function ShotCard({
   }
 
   return (
-    <Link
-      to={destination}
-      onMouseEnter={onMouseEnter}
+    <EntityCard
+      href={destination}
+      title={titleParts.bean}
+      mediaTitle={shot.bag_display}
+      eyebrow={titleParts.roaster ?? 'Shot'}
+      imageUrl={shot.image_path}
+      media={media}
+      date={<time dateTime={shot.date}>{shot.date}</time>}
+      chip={renderExtractionChips(shot)}
+      className={['shot-card-list', 'shot-card-summary', className].filter(Boolean).join(' ')}
+      motionClassName="kaapi-motion-card"
       data-testid={testId}
-      className={['shot-card-list', 'kaapi-motion-card', className].filter(Boolean).join(' ')}
-    >
-      <div className="shot-card-list__header">
-        <div className="shot-card-list__identity">
-          <p className="shot-card-list__eyebrow">{shot.date}</p>
-          <p className="shot-card-list__title">{shot.bag_display}</p>
-        </div>
-        {shot.shot_eligibility ? (
-          <Chip variant={eligibilityBadgeTone(shot.shot_eligibility)}>{shot.shot_eligibility}</Chip>
-        ) : null}
-      </div>
-
-      <div className="shot-card-list__chips">
-        {doseYield(shot) ? <span className="shot-card-list__chip shot-card-list__chip--mono">{doseYield(shot)}</span> : null}
-        {shot.time_sec != null ? <span className="shot-card-list__chip">{shot.time_sec}s</span> : null}
-        {shot.grind_setting ? <span className="shot-card-list__chip">{COPY.brewLogList.grind} {shot.grind_setting}</span> : null}
-      </div>
-
-      {(shot.machine_name || shot.grinder_name || shot.basket_name) ? (
-        <div className="shot-card-list__hardware">
-          {shot.machine_name ? <span>{COPY.brewLogList.machine} {shot.machine_name}</span> : null}
-          {shot.grinder_name ? <span>{COPY.brewLogList.grinder} {shot.grinder_name}</span> : null}
-          {shot.basket_name ? <span>{COPY.brewLogList.basket} {shot.basket_name}</span> : null}
-        </div>
-      ) : null}
-    </Link>
+      onMouseEnter={onMouseEnter}
+    />
   )
 }

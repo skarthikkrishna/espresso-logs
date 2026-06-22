@@ -8,9 +8,10 @@
 >
 > **Stack:** React + TypeScript + Vite + DaisyUI v5 + Tailwind v4 · Theme: `espresso-dark` in `frontend/src/index.css`
 >
-> **Version note:** spec-043 thesis reconciliation — 2026-06-13. Encodes the
-> Warm Editorial Instrument Calm thesis: an espresso-dark frame/chrome with solid, light, elevated
-> warm content surfaces; chrome/overlay/sheet-only blur; restrained semantic color; density-keyed
+> **Version note:** spec-043 thesis reconciliation — 2026-06-13; canonical entity-card
+> reconciliation — 2026-06-21. Encodes the Warm Editorial Instrument Calm thesis: an
+> espresso-dark frame/chrome with operator-approved warm Liquid Glass entity cards via
+> `--kk-card-surface-*`; chrome/overlay/sheet blur remains restrained; semantic color is restrained; density-keyed
 > photographic backgrounds; subtle ambient depth; and Fable-level fluidity expectations. The WebGL
 > cap remains two foreground three.js surfaces plus one shared `KaapiAmbientLayer` context. An
 > authoritative synced copy is maintained in `espresso-logs/docs/requirements/design-language.md`
@@ -37,15 +38,75 @@ scroll, and state changes; the material system is restrained, not cloying.
 
 Kaapi Kadai uses a **hybrid base**. The product identity lives in the espresso-dark frame: sidebar,
 bottom navigation, AppShell chrome, background canvas, modal/sheet chrome, and page atmosphere. The
-work itself lives on **solid, light, elevated warm content surfaces**. Operational content means any
+work itself lives on elevated warm content surfaces. Repeated entity-card surfaces use the
+operator-approved warm Liquid Glass token family defined in [Canonical entity card](#canonical-entity-card).
+Operational content means any
 shot data, forms, tables, rows, cards, metrics, settings, auth/invite tasks, modal body content,
 alerts, badges that carry state, and controls that the user must read or operate.
 
-**Surface contract:** operational content always sits on a guaranteed-contrast solid light surface.
-That surface does not depend on a photograph, glass translucency, blur, ambient darkness, or a dark
-card to become readable. WCAG AA contrast is required on both sides of the hybrid base: light warm
-content surfaces and espresso-dark frame/chrome. The dark frame may be expressive; the content plane
-must be trustworthy, calm, and immediately legible.
+**Surface contract:** operational content always sits on a guaranteed-contrast elevated warm surface.
+Entity cards and the single stats card use one Liquid Glass surface token family; forms, tables,
+settings, modal bodies, and other dense reading planes may still use opaque warm content tokens where
+that is the clearer fit. No surface may depend on a photograph, ambient darkness, or a dark card to
+become readable. WCAG AA contrast is required on both sides of the hybrid base: warm content surfaces
+and espresso-dark frame/chrome. The dark frame may be expressive; the content plane must be trustworthy,
+calm, and immediately legible.
+
+### Canonical entity card
+
+The operator-validated canonical card system is the binding standard for entity cards and Home stats.
+It deliberately supersedes earlier strict "solid opaque cards only" language for this card family.
+
+#### Single-source card surface
+
+Entity cards and the single stats card consume one token family: `--kk-card-surface-*`.
+
+| Tone | Required card surface |
+|---|---|
+| Light | Warm Liquid Glass `rgba(245, 235, 220, .78)` with `blur(20px)`, lifted border, lifted shadow, and reduced brown saturation at the same alpha. |
+| Dark | Warm Liquid Glass `rgba(40, 22, 8, .72)` with `blur(8px)`, lifted border, lifted shadow, and reduced brown saturation at the same alpha. |
+
+This is an operator-chosen departure from the brief's strict solid lever, not an implementation loophole.
+The card surface remains single-source: do not create separate bag, shot, catalog, or stats card
+materials. If a future contrast fix is required, adjust the token family rather than forking surfaces.
+
+#### Identical card anatomy
+
+Bag and shot cards share one skeleton:
+
+1. top row: roaster eyebrow on the left + media top-right where applicable;
+2. bean-name title below the eyebrow row, `Inter`, two-line clamp;
+3. date on its own left-aligned line below the title;
+4. chip row.
+
+The rating chip is the only high-signal badge and stays single-line.
+
+#### ENUM → CHIP rule
+
+Enumerated values render as chips by default, no matter what: bag status (`Active`, `Resting`,
+`Finished`), roast level, shot rating, and any future enum. Continuous/numeric values such as
+dose→yield, time, and grind are case-by-case design decisions and must not be converted into chips
+automatically without an Aria/Finn contract note.
+
+#### Media mix
+
+Media position stays consistent; media type varies by surface:
+
+| Surface | Media |
+|---|---|
+| Home | Monogram. |
+| Brew-log | Bean photo. |
+| Catalog | Editorial tile with photo at the bottom. |
+
+Where media appears in the canonical card anatomy, it occupies the top-right slot except for Catalog's
+intentional editorial tile exception.
+
+#### Layout law
+
+Section, list, and carousel containers are never card surfaces: no "uber card" wrapping entity-card
+groups. Only entity cards plus the single stats card carry the card surface. Rails are container-aware,
+fit-to-width rows of whole cards with a `View all →` link. A rail must not show a partial card or force
+horizontal scrolling to reveal clipped cards.
 
 ---
 
@@ -53,13 +114,13 @@ must be trustworthy, calm, and immediately legible.
 
 | Principle | Description |
 |-----------|-------------|
-| **Hybrid base** | Espresso-dark frame/chrome carries identity; solid light elevated warm surfaces carry operational content. Light mode as a full product mode remains future work. |
-| **Surface contract** | Shot data, forms, rows, cards, metrics, settings, auth/invite tasks, modal body content, and other operational surfaces always sit on guaranteed-contrast solid light surfaces. |
+| **Hybrid base** | Espresso-dark frame/chrome carries identity; elevated warm surfaces carry operational content. Canonical entity cards and the single stats card use the operator-approved `--kk-card-surface-*` Liquid Glass family. Light mode as a full product mode remains future work. |
+| **Surface contract** | Shot data, forms, rows, cards, metrics, settings, auth/invite tasks, modal body content, and other operational surfaces always sit on guaranteed-contrast elevated warm surfaces; entity cards use the canonical card token, not page-local materials. |
 | **Craft, not productivity** | Visual language communicates ritual and care, not efficiency metrics. |
 | **Typography-led** | Strong typographic hierarchy carries the UX. Avoid decorative UI chrome. |
 | **Photography-anchored, density-keyed** | Photographic route backgrounds remain warm atmosphere behind the surface contract; prominence is tuned by page density and scrim depth, not blanket-retired. |
 | **Mobile-first** | Every layout is designed for a phone in one hand while pulling a shot with the other. Two breakpoints: 375px baseline and 768px (`md:`). |
-| **Liquid Glass restraint** | Real blur/glass is confined to chrome, overlays, modals, and sheets. Repeated operational content cards/rows are solid; no `backdrop-filter` on content cards, controls, dense lists, tables, badges, chips, pagination, or arbitrary containers. |
+| **Liquid Glass restraint** | Canonical entity cards and the single stats card may use the operator-approved `--kk-card-surface-*` Liquid Glass token family. Other real blur/glass is confined to chrome, overlays, modals, and sheets; no arbitrary container/card blur forks. |
 | **Motion-led tactility** | Smooth Bevel remains restrained material support, but tactility comes primarily from fluid route, scroll, layer, primitive, text/clip, pointer, and focus motion with reduced-motion parity. |
 | **iOS Readiness** | Every interactive element is Safari/WebKit-safe. `-webkit-` prefixes, tap-highlight suppression, and `appearance: none` are not optional. |
 | **Consistency mandate** | Every primary button computes identical `box-shadow`. Every modal computes identical `backdrop-filter`. This is enforced by Playwright assertions — not aspirational. |
@@ -177,10 +238,11 @@ outside the immediate design-coherence scope such as the Login invite notice.
 
 ## Design Principles: Liquid Glass
 
-**Baseline scope:** AppShell chrome, modal/dialog backdrops, overlay chrome, and sheet chrome ONLY.
-`backdrop-filter` remains prohibited on operational content cards, buttons, dense lists, table rows,
-badges/chips, pagination, expanders, and arbitrary containers. Content cards and rows receive depth
-from solid warm light surfaces, shadow, border, and restrained glint — never from blur.
+**Baseline scope:** canonical entity cards plus the single stats card use the operator-approved
+`--kk-card-surface-*` Liquid Glass token family. AppShell chrome, modal/dialog backdrops, overlay
+chrome, and sheet chrome may also use controlled glass. `backdrop-filter` remains prohibited on
+buttons, dense tables, badges/chips, pagination, expanders, and arbitrary section/list/carousel
+containers. No page may introduce a second entity-card material or a card-group "uber" surface.
 
 **Progressive enhancement scope:** On capable, non-WebKit engines only, real translucency/refraction
 may be added to chrome/overlay/sheet surfaces:
@@ -190,9 +252,11 @@ may be added to chrome/overlay/sheet surfaces:
 2. Overlay and sheet layers implemented as `.glass-overlay`, `.glass-sheet`, `.modal-backdrop`, or
    an approved modal/sheet chrome wrapper.
 
-`GlassCard` / `.liquid-card`, dashboard `HeroVisualFrame` / `.hero-visual-frame`, dense brew-log
-lists, table rows, repeated list items, every button, badges/chips, pagination, expanders, and
-arbitrary containers are not eligible. The fallback surface treatment must remain defined for every
+`GlassCard` / `.liquid-card` are eligible only when they consume the canonical `--kk-card-surface-*`
+entity-card token family or serve approved chrome/overlay/sheet roles. Dashboard `HeroVisualFrame` /
+`.hero-visual-frame`, dense brew-log
+lists, table rows, every button, badges/chips, pagination, expanders, and arbitrary containers are not
+eligible. The fallback surface treatment must remain defined for every
 eligible chrome/overlay/sheet surface, and the blur tier is purely additive: no text, icon, border,
 or contrast decision may depend on blur for legibility.
 
@@ -297,10 +361,11 @@ additional canvases. Per-card 3D and per-route canvases remain prohibited.
 
 ## Design Principles: Smooth Bevel
 
-**Scope:** All primary buttons, secondary buttons, and card/content surfaces. Operational content
-cards use solid light warm content tokens plus `box-shadow` for baseline depth. No content card may
-add `backdrop-filter`, including `GlassCard` when it is used as a repeated card/row/form/panel
-surface. Glass naming in legacy components does not override the surface contract.
+**Scope:** All primary buttons, secondary buttons, and card/content surfaces. Canonical entity cards
+and the single stats card use `--kk-card-surface-*` for their operator-approved warm Liquid Glass
+surface plus lifted border/shadow. Other dense operational surfaces use warm content tokens plus
+`box-shadow` for baseline depth. Glass naming in legacy components does not override the surface
+contract or permit page-local material forks.
 
 **Three-layer box-shadow recipe (all three layers are required on every primary button):**
 
@@ -358,6 +423,7 @@ scoped to `[data-theme="espresso-dark"]`. Finn implements these exact values.
 | `--kaapi-content-content` | `#2d1608` | Primary text/icons on light content surfaces |
 | `--kaapi-content-muted` | `#6b4a2f` | Secondary/meta text on light content surfaces |
 | `--kaapi-content-shadow` | `0 18px 44px rgba(18, 11, 6, 0.28), 0 2px 8px rgba(18, 11, 6, 0.18), inset 0 1px 0 rgba(255,255,255,0.72)` | Light-surface elevation and top light catch |
+| `--kk-card-surface-*` | Light: `rgba(245, 235, 220, .78)` + `blur(20px)`; Dark: `rgba(40, 22, 8, .72)` + `blur(8px)` | Single-source warm Liquid Glass surface for canonical entity cards and the single stats card; includes lifted border/shadow and reduced brown saturation at the same alpha. |
 
 ### Glass / Chrome Tokens
 
@@ -531,16 +597,19 @@ Coffee Tracker UI design, implementation, and review.
 
 ### Interaction and surface rules
 
-- **Surface contract:** operational content always sits on solid light warm elevated surfaces using
-  `--kaapi-content-*` tokens. The content plane must pass WCAG AA without help from photography,
-  blur, translucent cards, or ambient darkness.
-- **Blur scope baseline:** `backdrop-filter` is allowed only on AppShell/chrome, modal/dialog
-  backdrops, overlays, and sheet chrome. Buttons, content cards, dense lists, table rows, badges,
-  chips, pagination, expanders, and arbitrary containers never receive blur.
+- **Surface contract:** operational content always sits on guaranteed-contrast elevated warm surfaces.
+  Canonical entity cards and the single stats card use `--kk-card-surface-*`; dense reading planes use
+  `--kaapi-content-*` where opaque content is clearer. The content plane must pass WCAG AA without help
+  from photography, ambient darkness, or page-local surface forks.
+- **Blur scope baseline:** `backdrop-filter` is allowed on the canonical `--kk-card-surface-*` entity
+  card/stats-card family plus AppShell/chrome, modal/dialog backdrops, overlays, and sheet chrome.
+  Buttons, dense tables, badges, chips, pagination, expanders, and arbitrary section/list/carousel
+  containers never receive blur.
 - **Progressive blur tier:** `#main-content`, `.glass-chrome`, `.glass-overlay`, `.glass-sheet`, and
   `.modal-backdrop` may add `backdrop-filter: var(--glass-blur)` only inside `@supports
-  (backdrop-filter: blur(1px)) and (not (-webkit-touch-callout: none))`. Content surfaces including
-  `GlassCard` / `.liquid-card` and `HeroVisualFrame` / `.hero-visual-frame` are not eligible.
+  (backdrop-filter: blur(1px)) and (not (-webkit-touch-callout: none))`. `GlassCard` / `.liquid-card`
+  are eligible only when consuming the canonical card token family or serving approved chrome/overlay/
+  sheet roles; `HeroVisualFrame` / `.hero-visual-frame` is not eligible.
 - **WebGL surface cap:** Two foreground three.js surfaces plus one shared app-shell `KaapiAmbientLayer`
   context. Per-card 3D, per-route canvases, modal WebGL, and route-specific ambient canvases remain prohibited.
 - **Modal backdrop blur:** Modal backdrops consume `var(--glass-blur)` directly so the computed
@@ -578,8 +647,9 @@ Coffee Tracker UI design, implementation, and review.
 |-----------|----------------|-----------------|-------|
 | Page shell | `main.max-w-2xl.mx-auto.px-4.pt-4.pb-24` | `bg-base-100` | React Router `<Outlet>` target; `pb-24` clears bottom nav |
 | Shared ambient layer | `KaapiAmbientLayer` | `--kaapi-ambient-*` tokens | One app-shell WebGL context behind `#main-content`; static gradient fallback; no per-route/per-card canvas |
-| Cards — catalog/hardware | `GlassCard` content variant / `.liquid-card` legacy class | `--kaapi-content-surface` + `--kaapi-content-border` + `--kaapi-content-shadow` | Solid light elevated warm content surface; no blur even if legacy class name contains `glass` |
-| Cards — brew log rows | `.frosted-brew-card` retuned as solid row surface | `--kaapi-content-surface` + restrained semantic border/state tokens | Solid dense-list row; no `backdrop-filter`; image never shows through operational row content |
+| Canonical entity cards + single stats card | `EntityCard`, `BagCard`, `ShotCard`, `StatTile` | `--kk-card-surface-*` | Operator-approved warm Liquid Glass; one token family only; lifted border/shadow; no section/list/carousel "uber" card |
+| Catalog card media | `EntityCard` editorial tile variant | `--kk-card-surface-*` + `CatalogItem.image_path` bottom tile | Catalog intentionally uses bottom editorial photo, not the top-right media slot |
+| Brew-log cards | `ShotCard` summary | `--kk-card-surface-*` + bean photo top-right | Same bag/shot skeleton; rating chip is the only high-signal badge |
 | Primary button | `btn btn-primary .btn-bevel` | `--btn-rest-shadow` → `--btn-hover-shadow` → `--btn-active-shadow` | Three-layer recipe; `--bevel-radius` on all |
 | Secondary / outline button | `btn btn-outline` | `--glass-border` border; `--bevel-shadow-raised` on hover | No hard colour fill |
 | Destructive button | `btn btn-error btn-outline` | No bevel — flat error treatment | |
@@ -606,19 +676,20 @@ Clutter & Comprehension Diagnostic in `specs/043-kaapi-kadai-design-coherence/de
 apply the surface contract, then layer discipline, then scrim/prominence tuning, density rhythm,
 color restraint, and de-redundancy before deciding whether an image needs to recede further.
 
-**Binding rule:** photo behind scrim, content on solid elevated light surfaces, one translucent layer
-maximum, rhythm before ornament, amber as anchor rather than wash.
+**Binding rule:** photo behind scrim, canonical entity cards on the single warm Liquid Glass
+`--kk-card-surface-*` family, dense forms/settings/tables on contrast-safe warm reading surfaces,
+rhythm before ornament, amber as anchor rather than wash.
 
 | Density / scenario | Background treatment | Required controls |
 |---|---|---|
 | Sparse standalone flows (`StandaloneHouseholdShell`, login/welcome/recovery) | Keep photography visibly warm and atmospheric. | Solid auth/task card, generous negative space, one glass/scrim layer at shell/backdrop only. |
 | Medium task flows (register, invite accept, household new, detail pages, modals) | Keep or quiet the image based on task length and focal competition. | Solid form/detail surface, grouped fields, restrained semantic accents, no duplicate context labels. |
-| Dense app/admin/list flows (`AppShell`, dashboard, catalog list, brew log, hardware, import, settings) | Keep photography as receded mood behind a deeper scrim. | Solid cards/rows/panels, strict badge/color restraint, measured row/card rhythm, no translucent repeated content. |
+| Dense app/admin/list flows (`AppShell`, dashboard, catalog list, brew log, hardware, import, settings) | Keep photography as receded mood behind a deeper scrim. | Canonical entity cards use `--kk-card-surface-*`; forms/settings/tables use contrast-safe warm reading surfaces; strict badge/color restraint; measured row/card rhythm; no container card surfaces. |
 
-Layer discipline is absolute: at most one translucent layer participates in a stack. Never combine
-photo + glass + card + badge as competing translucent planes. If content feels cluttered, do not add
-another blur/card/badge; fix the reading surface, grouping, scrim, semantic color, or duplicate labels.
-The design brief's per-page matrix is the source of truth for route-specific treatment.
+Layer discipline is absolute: the canonical entity-card Liquid Glass token is the only repeated card
+material. Never add another glass/card container around card groups. If content feels cluttered, do not
+add another blur/card/badge; fix the reading surface token, grouping, scrim, semantic color, or duplicate
+labels. The design brief's per-page matrix is interpreted through the 2026-06-21 surface reconciliation.
 
 ## Typography
 
@@ -666,9 +737,11 @@ The design brief's per-page matrix is the source of truth for route-specific tre
 
 The historical mobile-first skeleton used only bottom navigation. spec-043 may also use desktop
 sidebar/AppShell chrome where the implementation already provides it, but the rule is unchanged:
-persistent chrome belongs to the espresso-dark frame, while operational content sits on solid light
-warm elevated surfaces. Content column widths and shell density may adapt at larger breakpoints, but
-component surface treatment must preserve the same surface contract at all widths.
+persistent chrome belongs to the espresso-dark frame, while operational content sits on elevated warm
+surfaces. Canonical entity cards and the single stats card use `--kk-card-surface-*`; dense forms,
+tables, and settings surfaces use contrast-safe warm reading tokens. Content column widths and shell
+density may adapt at larger breakpoints, but component surface treatment must preserve the same surface
+contract at all widths.
 
 ### React App Shell (reference skeleton)
 
@@ -693,7 +766,7 @@ component surface treatment must preserve the same surface contract at all width
 
 ## Eligibility & Taste Summary — Visual Encoding
 
-| Shot_Eligibility | Badge class | Display |
+| Shot_Eligibility | Chip class | Display |
 |-----------------|-------------|---------|
 | `Reject` | `badge-error` | 🚫 Reject |
 | `Passable` | `badge-warning` | Passable |
@@ -765,10 +838,13 @@ via `useRef` + `useEffect` — no CDN import in JSX.
 
 ## Changelog
 
+- **2026-06-21 — canonical entity-card reconciliation:** Added the operator-approved
+  `--kk-card-surface-*` warm Liquid Glass card system, shared bag/shot anatomy, enum-to-chip rule,
+  media mix, and no-container-card layout law.
 - **2026-06-13 — spec-043 thesis reconciliation:** Added Warm Editorial Instrument Calm hybrid base,
-  the solid light content-surface contract, chrome/overlay/sheet-only blur scope, restrained semantic
-  color guidance, density-keyed photographic backgrounds, one-translucent-layer discipline, subtle
-  ambient depth, and named fluidity token expectations.
+  content-surface contract, chrome/overlay/sheet blur guardrails, restrained semantic color guidance,
+  density-keyed photographic backgrounds, layer discipline, subtle ambient depth, and named fluidity
+  token expectations.
 
 ## Aria's Brief (Designer Agent)
 

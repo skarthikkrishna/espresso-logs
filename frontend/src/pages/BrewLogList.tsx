@@ -4,13 +4,22 @@ import { useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { brewLogDetailQueryKey, listBrewLog, getBrewLogDetail } from '../api/brewLog'
 import { brewLogListQueryKey } from '../api/queryKeys'
-import LoadingSpinner from '../components/LoadingSpinner'
-import { EmptyState, PageHeader, Pagination } from '../components/ui'
+import Pagination from '../components/ui/Pagination'
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
 import { ToneProvider } from '../contexts/ToneContext'
 import { useKaapiMotion } from '../lib/motion'
 import { COPY } from '../copy'
-import { LogShotAction, ShotCard, TonePageWrapper } from '../components/tone-system'
+import {
+  ImmersiveEmptyState,
+  ImmersiveListShell,
+  ListPageHeader,
+  LogShotAction,
+  ShotCard,
+  ShotRowSkeleton,
+  ToneButton,
+  ToneStateCard,
+  ToneToggle,
+} from '../components/tone-system'
 
 export default function BrewLogList() {
   return (
@@ -32,9 +41,10 @@ function BrewLogListPage() {
   const activeHouseholdId = useHouseholdQueryScope()
   const routeRef = useRef<HTMLDivElement>(null)
   const cardListRef = useRef<HTMLDivElement>(null)
-  const { routeEnter, staggerCards } = useKaapiMotion({ scope: routeRef })
+  const fabRef = useRef<HTMLButtonElement>(null)
+  const { routeEnter, staggerCards, fabMount, pressFeedback } = useKaapiMotion({ scope: routeRef })
 
-  const { data, isLoading, isPlaceholderData, error } = useQuery({
+  const { data, isLoading, isPlaceholderData, error, refetch } = useQuery({
     queryKey: brewLogListQueryKey(activeHouseholdId, page, 100),
     queryFn: () => listBrewLog(page, 100),
     placeholderData: keepPreviousData,
@@ -43,7 +53,7 @@ function BrewLogListPage() {
   useEffect(() => {
     if (toastParam === 'shot-saved') {
       /* eslint-disable react-hooks/set-state-in-effect -- URL-to-state bridge: setSearchParams clears the trigger param in the same batch so toastParam is null on the next render; no cascade risk. */
-      setToast('Shot saved!')
+      setToast(COPY.brewLogList.shotSaved)
       setSearchParams({}, { replace: true })
       /* eslint-enable react-hooks/set-state-in-effect */
     }
@@ -64,47 +74,92 @@ function BrewLogListPage() {
     if (cards?.length) staggerCards(cards)
   }, [data, staggerCards])
 
-  if (isLoading) return <LoadingSpinner />
-  if (error) return <div className="p-6 text-error">{COPY.brewLogList.loadError}</div>
+  useEffect(() => {
+    if (fabRef.current) fabMount(fabRef.current)
+  }, [fabMount])
 
   const perPage = data?.per_page || 100
   const pageCount = Math.max(1, Math.ceil((data?.total_count ?? 0) / perPage))
 
   return (
-    <TonePageWrapper ref={routeRef} testId="motion-route-boundary" className="p-4 md:p-6 relative">
-      <PageHeader title="Brew log" />
+    <ImmersiveListShell ref={routeRef} testId="motion-route-boundary" className="brew-log-list-page">
+      <div className="immersive-nav-row">
+        <ToneToggle />
+      </div>
+
+      <ListPageHeader
+        title={COPY.nav.brewLog}
+        section="SHOTS / HISTORY"
+        sectionTestId="brew-log-section-heading"
+      />
+
       {toast && createPortal(
-        <div
-          className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-amber-700 text-white text-sm px-4 py-2 rounded-full shadow-lg z-50"
-          onClick={() => setToast(null)}
-        >
-          {toast}
-        </div>,
+        <ToneStateCard
+          state="success"
+          title={toast}
+          compact
+          live
+          className="tone-state-toast"
+          action={
+            <ToneButton variant="ghost" onClick={() => setToast(null)} aria-label="✕">
+              ✕
+            </ToneButton>
+          }
+        />,
         document.body
       )}
+
       {data?.sync_alert && !syncAlertDismissed && (
-        <div role="alert" className="alert alert-warning mb-4">
-          <span>{COPY.brewLogList.syncAlert}</span>
-          <button className="btn btn-sm btn-ghost" onClick={() => setSyncAlertDismissed(true)}>✕</button>
-        </div>
+        <ToneStateCard
+          state="warning"
+          title={COPY.brewLogList.syncAlertTitle}
+          message={COPY.brewLogList.syncAlert}
+          compact
+          action={
+            <ToneButton variant="ghost" onClick={() => setSyncAlertDismissed(true)} aria-label="✕">
+              ✕
+            </ToneButton>
+          }
+        />
       )}
-      {!data?.items?.length ? (
+
+      {isLoading ? (
+        <ToneStateCard state="loading" title={COPY.brewLogList.loading} live>
+          <div className="shot-row-list brew-log-loading-list" aria-hidden="true">
+            {[1, 2, 3].map((i) => (
+              <ShotRowSkeleton key={i} />
+            ))}
+          </div>
+        </ToneStateCard>
+      ) : error ? (
+        <ToneStateCard
+          state="error"
+          title={COPY.brewLogList.loadError}
+          message={COPY.brewLogList.retryBody}
+          action={
+            <ToneButton variant="edit" onClick={() => refetch()}>
+              {COPY.actions.retry}
+            </ToneButton>
+          }
+        />
+      ) : !data?.items?.length ? (
         <div data-testid="fresh-household-empty-brew-log">
-          <EmptyState
+          <ImmersiveEmptyState
             icon={<span aria-hidden="true" className="text-3xl">☕</span>}
             title={COPY.brewLogList.emptyTitle}
             description={COPY.brewLogList.emptyBody}
+            action={<LogShotAction variant="empty" />}
           />
         </div>
       ) : (
         <>
-          <div ref={cardListRef} data-testid="brew-log-list" className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div ref={cardListRef} data-testid="brew-log-list" className="brew-log-card-grid">
             {data.items.map((entry) => (
               <ShotCard
                 data-testid="brew-log-entry"
                 key={entry.shot_id}
                 shot={entry}
-                variant="list-card"
+                variant="summary"
                 onMouseEnter={() => {
                   queryClient.prefetchQuery({
                     queryKey: brewLogDetailQueryKey(entry.shot_id, activeHouseholdId),
@@ -122,14 +177,15 @@ function BrewLogListPage() {
               if (isPlaceholderData) return
               setSearchParams({ page: String(next) })
             }}
-            className="mt-4"
           />
         </>
       )}
 
-      {/* Add shot FAB — portalled to document.body so backdrop-filter on #main-content
-          does not create a new containing block and break position:fixed */}
-      <LogShotAction variant="fab" />
-    </TonePageWrapper>
+      <LogShotAction
+        variant="fab"
+        ref={fabRef}
+        onMouseDown={() => fabRef.current && pressFeedback(fabRef.current)}
+      />
+    </ImmersiveListShell>
   )
 }
