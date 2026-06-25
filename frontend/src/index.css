@@ -3752,13 +3752,17 @@ select.input-styled,
 
   @media (min-width: 1024px) {
     .brew-log-add-form__main {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 20rem);
+      grid-template-columns: minmax(0, 1fr) minmax(24rem, 1fr);
       align-items: start;
       gap: 1.5rem;
     }
 
     .brew-log-add-form__compass-section {
       align-self: start;
+    }
+
+    .brew-log-add-form__compass-section .kk-compass-panel {
+      padding: 1rem;
     }
   }
 
