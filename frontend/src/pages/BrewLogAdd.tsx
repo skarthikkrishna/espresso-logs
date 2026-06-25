@@ -295,7 +295,6 @@ function BrewLogAddPage() {
   if (invError) return (
     <FormPageShell
       backTo="/brew-log"
-      eyebrow="Brew log"
       title={COPY.brewLogAdd.title}
       subtitle={COPY.brewLogAdd.loadErrorBody}
       errorSummary={COPY.brewLogAdd.loadError}
@@ -315,7 +314,6 @@ function BrewLogAddPage() {
     <div ref={routeRef} data-testid="motion-route-boundary">
       <FormPageShell
         backTo="/brew-log"
-        eyebrow="Brew log"
         title={COPY.brewLogAdd.title}
         subtitle="Record the recipe, extraction, and tasting notes for this shot."
         errorSummary={errorSummary || undefined}
@@ -429,6 +427,81 @@ function BrewLogAddPage() {
                   </ToneSelect>
                 </div>
             </EntityFormSection>
+
+            <ToneButton
+              variant="ghost"
+              type="button"
+              onClick={() => setAdvancedOpen(v => !v)}
+              aria-expanded={advancedOpen}
+              aria-controls="advanced-fields"
+              className="brew-log-add-form__advanced-toggle"
+            >
+              {advancedOpen ? COPY.brewLog.fewerOptions : COPY.brewLog.moreOptions}
+              <span aria-hidden="true">{advancedOpen ? '↑' : '↓'}</span>
+            </ToneButton>
+
+            <div id="advanced-fields" hidden={!advancedOpen}>
+              <EntityFormSection title="Advanced details">
+                  <div className="brew-log-add-form__field-grid brew-log-add-form__field-grid--two">
+                    <ToneSelect
+                      label="Machine"
+                      id="brew-log-machine"
+                      value={machineId}
+                      onChange={e => { markDirty('machineId'); setMachineId(e.target.value) }}
+                      disabled={hardwareIsLoading}
+                    >
+                      <option value="">{COPY.brewLogAdd.selectMachine}</option>
+                      {machines.map(m => (
+                        <option key={m.hardware_id} value={m.hardware_id}>{m.name}</option>
+                      ))}
+                    </ToneSelect>
+
+                    <ToneSelect
+                      label="Grinder"
+                      id="brew-log-grinder"
+                      value={grinderId}
+                      onChange={e => { markDirty('grinderId'); setGrinderId(e.target.value) }}
+                      disabled={hardwareIsLoading}
+                    >
+                      <option value="">{COPY.brewLogAdd.selectGrinder}</option>
+                      {grinders.map(g => (
+                        <option key={g.hardware_id} value={g.hardware_id}>{g.name}</option>
+                      ))}
+                    </ToneSelect>
+                  </div>
+
+                  <div className="brew-log-add-form__field-grid brew-log-add-form__field-grid--two">
+                    <ToneInput
+                      label="Grind setting"
+                      id="brew-log-grind-setting"
+                      type="text"
+                      value={grindSetting}
+                      onChange={(e) => { markDirty('grindSetting'); setGrindSetting(e.target.value) }}
+                    />
+
+                    <ToneSelect
+                      label="Storage method"
+                      id="brew-log-storage-method"
+                      value={storageMethod}
+                      onChange={e => { markDirty('storageMethod'); setStorageMethod(e.target.value) }}
+                      disabled={hardwareIsLoading}
+                    >
+                      <option value="">{COPY.brewLogAdd.selectStorage}</option>
+                      {storageItems.map(h => (
+                        <option key={h.hardware_id} value={h.name}>{h.name}</option>
+                      ))}
+                    </ToneSelect>
+                  </div>
+
+                  <ToneTextarea
+                    label="Notes"
+                    id="brew-log-notes"
+                    rows={3}
+                    value={notes}
+                    onChange={(e) => { markDirty('notes'); setNotes(e.target.value) }}
+                  />
+              </EntityFormSection>
+            </div>
           </div>
 
           <EntityFormSection title={COPY.brewLogAdd.extractionCompass} className="brew-log-add-form__compass-section">
@@ -454,81 +527,6 @@ function BrewLogAddPage() {
                 selectedTaste={tasteSummary}
               />
             </div>
-          </EntityFormSection>
-        </div>
-
-        <ToneButton
-          variant="ghost"
-          type="button"
-          onClick={() => setAdvancedOpen(v => !v)}
-          aria-expanded={advancedOpen}
-          aria-controls="advanced-fields"
-          className="brew-log-add-form__advanced-toggle"
-        >
-          {advancedOpen ? COPY.brewLog.fewerOptions : COPY.brewLog.moreOptions}
-          <span aria-hidden="true">{advancedOpen ? '↑' : '↓'}</span>
-        </ToneButton>
-
-        <div id="advanced-fields" hidden={!advancedOpen}>
-          <EntityFormSection title="Advanced details">
-              <div className="brew-log-add-form__field-grid brew-log-add-form__field-grid--two">
-                <ToneSelect
-                  label="Machine"
-                  id="brew-log-machine"
-                  value={machineId}
-                  onChange={e => { markDirty('machineId'); setMachineId(e.target.value) }}
-                  disabled={hardwareIsLoading}
-                >
-                  <option value="">{COPY.brewLogAdd.selectMachine}</option>
-                  {machines.map(m => (
-                    <option key={m.hardware_id} value={m.hardware_id}>{m.name}</option>
-                  ))}
-                </ToneSelect>
-
-                <ToneSelect
-                  label="Grinder"
-                  id="brew-log-grinder"
-                  value={grinderId}
-                  onChange={e => { markDirty('grinderId'); setGrinderId(e.target.value) }}
-                  disabled={hardwareIsLoading}
-                >
-                  <option value="">{COPY.brewLogAdd.selectGrinder}</option>
-                  {grinders.map(g => (
-                    <option key={g.hardware_id} value={g.hardware_id}>{g.name}</option>
-                  ))}
-                </ToneSelect>
-              </div>
-
-              <div className="brew-log-add-form__field-grid brew-log-add-form__field-grid--two">
-                <ToneInput
-                  label="Grind setting"
-                  id="brew-log-grind-setting"
-                  type="text"
-                  value={grindSetting}
-                  onChange={(e) => { markDirty('grindSetting'); setGrindSetting(e.target.value) }}
-                />
-
-                <ToneSelect
-                  label="Storage method"
-                  id="brew-log-storage-method"
-                  value={storageMethod}
-                  onChange={e => { markDirty('storageMethod'); setStorageMethod(e.target.value) }}
-                  disabled={hardwareIsLoading}
-                >
-                  <option value="">{COPY.brewLogAdd.selectStorage}</option>
-                  {storageItems.map(h => (
-                    <option key={h.hardware_id} value={h.name}>{h.name}</option>
-                  ))}
-                </ToneSelect>
-              </div>
-
-              <ToneTextarea
-                label="Notes"
-                id="brew-log-notes"
-                rows={3}
-                value={notes}
-                onChange={(e) => { markDirty('notes'); setNotes(e.target.value) }}
-              />
           </EntityFormSection>
         </div>
       </FormPageShell>
