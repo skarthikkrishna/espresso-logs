@@ -91,7 +91,16 @@ export default function ExtractionCompassPanel({
 
   return (
     <div className="kk-compass-panel" role="group" aria-labelledby="extraction-compass-label">
-      <span id="extraction-compass-label" className="sr-only">{COPY.brewLogAdd.extractionCompass}</span>
+      <div className="kk-compass-panel__header">
+        <div>
+          <p className="kk-compass-panel__eyebrow">Add shot helper</p>
+          <h2 id="extraction-compass-label" className="kk-compass-panel__title">{COPY.brewLogAdd.extractionCompass}</h2>
+        </div>
+        <ul className="kk-compass-panel__legend" aria-label="Marker legend">
+          <li><span className="kk-compass-panel__legend-symbol kk-compass-panel__legend-symbol--recipe" aria-hidden="true" /> Recipe diagnosis</li>
+          <li><span className="kk-compass-panel__legend-symbol kk-compass-panel__legend-symbol--taste" aria-hidden="true" /> Your taste</li>
+        </ul>
+      </div>
       <div className="kk-compass-panel__body">
         <div className="kk-compass-panel__instrument">
           {!use3DInstrument ? (
@@ -128,20 +137,6 @@ export default function ExtractionCompassPanel({
             selectedTaste={selectedTaste}
             zoneBoundaries={zoneBoundaries}
           />
-          <div className="kk-compass-taste-note" aria-label={COPY.compass.subjectiveSelectorLabel}>
-            <p className="kk-compass-taste-note__summary">
-              <span>{COPY.compass.subjectiveTasteLabel}:</span>{' '}
-              <strong>{model.selectedTaste || COPY.compass.noTasteNote}</strong>
-            </p>
-            {model.selectedTaste && (
-              <button type="button" className="kk-compass-taste-note__clear" onClick={() => selectTaste('')}>
-                {COPY.compass.clearTasteNote}
-              </button>
-            )}
-            {model.computedTaste && model.selectedTaste && model.computedTaste === model.selectedTaste && (
-              <p className="kk-compass-taste-note__agreement">{COPY.compass.agreementNote}</p>
-            )}
-          </div>
         </div>
       </div>
     </div>

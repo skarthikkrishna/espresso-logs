@@ -1,9 +1,8 @@
 import { useRef } from 'react'
 import { gsap } from 'gsap'
 import { useGSAP } from '@gsap/react'
-import { getBrewRatio, getCompassZoneTaste } from '../utils/extractionCompass'
-import { getZoneGuidance } from '../utils/zoneGuidance'
 import type { ZoneBoundaries } from '../utils/zoneBoundaries'
+import { buildExtractionCompassViewModel } from '../utils/extractionCompassViewModel'
 import { usePrefersReducedMotion } from '../lib/motion/usePrefersReducedMotion'
 import { COPY } from '../copy'
 
@@ -17,44 +16,10 @@ interface ExtractionReadoutProps {
   zoneBoundaries?: ZoneBoundaries
 }
 
-function zoneFamily(zone: string | null): 'under' | 'balanced' | 'over' | 'neutral' {
-  if (!zone) return 'neutral'
-  if (zone.includes('sour') || zone === 'Weak & sweet') return 'under'
-  if (zone === 'Sweet & balanced') return 'balanced'
-  return 'over'
-}
-
-function formatRatio(ratio: number | null): string | null {
-  return ratio == null ? null : `1:${ratio.toFixed(1)}`
-}
-
 export default function ExtractionReadout({ doseG, yieldG, timeSec, selectedTaste, zoneBoundaries }: ExtractionReadoutProps) {
-  const guidanceRef = useRef<HTMLSpanElement>(null)
+  const guidanceRef = useRef<HTMLParagraphElement>(null)
   const prefersReducedMotion = usePrefersReducedMotion()
-  const ratio = getBrewRatio(doseG, yieldG)
-  const ratioText = formatRatio(ratio)
-  const zone = ratioText && timeSec != null ? getCompassZoneTaste(doseG, yieldG, timeSec, zoneBoundaries) : null
-  const guidance = zone ? getZoneGuidance(zone) : null
-  const selectedGuidance = selectedTaste ? getZoneGuidance(selectedTaste) : null
-  const nullDoseFallback = (doseG == null || doseG === 0) && yieldG != null
-  const personalNote = zone && selectedTaste && zone !== selectedTaste
-    ? COPY.compass.personalNote(zone.toLowerCase(), selectedTaste.toLowerCase())
-    : null
-  const helper =
-    zone && selectedTaste && zone === selectedTaste
-      ? `Recipe and taste agree: ${zone}. ${guidance ?? ''}`.trim()
-      : zone && selectedTaste && personalNote
-        ? `Recipe suggests ${zone}. You tasted ${selectedTaste}.`
-        : zone
-          ? `Recipe suggests ${zone}. ${guidance ?? ''}`.trim()
-          : selectedTaste
-            ? `Your taste note is ${selectedTaste}. ${selectedGuidance ?? ''}`.trim()
-            : nullDoseFallback
-              ? COPY.compass.nullDose
-              : ratioText
-                ? COPY.compass.promptTime
-                : COPY.compass.promptDoseYield
-  const family = zoneFamily(zone)
+  const model = buildExtractionCompassViewModel({ doseG, yieldG, timeSec, selectedTaste, zoneBoundaries })
 
   useGSAP(
     () => {
@@ -66,37 +31,32 @@ export default function ExtractionReadout({ doseG, yieldG, timeSec, selectedTast
       }
       gsap.fromTo(guidance, { opacity: 0.42, y: 4 }, { opacity: 1, y: 0, duration: 0.28, ease: 'power2.out' })
     },
-    { dependencies: [helper, prefersReducedMotion] },
+    { dependencies: [model.primaryGuidanceText, prefersReducedMotion] },
   )
 
   return (
-    <div id="extraction-compass-live-readout" className="kk-extraction-readout" data-testid="extraction-readout" aria-live="polite">
-      <div className="kk-extraction-readout__metric">
-        <span className="kk-extraction-readout__eyebrow">{COPY.brewLogDetail.extractionReadout.ratioLabel}</span>
-        <span className="kk-extraction-readout__value">{ratioText ?? '—'}</span>
+    <section id="extraction-compass-live-readout" className="kk-extraction-readout" data-testid="extraction-readout" aria-labelledby="extraction-readout-title">
+      <p className="kk-extraction-readout__eyebrow" id="extraction-readout-title">Live guidance</p>
+      <div className="kk-extraction-readout__metric-grid" aria-label="Current extraction state">
+        <div className="kk-extraction-readout__metric">
+          <span className="kk-extraction-readout__metric-label">{COPY.brewLogDetail.extractionReadout.ratioLabel}</span>
+          <span className="kk-extraction-readout__metric-value">{model.ratioText ?? '—'}</span>
+        </div>
+        <div className="kk-extraction-readout__metric">
+          <span className="kk-extraction-readout__metric-label">{COPY.compass.computedDiagnosisLabel}</span>
+          <span className="kk-extraction-readout__metric-value">{model.computedTaste ?? (model.timeSec == null ? COPY.brewLogDetail.extractionReadout.timeNeeded : COPY.brewLogDetail.extractionReadout.unavailable)}</span>
+        </div>
+        <div className="kk-extraction-readout__metric">
+          <span className="kk-extraction-readout__metric-label">{COPY.compass.subjectiveTasteLabel}</span>
+          <span className="kk-extraction-readout__metric-value">{model.selectedTaste || COPY.compass.noTasteNote}</span>
+        </div>
       </div>
-      <div className="kk-extraction-readout__zone">
-        <span className="kk-extraction-readout__eyebrow">{COPY.compass.computedDiagnosisLabel}</span>
-        <span className={`kk-zone-chip kk-zone-chip--${family}`}>
-          {zone ?? (timeSec == null ? COPY.brewLogDetail.extractionReadout.timeNeeded : COPY.brewLogDetail.extractionReadout.unavailable)}
-        </span>
-        <span ref={guidanceRef} className="kk-extraction-readout__guidance">{helper}</span>
-        {selectedTaste && (
-          <span className="kk-extraction-readout__note">
-            {COPY.compass.subjectiveTasteReadout(selectedTaste)}
-          </span>
-        )}
-        {personalNote && (
-          <span className="kk-extraction-readout__note">
-            {personalNote}
-          </span>
-        )}
-        {zone && selectedTaste && zone !== selectedTaste && selectedGuidance && (
-          <span className="kk-extraction-readout__note">
-            {selectedGuidance}
-          </span>
-        )}
-      </div>
-    </div>
+      <p ref={guidanceRef} className="kk-extraction-readout__guidance" aria-live="polite">
+        {model.primaryGuidanceText}
+      </p>
+      {model.actionText && (
+        <span className="kk-extraction-readout__action-chip">Single next correction: {model.actionText}</span>
+      )}
+    </section>
   )
 }

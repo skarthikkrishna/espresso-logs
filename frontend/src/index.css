@@ -5661,3 +5661,484 @@ html:has([data-tone="beige"]) .kk-nav-profile-btn:hover {
 .dashboard-panel .shot-card-list:hover {
   box-shadow: var(--kk-card-surface-shadow);
 }
+
+/* spec-043 compass redesign — approved matrix-first production build */
+[data-tone="beige"] .brew-log-add-form {
+  --kk-compass-panel-bg: #faf5ef;
+  --kk-compass-instrument-readable-bg: #f7ead8;
+  --kk-compass-title-text: #2d1608;
+  --kk-compass-body-text: #2d1608;
+  --kk-compass-muted-text: #5c3d1e;
+  --kk-compass-tertiary-text: #6b4a2f;
+  --kk-compass-zone-label-bg: #fff7ed;
+  --kk-compass-computed-dot: #2d1608;
+  --kk-compass-computed-ring: #92400e;
+  --kk-compass-computed-marker-bg: #fef3c7;
+  --kk-compass-taste-marker: #075985;
+  --kk-compass-taste-marker-bg: #e0f2fe;
+  --kk-compass-cell-border: rgba(120, 53, 15, 0.32);
+  --kk-compass-grid-line: rgba(255, 247, 237, 0.54);
+  --kk-compass-focus-ring: rgba(146, 64, 14, 0.36);
+  --kk-compass-matrix-field:
+    radial-gradient(circle at 50% 52%, rgba(250, 204, 21, 0.78) 0 18%, rgba(250, 204, 21, 0.42) 27%, transparent 43%),
+    linear-gradient(90deg, rgba(14, 165, 233, 0.72) 0%, rgba(125, 211, 252, 0.48) 27%, rgba(250, 204, 21, 0.30) 50%, rgba(245, 158, 11, 0.56) 72%, rgba(194, 65, 12, 0.76) 100%),
+    linear-gradient(180deg, rgba(120, 53, 15, 0.50) 0%, rgba(234, 179, 8, 0.18) 44%, rgba(14, 116, 144, 0.42) 100%),
+    #f7ead8;
+}
+
+[data-tone="dark"] .brew-log-add-form {
+  --kk-compass-panel-bg: #221c16;
+  --kk-compass-instrument-readable-bg: #18100a;
+  --kk-compass-title-text: #fff7ed;
+  --kk-compass-body-text: #f5e6d3;
+  --kk-compass-muted-text: #d6cbbf;
+  --kk-compass-tertiary-text: #c9b89e;
+  --kk-compass-zone-label-bg: #18100a;
+  --kk-compass-computed-dot: #fff7ed;
+  --kk-compass-computed-ring: #fbbf24;
+  --kk-compass-computed-marker-bg: #4a2e0b;
+  --kk-compass-taste-marker: #67e8f9;
+  --kk-compass-taste-marker-bg: #082f49;
+  --kk-compass-cell-border: rgba(245, 230, 211, 0.22);
+  --kk-compass-grid-line: rgba(255, 247, 237, 0.20);
+  --kk-compass-focus-ring: rgba(251, 191, 36, 0.36);
+  --kk-compass-matrix-field:
+    radial-gradient(circle at 50% 52%, rgba(251, 191, 36, 0.62) 0 16%, rgba(251, 191, 36, 0.30) 29%, transparent 45%),
+    linear-gradient(90deg, rgba(6, 182, 212, 0.58) 0%, rgba(21, 94, 117, 0.50) 27%, rgba(180, 83, 9, 0.32) 50%, rgba(180, 83, 9, 0.50) 73%, rgba(127, 29, 29, 0.66) 100%),
+    linear-gradient(180deg, rgba(120, 53, 15, 0.62) 0%, rgba(24, 16, 10, 0.18) 48%, rgba(8, 47, 73, 0.62) 100%),
+    #18100a;
+}
+
+.kk-form-page .kk-compass-panel {
+  gap: 1rem;
+  border: 1px solid var(--kaapi-content-border);
+  border-radius: 18px;
+  background: var(--kk-compass-panel-bg);
+  box-shadow: var(--kaapi-content-shadow);
+  padding: clamp(0.875rem, 2vw, 1.75rem);
+}
+
+.kk-compass-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.kk-compass-panel__eyebrow,
+.kk-extraction-readout__eyebrow {
+  margin: 0 0 0.375rem;
+  color: var(--kk-compass-muted-text);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.kk-compass-panel__title {
+  margin: 0;
+  color: var(--kk-compass-title-text);
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 1rem + 1vw, 1.75rem);
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+}
+
+.kk-compass-panel__legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--kk-compass-body-text);
+  font-size: 0.82rem;
+  line-height: 1.3;
+}
+
+.kk-compass-panel__legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid var(--kaapi-content-border);
+  border-radius: 999px;
+  background: var(--kk-compass-instrument-readable-bg);
+  padding: 0.375rem 0.625rem;
+  white-space: nowrap;
+}
+
+.kk-compass-panel__legend-symbol {
+  display: inline-grid;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 1rem;
+}
+
+.kk-compass-panel__legend-symbol--recipe {
+  border: 2px solid var(--kk-compass-computed-ring);
+  border-radius: 999px;
+}
+
+.kk-compass-panel__legend-symbol--recipe::after {
+  content: "";
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 999px;
+  background: var(--kk-compass-computed-dot);
+}
+
+.kk-compass-panel__legend-symbol--taste {
+  border: 2px solid var(--kk-compass-taste-marker);
+  border-radius: 5px;
+  background: var(--kk-compass-taste-marker-bg);
+  transform: rotate(45deg) scale(0.82);
+}
+
+.kk-compass-panel__body,
+.kk-compass-panel__instrument,
+.kk-compass-panel__readout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.kk-form-page .kk-compass-panel__instrument {
+  overflow: visible;
+  border: 1px solid var(--kk-compass-instrument-border);
+  border-radius: 12px;
+  background: var(--kk-compass-instrument-readable-bg);
+  box-shadow: none;
+  padding: clamp(0.75rem, 1.8vw, 1.5rem);
+}
+
+.kk-compass-chart {
+  display: grid;
+  gap: 0.625rem;
+  min-width: 0;
+}
+
+.kk-compass-chart__axis-label-row,
+.kk-compass-chart__matrix-wrap,
+.kk-compass-chart__x-axis {
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr);
+  gap: 0.875rem;
+  align-items: center;
+  color: var(--kk-compass-muted-text);
+  font-size: clamp(0.8rem, 0.65rem + 0.35vw, 1rem);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.kk-compass-chart__matrix-wrap {
+  align-items: stretch;
+}
+
+.kk-compass-chart__y-axis {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.kk-compass-chart__matrix {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(7.5rem, 1fr));
+  gap: clamp(0.375rem, 1vw, 0.875rem);
+  min-height: min(118vw, 35rem);
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--kk-compass-matrix-field);
+}
+
+.kk-compass-chart__grid-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  overflow: hidden;
+  border: 1px solid var(--kk-compass-cell-border);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--kk-compass-title-text);
+  cursor: pointer;
+  font: inherit;
+  padding: clamp(0.625rem, 1.6vw, 1.625rem);
+  text-align: center;
+  transition: transform var(--motion-duration-micro) var(--motion-ease-standard), border-color var(--motion-duration-micro) var(--motion-ease-standard), box-shadow var(--motion-duration-micro) var(--motion-ease-standard);
+}
+
+.kk-compass-chart__grid-cell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--kk-compass-grid-line);
+  pointer-events: none;
+}
+
+.kk-compass-chart__grid-cell:hover {
+  transform: translateY(-1px);
+}
+
+.kk-compass-chart__grid-cell[data-computed="true"] {
+  box-shadow: inset 0 0 0 2px var(--kk-compass-computed-ring);
+}
+
+.kk-compass-chart__grid-cell[data-selected="true"] {
+  box-shadow: inset 0 0 0 3px var(--kk-compass-taste-marker);
+}
+
+.kk-compass-chart__grid-cell:focus-visible {
+  outline: 3px solid var(--kk-compass-focus-ring);
+  outline-offset: 3px;
+}
+
+.kk-compass-chart__cell-label {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  min-height: 2.375rem;
+  max-width: 9rem;
+  border: 1px solid var(--kaapi-content-border);
+  border-radius: 999px;
+  background: var(--kk-compass-zone-label-bg);
+  color: var(--kk-compass-title-text);
+  box-shadow: 0 8px 22px rgba(45, 22, 8, 0.14);
+  font-size: clamp(0.82rem, 3.4vw, 1rem);
+  font-weight: 900;
+  line-height: 1.08;
+  padding: 0.5rem 0.625rem;
+}
+
+.kk-compass-chart__recipe-marker-wrap {
+  position: absolute;
+  z-index: 3;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.kk-compass-chart__recipe-marker {
+  display: grid;
+  place-items: center;
+  width: clamp(2.125rem, 3vw, 2.875rem);
+  height: clamp(2.125rem, 3vw, 2.875rem);
+  border: 3px solid var(--kk-compass-computed-ring);
+  border-radius: 999px;
+  background: var(--kk-compass-computed-marker-bg);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--kk-compass-computed-ring) 22%, transparent);
+}
+
+.kk-compass-chart__recipe-marker::after {
+  content: "";
+  width: clamp(0.6875rem, 1vw, 0.9375rem);
+  height: clamp(0.6875rem, 1vw, 0.9375rem);
+  border-radius: 999px;
+  background: var(--kk-compass-computed-dot);
+}
+
+.kk-compass-chart__recipe-tag,
+.kk-compass-chart__taste-tag {
+  position: absolute;
+  z-index: 4;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: clamp(0.64rem, 0.55rem + 0.28vw, 0.86rem);
+  font-weight: 1000;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  padding: 0.375rem 0.5625rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.kk-compass-chart__recipe-tag {
+  left: 1.5rem;
+  top: -1.8rem;
+  background: var(--kk-compass-computed-marker-bg);
+  color: var(--kk-compass-computed-ring);
+}
+
+.kk-compass-chart__taste-marker {
+  position: absolute;
+  z-index: 2;
+  right: 0.875rem;
+  top: 0.875rem;
+  width: clamp(1.4375rem, 2.2vw, 2.125rem);
+  height: clamp(1.4375rem, 2.2vw, 2.125rem);
+  border: 3px solid var(--kk-compass-taste-marker);
+  border-radius: 6px;
+  background: var(--kk-compass-taste-marker-bg);
+  transform: rotate(45deg);
+}
+
+.kk-compass-chart__taste-tag {
+  right: 2.625rem;
+  top: 0.875rem;
+  background: var(--kk-compass-taste-marker-bg);
+  color: var(--kk-compass-taste-marker);
+}
+
+.kk-compass-chart__out-of-range,
+.kk-compass-chart__null-dose {
+  border-radius: 999px;
+  background: var(--kk-compass-computed-marker-bg);
+  color: var(--kk-compass-computed-ring);
+  font-size: 0.75rem;
+  font-weight: 900;
+  padding: 0.35rem 0.55rem;
+}
+
+.kk-compass-chart__out-of-range {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 0.25rem);
+  transform: translateX(-50%);
+}
+
+.kk-compass-chart__null-dose {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 4;
+  margin: 0;
+  transform: translate(-50%, -50%);
+}
+
+.kk-compass-chart__x-axis-values {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  color: var(--kk-compass-tertiary-text);
+  font-size: clamp(0.8rem, 0.65rem + 0.35vw, 1rem);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-align: center;
+  text-transform: none;
+}
+
+.kk-form-page .kk-extraction-readout {
+  display: grid;
+  gap: 0.875rem;
+  width: 100%;
+  border: 1px solid var(--kaapi-content-border);
+  border-radius: 12px;
+  background: var(--kk-compass-instrument-readable-bg);
+  color: var(--kk-compass-body-text);
+  padding: clamp(0.875rem, 2vw, 1.25rem);
+}
+
+.kk-form-page .kk-extraction-readout__metric-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.625rem;
+}
+
+.kk-form-page .kk-extraction-readout__metric {
+  display: grid;
+  gap: 0.3125rem;
+  border: 1px solid var(--kaapi-content-border);
+  border-radius: 12px;
+  background: var(--kk-compass-panel-bg);
+  padding: 0.75rem;
+}
+
+.kk-form-page .kk-extraction-readout__metric-label {
+  color: var(--kk-compass-muted-text);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.kk-form-page .kk-extraction-readout__metric-value {
+  color: var(--kk-compass-title-text);
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.kk-form-page .kk-extraction-readout__guidance {
+  margin: 0;
+  color: var(--kk-compass-body-text);
+  font-size: clamp(1.05rem, 0.95rem + 0.45vw, 1.28rem);
+  font-weight: 760;
+  line-height: 1.42;
+}
+
+.kk-form-page .kk-extraction-readout__action-chip {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--kk-compass-computed-ring);
+  border-radius: 999px;
+  background: var(--kk-compass-computed-marker-bg);
+  color: var(--kk-compass-computed-ring);
+  font-weight: 900;
+  padding: 0.5rem 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .kk-form-page .kk-extraction-readout__metric-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 721px) {
+  .kk-compass-chart__matrix {
+    grid-template-rows: repeat(3, minmax(170px, 1fr));
+    min-height: clamp(560px, 58vw, 820px);
+  }
+
+  .kk-compass-chart__cell-label {
+    min-height: 3rem;
+    max-width: 15rem;
+    font-size: clamp(1.05rem, 1.15vw, 1.35rem);
+    padding: 0.75rem 1.125rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .kk-compass-panel__body {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .kk-compass-panel__header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .kk-compass-panel__legend {
+    justify-content: flex-start;
+  }
+
+  .kk-compass-chart__axis-label-row,
+  .kk-compass-chart__matrix-wrap,
+  .kk-compass-chart__x-axis {
+    grid-template-columns: 1fr;
+  }
+
+  .kk-compass-chart__y-axis {
+    display: none;
+  }
+}
+
+@media (min-width: 640px) {
+  .kk-form-page .kk-extraction-readout {
+    grid-template-columns: 1fr;
+  }
+}

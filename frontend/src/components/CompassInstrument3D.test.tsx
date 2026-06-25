@@ -16,10 +16,13 @@ vi.mock('../lib/motion/useThreeSurface', () => ({
 
 const model: ExtractionCompassViewModel = {
   ratio: 2,
+  ratioText: '1:2.0',
   timeSec: 30,
   computedTaste: 'Sweet & balanced',
   selectedTaste: 'Sour',
   guidanceText: 'Ideal extraction — ratio 1.7–2.3, time 25–35 s. Keep these parameters.',
+  primaryGuidanceText: 'At 1:2.0, the recipe lands in Sweet & balanced and your taste is Sour — grind finer for the next shot.',
+  actionText: 'grind finer',
   personalNote: null,
   missingInputState: null,
   timeOutOfRange: null,

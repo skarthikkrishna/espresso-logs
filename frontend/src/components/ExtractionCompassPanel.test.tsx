@@ -19,7 +19,7 @@ describe('ExtractionCompassPanel', () => {
     )
 
     expect(screen.queryByTestId('compass-3d-instrument')).not.toBeInTheDocument()
-    expect(document.querySelector('.kk-compass-chart__svg')).not.toBeNull()
+    expect(screen.getByTestId('compass-gradient-matrix')).toBeInTheDocument()
     expect(screen.getByTestId('extraction-readout')).toBeInTheDocument()
   })
 
@@ -36,8 +36,8 @@ describe('ExtractionCompassPanel', () => {
 
     expect(screen.getByText(/static compass/i)).toBeInTheDocument()
     expect(screen.getByText('Computed from recipe')).toBeInTheDocument()
-    expect(screen.getByText('You tasted: Sweet & balanced')).toBeInTheDocument()
-    expect(screen.getByText(/Your parameters suggest bitter & astringent/i)).toBeInTheDocument()
+    expect(screen.getByText('You tasted')).toBeInTheDocument()
+    expect(screen.getByText(/At 1:2.7, the recipe lands in Bitter & astringent and your taste is Sweet & balanced/i)).toBeInTheDocument()
   })
 
   it('selects subjective taste directly on the compass grid by pointer and keyboard', () => {
@@ -54,17 +54,15 @@ describe('ExtractionCompassPanel', () => {
     expect(screen.getByRole('gridcell', { name: /Astringent & sour/i })).toHaveFocus()
   })
 
-  it('exposes a clear action for the subjective taste note', () => {
-    const onSelectTaste = vi.fn()
+  it('does not render the removed separate taste note controls', () => {
     renderCompassPanel(
       <ExtractionCompassPanel
         selectedTaste="Sour"
-        onSelectTaste={onSelectTaste}
         forceSvgFallback
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: 'Clear taste note' }))
-    expect(onSelectTaste).toHaveBeenCalledWith('')
+    expect(screen.queryByRole('button', { name: 'Clear taste note' })).not.toBeInTheDocument()
+    expect(screen.getByRole('gridcell', { name: /^Sour, selected as your taste/i })).toBeInTheDocument()
   })
 })

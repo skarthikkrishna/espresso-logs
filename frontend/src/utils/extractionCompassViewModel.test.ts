@@ -24,6 +24,7 @@ describe('buildExtractionCompassViewModel', () => {
     expect(model.computedTaste).toBeNull()
     expect(model.selectedTaste).toBe('Sour')
     expect(model.guidanceText).toMatch(/under-extracted/i)
+    expect(model.primaryGuidanceText).toMatch(/You tasted Sour — grind finer/i)
   })
 
   it('ignores unrecognized saved taste strings for zone semantics', () => {
