@@ -39,6 +39,8 @@ export { MarkdownProse } from './MarkdownProse'
 
 // Action
 export { ToneButton } from './ToneButton'
+export { EntityFormActions } from './EntityFormActions'
+export type { EntityFormActionsProps } from './EntityFormActions'
 export { LogShotAction } from './actions/LogShotAction'
 export type { LogShotActionVariant } from './actions/LogShotAction'
 export { AddBagAction } from './actions/AddBagAction'
