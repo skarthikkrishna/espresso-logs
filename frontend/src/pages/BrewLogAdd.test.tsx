@@ -28,6 +28,7 @@ import { MemoryRouter } from 'react-router-dom'
 // ---------------------------------------------------------------------------
 
 const searchParamsMock = vi.hoisted(() => ({ value: new URLSearchParams() }))
+const routeEnterMock = vi.hoisted(() => vi.fn())
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
@@ -64,6 +65,12 @@ vi.mock('../api/brewLog', () => ({
 vi.mock('../contexts/AuthContext', () => ({
   useAuth: () => ({ activeHouseholdId: 'hh-1' }),
   useHouseholdQueryScope: () => 'hh-1',
+}))
+
+vi.mock('../lib/motion', () => ({
+  useKaapiMotion: () => ({
+    routeEnter: (target: Element) => routeEnterMock(target),
+  }),
 }))
 
 // ---------------------------------------------------------------------------
@@ -167,6 +174,20 @@ describe('BrewLogAdd', () => {
     expect(screen.getByLabelText('Grind setting')).toBeInTheDocument()
     expect(screen.getByLabelText('Storage method')).toBeInTheDocument()
     expect(screen.getByLabelText('Notes')).toBeInTheDocument()
+  })
+
+  it('does not replay the page enter animation while typing after load', async () => {
+    renderWithQuery(<BrewLogAdd />)
+
+    const doseInput = await screen.findByLabelText('Dose (g)')
+    await waitFor(() => {
+      expect(routeEnterMock).toHaveBeenCalledTimes(1)
+    })
+
+    fireEvent.change(doseInput, { target: { value: '18' } })
+
+    expect(doseInput).toHaveValue(18)
+    expect(routeEnterMock).toHaveBeenCalledTimes(1)
   })
 
   // ── Test 1: Basket select renders with hardware query options ─────────────

@@ -43,6 +43,7 @@ function BrewLogAddPage() {
   const queryClient = useQueryClient()
   const activeHouseholdId = useHouseholdQueryScope()
   const routeRef = useRef<HTMLDivElement>(null)
+  const hasPlayedRouteEnterRef = useRef(false)
   const { routeEnter } = useKaapiMotion({ scope: routeRef })
   const requestedBagId = searchParams.get('bag_id')?.trim() ?? ''
   const similarShotId = searchParams.get('similar_shot_id')?.trim() ?? ''
@@ -283,7 +284,9 @@ function BrewLogAddPage() {
   }
 
   useEffect(() => {
-    if (!invLoading && !invError && routeRef.current) routeEnter(routeRef.current)
+    if (hasPlayedRouteEnterRef.current || invLoading || invError || !routeRef.current) return
+    hasPlayedRouteEnterRef.current = true
+    routeEnter(routeRef.current)
   }, [invLoading, invError, routeEnter])
 
   const errorSummary = [
