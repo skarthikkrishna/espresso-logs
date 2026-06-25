@@ -10,11 +10,12 @@ from __future__ import annotations
 
 import logging
 import uuid
+from datetime import date
 from typing import Any, List
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.config import settings
 from app.deps import (
@@ -194,9 +195,14 @@ async def api_hardware_create(
 
 
 class _HardwareUpdateBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: str
     category: str | None = None
     maker: str | None = None
+    product_url: str | None = None
+    purchase_date: str | None = None
+    notes: str | None = None
 
 
 @router.put("/hardware/{hardware_id}", response_model=HardwareItemOut)
@@ -211,13 +217,36 @@ async def api_hardware_update(
         raise HTTPException(status_code=404, detail="Hardware item not found")
     if not body.name.strip():
         raise HTTPException(status_code=422, detail="Name is required")
+    fields_set = body.model_fields_set
+    if "category" in fields_set and body.category is None:
+        raise HTTPException(status_code=422, detail="Invalid category")
+    if body.category is not None and body.category not in _CATEGORIES:
+        raise HTTPException(status_code=422, detail="Invalid category")
+    if body.product_url:
+        product_url = body.product_url.strip()
+        scheme = urlparse(product_url).scheme
+        if scheme not in ("http", "https"):
+            raise HTTPException(status_code=422, detail="product_url must be http or https")
+    if body.purchase_date:
+        try:
+            date.fromisoformat(body.purchase_date)
+        except ValueError:
+            raise HTTPException(
+                status_code=422, detail="purchase_date must be ISO format (YYYY-MM-DD)"
+            )
 
     updated = dict(item)
     updated["Name"] = body.name.strip()
-    if body.maker is not None:
-        updated["Maker"] = body.maker.strip()
-    if body.category and body.category in _CATEGORIES:
+    if "category" in fields_set and body.category is not None:
         updated["Category"] = body.category
+    if "maker" in fields_set:
+        updated["Maker"] = (body.maker or "").strip()
+    if "product_url" in fields_set:
+        updated["Product_URL"] = (body.product_url or "").strip()
+    if "purchase_date" in fields_set:
+        updated["Purchase_Date"] = (body.purchase_date or "").strip()
+    if "notes" in fields_set:
+        updated["Notes"] = (body.notes or "").strip()
     await hardware_repo.upsert(updated)
     return _hw_to_out(updated)
 
