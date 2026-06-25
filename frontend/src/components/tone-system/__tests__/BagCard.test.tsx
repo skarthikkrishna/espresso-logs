@@ -26,7 +26,7 @@ function Wrapper({ children }: { children: React.ReactNode }) {
 }
 
 describe('BagCard', () => {
-  it('renders the card variant through EntityCard and catalog media', () => {
+  it('renders the card variant through EntityCard without Home media', () => {
     const { container } = render(
       <Wrapper>
         <BagCard bag={bag} variant="card" />
@@ -37,13 +37,15 @@ describe('BagCard', () => {
     expect(container.querySelector('.entity-card-eyebrow')).toHaveTextContent('Test Roaster')
     expect(container.querySelector('.entity-card-title')).toHaveTextContent('Test Bean')
     expect(container.querySelector('.entity-card-date')).toHaveTextContent('2d ago')
-    const img = screen.getByRole('img', { name: 'Test Roaster — Test Bean' })
-    expect(img).toHaveAttribute('src', '/static/catalog/test-bean.jpg')
-    expect(container.querySelector('.kk-tc-metric-chip')).toHaveTextContent('18g → 36g')
+    expect(screen.queryByRole('img', { name: 'Test Roaster — Test Bean' })).toBeNull()
+    expect(container.querySelector('.entity-card-figure')).toBeNull()
+    expect(container.querySelector('.kk-tc-metric-chip')).toBeNull()
+    expect(screen.getByText('Medium')).toBeInTheDocument()
+    expect(screen.queryByText('18g → 36g')).not.toBeInTheDocument()
     expect(screen.queryByText('TR')).not.toBeInTheDocument()
   })
 
-  it('uses EntityCard monogram fallback only when image_path is absent', () => {
+  it('uses no monogram fallback when image_path is absent', () => {
     const { container } = render(
       <Wrapper>
         <BagCard bag={{ ...bag, image_path: '' }} variant="card" />
@@ -51,10 +53,10 @@ describe('BagCard', () => {
     )
 
     expect(screen.queryByRole('img')).toBeNull()
-    expect(container.querySelector('.entity-card-monogram')).toHaveTextContent('TR')
+    expect(container.querySelector('.entity-card-monogram')).toBeNull()
   })
 
-  it('allows Dashboard to force monogram media without removing catalog image support', () => {
+  it('can still render explicitly requested monogram media for approved placeholders', () => {
     const { container } = render(
       <Wrapper>
         <BagCard bag={bag} variant="card" media="monogram" />
@@ -63,5 +65,29 @@ describe('BagCard', () => {
 
     expect(screen.queryByRole('img')).toBeNull()
     expect(container.querySelector('.entity-card-monogram')).toHaveTextContent('TR')
+  })
+
+  it('renders the row variant as one flat bag row with metadata and roast on separate rows', () => {
+    const { container } = render(
+      <Wrapper>
+        <BagCard
+          bag={{
+            ...bag,
+            roast_date: '2026-06-01',
+            status: 'Active',
+            catalog_id: 'cat-1',
+          }}
+          variant="row"
+          action={<button type="button">Finish bag</button>}
+        />
+      </Wrapper>
+    )
+
+    expect(container.querySelector('.bag-card-row')).toBeInTheDocument()
+    expect(container.querySelector('.bag-card-row .entity-card')).toBeNull()
+    expect(container.querySelector('.bag-card-row__meta')).toHaveTextContent('2026-06-01')
+    expect(screen.getByTestId('bag-status')).toHaveTextContent('Active')
+    expect(container.querySelector('.bag-card-row__chip-line')).toHaveTextContent('Medium')
+    expect(screen.getByRole('button', { name: 'Finish bag' })).toBeInTheDocument()
   })
 })

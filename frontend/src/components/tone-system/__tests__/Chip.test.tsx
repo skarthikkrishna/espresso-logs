@@ -5,6 +5,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
 import '../../../index.css'
 import { Chip, StatusChip } from '../Chip'
+import { eligibilityBadgeTone } from '../../../utils/eligibility'
 
 describe('Chip', () => {
   it('renders children', () => {
@@ -30,13 +31,13 @@ describe('Chip', () => {
   })
 
   it('renders "success" variant with correct modifier class', () => {
-    const { container } = render(<Chip variant="success">Good Espresso</Chip>)
+    const { container } = render(<Chip variant="success">God Shot</Chip>)
     const chip = container.firstChild as HTMLElement
     expect(chip.className).toContain('kk-tc-chip--success')
   })
 
   it('renders "brand" variant with correct modifier class', () => {
-    const { container } = render(<Chip variant="brand">God Shot</Chip>)
+    const { container } = render(<Chip variant="brand">Good Espresso</Chip>)
     const chip = container.firstChild as HTMLElement
     expect(chip.className).toContain('kk-tc-chip--brand')
   })
@@ -69,12 +70,12 @@ describe('Chip', () => {
   })
 
   it.each([
-    ['beige', 'God Shot', 'brand'],
-    ['beige', 'Good Espresso', 'success'],
+    ['beige', 'God Shot', 'success'],
+    ['beige', 'Good Espresso', 'brand'],
     ['beige', 'Passable', 'warning'],
     ['beige', 'Reject', 'danger'],
-    ['dark', 'God Shot', 'brand'],
-    ['dark', 'Good Espresso', 'success'],
+    ['dark', 'God Shot', 'success'],
+    ['dark', 'Good Espresso', 'brand'],
     ['dark', 'Passable', 'warning'],
     ['dark', 'Reject', 'danger'],
   ] as const)('computes a distinct %s rating chip color for %s', (tone, label, variant) => {
@@ -90,16 +91,24 @@ describe('Chip', () => {
     expect(getComputedStyle(chip).color).not.toBe('')
   })
 
-  it.each(['beige', 'dark'] as const)('keeps God Shot and Passable computed colors separate in %s tone', (tone) => {
+  it('maps shot-quality tiers to Aria contract semantic variants', () => {
+    expect(eligibilityBadgeTone('God Shot')).toBe('success')
+    expect(eligibilityBadgeTone('Good')).toBe('brand')
+    expect(eligibilityBadgeTone('Good Espresso')).toBe('brand')
+    expect(eligibilityBadgeTone('Passable')).toBe('warning')
+    expect(eligibilityBadgeTone('Reject')).toBe('danger')
+  })
+
+  it.each(['beige', 'dark'] as const)('keeps God Shot and Passable as their contract classes in %s tone', (tone) => {
     render(
       <div className={`kk-takeover-card kk-tc--${tone}`} data-testid={`${tone}-tone`}>
-        <Chip variant="brand" data-testid={`${tone}-god`}>God Shot</Chip>
+        <Chip variant="success" data-testid={`${tone}-god`}>God Shot</Chip>
         <Chip variant="warning" data-testid={`${tone}-passable`}>Passable</Chip>
       </div>
     )
 
     expect(screen.getByTestId(`${tone}-tone`)).toBeInTheDocument()
-    expect(screen.getByTestId(`${tone}-god`)).toHaveClass('kk-tc-chip--brand')
+    expect(screen.getByTestId(`${tone}-god`)).toHaveClass('kk-tc-chip--success')
     expect(screen.getByTestId(`${tone}-passable`)).toHaveClass('kk-tc-chip--warning')
     expect(screen.getByTestId(`${tone}-god`).className).not.toBe(screen.getByTestId(`${tone}-passable`).className)
   })

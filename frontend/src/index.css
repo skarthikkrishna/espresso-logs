@@ -124,10 +124,25 @@
   --kaapi-content-border-dark: rgba(245, 230, 211, 0.16);
   --kaapi-content-shadow-dark: 0 20px 48px rgba(0, 0, 0, 0.52), 0 2px 10px rgba(18, 11, 6, 0.42), inset 0 1px 0 rgba(255, 247, 237, 0.08);
   --kaapi-frame-scrim-dark-t2: rgba(18, 11, 6, 0.68);
-  --kaapi-card-title-family: Inter, var(--font-body), system-ui, sans-serif;
-  --kaapi-card-title-size: clamp(0.92rem, 0.89rem + 0.14vw, 1rem);
-  --kaapi-card-title-weight: 650;
-  --kaapi-card-title-line-height: 1.24;
+  --kk-page-bg-scrim-neutral: linear-gradient(var(--kaapi-frame-scrim-dark-t2), rgba(18, 11, 6, 0.68));
+  --kk-page-bg-overlay: linear-gradient(rgba(18, 11, 6, 0.76), rgba(18, 11, 6, 0.76));
+  --kk-page-bg-overlay-base: linear-gradient(var(--kaapi-frame-scrim-dark-t2, rgba(18, 11, 6, 0.68)), rgba(18, 11, 6, 0.68));
+  --kk-page-bg-overlay-dashboard: linear-gradient(rgba(18, 11, 6, 0.76), rgba(18, 11, 6, 0.76));
+  --kk-page-bg-overlay-brew: linear-gradient(rgba(18, 11, 6, 0.76), rgba(18, 11, 6, 0.76));
+  --kk-page-bg-overlay-catalog: linear-gradient(rgba(18, 11, 6, 0.76), rgba(18, 11, 6, 0.76));
+  --kk-page-bg-overlay-hardware: linear-gradient(rgba(18, 11, 6, 0.76), rgba(18, 11, 6, 0.76));
+  --kk-main-veil-bg: rgba(14, 9, 4, 0.38);
+  --kk-main-veil-blur: blur(4px);
+  --kk-page-frost-blur: blur(4px);
+  --kk-scrim-dashboard-start: rgba(6, 4, 2, 0.32);
+  --kk-scrim-dashboard-end: rgba(8, 5, 2, 0.48);
+  --kk-scrim-brew-start: rgba(8, 5, 2, 0.45);
+  --kk-scrim-catalog-start: rgba(8, 5, 2, 0.40);
+  --kk-scrim-hardware-start: rgba(8, 5, 2, 0.40);
+  --kaapi-card-title-family: var(--font-display);
+  --kaapi-card-title-size: clamp(0.90rem, 0.86rem + 0.16vw, 1.00rem);
+  --kaapi-card-title-weight: 700;
+  --kaapi-card-title-line-height: 1.18;
   --kaapi-card-title-letter-spacing: -0.01em;
   --kaapi-card-meta-family: Inter, var(--font-body), system-ui, sans-serif;
   --kaapi-card-meta-size: 0.8125rem;
@@ -138,15 +153,14 @@
      The background, fallback solid, border, shadow, and blur below must move
      together; all repeated entity cards consume these tokens directly instead
      of --kk-tc-surface, --kk-surface-*, or --kaapi-content-surface. */
-  --kk-card-surface-bg: rgba(246, 242, 236, 0.78);
-  --kk-card-surface-bg-solid: #f6f2ec;
-  --kk-card-surface-border: 1px solid rgba(139, 90, 43, 0.12);
-  --kk-card-surface-shadow:
-    inset 1px 1px 0 0 rgba(255, 255, 255, 0.45),
-    inset -1px -1px 0 0 rgba(139, 90, 43, 0.15),
-    0 8px 32px -4px rgba(45, 22, 8, 0.2);
+  --kk-card-surface-bg: rgba(250, 245, 239, 0.86);
+  --kk-card-surface-bg-solid: #faf5ef;
+  --kk-card-surface-border: 1px solid rgba(139, 90, 43, 0.14);
+  --kk-card-surface-shadow: 0 10px 28px -20px rgba(45, 22, 8, 0.24);
   --kk-card-surface-blur: 20px;
   --kk-card-surface-filter: blur(var(--kk-card-surface-blur));
+  --kk-primary-btn-radius: 6px;
+  --kk-primary-btn-padding: 8px 16px;
 
   /* Restrained accent slots. Teal hue is quarantined to --color-info only. */
   --kaapi-accent-teal: #734a37;
@@ -249,10 +263,18 @@
   --kaapi-palette-sidebar-text-dark:  #f5e6d3;  /* dark: warm cream */
   --kaapi-palette-sidebar-border-dark:rgba(245, 230, 211, 0.08);
   --section-header-text: var(--kaapi-content-content);
-  --section-header-size: 0.8125rem;
-  --section-header-weight: 700;
-  --section-header-tracking: 0.04em;
+  --section-header-size: clamp(1.125rem, 1rem + 0.55vw, 1.375rem);
+  --section-header-weight: 650;
+  --section-header-tracking: -0.01em;
   --section-header-gap: 0.75rem;
+}
+
+[data-typography-variant="A"] {
+  --kaapi-card-title-family: var(--font-display);
+  --kaapi-card-title-size: clamp(0.90rem, 0.86rem + 0.16vw, 1.00rem);
+  --kaapi-card-title-weight: 650;
+  --kaapi-card-title-line-height: 1.18;
+  --kaapi-card-title-letter-spacing: -0.01em;
 }
 
 /* ── Custom font families (Tailwind v4 @theme creates utility classes) ─── */
@@ -308,9 +330,9 @@ h1, h2, .font-display {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background-image:
-    linear-gradient(rgba(6, 4, 2, 0.46), rgba(8, 5, 2, 0.60));
+  background-image: var(--kk-page-bg-overlay), url('/static/img/hero-dashboard.jpg');
   background-size: cover;
+  overflow: hidden;
   background-position: center 40%;
   /*
    * Chrome desktop fix: pre-promote to a GPU compositor layer so the layer
@@ -326,25 +348,17 @@ h1, h2, .font-display {
   will-change: transform;
 }
 
-/* Per-page background overrides — dense app routes keyed to deeper scrims */
+/* Dense app routes share one neutral dark scrim; only photo position changes per route. */
 .app-bg.bg-dashboard {
-  background-image:
-    linear-gradient(rgba(6, 4, 2, 0.46), rgba(8, 5, 2, 0.60));
   background-position: center 40%;
 }
 .app-bg.bg-brew-log {
-  background-image:
-    linear-gradient(rgba(8, 5, 2, 0.52), rgba(8, 5, 2, 0.66));
   background-position: center 40%;
 }
 .app-bg.bg-catalog {
-  background-image:
-    linear-gradient(rgba(8, 5, 2, 0.48), rgba(8, 5, 2, 0.62));
   background-position: center 55%;
 }
 .app-bg.bg-hardware {
-  background-image:
-    linear-gradient(rgba(8, 5, 2, 0.50), rgba(8, 5, 2, 0.66));
   background-position: center 20%;
 }
 
@@ -355,7 +369,8 @@ h1, h2, .font-display {
    inset:-12px extends the pseudo 12px past each viewport edge, hiding the
    blurred boundary off-screen on all four sides (no edge halo). */
 .app-bg::before {
-  content: '';
+  content: none;
+  display: none;
   position: absolute;
   inset: -12px;
   /* @vite-ignore */
@@ -363,8 +378,13 @@ h1, h2, .font-display {
   background-size: cover;
   background-position: center 40%;
   filter: blur(5px);
-  z-index: -1;
+  z-index: 0;
 }
+.app-bg::after {
+  content: none;
+  display: none;
+}
+
 .app-bg.bg-dashboard::before {
   /* @vite-ignore */
   background-image: url('/static/img/hero-dashboard.jpg');
@@ -500,9 +520,9 @@ h1, h2, .font-display {
 #main-content {
   position: relative;
   z-index: 1;
-  background: rgba(14, 9, 4, 0.38);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: var(--kk-main-veil-bg);
+  backdrop-filter: var(--kk-main-veil-blur);
+  -webkit-backdrop-filter: var(--kk-main-veil-blur);
   box-shadow:
     inset  1px 0 0 rgba(200, 134, 10, 0.10),
     inset -1px 0 0 rgba(200, 134, 10, 0.10),
@@ -968,7 +988,7 @@ input[type="file"]::file-selector-button {
    When it is the wrapper div: target the child h2 and hide the dark-chrome accent.
    When it is the h2 itself: style directly. */
 .kk-proto-043 .kk-section-header h2 {
-  font-family: var(--font-body);
+  font-family: var(--font-display);
   font-size: var(--section-header-size);
   font-weight: var(--section-header-weight);
   letter-spacing: var(--section-header-tracking);
@@ -982,7 +1002,7 @@ input[type="file"]::file-selector-button {
 }
 
 .kk-proto-043 h2.kk-section-header {
-  font-family: var(--font-body);
+  font-family: var(--font-display);
   font-size: var(--section-header-size);
   font-weight: var(--section-header-weight);
   letter-spacing: var(--section-header-tracking);
@@ -1406,55 +1426,40 @@ select.input-styled,
   --kk-tc-radius: 16px;
   --kk-tc-padding-x: 24px;
   --kk-tc-padding-y: 32px;
-  --kk-tc-max-width: 720px;
-  --kk-tc-blur: 20px;
+  --kk-tc-max-width: 1200px;
 
   /* Typography scale */
-  --kk-tc-title-size: 24px;
+  --kk-tc-title-size: clamp(1.18rem, 1rem + 0.45vw, 1.55rem);
   --kk-tc-title-weight: 700;
   --kk-tc-subtitle-size: 14px;
-  --kk-tc-section-header-size: 13px;
-  --kk-tc-section-header-weight: 600;
-  --kk-tc-section-header-tracking: 0.05em;
+  --kk-tc-section-header-size: clamp(1.125rem, 1rem + 0.55vw, 1.375rem);
+  --kk-tc-section-header-weight: 650;
+  --kk-tc-section-header-tracking: -0.01em;
   --kk-tc-section-header-margin-bottom: 12px;
   --kk-tc-body-size: 15px;
   --kk-tc-body-line-height: 1.6;
   --kk-tc-label-size: 12px;
-  --kk-tc-value-size: 16px;
+  --kk-tc-value-size: 15px;
+  --kk-tc-value-weight: 500;
   --kk-tc-section-gap: 32px;
 
-  /* Bevel shadow default (dark tone) — comma-separated: MUST be in :root per
-     DaisyUI @plugin "daisyui/theme" comma-truncation constraint.
-     Overridden by .kk-tc--dark / .kk-tc--beige (which are NOT inside @plugin). */
-  --kk-tc-bevel-shadow:
-    inset 1px 1px 0 0 rgba(255, 247, 237, 0.12),
-    inset -1px -1px 0 0 rgba(0, 0, 0, 0.25),
-    0 8px 32px -4px rgba(0, 0, 0, 0.5);
 
-  /* Primary action button geometry — shared, tone-agnostic */
-  --kk-tc-primary-btn-radius: 6px;
-  --kk-tc-primary-btn-padding: 8px 16px;
-
-  /* spec-043 v5: --kk-il-header-shadow-light REMOVED — legibility now from darker scrim
-     (#rgba(45,22,8,0.22) light-mode frost) and eggshell card surfaces, not shadow hack. */
-
-  /* Roast gradation tokens — shared across tones */
-  --kk-tc-roast-light-bg: #f5e6d3;
-  --kk-tc-roast-light-text: #3d2314;
-  --kk-tc-roast-light-medium-bg: #d4b896;
-  --kk-tc-roast-light-medium-text: #3d2314;
-  --kk-tc-roast-medium-bg: #a67c52;
-  --kk-tc-roast-medium-text: #fff7ed;
-  --kk-tc-roast-medium-dark-bg: #6b4423;
-  --kk-tc-roast-medium-dark-text: #fff7ed;
-  --kk-tc-roast-dark-bg: #3d2314;
-  --kk-tc-roast-dark-text: #fff7ed;
+  /* Back-link tokens — amber on dark surfaces (AA ~5.5:1) */
+  --kk-tc-back-link-color: #fbbf24;
+  --kk-tc-back-link-hover: #fcd34d;
+  --kk-tc-back-link-chip-bg: transparent;
+  --kk-tc-back-link-chip-border: transparent;
+  --kk-tc-back-link-chip-blur: none;
+  --kk-tc-nav-text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+  --kk-tc-tone-btn-bg: transparent;
+  --kk-tc-tone-btn-text: rgba(255, 247, 237, 0.95);
+  --kk-tc-tone-btn-border: transparent;
+  --kk-tc-tone-btn-hover-bg: rgba(255, 247, 237, 0.10);
+  --kk-tc-tone-btn-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
 }
 
-/* ── Reset kk-proto-043 responsive constraints for brew-log detail page ──── */
-/* kk-proto-043 adds padding + max-width at breakpoints for CatalogDetail.
-   kk-b-page cancels those so the page wrapper is fully transparent and the
-   takeover card centers itself within the full main-content width. */
+
+/* ── Reset kk-proto-043 responsive constraints for detail pages ──────────── */
 .kk-b-page.kk-proto-043 {
   padding: 0;
   max-width: none;
@@ -1481,68 +1486,41 @@ select.input-styled,
   }
 }
 
-/* ── #main-content: transparent when takeover card is on screen ─────────── */
-/* Prevents double-frost and lets the photo show through the page at full
-   fidelity. The card does ALL the visual frosting. Without this, main-content's
-   rgba(14,9,4,0.38) + blur(4px) would darken and pre-blur the backdrop before
-   the card's backdrop-filter samples it. */
+/* Detail takeovers do all card frosting; the page shell stays transparent. */
 #main-content:has(.kk-b-page),
-#main-content:has([data-tone]) {
+#main-content:has([data-tone]),
+#main-content:has(.immersive-list-shell[data-tone]) {
   background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   box-shadow: none;
 }
 
-/* ── Tone-aware scrim override via :has() — no shell edits ─────────────── */
-/* The card tone class controls the photo scrim automatically.
-   .app-bg.bg-brew-log and <main> are DOM siblings inside AppShell's flex div.
-   :has(~ main .kk-takeover-card.kk-tc--X) selects .app-bg when a subsequent
-   sibling <main> contains the given card tone. Non-detail brew-log routes
-   (list, add) have no .kk-takeover-card → default scrim applies. */
-.app-bg.bg-brew-log:has(~ main .kk-takeover-card.kk-tc--dark) {
-  background-image:
-    linear-gradient(rgba(24, 16, 10, 0.28), rgba(24, 16, 10, 0.32));
-}
-.app-bg.bg-brew-log:has(~ main .kk-takeover-card.kk-tc--beige) {
-  background-image:
-    linear-gradient(rgba(245, 235, 220, 0.10), rgba(245, 235, 220, 0.14));
-}
-
-/* ── Catalog: tone-aware scrim via :has() — minimal, let the card frost ──── */
-.app-bg.bg-catalog:has(~ main .kk-takeover-card.kk-tc--dark) {
-  background-image:
-    linear-gradient(rgba(24, 16, 10, 0.28), rgba(24, 16, 10, 0.32));
-}
-.app-bg.bg-catalog:has(~ main .kk-takeover-card.kk-tc--beige) {
-  background-image:
-    linear-gradient(rgba(245, 235, 220, 0.10), rgba(245, 235, 220, 0.14));
-}
-
-/* ── Nav row: back link + prototype tone toggle ──────────────────────────── */
+/* ── Nav row: back link + tone toggle ───────────────────────────────────── */
 .kk-b-page__nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
   padding: 16px 16px 0;
-  max-width: calc(var(--kk-tc-max-width) + 32px);
+  max-width: min(var(--kk-il-content-max-width, var(--kk-tc-max-width)), calc(100% - 32px));
+  width: calc(100% - 32px);
   margin: 0 auto;
 }
 
 .kk-tc-back-link {
   font-size: 14px;
-  color: var(--kk-tc-back-link-color, #fbbf24); /* token: dark=amber, light=bark brown */
+  color: var(--kk-tc-back-link-color, #fbbf24);
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-  /* Glass pill chip — photo-independent AA fix (spec-043 nav-control-contrast) */
   background: var(--kk-tc-back-link-chip-bg, rgba(20, 12, 6, 0.68));
-  border: 1px solid var(--kk-tc-back-link-chip-border, rgba(255, 247, 237, 0.20));
-  border-radius: 9999px;
-  padding: 8px 16px;
+  border: 1px solid var(--kk-tc-back-link-chip-border, transparent);
+  border-radius: 6px;
+  padding: 8px 0;
   min-height: 44px;
-  backdrop-filter: var(--kk-tc-back-link-chip-blur, blur(16px));
-  -webkit-backdrop-filter: var(--kk-tc-back-link-chip-blur, blur(16px));
+  backdrop-filter: var(--kk-tc-back-link-chip-blur, none);
+  -webkit-backdrop-filter: var(--kk-tc-back-link-chip-blur, none);
   text-shadow: var(--kk-tc-nav-text-shadow, none);
   transition: color 150ms, background 150ms;
 }
@@ -1554,12 +1532,11 @@ select.input-styled,
   outline-offset: 2px;
 }
 
-/* Bug-fix (P0): toolbar is the position-containment boundary for the toggle
-   button/label. overflow:hidden prevents any emoji or text bleed outside the
-   element box; inline-flex keeps the pill tight to its content. */
 .kk-tc-tone-toolbar {
-  position: relative;
+  position: static;
+  z-index: 1;
   overflow: hidden;
+  margin-left: auto;
   display: inline-flex;
   align-items: center;
 }
@@ -1567,15 +1544,14 @@ select.input-styled,
 .kk-tc-tone-btn {
   font-size: 13px;
   font-weight: 500;
-  /* Bug-fix (P0): 44px min touch target per WCAG 2.5.8 / iOS HIG (was 32px) */
   padding: 8px 16px;
   min-height: 44px;
-  border-radius: 9999px;
+  border-radius: 6px;
   background: var(--kk-tc-tone-btn-bg, rgba(20, 12, 6, 0.68));
   color: var(--kk-tc-tone-btn-text, rgba(255, 247, 237, 0.95));
-  border: 1px solid var(--kk-tc-tone-btn-border, rgba(255, 247, 237, 0.20));
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--kk-tc-tone-btn-border, transparent);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   text-shadow: var(--kk-tc-tone-btn-text-shadow, none);
   cursor: pointer;
   transition: background 150ms;
@@ -1595,207 +1571,27 @@ select.input-styled,
   max-width: var(--kk-tc-max-width);
   width: calc(100% - 32px);
   margin: 16px auto 48px;
-  backdrop-filter: blur(var(--kk-tc-blur));
-  -webkit-backdrop-filter: blur(var(--kk-tc-blur));
-  background: var(--kk-tc-surface);
-  color: var(--kk-tc-text-primary);
-  box-shadow: var(--kk-tc-bevel-shadow);
-  border: var(--kk-tc-border);
+  backdrop-filter: var(--kk-card-surface-filter);
+  -webkit-backdrop-filter: var(--kk-card-surface-filter);
+  background: var(--kk-card-surface-bg);
+  color: var(--kk-text-primary);
+  box-shadow: var(--kk-card-surface-shadow);
+  border: var(--kk-card-surface-border);
 }
 
-/* ── DARK tone token set ─────────────────────────────────────────────────── */
-/* All .kk-tc--dark rules are regular CSS (NOT inside @plugin "daisyui/theme")
-   so multi-value comma-separated box-shadows work correctly. */
-.kk-takeover-card.kk-tc--dark {
-  --kk-tc-surface: rgba(24, 16, 10, 0.64);
-  --kk-tc-surface-solid: #18100a;
-  /* Text */
-  --kk-tc-text-primary: #fff7ed;
-  --kk-tc-text-secondary: #e8ddd4;
-  --kk-tc-text-tertiary: #c4b5a8;
-  --kk-tc-link: #fbbf24;
-  --kk-tc-link-hover: #fcd34d;
-  /* Section header */
-  --kk-tc-section-header-color: #e8ddd4;
-  /* Inputs */
-  --kk-tc-input-bg: rgba(45, 32, 22, 0.6);
-  --kk-tc-input-border: 1px solid rgba(255, 247, 237, 0.15);
-  --kk-tc-input-text: #fff7ed;
-  --kk-tc-input-placeholder: rgba(255, 247, 237, 0.5);
-  --kk-tc-input-focus-border: rgba(251, 191, 36, 0.6);
-  --kk-tc-input-focus-ring: 0 0 0 3px rgba(251, 191, 36, 0.15);
-  /* Chips */
-  --kk-tc-chip-bg: rgba(255, 247, 237, 0.1);
-  --kk-tc-chip-text: #e8ddd4;
-  --kk-tc-chip-border: 1px solid rgba(255, 247, 237, 0.15);
-  --kk-tc-chip-verified-bg: rgba(34, 197, 94, 0.15);
-  --kk-tc-chip-verified-text: #86efac;
-  --kk-tc-chip-ai-bg: rgba(251, 191, 36, 0.15);
-  --kk-tc-chip-ai-text: #fcd34d;
-  --kk-tc-chip-danger-bg: rgba(239, 68, 68, 0.12);
-  --kk-tc-chip-danger-text: #fca5a5;
-  /* Edit button */
-  --kk-tc-btn-edit-bg: rgba(255, 247, 237, 0.1);
-  --kk-tc-btn-edit-text: #e8ddd4;
-  --kk-tc-btn-edit-border: rgba(255, 247, 237, 0.15);
-  --kk-tc-btn-edit-hover-bg: rgba(255, 247, 237, 0.18);
-  --kk-tc-btn-edit-hover-text: #fff7ed;
-  --kk-tc-btn-edit-hover-border: rgba(255, 247, 237, 0.25);
-  --kk-tc-btn-edit-active-bg: rgba(255, 247, 237, 0.25);
-  --kk-tc-btn-edit-active-text: #fff7ed;
-  --kk-tc-btn-edit-active-border: rgba(255, 247, 237, 0.35);
-  --kk-tc-btn-focus-ring: 0 0 0 3px rgba(251, 191, 36, 0.25);
-  /* Danger button */
-  --kk-tc-btn-danger-bg: rgba(239, 68, 68, 0.12);
-  --kk-tc-btn-danger-text: #fca5a5;
-  --kk-tc-btn-danger-border: rgba(239, 68, 68, 0.2);
-  --kk-tc-btn-danger-hover-bg: rgba(239, 68, 68, 0.22);
-  --kk-tc-btn-danger-hover-text: #fecaca;
-  --kk-tc-btn-danger-hover-border: rgba(239, 68, 68, 0.35);
-  --kk-tc-btn-danger-active-bg: rgba(239, 68, 68, 0.32);
-  --kk-tc-btn-danger-active-text: #fee2e2;
-  --kk-tc-btn-danger-active-border: rgba(239, 68, 68, 0.5);
-  --kk-tc-btn-danger-focus-ring: 0 0 0 3px rgba(239, 68, 68, 0.25);
-  /* Primary action button — warm amber fill, espresso text */
-  --kk-tc-primary-btn-bg: #f59e0b;
-  --kk-tc-primary-btn-text: #451a03;
-  --kk-tc-primary-btn-border: rgba(245, 158, 11, 0.7);
-  --kk-tc-primary-btn-hover-bg: #fbbf24;
-  --kk-tc-primary-btn-hover-text: #451a03;
-  --kk-tc-primary-btn-hover-border: rgba(251, 191, 36, 0.85);
-  --kk-tc-primary-btn-active-bg: #d97706;
-  --kk-tc-primary-btn-active-text: #fffbeb;
-  --kk-tc-primary-btn-active-border: rgba(217, 119, 6, 0.9);
-  --kk-tc-primary-btn-focus-ring: 0 0 0 3px rgba(251, 191, 36, 0.35);
-  /* Roast chip border tokens — DARK tone */
-  --kk-tc-roast-light-border: transparent;
-  --kk-tc-roast-light-medium-border: transparent;
-  --kk-tc-roast-medium-border: transparent;
-  --kk-tc-roast-medium-dark-border: transparent;
-  --kk-tc-roast-dark-border: rgba(255, 247, 237, 0.15);
-  /* Monogram tile background — warm amber tint on dark surface */
-  --kk-tc-monogram-tile-bg: rgba(245, 158, 11, 0.15);
-  /* Back-link tokens — amber on dark surfaces (AA ~5.5:1) */
-  --kk-tc-back-link-color: #fbbf24;
-  --kk-tc-back-link-hover: #fcd34d;
-  /* Back-link glass pill — Option C (spec-043 nav-control-contrast) */
-  --kk-tc-back-link-chip-bg: rgba(20, 12, 6, 0.68);
-  --kk-tc-back-link-chip-border: rgba(255, 247, 237, 0.20);
-  --kk-tc-back-link-chip-blur: blur(16px);
-  --kk-tc-nav-text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
-  /* Tone-btn glass values — Option C */
-  --kk-tc-tone-btn-bg: rgba(20, 12, 6, 0.68);
-  --kk-tc-tone-btn-text: rgba(255, 247, 237, 0.95);
-  --kk-tc-tone-btn-border: rgba(255, 247, 237, 0.20);
-  --kk-tc-tone-btn-hover-bg: rgba(30, 16, 7, 0.80);
-  --kk-tc-tone-btn-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
-}
-
-/* ── BEIGE tone token set ────────────────────────────────────────────────── */
-.kk-takeover-card.kk-tc--beige {
-  --kk-tc-surface: rgba(250, 245, 239, 0.86);
-  --kk-tc-surface-solid: #faf5ef;
-  /* Text */
-  --kk-tc-text-primary: #2d1608;
-  --kk-tc-text-secondary: #4a3728;
-  --kk-tc-text-tertiary: #6b5344;
-  --kk-tc-link: #92400e;
-  --kk-tc-link-hover: #78350f;
-  /* Section header */
-  --kk-tc-section-header-color: #4a3728;
-  /* Inputs */
-  --kk-tc-input-bg: rgba(235, 220, 200, 0.7);
-  --kk-tc-input-border: 1px solid rgba(139, 90, 43, 0.2);
-  --kk-tc-input-text: #2d1608;
-  --kk-tc-input-placeholder: rgba(45, 22, 8, 0.45);
-  --kk-tc-input-focus-border: rgba(146, 64, 14, 0.6);
-  --kk-tc-input-focus-ring: 0 0 0 3px rgba(146, 64, 14, 0.12);
-  /* Chips */
-  --kk-tc-chip-bg: rgba(45, 22, 8, 0.08);
-  --kk-tc-chip-text: #4a3728;
-  --kk-tc-chip-border: 1px solid rgba(45, 22, 8, 0.12);
-  --kk-tc-chip-verified-bg: rgba(22, 163, 74, 0.12);
-  --kk-tc-chip-verified-text: #166534;
-  --kk-tc-chip-ai-bg: rgba(146, 64, 14, 0.12);
-  --kk-tc-chip-ai-text: #92400e;
-  --kk-tc-chip-danger-bg: rgba(185, 28, 28, 0.1);
-  --kk-tc-chip-danger-text: #b91c1c;
-  /* Edit button */
-  --kk-tc-btn-edit-bg: rgba(45, 22, 8, 0.08);
-  --kk-tc-btn-edit-text: #4a3728;
-  --kk-tc-btn-edit-border: rgba(45, 22, 8, 0.12);
-  --kk-tc-btn-edit-hover-bg: rgba(45, 22, 8, 0.14);
-  --kk-tc-btn-edit-hover-text: #2d1608;
-  --kk-tc-btn-edit-hover-border: rgba(45, 22, 8, 0.2);
-  --kk-tc-btn-edit-active-bg: rgba(45, 22, 8, 0.2);
-  --kk-tc-btn-edit-active-text: #2d1608;
-  --kk-tc-btn-edit-active-border: rgba(45, 22, 8, 0.28);
-  --kk-tc-btn-focus-ring: 0 0 0 3px rgba(146, 64, 14, 0.15);
-  /* Danger button */
-  --kk-tc-btn-danger-bg: rgba(185, 28, 28, 0.1);
-  --kk-tc-btn-danger-text: #b91c1c;
-  --kk-tc-btn-danger-border: rgba(185, 28, 28, 0.15);
-  --kk-tc-btn-danger-hover-bg: rgba(185, 28, 28, 0.18);
-  --kk-tc-btn-danger-hover-text: #991b1b;
-  --kk-tc-btn-danger-hover-border: rgba(185, 28, 28, 0.25);
-  --kk-tc-btn-danger-active-bg: rgba(185, 28, 28, 0.26);
-  --kk-tc-btn-danger-active-text: #7f1d1d;
-  --kk-tc-btn-danger-active-border: rgba(185, 28, 28, 0.35);
-  --kk-tc-btn-danger-focus-ring: 0 0 0 3px rgba(185, 28, 28, 0.15);
-  /* Primary action button — espresso fill, cream text */
-  --kk-tc-primary-btn-bg: #92400e;
-  --kk-tc-primary-btn-text: #fffbeb;
-  --kk-tc-primary-btn-border: rgba(146, 64, 14, 0.6);
-  --kk-tc-primary-btn-hover-bg: #78350f;
-  --kk-tc-primary-btn-hover-text: #fef3c7;
-  --kk-tc-primary-btn-hover-border: rgba(120, 53, 15, 0.75);
-  --kk-tc-primary-btn-active-bg: #451a03;
-  --kk-tc-primary-btn-active-text: #fef3c7;
-  --kk-tc-primary-btn-active-border: rgba(69, 26, 3, 0.85);
-  --kk-tc-primary-btn-focus-ring: 0 0 0 3px rgba(146, 64, 14, 0.2);
-  /* Roast chip border tokens — BEIGE tone */
-  --kk-tc-roast-light-border: rgba(45, 22, 8, 0.2);
-  --kk-tc-roast-light-medium-border: rgba(45, 22, 8, 0.15);
-  --kk-tc-roast-medium-border: transparent;
-  --kk-tc-roast-medium-dark-border: transparent;
-  --kk-tc-roast-dark-border: transparent;
-  /* Monogram tile background — warm espresso tint on beige surface */
-  --kk-tc-monogram-tile-bg: rgba(120, 53, 15, 0.10);
-  /* Back-link tokens — bark brown on light surfaces (AA ~7:1, reuses --color-secondary) */
-  --kk-tc-back-link-color: #92400e;
-  --kk-tc-back-link-hover: #78350f;
-  /* Back-link glass pill — Option C beige (spec-043 nav-control-contrast) */
-  --kk-tc-back-link-chip-bg: rgba(245, 235, 220, 0.90);
-  --kk-tc-back-link-chip-border: rgba(45, 22, 8, 0.18);
-  --kk-tc-back-link-chip-blur: blur(16px);
-  --kk-tc-nav-text-shadow: none;
-  /* Tone-btn glass values — Option C beige */
-  --kk-tc-tone-btn-bg: rgba(245, 235, 220, 0.90);
-  --kk-tc-tone-btn-text: #4a3728;
-  --kk-tc-tone-btn-border: rgba(45, 22, 8, 0.18);
-  --kk-tc-tone-btn-hover-bg: rgba(245, 235, 220, 0.96);
-  --kk-tc-tone-btn-text-shadow: none;
+@supports not (backdrop-filter: blur(1px)) {
+  .kk-takeover-card {
+    background: var(--kk-card-surface-bg-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }
 
 /* ── Fallback: no backdrop-filter support ───────────────────────────────── */
-@supports not (backdrop-filter: blur(1px)) {
-  .kk-takeover-card.kk-tc--dark {
-    --kk-tc-surface: var(--kk-tc-surface-solid);
-  }
-  .kk-takeover-card.kk-tc--beige {
-    --kk-tc-surface: var(--kk-tc-surface-solid);
-  }
-}
 @media (prefers-reduced-transparency: reduce) {
   .kk-takeover-card {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-  }
-  .kk-takeover-card.kk-tc--dark {
-    --kk-tc-surface: var(--kk-tc-surface-solid);
-  }
-  .kk-takeover-card.kk-tc--beige {
-    --kk-tc-surface: var(--kk-tc-surface-solid);
   }
 }
 
@@ -1820,26 +1616,88 @@ select.input-styled,
   min-width: 64px;
   border-radius: 8px;
   object-fit: cover;
-  background: color-mix(in srgb, var(--kk-tc-text-primary) 8%, transparent);
+  background: color-mix(in srgb, var(--kk-text-primary) 8%, transparent);
 }
 .kk-tc-title-icon-placeholder {
   width: 64px;
   height: 64px;
   min-width: 64px;
   border-radius: 8px;
-  background: var(--kk-tc-monogram-tile-bg, color-mix(in srgb, var(--kk-tc-text-primary) 12%, transparent));
+  background: var(--kk-monogram-tile-bg, color-mix(in srgb, var(--kk-text-primary) 12%, transparent));
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
-  color: var(--kk-tc-text-tertiary);
+  color: var(--kk-text-tertiary);
 }
 .kk-tc-title-icon-monogram {
   font-size: 1.5rem;
   font-weight: 700;
   font-family: var(--font-display);
-  color: var(--kk-tc-text-primary);
+  color: var(--kk-text-primary);
   user-select: none;
+}
+.hardware-detail-image-action {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  min-height: 44px;
+}
+.hardware-detail-image-status {
+  position: absolute;
+  left: 0.5rem;
+  right: 0.5rem;
+  bottom: 3.5rem;
+  max-width: calc(100% - 1rem);
+  font-size: 13px;
+  line-height: 1.35;
+  border-radius: 8px;
+  background: var(--kk-card-surface-bg-solid);
+  padding: 0.35rem 0.5rem;
+}
+.hardware-detail-notes {
+  margin-top: 20px;
+}
+.hardware-detail-compact-params .kk-tc-param-grid {
+  grid-template-columns: max-content minmax(0, max-content);
+  justify-content: start;
+  align-items: baseline;
+  gap: 8px 12px;
+}
+.hardware-detail-compact-params .kk-tc-param-value {
+  max-width: min(100%, 28rem);
+}
+.hardware-maintenance-list {
+  display: flex;
+  flex-direction: column;
+}
+.hardware-maintenance-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--kk-text-primary) 10%, transparent);
+}
+.hardware-maintenance-row:first-child {
+  padding-top: 0;
+}
+.hardware-maintenance-row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.hardware-maintenance-date {
+  font-weight: 600;
+}
+.hardware-maintenance-copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+@media (min-width: 640px) {
+  .hardware-maintenance-row {
+    grid-template-columns: minmax(8rem, 0.38fr) 1fr;
+  }
 }
 .kk-tc-title-stack {
   display: flex;
@@ -1854,53 +1712,59 @@ select.input-styled,
   font-size: var(--kk-tc-title-size);
   font-weight: var(--kk-tc-title-weight);
   line-height: 1.2;
-  color: var(--kk-tc-text-primary);
+  color: var(--kk-text-primary);
   text-wrap: balance;
   overflow-wrap: anywhere;
   margin: 0;
 }
+
+.kk-detail-header .kk-tc-title {
+  font-size: clamp(1.5rem, 1.2rem + 1.4vw, 2rem);
+  line-height: 1.08;
+}
 .kk-tc-subtitle {
   font-size: var(--kk-tc-subtitle-size);
-  color: var(--kk-tc-text-secondary);
+  color: var(--kk-text-secondary);
   margin: 0;
 }
 .kk-tc-section-header {
-  font-family: var(--font-body);
+  font-family: var(--font-display);
   font-size: var(--kk-tc-section-header-size);
   font-weight: var(--kk-tc-section-header-weight);
   letter-spacing: var(--kk-tc-section-header-tracking);
-  text-transform: uppercase;
-  color: var(--kk-tc-section-header-color);
+  line-height: 1.12;
+  text-transform: none;
+  color: var(--kk-text-primary);
   margin: 0 0 var(--kk-tc-section-header-margin-bottom);
   /* No border, no background, no padding box */
 }
 .kk-tc-body {
   font-size: var(--kk-tc-body-size);
   line-height: var(--kk-tc-body-line-height);
-  color: var(--kk-tc-text-primary);
+  color: var(--kk-text-primary);
   margin: 0;
 }
 .kk-tc-body-muted {
   font-size: var(--kk-tc-body-size);
   line-height: var(--kk-tc-body-line-height);
-  color: var(--kk-tc-text-tertiary);
+  color: var(--kk-text-secondary);
   margin: 0;
 }
 
 /* ── Tone-aware form field label — Principle 5 (AA Legibility) ──────────── */
 /* Used by ToneInput / ToneSelect / ToneTextarea in the shared tone-system library.
-   Color resolves via inherited --kk-tc-text-secondary from the enclosing card tone. */
+   Color resolves via inherited --kk-text-secondary from the enclosing card tone. */
 .kk-tc-field-label {
   display: block;
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--kk-tc-text-secondary, #4a3728);
+  color: var(--kk-text-secondary, #4a3728);
   margin-bottom: 0.375rem;
 }
 
 /* ── Markdown prose container — AI summary styled per card tone ─────────── */
 .kk-takeover-card .kk-tc-markdown {
-  color: var(--kk-tc-text-primary);
+  color: var(--kk-text-primary);
   font-size: var(--kk-tc-body-size, 0.9375rem);
   line-height: 1.65;
 }
@@ -1911,7 +1775,7 @@ select.input-styled,
 .kk-takeover-card .kk-tc-markdown h5,
 .kk-takeover-card .kk-tc-markdown h6 {
   font-family: var(--font-body);
-  color: var(--kk-tc-text-secondary);
+  color: var(--kk-text-secondary);
   font-weight: 500;
   margin-top: 1.25em;
   margin-bottom: 0.5em;
@@ -1937,12 +1801,12 @@ select.input-styled,
 .kk-takeover-card .kk-tc-markdown strong,
 .kk-takeover-card .kk-tc-markdown b {
   font-weight: 600;
-  color: var(--kk-tc-text-primary);
+  color: var(--kk-text-primary);
 }
 .kk-takeover-card .kk-tc-markdown em,
 .kk-takeover-card .kk-tc-markdown i {
   font-style: italic;
-  color: var(--kk-tc-text-secondary);
+  color: var(--kk-text-secondary);
 }
 .kk-takeover-card .kk-tc-markdown ul,
 .kk-takeover-card .kk-tc-markdown ol {
@@ -1951,19 +1815,19 @@ select.input-styled,
 }
 .kk-takeover-card .kk-tc-markdown li {
   margin-bottom: 0.35em;
-  color: var(--kk-tc-text-primary);
+  color: var(--kk-text-primary);
 }
 .kk-takeover-card .kk-tc-markdown ul {
   list-style-type: disc;
 }
 .kk-takeover-card .kk-tc-markdown ul li::marker {
-  color: var(--kk-tc-text-tertiary);
+  color: var(--kk-text-tertiary);
 }
 .kk-takeover-card .kk-tc-markdown ol {
   list-style-type: decimal;
 }
 .kk-takeover-card .kk-tc-markdown ol li::marker {
-  color: var(--kk-tc-text-secondary);
+  color: var(--kk-text-secondary);
   font-weight: 500;
 }
 .kk-takeover-card .kk-tc-markdown ul ul,
@@ -1986,13 +1850,13 @@ select.input-styled,
 .kk-takeover-card .kk-tc-markdown code {
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 0.875em;
-  background: color-mix(in srgb, var(--kk-tc-text-primary) 8%, transparent);
-  color: var(--kk-tc-text-secondary);
+  background: color-mix(in srgb, var(--kk-text-primary) 8%, transparent);
+  color: var(--kk-text-secondary);
   padding: 0.125em 0.375em;
   border-radius: 4px;
 }
 .kk-takeover-card .kk-tc-markdown pre {
-  background: color-mix(in srgb, var(--kk-tc-text-primary) 6%, transparent);
+  background: color-mix(in srgb, var(--kk-text-primary) 6%, transparent);
   padding: 1em;
   border-radius: 8px;
   overflow-x: auto;
@@ -2005,15 +1869,15 @@ select.input-styled,
 }
 .kk-takeover-card .kk-tc-markdown hr {
   border: none;
-  border-top: 1px solid color-mix(in srgb, var(--kk-tc-text-primary) 15%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--kk-text-primary) 15%, transparent);
   margin: 1.5em 0;
 }
 .kk-takeover-card .kk-tc-markdown blockquote {
-  border-left: 3px solid var(--kk-tc-text-tertiary);
+  border-left: 3px solid var(--kk-text-tertiary);
   padding-left: 1em;
   margin-left: 0;
   margin-bottom: 1em;
-  color: var(--kk-tc-text-secondary);
+  color: var(--kk-text-secondary);
   font-style: italic;
 }
 .kk-tc-error {
@@ -2027,26 +1891,31 @@ select.input-styled,
 /* ── Parameter grid ─────────────────────────────────────────────────────── */
 .kk-tc-param-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 16px;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: clamp(12px, 2vw, 16px);
+  row-gap: 8px;
+  align-items: baseline;
 }
 .kk-tc-param-label {
   font-size: var(--kk-tc-label-size);
   font-weight: 500;
-  color: var(--kk-tc-text-tertiary);
+  color: var(--kk-text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 .kk-tc-param-value {
   font-size: var(--kk-tc-value-size);
-  font-weight: 600;
-  color: var(--kk-tc-text-primary);
+  font-weight: var(--kk-tc-value-weight);
+  color: var(--kk-text-primary);
   font-variant-numeric: tabular-nums;
+}
+.detail-panel .kk-tc-param-value {
+  color: var(--kk-chip-neutral-text);
 }
 
 /* Table row separator using tone-aware token */
 .kk-tc-table-row {
-  border-bottom: 1px solid color-mix(in srgb, var(--kk-tc-text-primary) 10%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--kk-text-primary) 10%, transparent);
 }
 
 /* ── Action area ────────────────────────────────────────────────────────── */
@@ -2081,49 +1950,75 @@ select.input-styled,
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 600;
-  background: var(--kk-tc-chip-bg);
-  color: var(--kk-tc-chip-text);
-  border: var(--kk-tc-chip-border);
+  background: var(--kk-chip-bg);
+  color: var(--kk-chip-text);
+  border: var(--kk-chip-border);
 }
 /* Eligibility tone variants — map EligibilityTone to chip visual */
 .kk-tc-chip--success {
-  background: var(--kk-tc-chip-rating-good-bg, var(--kk-tc-chip-verified-bg));
-  color: var(--kk-tc-chip-rating-good-text, var(--kk-tc-chip-verified-text));
-  border-color: var(--kk-tc-chip-rating-good-border, transparent);
+  background: var(--kk-chip-success-bg, var(--kk-chip-success-bg));
+  color: var(--kk-chip-success-text, var(--kk-chip-success-text));
+  border-color: var(--kk-chip-success-border, transparent);
 }
 .kk-tc-chip--brand {
-  background: var(--kk-tc-chip-rating-godshot-bg, var(--kk-tc-chip-ai-bg));
-  color: var(--kk-tc-chip-rating-godshot-text, var(--kk-tc-chip-ai-text));
-  border-color: var(--kk-tc-chip-rating-godshot-border, transparent);
+  background: var(--kk-chip-brand-bg, var(--kk-chip-brand-bg));
+  color: var(--kk-chip-brand-text, var(--kk-chip-brand-text));
+  border-color: var(--kk-chip-brand-border, transparent);
 }
 .kk-tc-chip--warning {
-  background: var(--kk-tc-chip-rating-passable-bg, var(--kk-tc-chip-ai-bg));
-  color: var(--kk-tc-chip-rating-passable-text, var(--kk-tc-chip-ai-text));
-  border-color: var(--kk-tc-chip-rating-passable-border, transparent);
+  background: var(--kk-chip-warning-bg, var(--kk-chip-brand-bg));
+  color: var(--kk-chip-warning-text, var(--kk-chip-brand-text));
+  border-color: var(--kk-chip-warning-border, transparent);
 }
 .kk-tc-chip--danger {
-  background: var(--kk-tc-chip-rating-reject-bg, var(--kk-tc-chip-danger-bg));
-  color: var(--kk-tc-chip-rating-reject-text, var(--kk-tc-chip-danger-text));
-  border-color: var(--kk-tc-chip-rating-reject-border, transparent);
+  background: var(--kk-chip-danger-bg, var(--kk-chip-danger-bg));
+  color: var(--kk-chip-danger-text, var(--kk-chip-danger-text));
+  border-color: var(--kk-chip-danger-border, transparent);
 }
 .kk-tc-chip--neutral {
-  background: var(--kk-tc-chip-rating-unknown-bg, var(--kk-tc-chip-bg));
-  color: var(--kk-tc-chip-rating-unknown-text, var(--kk-tc-chip-text));
-  border-color: var(--kk-tc-chip-rating-unknown-border, currentColor);
+  background: var(--kk-chip-neutral-bg, var(--kk-chip-bg));
+  color: var(--kk-chip-neutral-text, var(--kk-chip-text));
+  border-color: var(--kk-chip-neutral-border, currentColor);
+}
+
+.extraction-chip {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  flex: 0 0 auto;
+  width: fit-content;
+  min-width: max-content;
+  border-radius: 9999px;
+  padding: 4px 12px;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.extraction-chip--brand {
+  background: var(--kk-chip-brand-bg);
+  color: var(--kk-chip-brand-text);
+  border: 1px solid var(--kk-chip-brand-border);
+}
+.extraction-chip--neutral {
+  background: var(--kk-chip-neutral-bg);
+  color: var(--kk-chip-neutral-text);
+  border: 1px solid var(--kk-chip-neutral-border);
 }
 .kk-tc-chip--status-active {
-  background: var(--kk-tc-chip-verified-bg);
-  color: var(--kk-tc-chip-verified-text);
+  background: var(--kk-chip-success-bg);
+  color: var(--kk-chip-success-text);
   border-color: transparent;
 }
 .kk-tc-chip--status-resting {
-  background: var(--kk-tc-chip-ai-bg);
-  color: var(--kk-tc-chip-ai-text);
+  background: var(--kk-chip-brand-bg);
+  color: var(--kk-chip-brand-text);
   border-color: transparent;
 }
 .kk-tc-chip--status-finished {
-  background: var(--kk-tc-chip-bg);
-  color: var(--kk-tc-text-tertiary, var(--kk-tc-chip-text));
+  background: var(--kk-chip-bg);
+  color: var(--kk-text-tertiary, var(--kk-chip-text));
   border-color: transparent;
   opacity: 0.72;
 }
@@ -2138,29 +2033,29 @@ select.input-styled,
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 .kk-tc-chip--roast-light {
-  background: var(--kk-tc-roast-light-bg);
-  color: var(--kk-tc-roast-light-text);
-  border-color: var(--kk-tc-roast-light-border, transparent);
+  background: var(--kk-tc-roast-light-bg, rgba(255, 247, 237, 0.88));
+  color: var(--kk-tc-roast-light-text, #2d1608);
+  border-color: var(--kk-roast-light-border, transparent);
 }
 .kk-tc-chip--roast-light-medium {
-  background: var(--kk-tc-roast-light-medium-bg);
-  color: var(--kk-tc-roast-light-medium-text);
-  border-color: var(--kk-tc-roast-light-medium-border, transparent);
+  background: var(--kk-tc-roast-light-medium-bg, rgba(251, 191, 36, 0.34));
+  color: var(--kk-tc-roast-light-medium-text, #2d1608);
+  border-color: var(--kk-roast-light-medium-border, transparent);
 }
 .kk-tc-chip--roast-medium {
-  background: var(--kk-tc-roast-medium-bg);
-  color: var(--kk-tc-roast-medium-text);
-  border-color: var(--kk-tc-roast-medium-border, transparent);
+  background: var(--kk-tc-roast-medium-bg, rgba(180, 83, 9, 0.38));
+  color: var(--kk-tc-roast-medium-text, #fff7ed);
+  border-color: var(--kk-roast-medium-border, transparent);
 }
 .kk-tc-chip--roast-medium-dark {
-  background: var(--kk-tc-roast-medium-dark-bg);
-  color: var(--kk-tc-roast-medium-dark-text);
-  border-color: var(--kk-tc-roast-medium-dark-border, transparent);
+  background: var(--kk-tc-roast-medium-dark-bg, rgba(120, 53, 15, 0.72));
+  color: var(--kk-tc-roast-medium-dark-text, #fff7ed);
+  border-color: var(--kk-roast-medium-dark-border, transparent);
 }
 .kk-tc-chip--roast-dark {
-  background: var(--kk-tc-roast-dark-bg);
-  color: var(--kk-tc-roast-dark-text);
-  border-color: var(--kk-tc-roast-dark-border, transparent);
+  background: var(--kk-tc-roast-dark-bg, rgba(45, 22, 8, 0.90));
+  color: var(--kk-tc-roast-dark-text, #fff7ed);
+  border-color: var(--kk-roast-dark-border, transparent);
 }
 
 /* ── Action buttons — intensify on hover, no color-flip ────────────────── */
@@ -2227,11 +2122,11 @@ select.input-styled,
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: var(--kk-tc-primary-btn-bg);
-  color: var(--kk-tc-primary-btn-text);
-  border: 1px solid var(--kk-tc-primary-btn-border);
-  border-radius: var(--kk-tc-primary-btn-radius);
-  padding: var(--kk-tc-primary-btn-padding);
+  background: var(--kk-primary-btn-bg);
+  color: var(--kk-primary-btn-text);
+  border: 1px solid var(--kk-primary-btn-border);
+  border-radius: var(--kk-primary-btn-radius);
+  padding: var(--kk-primary-btn-padding);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -2239,18 +2134,18 @@ select.input-styled,
 }
 .kk-tc-primary-btn:hover:not(:disabled),
 .kk-tc-primary-btn:focus-visible:not(:disabled) {
-  background: var(--kk-tc-primary-btn-hover-bg);
-  color: var(--kk-tc-primary-btn-hover-text);
-  border-color: var(--kk-tc-primary-btn-hover-border);
+  background: var(--kk-primary-btn-hover-bg);
+  color: var(--kk-primary-btn-hover-text);
+  border-color: var(--kk-primary-btn-hover-border);
 }
 .kk-tc-primary-btn:active:not(:disabled) {
-  background: var(--kk-tc-primary-btn-active-bg);
-  color: var(--kk-tc-primary-btn-active-text);
-  border-color: var(--kk-tc-primary-btn-active-border);
+  background: var(--kk-primary-btn-active-bg);
+  color: var(--kk-primary-btn-active-text);
+  border-color: var(--kk-primary-btn-active-border);
 }
 .kk-tc-primary-btn:focus-visible {
   outline: none;
-  box-shadow: var(--kk-tc-primary-btn-focus-ring);
+  box-shadow: var(--kk-primary-btn-focus-ring);
 }
 .kk-tc-primary-btn:disabled {
   opacity: 0.45;
@@ -2260,22 +2155,17 @@ select.input-styled,
 /* ── Ghost / tertiary action button — text-only, no fill, no border ─────── */
 /* Hierarchy: primary (solid fill) > edit/secondary (border) > ghost (text). */
 .kk-tc-btn--ghost {
-  background: transparent;
-  color: var(--kk-tc-btn-ghost-text, var(--kk-tc-text-secondary));
-  border: none;
+  background: var(--kk-tc-btn-edit-bg);
+  color: var(--kk-tc-btn-ghost-text, var(--kk-text-secondary));
+  border-color: var(--kk-tc-btn-edit-border);
 }
 .kk-tc-btn--ghost:hover:not(:disabled) {
-  background: var(--kk-tc-btn-ghost-hover-bg, rgba(255, 247, 237, 0.08));
-  color: var(--kk-tc-btn-ghost-hover-text, var(--kk-tc-text-primary));
+  background: var(--kk-tc-btn-ghost-hover-bg, var(--kk-tc-btn-edit-hover-bg));
+  color: var(--kk-tc-btn-ghost-hover-text, var(--kk-text-primary));
 }
 .kk-tc-btn--ghost:focus-visible {
   outline: none;
   box-shadow: var(--kk-tc-btn-focus-ring);
-}
-/* Beige-tone ghost hover — warm espresso tint instead of cream */
-[data-tone="beige"] .kk-tc-btn--ghost:hover:not(:disabled),
-.kk-tc--beige .kk-tc-btn--ghost:hover:not(:disabled) {
-  background: rgba(45, 22, 8, 0.06);
 }
 
 /* ── Roaster link — inherits per-tone link color ─────────────────────────── */
@@ -2291,12 +2181,12 @@ select.input-styled,
 
 /* ── Catalog image placeholder — adapt to takeover card surface ────────── */
 .kk-takeover-card .kk-catalog-placeholder {
-  background: var(--kk-tc-chip-bg);
+  background: var(--kk-chip-bg);
   box-shadow: none;
 }
 .kk-takeover-card .kk-catalog-placeholder__glyph,
 .kk-takeover-card .kk-catalog-placeholder__monogram {
-  color: var(--kk-tc-text-tertiary);
+  color: var(--kk-text-tertiary);
 }
 
 /* ── Form input legibility — per-tone via inherited tokens ─────────────── */
@@ -2331,10 +2221,10 @@ select.input-styled,
 
 /* FormField label + hint text — adapt to current tone */
 .kk-takeover-card .label-text {
-  color: var(--kk-tc-text-secondary);
+  color: var(--kk-text-secondary);
 }
 .kk-takeover-card .text-base-content\/50 {
-  color: var(--kk-tc-text-tertiary);
+  color: var(--kk-text-tertiary);
   opacity: 1;
 }
 /* FormField error text — use per-tone danger color (not DaisyUI text-error) */
@@ -2352,7 +2242,7 @@ select.input-styled,
   background: transparent;
   padding: 0;
   margin-top: 0;
-  color: var(--kk-tc-text-primary);
+  color: var(--kk-text-primary);
   gap: 0.75rem;
 }
 @media (min-width: 640px) {
@@ -2372,17 +2262,17 @@ select.input-styled,
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--kk-tc-text-tertiary);
+  color: var(--kk-text-tertiary);
 }
 .kk-takeover-card .kk-extraction-readout__value {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   font-size: clamp(1.5rem, 6vw, 2rem);
   font-weight: 700;
   line-height: 1;
-  color: var(--kk-tc-text-primary);
+  color: var(--kk-text-primary);
 }
 .kk-takeover-card .kk-extraction-readout__guidance {
-  color: var(--kk-tc-text-tertiary);
+  color: var(--kk-text-tertiary);
   font-size: 0.8125rem;
   line-height: 1.35;
   margin-top: 0.25rem;
@@ -2393,10 +2283,10 @@ select.input-styled,
   display: inline-flex;
   align-items: center;
   width: fit-content;
-  border: 1px solid var(--kk-tc-chip-border);
+  border: 1px solid var(--kk-chip-border);
   border-radius: var(--kaapi-content-radius);
-  background: var(--kk-tc-chip-bg);
-  color: var(--kk-tc-chip-text);
+  background: var(--kk-chip-bg);
+  color: var(--kk-chip-text);
   padding: 0.35rem 0.65rem;
   font-size: 0.75rem;
   font-weight: 700;
@@ -2405,7 +2295,7 @@ select.input-styled,
 .kk-takeover-card .kk-zone-chip--under {
   border-color: transparent;
   background: rgba(14, 116, 144, 0.18);
-  color: var(--kk-tc-chip-verified-text, #86efac);
+  color: var(--kk-chip-success-text, #86efac);
 }
 .kk-takeover-card.kk-tc--beige .kk-zone-chip--under {
   background: rgba(14, 116, 144, 0.12);
@@ -2413,17 +2303,151 @@ select.input-styled,
 }
 .kk-takeover-card .kk-zone-chip--balanced {
   border-color: transparent;
-  background: var(--kk-tc-chip-ai-bg);
-  color: var(--kk-tc-chip-ai-text);
+  background: var(--kk-chip-brand-bg);
+  color: var(--kk-chip-brand-text);
 }
 .kk-takeover-card .kk-zone-chip--over {
   border-color: transparent;
-  background: var(--kk-tc-chip-danger-bg);
-  color: var(--kk-tc-chip-danger-text);
+  background: var(--kk-chip-danger-bg);
+  color: var(--kk-chip-danger-text);
 }
+
+
+/* ── No-uber detail pages + text-over-photo backing ─────────────────────── */
+.kk-detail-page {
+  min-height: 100%;
+  padding-bottom: var(--mobile-content-bottom-padding);
+}
+.kk-detail-shell {
+  max-width: min(var(--kk-il-content-max-width, var(--kk-tc-max-width)), calc(100% - 32px));
+  width: calc(100% - 32px);
+  margin: 16px auto 48px;
+  color: var(--kk-text-primary);
+  overflow-x: clip;
+}
+.kk-detail-header {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: var(--kk-tc-section-gap);
+}
+.kk-detail-header .kk-tc-title { color: var(--kk-text-primary); }
+.kk-detail-header .kk-tc-subtitle { color: var(--kk-text-secondary); }
+.kk-detail-header .kk-tc-section--title { gap: 1rem; }
+
+.kk-detail-header--unified {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: clamp(1rem, 2vw, 1.5rem);
+}
+.kk-detail-header__media {
+  position: relative;
+  width: clamp(144px, 22vw, 256px);
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 12px;
+  border: var(--kk-card-surface-border);
+  box-shadow: var(--kk-card-surface-shadow);
+  background: var(--kk-card-surface-bg);
+}
+.kk-detail-header__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.kk-detail-header__media > .kk-tc-btn,
+.kk-detail-header__media > .kk-tc-primary-btn {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  z-index: 1;
+}
+.kk-detail-header__media-placeholder {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--kk-text-primary) 10%, transparent);
+  color: var(--kk-text-secondary);
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 8vw, 3.5rem);
+  font-weight: 700;
+}
+.kk-detail-header__eyebrow {
+  margin: 0;
+  color: var(--kk-text-eyebrow);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+.kk-detail-header__main {
+  min-width: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+.kk-detail-header__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+.kk-detail-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+.detail-panel {
+  background: var(--kk-card-surface-bg);
+  color: var(--kk-text-primary);
+  border: var(--kk-card-surface-border);
+  border-radius: 12px;
+  box-shadow: var(--kk-card-surface-shadow);
+  backdrop-filter: var(--kk-card-surface-filter);
+  -webkit-backdrop-filter: var(--kk-card-surface-filter);
+  padding: 0.875rem 1rem;
+}
+.kk-detail-shell .kk-tc-section { margin-top: var(--kk-tc-section-gap); }
+.kk-detail-shell .kk-tc-section:first-child { margin-top: 0; }
+.kk-detail-shell .kk-tc-section:not(.detail-panel):not(.kk-detail-header) {
+  color: var(--kk-text-primary);
+}
+.kk-detail-shell .kk-tc-section:not(.detail-panel):not(.kk-detail-header) .kk-tc-section-header { color: var(--kk-text-primary); }
+.kk-detail-shell .kk-tc-section:not(.detail-panel):not(.kk-detail-header) .kk-tc-body { color: var(--kk-text-primary); }
+.kk-detail-shell .kk-tc-section:not(.detail-panel):not(.kk-detail-header) .kk-tc-body-muted { color: var(--kk-text-secondary); }
+.kk-detail-shell .kk-tc-body,
+.kk-detail-shell .kk-tc-markdown {
+  max-width: 72ch;
+}
+.kk-ai-summary {
+  border-top: 1px solid color-mix(in srgb, var(--kk-text-primary) 18%, transparent);
+  padding-top: 1rem;
+}
+.kk-detail-shell .kk-tc-markdown { color: var(--kk-text-primary); font-size: var(--kk-tc-body-size, 0.9375rem); line-height: 1.65; }
+.kk-detail-shell .kk-tc-markdown h1,.kk-detail-shell .kk-tc-markdown h2,.kk-detail-shell .kk-tc-markdown h3,.kk-detail-shell .kk-tc-markdown h4,.kk-detail-shell .kk-tc-markdown h5,.kk-detail-shell .kk-tc-markdown h6 { font-family: var(--font-body); color: var(--kk-text-secondary); font-size: 1.05em; }
+.kk-detail-shell .kk-tc-markdown a { color: var(--kk-tc-link); }
+.kk-detail-shell .kk-extraction-readout { display: grid; gap: 0.75rem; color: var(--kk-text-primary); }
+@media (min-width: 640px) { .kk-detail-shell .kk-extraction-readout { grid-template-columns: minmax(8rem, 0.75fr) minmax(0, 1.25fr); align-items: start; } }
+.kk-detail-shell .kk-extraction-readout__metric,.kk-detail-shell .kk-extraction-readout__zone { display:flex; flex-direction:column; gap:0.35rem; }
+.kk-detail-shell .kk-extraction-readout__eyebrow { font-size:0.6875rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--kk-text-secondary); }
+.kk-detail-shell .kk-extraction-readout__value { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: clamp(1.5rem, 6vw, 2rem); font-weight: 700; line-height: 1; color: var(--kk-text-primary); }
+.kk-detail-shell .kk-extraction-readout__guidance { color: var(--kk-text-secondary); font-size:0.8125rem; line-height:1.35; margin-top:0.25rem; }
+.kk-detail-shell .kk-zone-chip { display:inline-flex; width:fit-content; border:var(--kk-chip-border); border-radius:9999px; background:var(--kk-chip-bg); color:var(--kk-chip-text); padding:0.35rem 0.65rem; font-size:0.75rem; font-weight:700; }
+.kk-detail-shell .kk-zone-chip--under { background:var(--kk-chip-success-bg); color:var(--kk-chip-success-text); border-color:var(--kk-chip-success-border); }
+.kk-detail-shell .kk-zone-chip--balanced { background:var(--kk-chip-brand-bg); color:var(--kk-chip-brand-text); border-color:var(--kk-chip-brand-border); }
+.kk-detail-shell .kk-zone-chip--over { background:var(--kk-chip-danger-bg); color:var(--kk-chip-danger-text); border-color:var(--kk-chip-danger-border); }
+@supports not (backdrop-filter: blur(1px)) { .detail-panel { background: var(--kk-card-surface-bg-solid); backdrop-filter:none; -webkit-backdrop-filter:none; } }
 
 /* ── Mobile responsive ──────────────────────────────────────────────────── */
 @media (max-width: 767px) {
+  .kk-detail-shell {
+    --kk-tc-section-gap: 24px;
+    width: calc(100% - 32px);
+    margin: 12px auto 32px;
+  }
   .kk-takeover-card {
     --kk-tc-padding-x: 16px;
     --kk-tc-padding-y: 24px;
@@ -2433,7 +2457,32 @@ select.input-styled,
     margin: 12px auto 32px;
   }
   .kk-b-page__nav {
-    padding: 12px 12px 0;
+    padding: 12px 16px 0;
+    margin: 0 auto;
+    width: calc(100% - 32px);
+  }
+
+  .kk-detail-header--unified {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .kk-detail-header__media {
+    width: clamp(144px, 46vw, 200px);
+    max-width: none;
+  }
+  .kk-detail-header__actions {
+    justify-content: flex-start;
+  }
+  .kk-detail-header__actions .kk-tc-btn,
+  .kk-detail-header__actions .kk-tc-primary-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .bag-card-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .bag-card-row__action {
+    justify-content: flex-start;
   }
 }
 
@@ -2474,18 +2523,16 @@ select.input-styled,
 
   /* EntityCard geometry */
   --kk-ec-radius: 12px;
-  --kk-ec-blur: 20px;
   --kk-ec-padding: 12px;
   --kk-ec-figure-radius: 8px;
-  --kk-ec-max-width: 220px;  /* spec-043 v5: cap individual card width on wide viewports */
+  --kk-ec-max-width: 320px;
 
   /* Canonical content-spacing tokens (spec-043) */
   --kk-card-gap-eyebrow-title: 0.25rem;
   --kk-card-gap-text-text: 0.25rem;
-  --kk-card-gap-text-chip: 0.375rem;
-  --kk-card-gap-chip-text: 0.375rem;
-  --kk-card-gap-chip-inline: 0.375rem;
-
+  --kk-card-gap-text-chip: 0.5rem;
+  --kk-card-gap-chip-text: 0.5rem;
+  --kk-card-gap-chip-inline: 0.5rem;
 }
 
 /* ── [data-tone="dark"] — DARK tone color tokens (single surface source) */
@@ -2497,288 +2544,238 @@ select.input-styled,
   --kk-il-text-secondary: #d6cbbf;
   --kk-il-text-tertiary: #a89585;
 
-  /* Repeated operational surfaces — dark canonical T2 uses opaque espresso cards. */
   --kk-card-surface-bg: rgba(34, 28, 22, 0.72);
   --kk-card-surface-bg-solid: #221c16;
-  --kk-card-surface-border: 1px solid rgba(245, 230, 211, 0.10);
-  --kk-card-surface-shadow:
-    inset 1px 1px 0 0 rgba(255, 247, 237, 0.12),
-    inset -1px -1px 0 0 rgba(0, 0, 0, 0.25),
-    0 8px 32px -4px rgba(0, 0, 0, 0.5);
+  --kk-card-surface-border: 1px solid rgba(245, 230, 211, 0.14);
+  --kk-card-surface-shadow: 0 10px 28px -18px rgba(0, 0, 0, 0.62);
   --kk-card-surface-blur: 8px;
   --kk-card-surface-filter: blur(var(--kk-card-surface-blur));
-  --kk-tc-surface: var(--kaapi-content-surface-dark);
-  --kk-tc-surface-solid: var(--kaapi-content-surface-dark);
-  --kk-tc-border: 1px solid var(--kaapi-content-border-dark);
-  --kk-tc-blur: 0px;
-  --kk-ec-blur: 0px;
-  --kk-tc-bevel-shadow: var(--kaapi-content-shadow-dark);
-  --kk-tc-text-primary: var(--kaapi-content-content-dark);
-  --kk-tc-text-secondary: var(--kaapi-content-muted-dark);
-  --kk-tc-text-tertiary: var(--kaapi-content-muted-dark);
-  --kk-tc-chip-bg: rgba(245, 230, 211, 0.08);
-  --kk-tc-chip-text: #d8c7b1;
-  --kk-tc-chip-border: 1px solid rgba(245, 230, 211, 0.14);
-  --kk-tc-btn-edit-bg: transparent;
-  --kk-tc-btn-edit-text: #fbbf24;
-  --kk-tc-btn-edit-border: rgba(251, 191, 36, 0.32);
-  --kk-tc-btn-edit-hover-bg: rgba(251, 191, 36, 0.10);
-  --kk-tc-btn-edit-hover-text: #fcd34d;
-  --kk-tc-btn-edit-hover-border: rgba(251, 191, 36, 0.44);
-  --kk-tc-btn-edit-active-bg: rgba(251, 191, 36, 0.16);
-  --kk-tc-btn-edit-active-text: #fcd34d;
-  --kk-tc-btn-edit-active-border: rgba(251, 191, 36, 0.54);
+
+  --kk-text-primary: #fff7ed;
+  --kk-text-secondary: #d6cbbf;
+  --kk-text-tertiary: #a89585;
+  --kk-text-eyebrow: #e8ddd4;
+  --kk-tc-link: #fbbf24;
+  --kk-tc-link-hover: #fcd34d;
+  --kk-tc-input-bg: rgba(45, 32, 22, 0.6);
+  --kk-tc-input-border: 1px solid rgba(255, 247, 237, 0.15);
+  --kk-tc-input-text: #fff7ed;
+  --kk-tc-input-placeholder: rgba(255, 247, 237, 0.5);
+  --kk-tc-input-focus-border: rgba(251, 191, 36, 0.6);
+  --kk-tc-input-focus-ring: 0 0 0 3px rgba(251, 191, 36, 0.15);
+
+  --kk-chip-bg: rgba(255, 247, 237, 0.20);
+  --kk-chip-text: #e8ddd4;
+  --kk-chip-border: 1px solid rgba(255, 247, 237, 0.30);
+  --kk-chip-neutral-bg: rgba(255, 247, 237, 0.20);
+  --kk-chip-neutral-text: #e8ddd4;
+  --kk-chip-neutral-border: rgba(255, 247, 237, 0.30);
+  --kk-chip-success-bg: rgba(34, 197, 94, 0.16);
+  --kk-chip-success-text: #86efac;
+  --kk-chip-success-border: rgba(34, 197, 94, 0.32);
+  --kk-chip-brand-bg: rgba(251, 191, 36, 0.20);
+  --kk-chip-brand-text: #fde68a;
+  --kk-chip-brand-border: rgba(251, 191, 36, 0.38);
+  --kk-chip-warning-bg: rgba(245, 158, 11, 0.17);
+  --kk-chip-warning-text: #fdba74;
+  --kk-chip-warning-border: rgba(245, 158, 11, 0.34);
+  --kk-tc-roast-amber-on-dark-text: #fef3c7;
+  --kk-tc-roast-light-medium-text: var(--kk-tc-roast-amber-on-dark-text);
+  --kk-chip-danger-bg: rgba(239, 68, 68, 0.13);
+  --kk-chip-danger-text: #fca5a5;
+  --kk-chip-danger-border: rgba(239, 68, 68, 0.30);
+
+  --kk-tc-btn-edit-bg: rgba(255, 247, 237, 0.18);
+  --kk-tc-btn-edit-text: #e8ddd4;
+  --kk-tc-btn-edit-border: rgba(255, 247, 237, 0.30);
+  --kk-tc-btn-edit-hover-bg: rgba(255, 247, 237, 0.26);
+  --kk-tc-btn-edit-hover-text: #fff7ed;
+  --kk-tc-btn-edit-hover-border: rgba(255, 247, 237, 0.42);
+  --kk-tc-btn-edit-active-bg: rgba(255, 247, 237, 0.34);
+  --kk-tc-btn-edit-active-text: #fff7ed;
+  --kk-tc-btn-edit-active-border: rgba(255, 247, 237, 0.52);
   --kk-tc-btn-focus-ring: 0 0 0 3px rgba(251, 191, 36, 0.25);
-  --kk-tc-primary-btn-bg: #fbbf24;
-  --kk-tc-primary-btn-text: #2d1608;
-  --kk-tc-primary-btn-border: rgba(251, 191, 36, 0.85);
-  --kk-tc-primary-btn-hover-bg: #fcd34d;
-  --kk-tc-primary-btn-hover-text: #2d1608;
-  --kk-tc-primary-btn-hover-border: rgba(252, 211, 77, 0.95);
-  --kk-tc-primary-btn-active-bg: #f59e0b;
-  --kk-tc-primary-btn-active-text: #2d1608;
-  --kk-tc-primary-btn-active-border: rgba(245, 158, 11, 0.95);
-  --kk-tc-primary-btn-focus-ring: 0 0 0 3px rgba(251, 191, 36, 0.35);
-  --kk-tc-monogram-tile-bg: rgba(245, 158, 11, 0.15);
-  /* Roast chip border tokens */
-  --kk-tc-roast-light-border: transparent;
-  --kk-tc-roast-light-medium-border: transparent;
-  --kk-tc-roast-medium-border: transparent;
-  --kk-tc-roast-medium-dark-border: transparent;
-  --kk-tc-roast-dark-border: rgba(255, 247, 237, 0.15);
-  /* Back-link tokens */
+  --kk-tc-btn-danger-bg: rgba(239, 68, 68, 0.20);
+  --kk-tc-btn-danger-text: #fca5a5;
+  --kk-tc-btn-danger-border: rgba(239, 68, 68, 0.36);
+  --kk-tc-btn-danger-hover-bg: rgba(239, 68, 68, 0.28);
+  --kk-tc-btn-danger-hover-text: #fecaca;
+  --kk-tc-btn-danger-hover-border: rgba(239, 68, 68, 0.50);
+  --kk-tc-btn-danger-active-bg: rgba(239, 68, 68, 0.32);
+  --kk-tc-btn-danger-active-text: #fee2e2;
+  --kk-tc-btn-danger-active-border: rgba(239, 68, 68, 0.50);
+  --kk-tc-btn-danger-focus-ring: 0 0 0 3px rgba(239, 68, 68, 0.25);
+
+  --kk-primary-btn-bg: #fbbf24;
+  --kk-primary-btn-text: #2d1608;
+  --kk-primary-btn-border: rgba(251, 191, 36, 0.85);
+  --kk-primary-btn-hover-bg: #fcd34d;
+  --kk-primary-btn-hover-text: #2d1608;
+  --kk-primary-btn-hover-border: rgba(252, 211, 77, 0.95);
+  --kk-primary-btn-active-bg: #f59e0b;
+  --kk-primary-btn-active-text: #2d1608;
+  --kk-primary-btn-active-border: rgba(245, 158, 11, 0.95);
+  --kk-primary-btn-focus-ring: 0 0 0 3px rgba(251, 191, 36, 0.35);
+
+  --kk-monogram-tile-bg: rgba(245, 158, 11, 0.15);
+  --kk-roast-light-border: transparent;
+  --kk-roast-light-medium-border: transparent;
+  --kk-roast-medium-border: transparent;
+  --kk-roast-medium-dark-border: transparent;
+  --kk-roast-dark-border: rgba(255, 247, 237, 0.15);
+
   --kk-tc-back-link-color: #fbbf24;
   --kk-tc-back-link-hover: #fcd34d;
-  /* Back-link glass pill — Option C (spec-043 nav-control-contrast) */
-  --kk-tc-back-link-chip-bg: rgba(20, 12, 6, 0.68);
-  --kk-tc-back-link-chip-border: rgba(255, 247, 237, 0.20);
-  --kk-tc-back-link-chip-blur: blur(16px);
+  --kk-tc-back-link-chip-bg: transparent;
+  --kk-tc-back-link-chip-border: transparent;
+  --kk-tc-back-link-chip-blur: none;
   --kk-tc-nav-text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
-  /* Tone-btn glass values — Option C */
-  --kk-tc-tone-btn-bg: rgba(20, 12, 6, 0.68);
+  --kk-tc-tone-btn-bg: transparent;
   --kk-tc-tone-btn-text: rgba(255, 247, 237, 0.95);
-  --kk-tc-tone-btn-border: rgba(255, 247, 237, 0.20);
-  --kk-tc-tone-btn-hover-bg: rgba(30, 16, 7, 0.80);
+  --kk-tc-tone-btn-border: transparent;
+  --kk-tc-tone-btn-hover-bg: rgba(255, 247, 237, 0.10);
   --kk-tc-tone-btn-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --kk-scrim-brew-end: rgba(8, 5, 2, 0.62);
+  --kk-scrim-catalog-end: rgba(8, 5, 2, 0.52);
+  --kk-scrim-hardware-end: rgba(8, 5, 2, 0.52);
+  --kk-page-bg-overlay: linear-gradient(rgba(18, 11, 6, 0.76), rgba(18, 11, 6, 0.76));
+  --kk-page-bg-overlay-base: linear-gradient(var(--kaapi-frame-scrim-dark-t2, rgba(18, 11, 6, 0.68)), rgba(18, 11, 6, 0.68));
+  --kk-page-bg-overlay-dashboard: linear-gradient(rgba(18, 11, 6, 0.76), rgba(18, 11, 6, 0.76));
+  --kk-page-bg-overlay-brew: linear-gradient(rgba(18, 11, 6, 0.76), rgba(18, 11, 6, 0.76));
+  --kk-page-bg-overlay-catalog: linear-gradient(rgba(18, 11, 6, 0.76), rgba(18, 11, 6, 0.76));
+  --kk-page-bg-overlay-hardware: linear-gradient(rgba(18, 11, 6, 0.76), rgba(18, 11, 6, 0.76));
 }
 [data-tone="beige"] {
   /* Immersive frost tint */
-  --kk-il-frost-tint: transparent; /* was rgba(245, 235, 220, 0.55) — transparent frost lets blurred photo show through */
+  --kk-il-frost-tint: transparent;
   --kk-il-frost-tint-solid: rgba(245, 235, 220, 0.92);
   --kk-il-text-primary: #2d1608;
   --kk-il-text-secondary: #5c3d1e;
   --kk-il-text-tertiary: #8b6b4a;
 
-  /* Repeated operational surfaces — solid light instruments. */
-  --kk-card-surface-bg: rgba(246, 242, 236, 0.78);
-  --kk-card-surface-bg-solid: #f6f2ec;
-  --kk-card-surface-border: 1px solid rgba(139, 90, 43, 0.12);
-  --kk-card-surface-shadow:
-    inset 1px 1px 0 0 rgba(255, 255, 255, 0.45),
-    inset -1px -1px 0 0 rgba(139, 90, 43, 0.15),
-    0 8px 32px -4px rgba(45, 22, 8, 0.2);
+  --kk-card-surface-bg: rgba(250, 245, 239, 0.86);
+  --kk-card-surface-bg-solid: #faf5ef;
+  --kk-card-surface-border: 1px solid rgba(139, 90, 43, 0.14);
+  --kk-card-surface-shadow: 0 10px 28px -20px rgba(45, 22, 8, 0.24);
   --kk-card-surface-blur: 20px;
   --kk-card-surface-filter: blur(var(--kk-card-surface-blur));
-  --kk-tc-surface: var(--kaapi-content-surface);
-  --kk-tc-surface-solid: var(--kaapi-content-surface);
-  --kk-tc-border: 1px solid var(--kaapi-content-border);
-  --kk-tc-blur: 0px;
-  --kk-ec-blur: 0px;
-  --kk-tc-bevel-shadow: var(--kaapi-content-shadow);
-  --kk-tc-text-primary: var(--kaapi-content-content);
-  --kk-tc-text-secondary: var(--kaapi-content-muted);
-  --kk-tc-text-tertiary: var(--kaapi-content-muted);
-  --kk-tc-chip-bg: rgba(120, 53, 15, 0.07);
-  --kk-tc-chip-text: #6b4a2f;
-  --kk-tc-chip-border: 1px solid rgba(120, 53, 15, 0.14);
-  --kk-tc-btn-edit-bg: rgba(115, 74, 55, 0.08);
+
+  --kk-text-primary: #2d1608;
+  --kk-text-secondary: #5c3d1e;
+  --kk-text-tertiary: #8b6b4a;
+  --kk-text-eyebrow: #5c3d1e;
+  --kk-tc-link: #78350f;
+  --kk-tc-link-hover: #5c2e0b;
+  --kk-tc-input-bg: rgba(235, 220, 200, 0.7);
+  --kk-tc-input-border: 1px solid rgba(139, 90, 43, 0.2);
+  --kk-tc-input-text: #2d1608;
+  --kk-tc-input-placeholder: rgba(45, 22, 8, 0.45);
+  --kk-tc-input-focus-border: rgba(146, 64, 14, 0.6);
+  --kk-tc-input-focus-ring: 0 0 0 3px rgba(146, 64, 14, 0.12);
+
+  --kk-chip-bg: rgba(45, 22, 8, 0.08);
+  --kk-chip-text: #4a3728;
+  --kk-chip-border: 1px solid rgba(45, 22, 8, 0.12);
+  --kk-chip-neutral-bg: rgba(45, 22, 8, 0.08);
+  --kk-chip-neutral-text: #4a3728;
+  --kk-chip-neutral-border: rgba(45, 22, 8, 0.12);
+  --kk-chip-success-bg: rgba(22, 163, 74, 0.12);
+  --kk-chip-success-text: #166534;
+  --kk-chip-success-border: rgba(22, 163, 74, 0.26);
+  --kk-chip-brand-bg: rgba(146, 64, 14, 0.12);
+  --kk-chip-brand-text: #92400e;
+  --kk-chip-brand-border: rgba(146, 64, 14, 0.26);
+  --kk-chip-warning-bg: rgba(146, 64, 14, 0.12);
+  --kk-chip-warning-text: #92400e;
+  --kk-chip-warning-border: rgba(146, 64, 14, 0.26);
+  --kk-tc-roast-light-medium-text: #92400e;
+  --kk-chip-danger-bg: rgba(185, 28, 28, 0.10);
+  --kk-chip-danger-text: #b91c1c;
+  --kk-chip-danger-border: rgba(185, 28, 28, 0.24);
+
+  --kk-tc-btn-edit-bg: rgba(45, 22, 8, 0.08);
   --kk-tc-btn-edit-text: #5c3d1e;
-  --kk-tc-btn-edit-border: rgba(92, 61, 30, 0.66);
-  --kk-tc-btn-edit-hover-bg: rgba(115, 74, 55, 0.14);
-  --kk-tc-btn-edit-hover-text: #5c3d1e;
-  --kk-tc-btn-edit-hover-border: rgba(92, 61, 30, 0.78);
-  --kk-tc-btn-edit-active-bg: rgba(115, 74, 55, 0.20);
+  --kk-tc-btn-edit-border: rgba(45, 22, 8, 0.12);
+  --kk-tc-btn-edit-hover-bg: rgba(45, 22, 8, 0.14);
+  --kk-tc-btn-edit-hover-text: #2d1608;
+  --kk-tc-btn-edit-hover-border: rgba(45, 22, 8, 0.20);
+  --kk-tc-btn-edit-active-bg: rgba(45, 22, 8, 0.20);
   --kk-tc-btn-edit-active-text: #2d1608;
-  --kk-tc-btn-edit-active-border: rgba(92, 61, 30, 0.88);
-  --kk-tc-btn-focus-ring: 0 0 0 3px rgba(92, 61, 30, 0.24);
-  --kk-tc-primary-btn-bg: #b45309;
-  --kk-tc-primary-btn-text: #fffaf3;
-  --kk-tc-primary-btn-border: rgba(180, 83, 9, 0.72);
-  --kk-tc-primary-btn-hover-bg: #92400e;
-  --kk-tc-primary-btn-hover-text: #fffaf3;
-  --kk-tc-primary-btn-hover-border: rgba(146, 64, 14, 0.86);
-  --kk-tc-primary-btn-active-bg: #78350f;
-  --kk-tc-primary-btn-active-text: #fffaf3;
-  --kk-tc-primary-btn-active-border: rgba(120, 53, 15, 0.92);
-  --kk-tc-primary-btn-focus-ring: 0 0 0 3px rgba(180, 83, 9, 0.25);
-  --kk-tc-monogram-tile-bg: rgba(120, 53, 15, 0.10);
-  /* Roast chip border tokens */
-  --kk-tc-roast-light-border: rgba(45, 22, 8, 0.2);
-  --kk-tc-roast-light-medium-border: rgba(45, 22, 8, 0.15);
-  --kk-tc-roast-medium-border: transparent;
-  --kk-tc-roast-medium-dark-border: transparent;
-  --kk-tc-roast-dark-border: transparent;
-  /* Back-link tokens */
-  --kk-tc-back-link-color: #92400e;
-  --kk-tc-back-link-hover: #78350f;
-  /* Back-link glass pill — Option C beige (spec-043 nav-control-contrast) */
-  --kk-tc-back-link-chip-bg: rgba(245, 235, 220, 0.90);
-  --kk-tc-back-link-chip-border: rgba(45, 22, 8, 0.18);
-  --kk-tc-back-link-chip-blur: blur(16px);
+  --kk-tc-btn-edit-active-border: rgba(45, 22, 8, 0.28);
+  --kk-tc-btn-focus-ring: 0 0 0 3px rgba(146, 64, 14, 0.15);
+  --kk-tc-btn-danger-bg: rgba(185, 28, 28, 0.10);
+  --kk-tc-btn-danger-text: #b91c1c;
+  --kk-tc-btn-danger-border: rgba(185, 28, 28, 0.15);
+  --kk-tc-btn-danger-hover-bg: rgba(185, 28, 28, 0.18);
+  --kk-tc-btn-danger-hover-text: #991b1b;
+  --kk-tc-btn-danger-hover-border: rgba(185, 28, 28, 0.25);
+  --kk-tc-btn-danger-active-bg: rgba(185, 28, 28, 0.26);
+  --kk-tc-btn-danger-active-text: #7f1d1d;
+  --kk-tc-btn-danger-active-border: rgba(185, 28, 28, 0.35);
+  --kk-tc-btn-danger-focus-ring: 0 0 0 3px rgba(185, 28, 28, 0.15);
+
+  --kk-primary-btn-bg: #fbbf24;
+  --kk-primary-btn-text: #2d1608;
+  --kk-primary-btn-border: rgba(251, 191, 36, 0.85);
+  --kk-primary-btn-hover-bg: #fcd34d;
+  --kk-primary-btn-hover-text: #2d1608;
+  --kk-primary-btn-hover-border: rgba(252, 211, 77, 0.95);
+  --kk-primary-btn-active-bg: #f59e0b;
+  --kk-primary-btn-active-text: #2d1608;
+  --kk-primary-btn-active-border: rgba(245, 158, 11, 0.95);
+  --kk-primary-btn-focus-ring: 0 0 0 3px rgba(251, 191, 36, 0.35);
+
+  --kk-monogram-tile-bg: rgba(120, 53, 15, 0.10);
+  --kk-roast-light-border: rgba(45, 22, 8, 0.2);
+  --kk-roast-light-medium-border: rgba(45, 22, 8, 0.15);
+  --kk-roast-medium-border: transparent;
+  --kk-roast-medium-dark-border: transparent;
+  --kk-roast-dark-border: transparent;
+
+  --kk-tc-back-link-color: #78350f;
+  --kk-tc-back-link-hover: #5c2e0b;
+  --kk-tc-back-link-chip-bg: transparent;
+  --kk-tc-back-link-chip-border: transparent;
+  --kk-tc-back-link-chip-blur: none;
   --kk-tc-nav-text-shadow: none;
-  /* Tone toggle — beige-tone overrides (spec-043: cream chip surface for photo-independent AA) */
-  --kk-tc-tone-btn-bg: rgba(245, 235, 220, 0.90);
+  --kk-tc-tone-btn-bg: transparent;
   --kk-tc-tone-btn-text: #4a3728;
-  --kk-tc-tone-btn-border: rgba(45, 22, 8, 0.18);
-  --kk-tc-tone-btn-hover-bg: rgba(245, 235, 220, 0.96);
+  --kk-tc-tone-btn-border: transparent;
+  --kk-tc-tone-btn-hover-bg: rgba(45, 22, 8, 0.08);
   --kk-tc-tone-btn-text-shadow: none;
+  --kk-scrim-brew-end: rgba(8, 5, 2, 0.62);
+  --kk-scrim-catalog-end: rgba(8, 5, 2, 0.52);
+  --kk-scrim-hardware-end: rgba(8, 5, 2, 0.52);
+  --kk-main-veil-blur: blur(18px);
+  --kk-page-frost-blur: blur(18px) saturate(1.08);
+  --kk-page-bg-overlay: linear-gradient(160deg, rgba(245, 235, 220, 0.86), rgba(232, 210, 180, 0.90));
+  --kk-page-bg-overlay-base: linear-gradient(160deg, rgba(245, 235, 220, 0.18), rgba(232, 210, 180, 0.28));
+  --kk-page-bg-overlay-dashboard: linear-gradient(160deg, rgba(245, 235, 220, 0.86), rgba(232, 210, 180, 0.90));
+  --kk-page-bg-overlay-brew: linear-gradient(160deg, rgba(245, 235, 220, 0.86), rgba(232, 210, 180, 0.90));
+  --kk-page-bg-overlay-catalog: linear-gradient(160deg, rgba(245, 235, 220, 0.86), rgba(232, 210, 180, 0.90));
+  --kk-page-bg-overlay-hardware: linear-gradient(160deg, rgba(245, 235, 220, 0.86), rgba(232, 210, 180, 0.90));
 }
 
-.kk-takeover-card.kk-tc--dark,
-[data-tone="dark"] {
-  --kk-tc-chip-rating-godshot-bg: rgba(251, 191, 36, 0.18);
-  --kk-tc-chip-rating-godshot-text: #fde68a;
-  --kk-tc-chip-rating-godshot-border: rgba(251, 191, 36, 0.34);
-  --kk-tc-chip-rating-good-bg: rgba(34, 197, 94, 0.15);
-  --kk-tc-chip-rating-good-text: #86efac;
-  --kk-tc-chip-rating-good-border: rgba(34, 197, 94, 0.3);
-  --kk-tc-chip-rating-passable-bg: rgba(245, 158, 11, 0.16);
-  --kk-tc-chip-rating-passable-text: #fdba74;
-  --kk-tc-chip-rating-passable-border: rgba(245, 158, 11, 0.32);
-  --kk-tc-chip-rating-reject-bg: rgba(239, 68, 68, 0.12);
-  --kk-tc-chip-rating-reject-text: #fca5a5;
-  --kk-tc-chip-rating-reject-border: rgba(239, 68, 68, 0.28);
-  --kk-tc-chip-rating-unknown-bg: var(--kk-tc-chip-bg, rgba(255, 247, 237, 0.1));
-  --kk-tc-chip-rating-unknown-text: var(--kk-tc-chip-text, #e8ddd4);
-  --kk-tc-chip-rating-unknown-border: rgba(255, 247, 237, 0.15);
-  --kk-tc-chip-verified-bg: var(--kk-tc-chip-rating-good-bg);
-  --kk-tc-chip-verified-text: var(--kk-tc-chip-rating-good-text);
-  --kk-tc-chip-ai-bg: var(--kk-tc-chip-rating-godshot-bg);
-  --kk-tc-chip-ai-text: var(--kk-tc-chip-rating-godshot-text);
-  --kk-tc-chip-danger-bg: var(--kk-tc-chip-rating-reject-bg);
-  --kk-tc-chip-danger-text: var(--kk-tc-chip-rating-reject-text);
-}
 
-.kk-takeover-card.kk-tc--beige,
-[data-tone="beige"] {
-  --kk-tc-chip-rating-godshot-bg: rgba(217, 119, 6, 0.16);
-  --kk-tc-chip-rating-godshot-text: #78350f;
-  --kk-tc-chip-rating-godshot-border: rgba(217, 119, 6, 0.28);
-  --kk-tc-chip-rating-good-bg: rgba(22, 163, 74, 0.12);
-  --kk-tc-chip-rating-good-text: #166534;
-  --kk-tc-chip-rating-good-border: rgba(22, 163, 74, 0.24);
-  --kk-tc-chip-rating-passable-bg: rgba(146, 64, 14, 0.12);
-  --kk-tc-chip-rating-passable-text: #92400e;
-  --kk-tc-chip-rating-passable-border: rgba(146, 64, 14, 0.24);
-  --kk-tc-chip-rating-reject-bg: rgba(185, 28, 28, 0.1);
-  --kk-tc-chip-rating-reject-text: #b91c1c;
-  --kk-tc-chip-rating-reject-border: rgba(185, 28, 28, 0.22);
-  --kk-tc-chip-rating-unknown-bg: var(--kk-tc-chip-bg, rgba(45, 22, 8, 0.08));
-  --kk-tc-chip-rating-unknown-text: var(--kk-tc-chip-text, #4a3728);
-  --kk-tc-chip-rating-unknown-border: rgba(45, 22, 8, 0.12);
-  --kk-tc-chip-verified-bg: var(--kk-tc-chip-rating-good-bg);
-  --kk-tc-chip-verified-text: var(--kk-tc-chip-rating-good-text);
-  --kk-tc-chip-ai-bg: var(--kk-tc-chip-rating-godshot-bg);
-  --kk-tc-chip-ai-text: var(--kk-tc-chip-rating-godshot-text);
-  --kk-tc-chip-danger-bg: var(--kk-tc-chip-rating-reject-bg);
-  --kk-tc-chip-danger-text: var(--kk-tc-chip-rating-reject-text);
+/* ── Immersive list route scrim ──────────────────────────────────────────── */
+.app-bg.bg-dashboard:has(~ main [data-tone]) {
+  background-image: var(--kk-page-bg-overlay-dashboard), url('/static/img/hero-dashboard.jpg');
 }
-
-[data-tone="dark"] {
-  --kk-tc-chip-rating-godshot-bg: rgba(251, 191, 36, 0.20);
-  --kk-tc-chip-rating-godshot-text: #fde68a;
-  --kk-tc-chip-rating-godshot-border: rgba(251, 191, 36, 0.38);
-  --kk-tc-chip-rating-good-bg: rgba(34, 197, 94, 0.16);
-  --kk-tc-chip-rating-good-text: #86efac;
-  --kk-tc-chip-rating-good-border: rgba(34, 197, 94, 0.32);
-  --kk-tc-chip-rating-passable-bg: rgba(245, 158, 11, 0.17);
-  --kk-tc-chip-rating-passable-text: #fdba74;
-  --kk-tc-chip-rating-passable-border: rgba(245, 158, 11, 0.34);
-  --kk-tc-chip-rating-reject-bg: rgba(239, 68, 68, 0.13);
-  --kk-tc-chip-rating-reject-text: #fca5a5;
-  --kk-tc-chip-rating-reject-border: rgba(239, 68, 68, 0.30);
-  --kk-tc-chip-rating-unknown-bg: rgba(245, 230, 211, 0.08);
-  --kk-tc-chip-rating-unknown-text: #d8c7b1;
-  --kk-tc-chip-rating-unknown-border: rgba(245, 230, 211, 0.14);
+.app-bg.bg-brew-log:has(~ main [data-tone]) {
+  background-image: var(--kk-page-bg-overlay-brew), url('/static/img/hero-brew.jpg');
 }
-
-/* Mirror of the anti-double-frost approach for detail pages (which makes
-   #main-content transparent). For list pages, #main-content IS the frost layer:
-   it applies backdrop-filter + tint so the catalog photo blurs through.
-   Specificity (1,2,0) > existing (1,1,0) transparent rule, so list pages
-   correctly get the frost while detail pages keep their transparent behavior. */
-#main-content:has(.immersive-list-shell[data-tone="dark"]) {
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  background: var(--kaapi-frame-scrim-dark-t2);
-  box-shadow: none;
+.app-bg.bg-catalog:has(~ main [data-tone]) {
+  background-image: var(--kk-page-bg-overlay-catalog), url('/static/img/hero-catalog.jpg');
 }
-#main-content:has(.immersive-list-shell[data-tone="beige"]) {
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  background: rgba(245, 235, 220, 0.24);
-  box-shadow: none;
+.app-bg.bg-hardware:has(~ main [data-tone]) {
+  background-image: var(--kk-page-bg-overlay-hardware), url('/static/img/hero-hardware.jpg');
 }
-
-/* Solid fallback — no backdrop-filter */
-@supports not (backdrop-filter: blur(1px)) {
-  #main-content:has(.immersive-list-shell[data-tone="dark"]) {
-    background: rgba(18, 11, 6, 0.88);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-  #main-content:has(.immersive-list-shell[data-tone="beige"]) {
-    background: rgba(45, 22, 8, 0.15);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-}
-
-/* Reduced transparency preference */
-@media (prefers-reduced-transparency: reduce) {
-  #main-content:has(.immersive-list-shell[data-tone="dark"]) {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    background: rgba(18, 11, 6, 0.88);
-  }
-  #main-content:has(.immersive-list-shell[data-tone="beige"]) {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    background: rgba(45, 22, 8, 0.12);
-  }
-}
-
-/* ── Catalog: tone-aware lighter scrim for immersive list shell ──────────── */
-/* The frost (#main-content) does the visual work; a lighter photo scrim lets
-   shapes show through. Mirrors the detail-page takeover card scrim values. */
-.app-bg.bg-catalog:has(~ main .immersive-list-shell[data-tone="dark"]) {
-  background-image:
-    linear-gradient(var(--kaapi-frame-scrim-dark-t2), rgba(18, 11, 6, 0.68));
-}
-.app-bg.bg-catalog:has(~ main .immersive-list-shell[data-tone="beige"]) {
-  background-image:
-    linear-gradient(rgba(180, 170, 160, 0.18), rgba(180, 170, 160, 0.22));
-}
-
-/* ── Dashboard: tone-aware lighter scrim for immersive list shell ────────── */
-/* Mirrors the catalog scrim pattern. */
-.app-bg.bg-dashboard:has(~ main .immersive-list-shell[data-tone="dark"]) {
-  background-image:
-    linear-gradient(160deg, var(--kaapi-frame-scrim-dark-t2), rgba(12, 7, 4, 0.64));
-}
-.app-bg.bg-dashboard:has(~ main .immersive-list-shell[data-tone="beige"]) {
-  background-image:
-    linear-gradient(160deg, rgba(245, 235, 220, 0.18), rgba(232, 210, 180, 0.28));
-}
-
-/* ── Brew log: tone-aware lighter scrim for immersive list shell ────────── */
-.app-bg.bg-brew-log:has(~ main .immersive-list-shell[data-tone="dark"]) {
-  background-image:
-    linear-gradient(var(--kaapi-frame-scrim-dark-t2), rgba(18, 11, 6, 0.68));
-}
-.app-bg.bg-brew-log:has(~ main .immersive-list-shell[data-tone="beige"]) {
-  background-image:
-    linear-gradient(rgba(245, 235, 220, 0.10), rgba(245, 235, 220, 0.14));
+.app-bg:has(~ main [data-tone="beige"]) {
+  --kk-page-bg-overlay: linear-gradient(160deg, rgba(245, 235, 220, 0.86), rgba(232, 210, 180, 0.90));
+  --kk-page-bg-overlay-dashboard: linear-gradient(160deg, rgba(245, 235, 220, 0.86), rgba(232, 210, 180, 0.90));
+  --kk-page-bg-overlay-brew: linear-gradient(160deg, rgba(245, 235, 220, 0.86), rgba(232, 210, 180, 0.90));
+  --kk-page-bg-overlay-catalog: linear-gradient(160deg, rgba(245, 235, 220, 0.86), rgba(232, 210, 180, 0.90));
+  --kk-page-bg-overlay-hardware: linear-gradient(160deg, rgba(245, 235, 220, 0.86), rgba(232, 210, 180, 0.90));
 }
 
 /* ── Immersive List Shell layout ─────────────────────────────────────────── */
@@ -2797,7 +2794,8 @@ select.input-styled,
 .immersive-nav-row {
   display: flex;
   justify-content: flex-end;
-  padding-bottom: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
 }
 
 /* ── ListPageHeader ──────────────────────────────────────────────────────── */
@@ -2820,6 +2818,71 @@ select.input-styled,
   line-height: 1.1;
   margin: 0 0 0.5rem;
 }
+.dashboard-home .list-page-header-title {
+  margin-bottom: 0.875rem;
+}
+.kk-home-wordmark {
+  display: inline-grid;
+  grid-template-columns: minmax(0, max-content);
+  justify-items: start;
+  row-gap: clamp(0.04em, 0.7vw, 0.10em);
+  max-width: min(100%, calc(100vw - 2rem));
+  overflow-wrap: normal;
+  font-family: var(--font-display, "Playfair Display", Georgia, serif);
+  font-weight: 700;
+  font-size: clamp(4.25rem, 18vw, 8.75rem);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+}
+
+.kk-home-wordmark__line {
+  display: block;
+  white-space: nowrap;
+  margin: 0;
+  transform: none;
+}
+
+.kk-home-wordmark__kaapi {
+  color: var(--kk-text-primary);
+}
+
+.kk-home-wordmark__kadai {
+  color: var(--kk-tc-link);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.dashboard-home .list-page-header-section {
+  color: var(--kk-il-text-secondary);
+  font-size: clamp(0.875rem, 0.82rem + 0.22vw, 1rem);
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: none;
+}
+@media (min-width: 768px) {
+  .kk-home-wordmark {
+    font-size: clamp(6rem, 12vw, 11rem);
+  }
+}
+.kk-section-heading-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.125rem, 1rem + 0.55vw, 1.375rem);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.12;
+  color: var(--kk-il-text-primary, var(--kk-text-primary));
+  margin: 0;
+  text-transform: none;
+}
 .list-page-header-section {
   font-size: 0.875rem;
   font-weight: 500;
@@ -2827,6 +2890,19 @@ select.input-styled,
   text-transform: uppercase;
   color: var(--kk-il-text-secondary);
   margin: 0;
+}
+.list-page-header > .kk-tc-primary-btn {
+  margin-top: 0.875rem;
+}
+
+@media (max-width: 430px) {
+  .kk-home-wordmark {
+    max-width: calc(100vw - 2rem);
+    font-size: clamp(3.75rem, 18vw, 4.85rem);
+    row-gap: 0.08em;
+    line-height: 0.92;
+    letter-spacing: -0.035em;
+  }
 }
 
 /* spec-043 v5: text-shadow removed — legibility from darker scrim + eggshell surfaces */
@@ -2845,16 +2921,24 @@ select.input-styled,
   border: var(--kk-card-surface-border);
   backdrop-filter: var(--kk-card-surface-filter);
   -webkit-backdrop-filter: var(--kk-card-surface-filter);
-  color: var(--kk-tc-text-primary);
+  color: var(--kk-text-primary);
   transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
   height: auto;
+}
+.entity-card--button {
+  width: 100%;
+  padding: 0;
+  appearance: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
 }
 .entity-card:hover {
   filter: brightness(1.05);
   box-shadow: var(--kk-card-surface-shadow), 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 .entity-card:focus-visible {
-  outline: 2px solid var(--kk-tc-text-primary);
+  outline: 2px solid var(--kk-text-primary);
   outline-offset: 2px;
 }
 .entity-card:active {
@@ -2885,9 +2969,9 @@ select.input-styled,
 }
 
 .entity-card-figure {
-  aspect-ratio: 16 / 10;  /* spec-043 v5: was 4/3 — 17% shorter figure; cards less dominant */
+  aspect-ratio: 4 / 3;
   overflow: hidden;
-  background: color-mix(in srgb, var(--kk-tc-text-primary) 8%, transparent);
+  background: color-mix(in srgb, var(--kk-text-primary) 8%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2903,9 +2987,9 @@ select.input-styled,
 /* Compact monogram fill — shown when no imageUrl is provided.
    Transparent background so the card's glass surface reads as one continuous
    surface across figure and body — no two-tone tinted-panel split. The compact
-   centred monogram letter (--kk-tc-text-primary) sits directly on the card
+   centred monogram letter (--kk-text-primary) sits directly on the card
    glass and is AA-legible on both tones (cream on dark glass; espresso on
-   beige glass). --kk-tc-monogram-tile-bg is intentionally NOT used here
+   beige glass). --kk-monogram-tile-bg is intentionally NOT used here
    to avoid the off-tone amber/brown block; that token is preserved for the
    detail-page TitleIcon (.kk-tc-title-icon-placeholder) which is unaffected. */
 .entity-card-monogram-fill {
@@ -2915,6 +2999,14 @@ select.input-styled,
   align-items: center;
   justify-content: center;
   background: transparent;
+}
+
+.entity-card-image-placeholder {
+  width: 100%;
+  height: 100%;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--kk-text-primary) 10%, transparent), transparent 55%),
+    color-mix(in srgb, var(--kk-text-primary) 6%, transparent);
 }
 
 /* Strip the figure's image-placeholder tint when a monogram fill is active,
@@ -2930,7 +3022,7 @@ select.input-styled,
   font-family: var(--font-display);
   font-size: clamp(2rem, 6vw, 3.5rem);  /* spec-043 v5: was clamp(3rem, 8vw, 5rem) — ~30% smaller, less dominant */
   font-weight: 700;
-  color: var(--kk-tc-text-primary);
+  color: var(--kk-text-primary);
   line-height: 1;
   user-select: none;
 }
@@ -2947,7 +3039,7 @@ select.input-styled,
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--kk-tc-text-tertiary);
+  color: var(--kk-text-tertiary);
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2958,7 +3050,7 @@ select.input-styled,
   font-family: var(--kaapi-card-title-family);
   font-size: var(--kaapi-card-title-size);
   font-weight: var(--kaapi-card-title-weight);
-  color: var(--kk-tc-text-primary);
+  color: var(--kk-text-primary);
   line-height: var(--kaapi-card-title-line-height);
   letter-spacing: var(--kaapi-card-title-letter-spacing);
   margin: 0;
@@ -2970,7 +3062,7 @@ select.input-styled,
 }
 
 .entity-card-date {
-  color: var(--kk-tc-text-secondary);
+  color: var(--kk-text-secondary);
   font-family: var(--kaapi-card-meta-family);
   font-size: var(--kaapi-card-meta-size);
   font-weight: var(--kaapi-card-meta-weight);
@@ -2980,10 +3072,36 @@ select.input-styled,
 .entity-card-chip-slot {
   display: flex;
   align-items: flex-start;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--kk-card-gap-chip-inline);
   margin-top: var(--kk-card-gap-text-chip);
   min-height: 1.75rem;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.entity-card-chip-row-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+.entity-card-chip,
+.entity-card-chip-slot > .kk-tc-chip {
+  flex: 0 0 auto;
+  min-width: max-content;
+}
+
+.entity-card-chip-measure {
+  position: absolute;
+  inset: 0 auto auto 0;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--kk-card-gap-chip-inline);
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+  visibility: hidden;
+  white-space: nowrap;
 }
 
 /* ── EntityCard responsive grid ─────────────────────────────────────────── */
@@ -2994,8 +3112,7 @@ select.input-styled,
 }
 @media (min-width: 768px) {
   .entity-card-grid {
-    /* spec-043 v5: auto-fill capped at 220px — prevents oversized 350px cards at 1200px viewport */
-    grid-template-columns: repeat(auto-fill, minmax(180px, var(--kk-ec-max-width)));
+    grid-template-columns: repeat(auto-fill, minmax(280px, var(--kk-ec-max-width)));
     justify-content: start;
     gap: 1rem;
   }
@@ -3006,28 +3123,29 @@ select.input-styled,
   margin-bottom: 1.5rem;
 }
 .immersive-search-input {
-  background: var(--kk-tc-surface);
-  backdrop-filter: blur(var(--kk-ec-blur));
-  -webkit-backdrop-filter: blur(var(--kk-ec-blur));
-  border: var(--kk-tc-border);
-  border-radius: 9999px;
+  background: var(--kk-tc-input-bg);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: var(--kk-tc-input-border);
+  border-radius: var(--kk-input-radius, 10px);
   padding: 0.75rem 1rem;
-  color: var(--kk-tc-text-primary);
+  color: var(--kk-tc-input-text);
   width: 100%;
   max-width: 400px;
   font-size: 0.9375rem;
   display: block;
 }
 .immersive-search-input::placeholder {
-  color: var(--kk-tc-text-tertiary);
+  color: var(--kk-tc-input-placeholder);
 }
 .immersive-search-input:focus {
-  outline: 2px solid var(--kk-tc-text-primary);
-  outline-offset: 2px;
+  outline: none;
+  border-color: var(--kk-tc-input-focus-border);
+  box-shadow: var(--kk-tc-input-focus-ring);
 }
 @supports not (backdrop-filter: blur(1px)) {
   .immersive-search-input {
-    background: var(--kk-tc-surface-solid);
+    background: var(--kk-card-surface-bg-solid);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
@@ -3036,7 +3154,7 @@ select.input-styled,
   .immersive-search-input {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    background: var(--kk-tc-surface-solid);
+    background: var(--kk-card-surface-bg-solid);
   }
 }
 
@@ -3051,18 +3169,18 @@ select.input-styled,
   margin-bottom: 1rem;
   opacity: 0.6;
   display: block;
-  color: var(--kk-il-text-tertiary, var(--kk-tc-text-tertiary));
+  color: var(--kk-il-text-tertiary, var(--kk-text-tertiary));
 }
 .immersive-empty-state-title {
   font-family: var(--font-display);
   font-size: var(--kk-tc-title-size);
   font-weight: var(--kk-tc-title-weight);
   line-height: 1.2;
-  color: var(--kk-il-text-primary, var(--kk-tc-text-primary));
+  color: var(--kk-il-text-primary, var(--kk-text-primary));
   margin: 0;
 }
 .immersive-empty-state-description {
-  color: var(--kk-il-text-secondary, var(--kk-tc-text-tertiary));
+  color: var(--kk-il-text-secondary, var(--kk-text-tertiary));
   font-size: var(--kk-tc-body-size);
   font-weight: 400;
   line-height: var(--kk-tc-body-line-height);
@@ -3198,7 +3316,7 @@ select.input-styled,
   width: 3rem;
   min-width: 3rem;
   height: 3rem;
-  color: var(--kk-tc-text-tertiary, var(--kaapi-content-muted));
+  color: var(--kk-text-tertiary, var(--kaapi-content-muted));
   font-size: 1.25rem;
   font-weight: 700;
 }
@@ -3208,12 +3326,12 @@ select.input-styled,
   font-size: var(--kk-tc-title-size);
   font-weight: var(--kk-tc-title-weight);
   line-height: 1.2;
-  color: var(--kk-tc-text-primary, var(--kaapi-content-content));
+  color: var(--kk-text-primary, var(--kaapi-content-content));
 }
 
 .tone-state-card--empty .tone-state-card__message {
   margin-top: var(--kk-card-gap-text-text);
-  color: var(--kk-tc-text-tertiary, var(--kaapi-content-muted));
+  color: var(--kk-text-tertiary, var(--kaapi-content-muted));
   font-size: var(--kk-tc-body-size);
   font-weight: 400;
   line-height: var(--kk-tc-body-line-height);
@@ -3364,18 +3482,19 @@ select.input-styled,
 
 @media (min-width: 768px) {
   .brew-log-card-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, var(--kk-ec-max-width)));
+    justify-content: start;
     gap: 1rem;
   }
 }
 
 /* ── Immersive error card — subtle glass for fetch errors ───────────────── */
 .immersive-error-card {
-  background: var(--kk-tc-surface);
-  backdrop-filter: blur(var(--kk-ec-blur));
-  -webkit-backdrop-filter: blur(var(--kk-ec-blur));
-  border: var(--kk-tc-border);
-  box-shadow: var(--kk-tc-bevel-shadow);
+  background: var(--kk-card-surface-bg);
+  backdrop-filter: var(--kk-card-surface-filter);
+  -webkit-backdrop-filter: var(--kk-card-surface-filter);
+  border: var(--kk-card-surface-border);
+  box-shadow: var(--kk-card-surface-shadow);
   border-radius: var(--kk-ec-radius);
   padding: 1.5rem;
   text-align: center;
@@ -3394,7 +3513,7 @@ select.input-styled,
 }
 @supports not (backdrop-filter: blur(1px)) {
   .immersive-error-card {
-    background: var(--kk-tc-surface-solid);
+    background: var(--kk-card-surface-bg-solid);
   }
 }
 
@@ -3407,17 +3526,17 @@ select.input-styled,
   right: max(1rem, env(safe-area-inset-right));
   z-index: 50;
 
-  background: var(--kk-tc-surface);
-  backdrop-filter: blur(var(--kk-tc-blur));
-  -webkit-backdrop-filter: blur(24px);
-  box-shadow: var(--kk-tc-bevel-shadow);
-  border: var(--kk-tc-border);
+  background: var(--kk-card-surface-bg);
+  backdrop-filter: var(--kk-card-surface-filter);
+  -webkit-backdrop-filter: var(--kk-card-surface-filter);
+  box-shadow: var(--kk-card-surface-shadow);
+  border: var(--kk-card-surface-border);
 
   width: 56px;
   height: 56px;
   border-radius: 50%;
 
-  color: var(--kk-tc-text-primary);
+  color: var(--kk-text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3433,7 +3552,7 @@ select.input-styled,
   transform: scale(0.95);
 }
 .immersive-fab:focus-visible {
-  outline: 2px solid var(--kk-tc-text-primary);
+  outline: 2px solid var(--kk-text-primary);
   outline-offset: 2px;
 }
 @media (min-width: 768px) {
@@ -3448,7 +3567,7 @@ select.input-styled,
 }
 @supports not (backdrop-filter: blur(1px)) {
   .immersive-fab {
-    background: var(--kk-tc-surface-solid);
+    background: var(--kk-card-surface-bg-solid);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
@@ -3457,7 +3576,7 @@ select.input-styled,
   .immersive-fab {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    background: var(--kk-tc-surface-solid);
+    background: var(--kk-card-surface-bg-solid);
   }
 }
 
@@ -3533,7 +3652,7 @@ select.input-styled,
 .stat-tile__value {
   font-size: 1.5rem;          /* 24px per Aria Item 2 spec */
   font-weight: 600;           /* semibold per Aria Item 2; was 700 (bold) */
-  color: var(--kk-tc-text-primary);
+  color: var(--kk-text-primary);
   line-height: 1.2;
 }
 
@@ -3556,7 +3675,7 @@ select.input-styled,
   width: 2rem;
   height: 1.5rem;
   border-radius: 4px;
-  background: color-mix(in srgb, var(--kk-tc-text-primary) 12%, transparent);
+  background: color-mix(in srgb, var(--kk-text-primary) 12%, transparent);
   animation: pulse 1.5s ease-in-out infinite;
 }
 
@@ -3566,14 +3685,14 @@ select.input-styled,
   height: 0.625rem;
   border-radius: 3px;
   margin-top: 0.375rem;
-  background: color-mix(in srgb, var(--kk-tc-text-primary) 8%, transparent);
+  background: color-mix(in srgb, var(--kk-text-primary) 8%, transparent);
   animation: pulse 1.5s ease-in-out infinite;
 }
 
 /* ── EntityCard meta slot ────────────────────────────────────────────────── */
 .entity-card__meta {
   font-size: 0.6875rem;
-  color: var(--kk-tc-text-secondary);
+  color: var(--kk-text-secondary);
   margin-top: var(--kk-card-gap-chip-text);
   line-height: 1.4;
 }
@@ -3595,7 +3714,7 @@ select.input-styled,
 .entity-card--skeleton .entity-card__skeleton-line {
   height: 0.75rem;
   border-radius: 4px;
-  background: color-mix(in srgb, var(--kk-tc-text-primary) 10%, transparent);
+  background: color-mix(in srgb, var(--kk-text-primary) 10%, transparent);
   margin-bottom: 0.5rem;
 }
 
@@ -3628,7 +3747,7 @@ select.input-styled,
 
 .shot-row:hover {
   transform: translateY(-1px);
-  box-shadow: var(--kk-card-surface-shadow), 0 2px 8px color-mix(in srgb, var(--kk-tc-text-primary) 15%, transparent);
+  box-shadow: var(--kk-card-surface-shadow), 0 2px 8px color-mix(in srgb, var(--kk-text-primary) 15%, transparent);
 }
 
 .shot-row:active {
@@ -3636,7 +3755,7 @@ select.input-styled,
 }
 
 .shot-row:focus-visible {
-  outline: 2px solid var(--kk-tc-text-primary);
+  outline: 2px solid var(--kk-text-primary);
   outline-offset: 2px;
 }
 
@@ -3649,7 +3768,7 @@ select.input-styled,
 .shot-row__bag {
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--kk-tc-text-primary);
+  color: var(--kk-text-primary);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3667,9 +3786,9 @@ select.input-styled,
   font-size: 0.6875rem;
   padding: 0.25rem 0.5rem;
   border-radius: 6px;
-  background: color-mix(in srgb, var(--kk-tc-text-primary) 8%, transparent);
-  color: var(--kk-il-text-secondary);
-  border: 1px solid color-mix(in srgb, var(--kk-tc-text-primary) 12%, transparent);
+  background: var(--kk-chip-bg);
+  color: var(--kk-chip-text);
+  border: var(--kk-chip-border);
 }
 
 .shot-row__chip-line {
@@ -3699,7 +3818,7 @@ select.input-styled,
   flex: 1;
   height: 0.875rem;
   border-radius: 4px;
-  background: color-mix(in srgb, var(--kk-tc-text-primary) 12%, transparent);
+  background: color-mix(in srgb, var(--kk-text-primary) 12%, transparent);
   min-width: 0;
   max-width: 12rem;
 }
@@ -3709,7 +3828,7 @@ select.input-styled,
   width: 4rem;
   height: 0.75rem;
   border-radius: 3px;
-  background: color-mix(in srgb, var(--kk-tc-text-primary) 8%, transparent);
+  background: color-mix(in srgb, var(--kk-text-primary) 8%, transparent);
   flex-shrink: 0;
 }
 
@@ -3718,7 +3837,7 @@ select.input-styled,
   width: 5rem;
   height: 1.5rem;
   border-radius: 6px;
-  background: color-mix(in srgb, var(--kk-tc-text-primary) 8%, transparent);
+  background: color-mix(in srgb, var(--kk-text-primary) 8%, transparent);
   flex-shrink: 0;
 }
 
@@ -3748,7 +3867,7 @@ select.input-styled,
 .bag-card-row,
 .shot-card-list {
   background: var(--kk-card-surface-bg);
-  color: var(--kk-tc-text-primary);
+  color: var(--kk-text-primary);
   border: var(--kk-card-surface-border);
   border-radius: 14px;
   box-shadow: var(--kk-card-surface-shadow);
@@ -3795,7 +3914,7 @@ select.input-styled,
   min-height: 6.25rem;
   padding: 0.9375rem 1rem;
   text-decoration: none;
-  color: var(--kk-tc-text-primary);
+  color: var(--kk-text-primary);
   background: var(--kk-card-surface-bg);
   border: var(--kk-card-surface-border);
   border-radius: 16px;
@@ -3832,6 +3951,11 @@ select.input-styled,
   height: auto;
 }
 
+
+.entity-card.entity-card--no-media {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .entity-card.bag-card-compact .entity-card-body,
 .entity-card.shot-card-list .entity-card-body {
   min-width: 0;
@@ -3851,8 +3975,32 @@ select.input-styled,
   font-size: 1.25rem;
 }
 
+.hardware-card {
+  width: 100%;
+  appearance: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.entity-card.hardware-card {
+  display: block;
+  padding: 0;
+  height: 100%;
+}
+
+.entity-card.hardware-card .entity-card-figure {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  border-radius: 0;
+}
+
+.entity-card.hardware-card .entity-card-body {
+  min-width: 0;
+}
+
 [data-tone="dark"] .bag-card-compact {
-  color: var(--kk-tc-text-primary);
+  color: var(--kk-text-primary);
 }
 
 .bag-card-compact:hover {
@@ -3866,7 +4014,7 @@ select.input-styled,
 }
 
 .bag-card-compact:focus-visible {
-  outline: 2px solid var(--kk-tc-text-primary);
+  outline: 2px solid var(--kk-text-primary);
   outline-offset: 2px;
 }
 
@@ -3875,7 +4023,7 @@ select.input-styled,
 }
 
 .bag-card-compact__eyebrow {
-  color: var(--kk-tc-text-secondary);
+  color: var(--kk-text-secondary);
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.11em;
@@ -3892,6 +4040,11 @@ select.input-styled,
   line-height: var(--kaapi-card-title-line-height);
   letter-spacing: var(--kaapi-card-title-letter-spacing);
   margin: 0;
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .bag-card-compact__details {
@@ -3913,7 +4066,7 @@ select.input-styled,
 }
 
 .bag-card-compact__meta {
-  color: var(--kk-tc-text-secondary);
+  color: var(--kk-text-secondary);
   font-size: 0.8125rem;
   line-height: 1.35;
   display: flex;
@@ -3929,7 +4082,7 @@ select.input-styled,
   height: 3.5rem;
   place-items: center;
   border-radius: 12px;
-  background: var(--kk-tc-monogram-tile-bg);
+  background: var(--kk-monogram-tile-bg);
   color: #734a37;
   font-family: var(--font-display);
   font-size: 1rem;
@@ -3938,7 +4091,7 @@ select.input-styled,
 }
 
 [data-tone="dark"] .bag-card-compact__monogram {
-  color: var(--kk-tc-text-primary);
+  color: var(--kk-text-primary);
 }
 
 .bag-card-row__body,
@@ -3968,7 +4121,7 @@ select.input-styled,
   align-items: center;
   flex-wrap: wrap;
   gap: 0.5rem;
-  color: var(--kk-tc-text-secondary);
+  color: var(--kk-text-secondary);
   font-family: var(--kaapi-card-meta-family);
   font-size: var(--kaapi-card-meta-size);
   font-weight: var(--kaapi-card-meta-weight);
@@ -4026,7 +4179,7 @@ select.input-styled,
 
 .shot-card-list:focus-visible,
 .bag-card-reference:focus-visible {
-  outline: 2px solid var(--kk-tc-text-primary);
+  outline: 2px solid var(--kk-text-primary);
   outline-offset: 2px;
 }
 
@@ -4054,7 +4207,7 @@ select.input-styled,
 }
 
 .shot-card-list__eyebrow {
-  color: var(--kk-tc-text-secondary);
+  color: var(--kk-text-secondary);
   font-size: 0.6875rem;
   letter-spacing: 0.18em;
   margin: 0;
@@ -4065,7 +4218,7 @@ select.input-styled,
 }
 
 .shot-card-list__date {
-  color: var(--kk-tc-text-secondary);
+  color: var(--kk-text-secondary);
   font-family: var(--kaapi-card-meta-family);
   font-size: 0.6875rem;
   font-weight: 650;
@@ -4096,9 +4249,9 @@ select.input-styled,
 
 .kk-tc-metric-chip {
   border-radius: 9999px;
-  background: var(--kk-tc-chip-bg);
-  color: var(--kk-tc-chip-text);
-  border: var(--kk-tc-chip-border);
+  background: var(--kk-chip-bg);
+  color: var(--kk-chip-text);
+  border: var(--kk-chip-border);
   padding: 0.25rem 0.625rem;
   font-size: 0.75rem;
   font-weight: 550;
@@ -4142,13 +4295,24 @@ select.input-styled,
   gap: clamp(1.75rem, 4vw, 3rem);
 }
 
+.dashboard-hero-grid {
+  display: grid;
+  gap: clamp(1.25rem, 4vw, 2rem);
+  margin-bottom: clamp(1.75rem, 5vw, 3.25rem);
+}
+
 .dashboard-page-header {
-  margin-bottom: clamp(1.5rem, 3vw, 2.25rem);
+  margin-bottom: 0;
+}
+
+.dashboard-hero-copy {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
 }
 
 .dashboard-home .list-page-header-title {
   color: var(--kk-il-text-primary);
-  margin-bottom: 0;
 }
 
 .dashboard-rails {
@@ -4164,10 +4328,10 @@ select.input-styled,
 
 .dashboard-card-section .kk-tc-section-header {
   font-family: var(--font-display);
-  font-size: 1.4375rem;
-  font-weight: 700;
+  font-size: clamp(1.125rem, 1rem + 0.55vw, 1.375rem);
+  font-weight: 650;
   letter-spacing: -0.01em;
-  line-height: 1.1;
+  line-height: 1.12;
   text-transform: none;
   color: var(--kk-il-text-primary);
   margin-bottom: 0;
@@ -4208,14 +4372,14 @@ select.input-styled,
 
 [data-tone="beige"].dashboard-home .hero-actions .kk-tc-btn--edit,
 [data-tone="beige"] .dashboard-home .hero-actions .kk-tc-btn--edit {
-  background: var(--kaapi-content-surface);
+  background: var(--kk-tc-btn-edit-bg);
   color: var(--kk-tc-btn-edit-text);
   border-color: var(--kk-tc-btn-edit-border);
 }
 
 [data-tone="beige"].dashboard-home .hero-actions .kk-tc-btn--edit:hover:not(:disabled),
 [data-tone="beige"] .dashboard-home .hero-actions .kk-tc-btn--edit:hover:not(:disabled) {
-  background: var(--kaapi-content-surface-2);
+  background: var(--kk-tc-btn-edit-hover-bg);
   color: var(--kk-tc-btn-edit-hover-text);
   border-color: var(--kk-tc-btn-edit-hover-border);
 }
@@ -4258,15 +4422,10 @@ select.input-styled,
   display: none;
 }
 
-.dashboard-home .dashboard-fit-rail .entity-card-title,
-.dashboard-home .dashboard-fit-rail .shot-card-list__title {
-  font-size: clamp(0.9rem, 0.86rem + 0.16vw, 1rem);
-  line-height: 1.22;
-}
-
 @container (min-width: 36rem) {
   .dashboard-fit-rail {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, var(--kk-ec-max-width)));
+    justify-content: start;
   }
 
   .dashboard-fit-rail > .entity-card {
@@ -4288,7 +4447,8 @@ select.input-styled,
 
 @container (min-width: 58rem) {
   .dashboard-fit-rail {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, var(--kk-ec-max-width)));
+    justify-content: start;
   }
 
   .dashboard-fit-rail > .entity-card {
@@ -4310,7 +4470,8 @@ select.input-styled,
 
 @container (min-width: 76rem) {
   .dashboard-fit-rail {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, var(--kk-ec-max-width)));
+    justify-content: start;
   }
 
   .dashboard-fit-rail > .entity-card {
@@ -4341,12 +4502,12 @@ select.input-styled,
 
 .dashboard-panel .kk-tc-section-header {
   font-family: var(--font-display);
-  font-size: 1.4375rem;
-  font-weight: 700;
+  font-size: clamp(1.125rem, 1rem + 0.55vw, 1.375rem);
+  font-weight: 650;
   letter-spacing: -0.01em;
-  line-height: 1.1;
+  line-height: 1.12;
   text-transform: none;
-  color: var(--kk-tc-text-primary);
+  color: var(--kk-text-primary);
   margin-bottom: 1.125rem;
 }
 
@@ -4378,7 +4539,7 @@ select.input-styled,
 }
 
 .dashboard-panel .bag-card-compact {
-  color: var(--kk-tc-text-primary);
+  color: var(--kk-text-primary);
 }
 
 .dashboard-panel .bag-card-compact:hover,
@@ -4392,8 +4553,8 @@ select.input-styled,
 }
 
 .dashboard-panel .bag-card-compact__monogram {
-  background: color-mix(in srgb, var(--kk-tc-text-primary) 6%, transparent);
-  color: var(--kk-tc-text-secondary);
+  background: var(--kk-monogram-tile-bg);
+  color: var(--kk-text-secondary);
   box-shadow: none;
 }
 
@@ -4418,30 +4579,83 @@ select.input-styled,
   border-radius: 0;
 }
 
-.dashboard-fab {
-  background: #d26946;
-  color: #ffffff;
-  border: none;
-  box-shadow: 0 4px 18px rgba(210, 105, 70, 0.45), 0 2px 6px rgba(0, 0, 0, 0.15);
-}
 
 .dashboard-stats-panel {
-  background: var(--kk-card-surface-bg);
-  border: var(--kk-card-surface-border);
-  border-radius: 14px;
-  box-shadow: var(--kk-card-surface-shadow);
-  backdrop-filter: var(--kk-card-surface-filter);
-  -webkit-backdrop-filter: var(--kk-card-surface-filter);
-  padding: 1.125rem 1.25rem;
+  padding: 0;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: 1fr;
+  justify-items: start;
+  gap: clamp(1.5rem, 4vw, 2rem);
 }
 
-/* Home proof: only individual entity cards and the single stats summary
-   consume the canonical card surface. Section/list/carousel containers stay
-   transparent so the Home rail never becomes a card containing cards. */
-.dashboard-home .dashboard-stats-panel,
+.dashboard-hero-grid--stats-underbar {
+  display: block;
+  margin-bottom: clamp(1.75rem, 5vw, 3.25rem);
+}
+
+.dashboard-stats-panel--underbar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, max-content));
+  align-items: start;
+  justify-content: start;
+  column-gap: clamp(1.25rem, 4vw, 3rem);
+  row-gap: 0.75rem;
+  margin-top: clamp(0.75rem, 2vw, 1rem);
+  padding: 0;
+}
+
+.dashboard-stats-panel--underbar .stat-tile {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 0.2rem;
+  padding: 0;
+  color: var(--kk-text-secondary);
+}
+
+.dashboard-stats-panel--underbar .stat-tile__value {
+  color: var(--kk-text-primary);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.dashboard-stats-panel--underbar .stat-tile__label {
+  margin-top: 0;
+  color: var(--kk-text-secondary);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 430px) {
+  .dashboard-stats-panel--underbar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .dashboard-stats-panel--underbar .stat-tile {
+    padding: 0.25rem 0;
+  }
+
+  .dashboard-stats-panel--underbar .stat-tile__value {
+    font-size: clamp(1.25rem, 8vw, 1.625rem);
+  }
+
+  .dashboard-stats-panel--underbar .stat-tile__label {
+    font-size: 0.625rem;
+    letter-spacing: 0.08em;
+  }
+}
+
+/* Home proof: individual entity cards consume the canonical card surface.
+   The stats summary is cardless floating text per Aria's v2 contract. */
 .dashboard-home .entity-card,
 .dashboard-home .shot-card-list,
 .dashboard-home .shot-row,
@@ -4453,7 +4667,6 @@ select.input-styled,
   -webkit-backdrop-filter: var(--kk-card-surface-filter);
 }
 
-.dashboard-home .dashboard-stats-panel,
 .dashboard-home .entity-card,
 .dashboard-home .shot-card-list,
 .dashboard-home .shot-row,
@@ -4468,7 +4681,6 @@ select.input-styled,
 }
 
 @supports not (backdrop-filter: blur(1px)) {
-  .dashboard-home .dashboard-stats-panel,
   .dashboard-home .entity-card,
   .dashboard-home .shot-card-list,
   .dashboard-home .shot-row,
@@ -4480,7 +4692,6 @@ select.input-styled,
 }
 
 @media (prefers-reduced-transparency: reduce) {
-  .dashboard-home .dashboard-stats-panel,
   .dashboard-home .entity-card,
   .dashboard-home .shot-card-list,
   .dashboard-home .shot-row,
@@ -4543,4 +4754,49 @@ html:has([data-tone="beige"]) .kk-nav-profile-btn:hover {
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.45; }
+}
+
+
+/* spec-043 v2 corrected: peer entity cards stretch uniformly; compact chip clusters stay one row. */
+.entity-card-grid,
+.brew-log-card-grid,
+.dashboard-fit-rail {
+  align-items: stretch;
+}
+.entity-card-grid > .entity-card,
+.brew-log-card-grid > .entity-card,
+.dashboard-fit-rail > .entity-card,
+.dashboard-fit-rail > .shot-card-list {
+  height: 100%;
+  min-height: 8.25rem;
+}
+.shot-card-list__chips,
+.shot-row__chip-line,
+.bag-card-row__chip-line,
+.bag-card-compact__chip-line {
+  flex-wrap: nowrap;
+  overflow: hidden;
+  max-height: 1.75rem;
+}
+.shot-card-list__chips .kk-tc-chip,
+.shot-card-list__chips .kk-tc-metric-chip,
+.shot-row__chip-line .kk-tc-chip,
+.bag-card-row__chip-line .kk-tc-chip,
+.bag-card-compact__chip-line .kk-tc-chip {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.entity-card:hover,
+.shot-card-list:hover,
+.bag-card-compact:hover,
+.shot-row:hover,
+.dashboard-home .entity-card:hover,
+.dashboard-home .shot-card-list:hover,
+.dashboard-home .shot-row:hover,
+.dashboard-panel .bag-card-compact:hover,
+.dashboard-panel .shot-row:hover,
+.dashboard-panel .shot-card-list:hover {
+  box-shadow: var(--kk-card-surface-shadow);
 }

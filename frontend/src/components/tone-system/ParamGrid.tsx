@@ -3,7 +3,7 @@
  *
  * Principle 6 (Typography Hierarchy): labels use `.kk-tc-param-label`
  * (12px/500, tertiary color, uppercase); values use `.kk-tc-param-value`
- * (16px/600, primary color, tabular nums).
+ * (15px/500, primary color, tabular nums).
  * Principle 2 (Single Surface): sits directly on the glass — no nested card.
  * Principle 12 (No One-Offs): replaces per-page `<dl className="kk-tc-param-grid">
  * <dt/><dd>` inline patterns.

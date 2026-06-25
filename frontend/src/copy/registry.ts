@@ -90,6 +90,7 @@ export const COPY = {
     label: 'Pagination',
   },
   expander: {
+    more: 'more',
     showMore: 'Show more',
     showFewer: 'Show fewer',
   },
@@ -552,7 +553,9 @@ export const COPY = {
     loadError: "Couldn't load hardware",
     emptyTitle: 'No hardware yet',
     emptyBody: 'Add the machine, grinder, basket, and storage this household uses. Fresh households start empty.',
-    backToHardware: '← Back to hardware',
+    backToHardware: '← Back',
+    details: 'Details',
+    viewProduct: 'View product →',
     maintenanceLog: 'Maintenance log',
     noMaintenance: 'No maintenance records.',
     unavailable: 'This hardware item is no longer available.',

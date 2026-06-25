@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import datetime
 import json
 
 import pytest
@@ -14,7 +15,7 @@ from app.repos.hardware import HardwareRepo
 from tests.doubles import FakeSheetsClient
 
 # ---------------------------------------------------------------------------
-# Full 5-column rows — FakeSheetsClient.update_row derives headers from the
+# Full 6-column rows — FakeSheetsClient.update_row derives headers from the
 # first existing row's .keys(); using only 3 columns causes Product_URL and
 # Local_Image_Path to be silently dropped on all subsequent upsert() calls.
 # ---------------------------------------------------------------------------
@@ -24,6 +25,7 @@ HARDWARE_ROWS = [
         "Hardware_ID": "M01",
         "Category": "Machine",
         "Name": "Rocket Mozzafiato",
+        "Maker": "Rocket Espresso",
         "Product_URL": "",
         "Local_Image_Path": "",
     },
@@ -31,6 +33,7 @@ HARDWARE_ROWS = [
         "Hardware_ID": "G01",
         "Category": "Grinder",
         "Name": "Niche Zero",
+        "Maker": "Niche",
         "Product_URL": "",
         "Local_Image_Path": "",
     },
@@ -89,6 +92,7 @@ def test_upsert_invalidates_cache(repo, fake_client):
             "Hardware_ID": "M01",
             "Category": "Machine",
             "Name": "Updated",
+            "Maker": "Rocket Espresso",
             "Product_URL": "",
             "Local_Image_Path": "",
         }
@@ -133,6 +137,7 @@ def test_upsert_writes_product_url_and_local_image_path():
                     "Hardware_ID": "M01",
                     "Category": "Machine",
                     "Name": "Rocket",
+                    "Maker": "Rocket Espresso",
                     "Product_URL": "",
                     "Local_Image_Path": "",
                 }
@@ -149,6 +154,7 @@ def test_upsert_writes_product_url_and_local_image_path():
             "Hardware_ID": "M01",
             "Category": "Machine",
             "Name": "Rocket",
+            "Maker": "Rocket Espresso",
             "Product_URL": new_product_url,
             "Local_Image_Path": new_image_path,
         }
@@ -161,7 +167,8 @@ def test_upsert_writes_product_url_and_local_image_path():
 
 
 def test_columns_tuple_includes_new_fields():
-    """Regression guard: COLUMNS must include Product_URL and Local_Image_Path."""
+    """Regression guard: COLUMNS must include Maker, Product_URL, and Local_Image_Path."""
+    assert "Maker" in HardwareRepo.COLUMNS
     assert "Product_URL" in HardwareRepo.COLUMNS
     assert "Local_Image_Path" in HardwareRepo.COLUMNS
 
@@ -190,6 +197,7 @@ async def test_hw_to_out_with_empty_local_image_path():
             "Hardware_ID": "M01",
             "Category": "Machine",
             "Name": "Rocket Mozzafiato",
+            "Maker": "Rocket Espresso",
             "Product_URL": "",
             "Local_Image_Path": "",
         }
@@ -214,3 +222,27 @@ async def test_hw_to_out_with_empty_local_image_path():
     # image_path must be present as null — NOT absent from the response
     assert "image_path" in items[0]
     assert items[0]["image_path"] is None
+
+
+def test_sql_hardware_to_dict_includes_detail_fields() -> None:
+    """SQL hardware rows expose API-ready detail fields without requiring a live DB."""
+    from app.models.hardware import Hardware
+    from app.repos.sql.hardware import SqlHardwareRepo
+
+    item = Hardware(
+        sheets_id="SPEC043_HW_MACHINE",
+        name="La Marzocco Linea Micra",
+        category="Machine",
+        maker="La Marzocco",
+        purchase_date=datetime.date(2025, 11, 15),
+        notes="9 bar reference profile; steam wand cleaned after milk drinks.",
+        product_url="https://lamarzocco.com/linea-micra/",
+        local_image_path="/static/spa/static/e2e-assets/spec-043/espresso-machine.jpg",
+    )
+
+    row = SqlHardwareRepo(db=None)._to_dict(item)  # type: ignore[arg-type]
+
+    assert row["Maker"] == "La Marzocco"
+    assert row["Purchase_Date"] == "2025-11-15"
+    assert row["Notes"] == "9 bar reference profile; steam wand cleaned after milk drinks."
+    assert row["Product_URL"] == "https://lamarzocco.com/linea-micra/"

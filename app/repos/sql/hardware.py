@@ -2,13 +2,21 @@
 
 from __future__ import annotations
 
+import datetime
 from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.hardware import Hardware
-from app.repos.sql.tenant import row_household_id_or_context
+from app.repos.sql.tenant import current_household_id, row_household_id_or_context
+
+
+def _to_date(val: Any) -> datetime.date | None:
+    try:
+        return datetime.date.fromisoformat(str(val)) if val not in (None, "") else None
+    except ValueError:
+        return None
 
 
 class SqlHardwareRepo:
@@ -22,7 +30,10 @@ class SqlHardwareRepo:
         sheets_id = row.get("Hardware_ID")
         household_id = await row_household_id_or_context(self._db, row)
         if sheets_id:
-            result = await self._db.execute(select(Hardware).where(Hardware.sheets_id == sheets_id))
+            q = select(Hardware).where(Hardware.sheets_id == sheets_id)
+            if household_id is not None:
+                q = q.where(Hardware.household_id == household_id)
+            result = await self._db.execute(q)
             existing = result.scalar_one_or_none()
         else:
             existing = None
@@ -31,6 +42,9 @@ class SqlHardwareRepo:
             existing.household_id = household_id
             existing.name = row.get("Name", "")
             existing.category = row.get("Category", "")
+            existing.maker = row.get("Maker") or None
+            existing.purchase_date = _to_date(row.get("Purchase_Date"))
+            existing.notes = row.get("Notes")
             existing.product_url = row.get("Product_URL")
             existing.local_image_path = row.get("Local_Image_Path")
         else:
@@ -39,6 +53,9 @@ class SqlHardwareRepo:
                 sheets_id=sheets_id,
                 name=row.get("Name", ""),
                 category=row.get("Category", ""),
+                maker=row.get("Maker") or None,
+                purchase_date=_to_date(row.get("Purchase_Date")),
+                notes=row.get("Notes"),
                 product_url=row.get("Product_URL"),
                 local_image_path=row.get("Local_Image_Path"),
             )
@@ -61,6 +78,9 @@ class SqlHardwareRepo:
     async def list(self, category: str | None = None) -> list[dict[str, Any]]:
         """Return hardware items, optionally filtered by category."""
         q = select(Hardware)
+        household_id = await current_household_id(self._db)
+        if household_id is not None:
+            q = q.where(Hardware.household_id == household_id)
         if category is not None:
             q = q.where(Hardware.category == category)
         result = await self._db.execute(q)
@@ -68,7 +88,11 @@ class SqlHardwareRepo:
 
     async def get(self, hardware_id: str) -> dict[str, Any] | None:
         """Fetch a single hardware item by Sheets Hardware_ID."""
-        result = await self._db.execute(select(Hardware).where(Hardware.sheets_id == hardware_id))
+        q = select(Hardware).where(Hardware.sheets_id == hardware_id)
+        household_id = await current_household_id(self._db)
+        if household_id is not None:
+            q = q.where(Hardware.household_id == household_id)
+        result = await self._db.execute(q)
         row = result.scalar_one_or_none()
         return self._to_dict(row) if row else None
 
@@ -77,7 +101,9 @@ class SqlHardwareRepo:
             "Hardware_ID": row.sheets_id or "",
             "Name": row.name or "",
             "Category": row.category or "",
+            "Maker": row.maker or "",
+            "Purchase_Date": row.purchase_date.isoformat() if row.purchase_date else "",
+            "Notes": row.notes or "",
             "Product_URL": row.product_url or "",
             "Local_Image_Path": row.local_image_path or "",
-            "Notes": row.notes or "",
         }

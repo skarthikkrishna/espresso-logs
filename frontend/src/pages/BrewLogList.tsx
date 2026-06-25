@@ -41,8 +41,7 @@ function BrewLogListPage() {
   const activeHouseholdId = useHouseholdQueryScope()
   const routeRef = useRef<HTMLDivElement>(null)
   const cardListRef = useRef<HTMLDivElement>(null)
-  const fabRef = useRef<HTMLButtonElement>(null)
-  const { routeEnter, staggerCards, fabMount, pressFeedback } = useKaapiMotion({ scope: routeRef })
+  const { routeEnter, staggerCards } = useKaapiMotion({ scope: routeRef })
 
   const { data, isLoading, isPlaceholderData, error, refetch } = useQuery({
     queryKey: brewLogListQueryKey(activeHouseholdId, page, 100),
@@ -74,10 +73,6 @@ function BrewLogListPage() {
     if (cards?.length) staggerCards(cards)
   }, [data, staggerCards])
 
-  useEffect(() => {
-    if (fabRef.current) fabMount(fabRef.current)
-  }, [fabMount])
-
   const perPage = data?.per_page || 100
   const pageCount = Math.max(1, Math.ceil((data?.total_count ?? 0) / perPage))
 
@@ -91,7 +86,9 @@ function BrewLogListPage() {
         title={COPY.nav.brewLog}
         section="SHOTS / HISTORY"
         sectionTestId="brew-log-section-heading"
-      />
+      >
+        <LogShotAction variant="hero" />
+      </ListPageHeader>
 
       {toast && createPortal(
         <ToneStateCard
@@ -159,7 +156,7 @@ function BrewLogListPage() {
                 data-testid="brew-log-entry"
                 key={entry.shot_id}
                 shot={entry}
-                variant="summary"
+                variant="list-card"
                 onMouseEnter={() => {
                   queryClient.prefetchQuery({
                     queryKey: brewLogDetailQueryKey(entry.shot_id, activeHouseholdId),
@@ -180,12 +177,6 @@ function BrewLogListPage() {
           />
         </>
       )}
-
-      <LogShotAction
-        variant="fab"
-        ref={fabRef}
-        onMouseDown={() => fabRef.current && pressFeedback(fabRef.current)}
-      />
     </ImmersiveListShell>
   )
 }

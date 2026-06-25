@@ -24,16 +24,18 @@ import { useHouseholdQueryScope } from '../contexts/AuthContext'
 import { ToneProvider } from '../contexts/ToneContext'
 import { useKaapiMotion } from '../lib/motion'
 import { COPY, LOCKED_LABELS } from '../copy/registry'
+import { eligibilityBadgeTone } from '../utils/eligibility'
 import {
   BackLink,
+  Chip,
+  DetailHeader,
   FormSection,
   MarkdownProse,
   ParamGrid,
   ParamPair,
   Section,
   SectionHeader,
-  ShotCard,
-  TakeoverCard,
+  RoastChip,
   ToneButton,
   ToneInput,
   TonePageWrapper,
@@ -248,7 +250,7 @@ function BrewLogDetailPage() {
   }
 
   return (
-    <TonePageWrapper ref={routeRef} testId="brew-log-detail">
+    <TonePageWrapper ref={routeRef} testId="brew-log-detail" className="kk-detail-page brew-detail-page">
 
       {/* ── Nav row: back link + tone toggle ─────────────────────────────── */}
       <div className="kk-b-page__nav">
@@ -257,15 +259,23 @@ function BrewLogDetailPage() {
         <ToneToggle />
       </div>
 
-      {/* ── Single takeover card — ALL brew-log content unified ─────────────── */}
-      <TakeoverCard>
-
-        <ShotCard shot={shot} variant="detail-header" />
-
-        {/* Action area: buttons only; shot identity chips live in ShotCard detail-header. */}
-        <div className="kk-tc-actions">
-          {!correctionOpen && (
-            <div className="kk-tc-actions-buttons">
+      <div className="kk-detail-shell">
+        <DetailHeader
+          title={shot.bag_display}
+          subtitle={<time dateTime={shot.date}>{shot.date}</time>}
+          media={shot.image_path ? <img src={shot.image_path} alt={shot.bag_display} /> : undefined}
+          chips={(
+            <>
+              <RoastChip level={shot.roast_level} />
+              {shot.shot_eligibility ? (
+                <Chip variant={eligibilityBadgeTone(shot.shot_eligibility)} data-testid="eligibility-badge">
+                  {shot.shot_eligibility}
+                </Chip>
+              ) : null}
+            </>
+          )}
+          actions={!correctionOpen ? (
+            <>
               <ToneButton variant="edit" onClick={openCorrectionForm}>
                 {COPY.brewLogDetail.correctTitle}
               </ToneButton>
@@ -279,37 +289,39 @@ function BrewLogDetailPage() {
               >
                 {LOCKED_LABELS.delete}
               </ToneButton>
-            </div>
-          )}
-        </div>
+            </>
+          ) : undefined}
+        />
 
         {/* Brew parameters section */}
         <Section>
           <SectionHeader>{COPY.brewLogDetail.shotParameters}</SectionHeader>
-          <ParamGrid>
-            {shot.dose_in_g != null && (
-              <ParamPair label={COPY.fields.dose} value={`${shot.dose_in_g}g`} />
-            )}
-            {shot.yield_out_g != null && (
-              <ParamPair label={COPY.fields.yield} value={`${shot.yield_out_g}g`} />
-            )}
-            {shot.time_sec != null && (
-              <ParamPair label={COPY.fields.time} value={`${shot.time_sec}s`} />
-            )}
-            {shot.grind_setting && (
-              <ParamPair label={COPY.fields.grindSetting} value={shot.grind_setting} />
-            )}
-            {shot.taste_summary && (
-              <ParamPair
-                label={COPY.fields.taste}
-                value={shot.taste_summary}
-                labelTestId="taste-summary-row"
-              />
-            )}
-            {shot.storage_method && (
-              <ParamPair label={COPY.fields.storage} value={shot.storage_method} />
-            )}
-          </ParamGrid>
+          <div className="detail-panel">
+            <ParamGrid>
+              {shot.dose_in_g != null && (
+                <ParamPair label={COPY.fields.dose} value={`${shot.dose_in_g}g`} />
+              )}
+              {shot.yield_out_g != null && (
+                <ParamPair label={COPY.fields.yield} value={`${shot.yield_out_g}g`} />
+              )}
+              {shot.time_sec != null && (
+                <ParamPair label={COPY.fields.time} value={`${shot.time_sec}s`} />
+              )}
+              {shot.grind_setting && (
+                <ParamPair label={COPY.fields.grindSetting} value={shot.grind_setting} />
+              )}
+              {shot.taste_summary && (
+                <ParamPair
+                  label={COPY.fields.taste}
+                  value={shot.taste_summary}
+                  labelTestId="taste-summary-row"
+                />
+              )}
+              {shot.storage_method && (
+                <ParamPair label={COPY.fields.storage} value={shot.storage_method} />
+              )}
+            </ParamGrid>
+          </div>
         </Section>
 
         {/* Extraction readout section */}
@@ -324,34 +336,8 @@ function BrewLogDetailPage() {
           </Section>
         )}
 
-        {/* Hardware section */}
-        {(shot.machine_name || shot.grinder_name || shot.basket_name) && (
-          <Section>
-            <SectionHeader>Hardware</SectionHeader>
-            <ParamGrid>
-              {shot.machine_name && (
-                <ParamPair label={COPY.fields.machine} value={shot.machine_name} />
-              )}
-              {shot.grinder_name && (
-                <ParamPair label={COPY.fields.grinder} value={shot.grinder_name} />
-              )}
-              {shot.basket_name && (
-                <ParamPair label={COPY.fields.basket} value={shot.basket_name} />
-              )}
-            </ParamGrid>
-          </Section>
-        )}
-
-        {/* Notes section */}
-        {shot.user_notes && (
-          <Section data-testid="notes-section">
-            <SectionHeader>Notes</SectionHeader>
-            <p className="kk-tc-body">{shot.user_notes}</p>
-          </Section>
-        )}
-
         {/* AI feedback section */}
-        <Section>
+        <Section className="kk-ai-summary">
           <SectionHeader>{COPY.brewLogDetail.aiFeedback}</SectionHeader>
           {visibleFeedback ? (
             <MarkdownProse>{visibleFeedback}</MarkdownProse>
@@ -380,6 +366,34 @@ function BrewLogDetailPage() {
             </ToneButton>
           </div>
         </Section>
+
+        {/* Hardware section */}
+        {(shot.machine_name || shot.grinder_name || shot.basket_name) && (
+          <Section>
+            <SectionHeader>Hardware</SectionHeader>
+            <div className="detail-panel">
+              <ParamGrid>
+                {shot.machine_name && (
+                  <ParamPair label={COPY.fields.machine} value={shot.machine_name} />
+                )}
+                {shot.grinder_name && (
+                  <ParamPair label={COPY.fields.grinder} value={shot.grinder_name} />
+                )}
+                {shot.basket_name && (
+                  <ParamPair label={COPY.fields.basket} value={shot.basket_name} />
+                )}
+              </ParamGrid>
+            </div>
+          </Section>
+        )}
+
+        {/* Notes section */}
+        {shot.user_notes && (
+          <Section data-testid="notes-section">
+            <SectionHeader>Notes</SectionHeader>
+            <p className="kk-tc-body">{shot.user_notes}</p>
+          </Section>
+        )}
 
         {/* Correction form section — shown inline when open */}
         {correctionOpen && (
@@ -454,7 +468,7 @@ function BrewLogDetailPage() {
           </Section>
         )}
 
-      </TakeoverCard>
+      </div>
 
       {/* Delete dialog — lives outside the card */}
       <AccessibleDialog

@@ -53,6 +53,11 @@ import { listBrewLog } from '../api/brewLog'
 import Dashboard from './Dashboard'
 import { FORBIDDEN_DASHBOARD_COPY } from '../copy/registry'
 
+
+async function waitForDashboardData() {
+  await screen.findAllByText(/Test Bean/)
+}
+
 function renderWithQuery(ui: React.ReactElement) {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -76,6 +81,12 @@ beforeEach(() => {
       display_name: 'Test Roaster — Test Bean',
       image_path: '/static/catalog/test-bean.jpg',
       roast_level: 'Medium',
+      last_shot: {
+        dose_in_g: 18,
+        yield_out_g: 36,
+        time_sec: 27,
+        shot_eligibility: 'Good Espresso',
+      },
     },
   ])
   vi.mocked(listBrewLog).mockResolvedValue({
@@ -85,6 +96,13 @@ beforeEach(() => {
         date: '2025-07-29',
         bag_display: 'Test Roaster — Test Bean',
         image_path: '/static/catalog/test-bean.jpg',
+        roast_level: 'Light',
+        dose_in_g: 18,
+        yield_out_g: 36,
+        time_sec: 27,
+        grind_setting: '4.5',
+        shot_eligibility: 'God Shot',
+        grinder_name: 'Niche Zero',
       },
     ],
     page: 1,
@@ -96,21 +114,20 @@ beforeEach(() => {
 })
 
 describe('Dashboard — portal regression', () => {
-  it('FAB renders in document.body, not inside component container', async () => {
+  it('does not render a redundant Home FAB when in-flow CTAs exist', async () => {
     const { container } = renderWithQuery(<Dashboard />)
 
-    const fab = await screen.findByTestId('dashboard-fab')
+    await waitForDashboardData()
 
-    expect(fab).toHaveAccessibleName(/log a shot/i) // contract hook targets the mobile FAB, not in-flow CTAs
-    expect(fab).toBeInTheDocument()             // sanity: element exists
-    expect(container).not.toContainElement(fab) // NOT inside component root
-    expect(document.body).toContainElement(fab) // IS portalled to body
+    expect(screen.queryByTestId('dashboard-fab')).toBeNull()
+    const cta = screen.getByRole('button', { name: /log a shot/i })
+    expect(container).toContainElement(cta)
   })
 
   it('bag card href encodes the reload-safe bag_id query param', async () => {
     renderWithQuery(<Dashboard />)
 
-    await screen.findByTestId('dashboard-fab')
+    await waitForDashboardData()
     // EntityCard renders as <a href="..."> — verify the correct URL is encoded
     const allLinks = screen.getAllByRole('link')
     const bagCardLink = allLinks.find(
@@ -122,21 +139,21 @@ describe('Dashboard — portal regression', () => {
 })
 
 describe('Dashboard — spec-043 T009 contract', () => {
-  it('uses the locked "Home" label as the single page h1 and no brand/subtitle', async () => {
+  it('uses Kaapi Kadai as the single Home page h1', async () => {
     renderWithQuery(<Dashboard />)
 
-    await screen.findByTestId('dashboard-fab')
+    await waitForDashboardData()
     const headings = screen.getAllByRole('heading', { level: 1 })
     expect(headings).toHaveLength(1)
-    expect(headings[0]).toHaveTextContent('Home')
-    // The brand belongs to the desktop shell, not the dashboard header.
-    expect(screen.queryByText('Kaapi Kadai')).toBeNull()
+    expect(headings[0]).toHaveTextContent(/Kaapi\s*Kadai/)
+    expect(headings[0].querySelector('.kk-home-wordmark__kaapi')).toHaveTextContent('Kaapi')
+    expect(headings[0].querySelector('.kk-home-wordmark__kadai')).toHaveTextContent('Kadai')
   })
 
   it('removes the unauthorized narration and the final-CTA card (Option D)', async () => {
     renderWithQuery(<Dashboard />)
 
-    await screen.findByTestId('dashboard-fab')
+    await waitForDashboardData()
     expect(screen.queryByTestId('dashboard-final-cta')).toBeNull()
     for (const forbidden of FORBIDDEN_DASHBOARD_COPY) {
       expect(screen.queryByText(forbidden)).toBeNull()
@@ -146,7 +163,7 @@ describe('Dashboard — spec-043 T009 contract', () => {
   it('derives the household count from membership data instead of a hardcoded value', async () => {
     renderWithQuery(<Dashboard />)
 
-    await screen.findByTestId('dashboard-fab')
+    await waitForDashboardData()
     // Two memberships are mocked; the Household tile must reflect that (BUG 1 fix),
     // not the previously hardcoded "1".
     const householdLabel = screen.getByText('Household')
@@ -159,14 +176,14 @@ describe('Dashboard — spec-043 T020 motion', () => {
   it('attaches the motion route boundary once content has loaded', async () => {
     renderWithQuery(<Dashboard />)
 
-    await screen.findByTestId('dashboard-fab')
+    await waitForDashboardData()
     expect(screen.getByTestId('motion-route-boundary')).toBeInTheDocument()
   })
 
   it('wires capped pointer-depth onto the hero zone (4px desktop lift, reset on leave)', async () => {
     renderWithQuery(<Dashboard />)
 
-    await screen.findByTestId('dashboard-fab')
+    await waitForDashboardData()
     const hero = screen.getByTestId('dashboard-hero-card')
     // Depth motion is disabled on the hero for energy/battery (useKaapiDepth removed).
     // Pointer events must NOT produce any transform on the hero section.
@@ -181,14 +198,14 @@ describe('Dashboard — immersive shell structure', () => {
   it('renders the active bags section heading with its testid', async () => {
     renderWithQuery(<Dashboard />)
 
-    await screen.findByTestId('dashboard-fab')
+    await waitForDashboardData()
     expect(screen.getByTestId('dashboard-active-bags-heading')).toBeInTheDocument()
   })
 
   it('uses fit rails with View all links instead of horizontal carousel scrollers', async () => {
     const { container } = renderWithQuery(<Dashboard />)
 
-    await screen.findByTestId('dashboard-fab')
+    await waitForDashboardData()
     expect(container.querySelector('.dashboard-carousel')).toBeNull()
     expect(container.querySelectorAll('.dashboard-fit-rail')).toHaveLength(2)
     const viewAllLinks = screen.getAllByRole('link', { name: 'View all →' })
@@ -199,7 +216,7 @@ describe('Dashboard — immersive shell structure', () => {
   it('renders bag as EntityCard link pointing to brew-log/add', async () => {
     const { container } = renderWithQuery(<Dashboard />)
 
-    await screen.findByTestId('dashboard-fab')
+    await waitForDashboardData()
     expect(container.querySelector('.entity-card-eyebrow')).toHaveTextContent('Test Roaster')
     // EntityCard title is the bean name; CSS clamps this node to two lines.
     const entityCardTitle = container.querySelector('.entity-card-title')
@@ -209,19 +226,38 @@ describe('Dashboard — immersive shell structure', () => {
   it('renders recent shot as ShotCard link pointing to brew-log/:id', async () => {
     renderWithQuery(<Dashboard />)
 
-    await screen.findByTestId('dashboard-fab')
+    await waitForDashboardData()
     // ShotCard renders as <a href="/brew-log/shot-1">
     const allLinks = screen.getAllByRole('link')
     const shotLink = allLinks.find((link) => link.getAttribute('href') === '/brew-log/shot-1')
     expect(shotLink).toBeDefined()
   })
 
-  it('forces Home bag and shot cards to monogram media instead of bean images', async () => {
+  it('omits Home bag and shot card media instead of bean images or monograms', async () => {
     const { container } = renderWithQuery(<Dashboard />)
 
-    await screen.findByTestId('dashboard-fab')
+    await waitForDashboardData()
     expect(screen.queryByRole('img')).toBeNull()
-    expect(container.querySelectorAll('.entity-card-monogram').length).toBeGreaterThanOrEqual(2)
+    expect(container.querySelectorAll('.entity-card-monogram')).toHaveLength(0)
+  })
+
+  it('renders Home compact chips with the Brew/Home extraction-chip exception only', async () => {
+    renderWithQuery(<Dashboard />)
+
+    await waitForDashboardData()
+    const allLinks = screen.getAllByRole('link')
+    const shotLink = allLinks.find((link) => link.getAttribute('href') === '/brew-log/shot-1')
+    expect(shotLink).toHaveTextContent('God Shot')
+    expect(shotLink).toHaveTextContent('27s')
+    expect(shotLink).toHaveTextContent('1:2.0')
+    expect(shotLink).not.toHaveTextContent('Light')
+    expect(shotLink).not.toHaveTextContent('36g')
+    expect(shotLink).not.toHaveTextContent('18g')
+    expect(shotLink).not.toHaveTextContent('4.5')
+    expect(shotLink).not.toHaveTextContent('Niche Zero')
+    const chipTexts = Array.from(shotLink!.querySelectorAll('.entity-card-chip-slot .kk-tc-chip, .entity-card-chip-slot .extraction-chip'))
+      .map((chip) => chip.textContent)
+    expect(chipTexts).toEqual(['God Shot', '1:2.0', '27s'])
   })
 
   it('caps Recent shots to the five newest items on Home', async () => {
@@ -241,7 +277,7 @@ describe('Dashboard — immersive shell structure', () => {
 
     renderWithQuery(<Dashboard />)
 
-    await screen.findByTestId('dashboard-fab')
+    await waitForDashboardData()
     expect(screen.getByText('Test Bean 5')).toBeInTheDocument()
     expect(screen.queryByText('Test Bean 6')).toBeNull()
   })
@@ -249,7 +285,7 @@ describe('Dashboard — immersive shell structure', () => {
   it('shows the hero-card testid on the hero zone element (not a GlassCard)', async () => {
     renderWithQuery(<Dashboard />)
 
-    await screen.findByTestId('dashboard-fab')
+    await waitForDashboardData()
     const hero = screen.getByTestId('dashboard-hero-card')
     // Hero zone is a <section>, not a glass-card div
     expect(hero.tagName).toBe('SECTION')
@@ -261,7 +297,7 @@ describe('Dashboard — immersive shell structure', () => {
   it('renders three StatTiles with their labels', async () => {
     const { container } = renderWithQuery(<Dashboard />)
 
-    await screen.findByTestId('dashboard-fab')
+    await waitForDashboardData()
     // stat-tile__label elements
     const labels = Array.from(container.querySelectorAll('.stat-tile__label')).map(
       (el) => el.textContent,
@@ -285,8 +321,7 @@ describe('Dashboard — empty / fresh household state', () => {
     })
     renderWithQuery(<Dashboard />)
 
-    await screen.findByTestId('dashboard-fab')
-    expect(screen.getByTestId('dashboard-empty-state')).toBeInTheDocument()
+    expect(await screen.findByTestId('dashboard-empty-state')).toBeInTheDocument()
     expect(screen.getByTestId('fresh-household-empty-dashboard')).toBeInTheDocument()
   })
 })

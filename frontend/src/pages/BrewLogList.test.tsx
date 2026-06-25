@@ -64,6 +64,13 @@ beforeEach(() => {
         shot_id: 'shot-1',
         date: '2025-07-29',
         bag_display: 'Test Roaster — Test Bean',
+        roast_level: 'Light',
+        dose_in_g: 18,
+        yield_out_g: 36,
+        time_sec: 27,
+        grind_setting: '4.5',
+        shot_eligibility: 'Good Espresso',
+        grinder_name: 'Niche Zero',
       },
     ],
     page: 1,
@@ -80,15 +87,13 @@ beforeEach(() => {
   })
 })
 
-describe('BrewLogList — portal regression', () => {
-  it('FAB renders in document.body, not inside component container', async () => {
+describe('BrewLogList — add action placement', () => {
+  it('renders a contextual Log a shot CTA instead of a portalled FAB', async () => {
     const { container } = renderWithQuery(<BrewLogList />)
 
-    const fab = await screen.findByRole('button', { name: /log a shot/i })
-
-    expect(fab).toBeInTheDocument()             // sanity: element exists
-    expect(container).not.toContainElement(fab) // NOT inside component root
-    expect(document.body).toContainElement(fab) // IS portalled to body
+    await screen.findByTestId('motion-route-boundary')
+    expect(container.querySelector('.immersive-fab')).toBeNull()
+    expect(container).toContainElement(screen.getByRole('button', { name: /log a shot/i }))
   })
 })
 
@@ -181,6 +186,23 @@ describe('BrewLogList — canonical state cards preserve fetch states', () => {
     expect(entry).toHaveTextContent('Second Roaster')
     expect(entry).toHaveTextContent('Bean')
     expect(screen.getByRole('button', { name: '2' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  it('renders brew-log compact chips without raw metric chips', async () => {
+    renderWithQuery(<BrewLogList />)
+
+    const entry = await screen.findByTestId('brew-log-entry')
+    expect(entry).toHaveTextContent('Good Espresso')
+    expect(entry).toHaveTextContent('Light')
+    expect(entry).not.toHaveTextContent('Niche Zero')
+    expect(entry).not.toHaveTextContent('18g')
+    expect(entry).toHaveTextContent('36g')
+    expect(entry).toHaveTextContent('27s')
+    expect(entry).toHaveTextContent('1:2.0')
+    expect(entry).not.toHaveTextContent('4.5')
+    const chipTexts = within(entry).getAllByText(/Good Espresso|1:2.0|27s|36g|Sour|Light/)
+      .map((chip) => chip.textContent)
+    expect(chipTexts).toEqual(['Good Espresso', '1:2.0', '27s', '36g', 'Sour', 'Light'])
   })
 })
 // ---------------------------------------------------------------------------

@@ -14,6 +14,7 @@ import type { EligibilityTone } from '../../utils/eligibility'
 type StatusChipVariant = 'status-active' | 'status-resting' | 'status-finished'
 type ChipVariant = EligibilityTone | StatusChipVariant | 'default'
 export type BagStatusValue = 'Active' | 'Resting' | 'Finished'
+export type ExtractionChipVariant = 'brand' | 'neutral'
 
 interface ChipProps {
   variant?: ChipVariant
@@ -24,6 +25,12 @@ interface ChipProps {
 interface MetricChipProps {
   children: ReactNode
   mono?: boolean
+  'data-testid'?: string
+}
+
+interface ExtractionChipProps {
+  children: ReactNode
+  variant?: ExtractionChipVariant
   'data-testid'?: string
 }
 
@@ -45,6 +52,17 @@ export function MetricChip({ children, mono = false, 'data-testid': testId }: Me
   return (
     <span
       className={['kk-tc-metric-chip', mono ? 'kk-tc-metric-chip--mono' : ''].filter(Boolean).join(' ')}
+      data-testid={testId}
+    >
+      {children}
+    </span>
+  )
+}
+
+export function ExtractionChip({ children, variant = 'neutral', 'data-testid': testId }: ExtractionChipProps) {
+  return (
+    <span
+      className={['extraction-chip', `extraction-chip--${variant}`].join(' ')}
       data-testid={testId}
     >
       {children}

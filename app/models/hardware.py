@@ -28,6 +28,7 @@ class Hardware(Base):
     )
     name: Mapped[str] = mapped_column(sa.Text, nullable=False)
     category: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    maker: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     purchase_date: Mapped[datetime.date | None] = mapped_column(sa.Date, nullable=True)
     notes: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     sheets_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True, unique=True)

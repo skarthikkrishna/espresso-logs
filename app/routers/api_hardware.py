@@ -1,8 +1,8 @@
 """JSON hardware endpoints.
 
 Deployment prerequisite: The live Google Sheet's Hardware tab must have
-``Product_URL`` (column D) and ``Local_Image_Path`` (column E) added to the
-header row **before** this code is deployed to production.  Without these
+``Maker`` (column D), ``Product_URL`` (column E), and ``Local_Image_Path``
+(column F) added to the header row **before** this code is deployed to production. Without these
 columns gspread will silently drop those fields from any upsert() call.
 """
 
@@ -61,6 +61,10 @@ def _hw_to_out(row: dict[str, Any]) -> HardwareItemOut:
         hardware_id=row.get("Hardware_ID", ""),
         category=row.get("Category", ""),
         name=row.get("Name", ""),
+        maker=row.get("Maker") or None,
+        purchase_date=row.get("Purchase_Date") or None,
+        notes=row.get("Notes") or None,
+        product_url=row.get("Product_URL") or None,
         image_path=row.get("Local_Image_Path") or None,
     )
 
@@ -130,6 +134,7 @@ async def api_hardware_detail(
 class _HardwareCreateBody(BaseModel):
     category: str
     name: str
+    maker: str | None = None
     product_url: str | None = None
 
 
@@ -154,6 +159,7 @@ async def api_hardware_create(
         "Hardware_ID": hardware_id,
         "Category": body.category,
         "Name": body.name.strip(),
+        "Maker": (body.maker or "").strip(),
         "Product_URL": (body.product_url or "").strip(),
         "Local_Image_Path": "",
     }
@@ -190,6 +196,7 @@ async def api_hardware_create(
 class _HardwareUpdateBody(BaseModel):
     name: str
     category: str | None = None
+    maker: str | None = None
 
 
 @router.put("/hardware/{hardware_id}", response_model=HardwareItemOut)
@@ -207,6 +214,8 @@ async def api_hardware_update(
 
     updated = dict(item)
     updated["Name"] = body.name.strip()
+    if body.maker is not None:
+        updated["Maker"] = body.maker.strip()
     if body.category and body.category in _CATEGORIES:
         updated["Category"] = body.category
     await hardware_repo.upsert(updated)

@@ -35,6 +35,7 @@ const FIXTURE_WITH_ROAST_DATE = {
     beans: 'Test Coffee',
     catalog_id: 'CAT001',
     roast_date: '2024-01-15',
+    roast_level: 'Medium',
     status: 'Active' as const,
   }],
   recent_shots: [],
@@ -79,6 +80,16 @@ describe('CatalogDetail — bag card', () => {
       expect(nodes.length).toBe(2)
       expect(nodes[0]).toHaveAttribute('data-testid', 'bag-roast-date')
       expect(nodes[1]).toHaveAttribute('data-testid', 'bag-status')
+    })
+  })
+
+  it('shows roast once in the header, not in the catalog detail bag row', async () => {
+    vi.mocked(getCatalogDetail).mockResolvedValue(FIXTURE_WITH_ROAST_DATE)
+    const { container } = renderWithProviders(<CatalogDetail />)
+    await waitFor(() => {
+      expect(container.querySelectorAll('.kk-tc-chip--roast')).toHaveLength(1)
+      expect(container.querySelector('.bag-card-row .kk-tc-chip--roast')).toBeNull()
+      expect(screen.getByText('Medium')).toBeInTheDocument()
     })
   })
 

@@ -8,7 +8,9 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
+import { Chip } from '../Chip'
 import { EntityCard } from '../EntityCard'
+import { getFittingCompactChipCount } from '../compactChipOverflow'
 import { RoastChip } from '../RoastChip'
 import { ToneProvider } from '../../../contexts/ToneContext'
 
@@ -62,6 +64,31 @@ describe('EntityCard', () => {
       </Wrapper>
     )
     expect(screen.getByText('Medium')).toBeInTheDocument()
+  })
+
+  it('renders priority-ordered compact chips through the shared one-row slot', () => {
+    const { container } = render(
+      <Wrapper>
+        <EntityCard
+          href="/catalog/1"
+          title="Test Bean"
+          compactChips={[
+            { key: 'rating', node: <Chip>Good Espresso</Chip> },
+            { key: 'roast', node: <RoastChip level="Medium" /> },
+          ]}
+        />
+      </Wrapper>
+    )
+
+    const chipTexts = Array.from(container.querySelectorAll('.entity-card-chip-slot .kk-tc-chip'))
+      .map((chip) => chip.textContent)
+    expect(chipTexts).toEqual(['Good Espresso', 'Medium'])
+  })
+
+  it('calculates highest-priority compact chips before +N more', () => {
+    expect(getFittingCompactChipCount([64, 72, 80, 68], 6, 230, 70)).toBe(2)
+    expect(getFittingCompactChipCount([64, 72, 80], 6, 240, 70)).toBe(3)
+    expect(getFittingCompactChipCount([120, 120], 6, 60, 70)).toBe(0)
   })
 
   it('renders the canonical date line below the title when provided', () => {
@@ -126,23 +153,21 @@ describe('EntityCard', () => {
     expect(container.querySelector('.entity-card-monogram')).toHaveTextContent('TB')
   })
 
-  it('renders full-figure monogram fill when imageUrl is absent', () => {
+  it('renders neutral image placeholder when imageUrl is absent', () => {
     const { container } = render(
       <Wrapper>
         <EntityCard href="/catalog/1" title="Test Bean" eyebrow="Test Roaster" />
       </Wrapper>
     )
-    // No img element — monogram fill is used instead
     expect(screen.queryByRole('img')).toBeNull()
-    // Full-figure monogram fill wrapper and letter are rendered
-    expect(container.querySelector('.entity-card-monogram-fill')).toBeInTheDocument()
-    expect(container.querySelector('.entity-card-monogram')).toBeInTheDocument()
+    expect(container.querySelector('.entity-card-image-placeholder')).toBeInTheDocument()
+    expect(container.querySelector('.entity-card-monogram')).toBeNull()
   })
 
-  it('derives monogram from title words, not from eyebrow', () => {
+  it('derives explicit monogram media from title words, not from eyebrow', () => {
     const { container } = render(
       <Wrapper>
-        <EntityCard href="/catalog/1" title="Roaster Bean" eyebrow="Ready to brew" />
+        <EntityCard href="/catalog/1" title="Roaster Bean" eyebrow="Ready to brew" media="monogram" />
       </Wrapper>
     )
     // eyebrow "Ready to brew" → old buggy code gave "RE"; title "Roaster Bean" → "RB"
@@ -152,7 +177,7 @@ describe('EntityCard', () => {
   it('splits on em-dash/en-dash for monogram — "Roaster — Bean" → "RB"', () => {
     const { container } = render(
       <Wrapper>
-        <EntityCard href="/catalog/1" title={"Roaster \u2014 Bean"} eyebrow="Ready to brew" />
+        <EntityCard href="/catalog/1" title={"Roaster \u2014 Bean"} eyebrow="Ready to brew" media="monogram" />
       </Wrapper>
     )
     expect(container.querySelector('.entity-card-monogram')?.textContent).toBe('RB')
@@ -161,7 +186,7 @@ describe('EntityCard', () => {
   it('uses only the first two words for monogram', () => {
     const { container } = render(
       <Wrapper>
-        <EntityCard href="/catalog/1" title="Ethiopia Yirgacheffe Natural" />
+        <EntityCard href="/catalog/1" title="Ethiopia Yirgacheffe Natural" media="monogram" />
       </Wrapper>
     )
     expect(container.querySelector('.entity-card-monogram')?.textContent).toBe('EY')
@@ -170,7 +195,7 @@ describe('EntityCard', () => {
   it('produces a single-letter monogram for a one-word title', () => {
     const { container } = render(
       <Wrapper>
-        <EntityCard href="/catalog/1" title="Monkeyman" />
+        <EntityCard href="/catalog/1" title="Monkeyman" media="monogram" />
       </Wrapper>
     )
     expect(container.querySelector('.entity-card-monogram')?.textContent).toBe('M')

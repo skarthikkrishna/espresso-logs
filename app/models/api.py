@@ -29,6 +29,10 @@ class HardwareItemOut(BaseModel):
     hardware_id: str
     category: str
     name: str
+    maker: str | None = None
+    purchase_date: str | None = None
+    notes: str | None = None
+    product_url: str | None = None
     image_path: str | None = None
 
 

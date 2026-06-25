@@ -217,29 +217,18 @@ describe('BrewLogDetail — detail presentation anchors', () => {
   })
 })
 
-describe('BrewLogDetail — title monogram icon', () => {
-  it('derives monogram from the bean portion after the " — " separator', () => {
-    // baseShot.bag_display = 'Verve Coffee — Seabright' → bean = 'Seabright' → 'S'
+describe('BrewLogDetail — title media policy', () => {
+  it('does not render an unauthorized monogram placeholder when no image exists', () => {
     renderWithPaginatedCache(baseShot)
 
-    const placeholder = screen.getByTestId('catalog-image-placeholder')
-    expect(placeholder).toBeInTheDocument()
-    expect(placeholder.querySelector('.kk-tc-title-icon-monogram')).toHaveTextContent('S')
+    expect(screen.queryByTestId('catalog-image-placeholder')).toBeNull()
+    expect(screen.queryByRole('img')).toBeNull()
   })
 
-  it('falls back to first letter of full string when no " — " separator', () => {
-    renderWithPaginatedCache({ ...baseShot, bag_display: 'Yirgacheffe' })
+  it('renders the allowed brew-detail bean image when image_path exists', () => {
+    renderWithPaginatedCache({ ...baseShot, image_path: '/static/catalog/seabright.jpg' })
 
-    const placeholder = screen.getByTestId('catalog-image-placeholder')
-    expect(placeholder.querySelector('.kk-tc-title-icon-monogram')).toHaveTextContent('Y')
-  })
-
-  it('renders ☕ fallback placeholder when bag_display is empty', () => {
-    renderWithPaginatedCache({ ...baseShot, bag_display: '' })
-
-    const placeholder = screen.getByTestId('catalog-image-placeholder')
-    expect(placeholder.querySelector('.kk-tc-title-icon-monogram')).toBeNull()
-    expect(placeholder).toHaveTextContent('☕')
+    expect(screen.getByRole('img', { name: 'Verve Coffee — Seabright' })).toHaveAttribute('src', '/static/catalog/seabright.jpg')
   })
 })
 

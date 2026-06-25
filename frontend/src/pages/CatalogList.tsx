@@ -27,8 +27,7 @@ export default function CatalogList() {
   const activeHouseholdId = useHouseholdQueryScope()
   const routeRef = useRef<HTMLDivElement>(null)
   const cardListRef = useRef<HTMLDivElement>(null)
-  const fabRef = useRef<HTMLButtonElement>(null)
-  const { routeEnter, staggerCards, fabMount, pressFeedback } = useKaapiMotion({ scope: routeRef })
+  const { routeEnter, staggerCards } = useKaapiMotion({ scope: routeRef })
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: catalogListQueryKey(activeHouseholdId),
@@ -49,10 +48,6 @@ export default function CatalogList() {
     const cards = cardListRef.current?.querySelectorAll('.kaapi-motion-card')
     if (cards?.length) staggerCards(cards)
   }, [filtered.length, staggerCards])
-
-  useEffect(() => {
-    if (fabRef.current) fabMount(fabRef.current)
-  }, [fabMount])
 
   if (isLoading) return <LoadingSpinner />
 
@@ -83,7 +78,9 @@ export default function CatalogList() {
           title="Catalog"
           section="BEANS / INVENTORY"
           sectionTestId="catalog-section-heading"
-        />
+        >
+          <AddBeanAction variant="empty" onAdd={() => setModalOpen(true)} />
+        </ListPageHeader>
 
         {data?.length === 0 ? (
           <div data-testid="fresh-household-empty-catalog">
@@ -120,7 +117,7 @@ export default function CatalogList() {
                     title={item.bean_name}
                     eyebrow={item.roaster}
                     imageUrl={item.image_path ?? undefined}
-                    chip={item.roast_level ? <RoastChip level={item.roast_level} /> : undefined}
+                    compactChips={item.roast_level ? [{ key: 'roast', node: <RoastChip level={item.roast_level} /> }] : []}
                     data-testid="catalog-card"
                   />
                 ))}
@@ -128,13 +125,6 @@ export default function CatalogList() {
             )}
           </>
         )}
-
-        <AddBeanAction
-          variant="fab"
-          ref={fabRef}
-          onAdd={() => setModalOpen(true)}
-          onMouseDown={() => fabRef.current && pressFeedback(fabRef.current)}
-        />
 
         {modalOpen && (
           <AddBeanModal

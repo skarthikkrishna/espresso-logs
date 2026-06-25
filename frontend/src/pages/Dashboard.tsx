@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { listBrewLog } from '../api/brewLog'
@@ -26,14 +26,46 @@ import {
   ToneToggle,
 } from '../components/tone-system'
 
+function HomeWordmark() {
+  const [kaapi, kadai] = COPY.shell.brand.split(' ')
+  return (
+    <span className="kk-home-wordmark" aria-label={COPY.shell.brand}>
+      <span className="kk-home-wordmark__line kk-home-wordmark__kaapi">{kaapi}</span>
+      <span className="kk-home-wordmark__line kk-home-wordmark__kadai">{kadai}</span>
+    </span>
+  )
+}
+
+
+function HomeHeroHeader() {
+  return (
+    <ListPageHeader
+      title={<HomeWordmark />}
+      section="Personal Shot Journal"
+      titleTestId="dashboard-heading"
+      className="dashboard-page-header"
+    />
+  )
+}
+
+function DashboardStatsPanel({ children }: { children: ReactNode }) {
+  return (
+    <div
+      className="dashboard-stats-panel dashboard-stats-panel--underbar"
+      aria-label={COPY.dashboard.summaryAria}
+    >
+      {children}
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const navigate = useNavigate()
   const activeHouseholdId = useHouseholdQueryScope()
   const { memberships } = useAuth()
   const routeRef = useRef<HTMLDivElement>(null)
   const cardListRef = useRef<HTMLDivElement>(null)
-  const fabRef = useRef<HTMLButtonElement>(null)
-  const { routeEnter, staggerCards, fabMount, pressFeedback } = useKaapiMotion({ scope: routeRef })
+  const { routeEnter, staggerCards } = useKaapiMotion({ scope: routeRef })
 
   const { data: bags, isLoading, isError, error, refetch } = useQuery({
     queryKey: dashboardQueryKey(activeHouseholdId),
@@ -55,11 +87,8 @@ export default function Dashboard() {
     if (cards?.length) staggerCards(cards)
   }, [bags, recentShots, staggerCards])
 
-  useEffect(() => {
-    if (fabRef.current) fabMount(fabRef.current)
-  }, [fabMount])
-
   const householdCount = memberships.length
+  const heroGridClass = 'dashboard-hero-grid dashboard-hero-grid--stats-underbar'
 
   if (isLoading) return (
     <ToneProvider>
@@ -67,13 +96,17 @@ export default function Dashboard() {
         <div className="immersive-nav-row">
           <ToneToggle />
         </div>
-        <ListPageHeader title={COPY.nav.home} titleTestId="dashboard-heading" className="dashboard-page-header" />
-        <div className="dashboard-layout">
-          <div className="dashboard-stats-panel" aria-label={COPY.dashboard.summaryAria}>
-            <StatTileSkeleton />
-            <StatTileSkeleton />
-            <StatTileSkeleton />
+        <div className={heroGridClass}>
+          <div className="dashboard-hero-copy">
+            <HomeHeroHeader />
+            <DashboardStatsPanel>
+              <StatTileSkeleton />
+              <StatTileSkeleton />
+              <StatTileSkeleton />
+            </DashboardStatsPanel>
           </div>
+        </div>
+        <div className="dashboard-layout">
           <div className="dashboard-rails">
             <section data-testid="dashboard-hero-card" className="dashboard-card-section dashboard-card-section--active">
               <SectionHeader testId="dashboard-active-bags-heading">Active bags</SectionHeader>
@@ -131,26 +164,24 @@ export default function Dashboard() {
           <ToneToggle />
         </div>
 
-        <ListPageHeader
-          title={COPY.nav.home}
-          titleTestId="dashboard-heading"
-          className="dashboard-page-header"
-        />
+        <div className={heroGridClass}>
+          <div className="dashboard-hero-copy">
+            <HomeHeroHeader />
+            <div className="hero-actions">
+              <LogShotAction variant="hero" />
+              <ToneButton variant="edit" onClick={() => navigate('/catalog')}>
+                {COPY.dashboard.manageCatalog}
+              </ToneButton>
+            </div>
+            <DashboardStatsPanel>
+              <StatTile value={bags?.length ?? 0} label="Active bags" />
+              <StatTile value={recentShots.length} label="Recent" />
+              <StatTile value={householdCount} label="Household" />
+            </DashboardStatsPanel>
+          </div>
+        </div>
 
         <div className="dashboard-layout">
-          <div className="hero-actions">
-            <LogShotAction variant="hero" />
-            <ToneButton variant="edit" onClick={() => navigate('/catalog')}>
-              {COPY.dashboard.manageCatalog}
-            </ToneButton>
-          </div>
-
-          <div className="dashboard-stats-panel" aria-label={COPY.dashboard.summaryAria}>
-            <StatTile value={bags?.length ?? 0} label="Active bags" />
-            <StatTile value={recentShots.length} label="Recent" />
-            <StatTile value={householdCount} label="Household" />
-          </div>
-
           <div ref={cardListRef} className="dashboard-rails" data-testid="motion-card-list">
             <section
               data-testid="dashboard-hero-card"
@@ -186,7 +217,6 @@ export default function Dashboard() {
                         key={bag.bag_id}
                         bag={bag}
                         variant="card"
-                        media="monogram"
                       />
                     )
                   })}
@@ -216,7 +246,6 @@ export default function Dashboard() {
                       key={shot.shot_id}
                       shot={shot}
                       variant="summary"
-                      media="monogram"
                     />
                   ))}
                 </div>
@@ -224,14 +253,6 @@ export default function Dashboard() {
             </section>
           </div>
         </div>
-
-        <LogShotAction
-          variant="fab"
-          ref={fabRef}
-          data-testid="dashboard-fab"
-          className="dashboard-fab"
-          onMouseDown={() => fabRef.current && pressFeedback(fabRef.current)}
-        />
       </ImmersiveListShell>
     </ToneProvider>
   )

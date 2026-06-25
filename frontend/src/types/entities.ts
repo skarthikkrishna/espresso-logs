@@ -24,8 +24,12 @@ export interface InventoryBag {
 export interface HardwareItem {
   hardware_id: string; // route key only — NEVER displayed
   category: 'Machine' | 'Grinder' | 'Basket' | 'Storage';
+  maker?: string | null;
   name: string;
-  image_path?: string;
+  purchase_date?: string | null;
+  notes?: string | null;
+  product_url?: string | null;
+  image_path?: string | null;
 }
 
 export interface MaintenanceEvent {

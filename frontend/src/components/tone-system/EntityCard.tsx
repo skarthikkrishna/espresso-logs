@@ -26,10 +26,25 @@
  * staggerCards() hook targets this element without extra config.
  */
 import type { MouseEventHandler, ReactNode } from 'react'
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { COPY } from '../../copy'
+import { Chip } from './Chip'
+import { getFittingCompactChipCount } from './compactChipOverflow'
 
-export type EntityCardMediaMode = 'image' | 'monogram'
+export type EntityCardMediaMode = 'image' | 'monogram' | 'none'
+
+export interface CompactCardChip {
+  key: string
+  node: ReactNode
+}
+
+interface CompactChipRowProps {
+  chips: CompactCardChip[]
+  overflowMode?: 'count' | 'none'
+  className?: string
+  'data-testid'?: string
+}
 
 export interface EntityCardProps {
   /** Navigation target (rendered as <a> for semantic card linking) */
@@ -46,6 +61,10 @@ export interface EntityCardProps {
   media?: EntityCardMediaMode
   /** Chip slot — e.g. <RoastChip level="Medium" /> */
   chip?: ReactNode
+  /** Priority-ordered compact-card chips with canonical one-row overflow. */
+  compactChips?: CompactCardChip[]
+  /** Home recent shots render their full approved chip set instead of +N overflow. */
+  compactChipOverflow?: 'count' | 'none'
   /** Date/meta line rendered in the canonical slot directly below the title. */
   date?: ReactNode
   /** Badge slot — e.g. count badge for home-page cards */
@@ -58,6 +77,24 @@ export interface EntityCardProps {
    *  Defaults to "kaapi-motion-card" to integrate with useKaapiMotion. */
   motionClassName?: string
   'data-testid'?: string
+}
+
+export interface EntityButtonCardProps {
+  title: string
+  mediaTitle?: string
+  eyebrow?: string
+  imageUrl?: string
+  media?: EntityCardMediaMode
+  compactChips?: CompactCardChip[]
+  compactChipOverflow?: 'count' | 'none'
+  date?: ReactNode
+  badge?: ReactNode
+  className?: string
+  onClick: MouseEventHandler<HTMLButtonElement>
+  onMouseEnter?: MouseEventHandler<HTMLButtonElement>
+  'data-testid'?: string
+  'data-entity-id'?: string
+  'data-hardware-id'?: string
 }
 
 interface EntityCardMediaProps {
@@ -83,6 +120,98 @@ function entityMonogram(title: string): string {
     .join('')
 }
 
+function measuredWidth(element: Element | null): number {
+  if (!(element instanceof HTMLElement)) return 0
+  return element.offsetWidth || element.getBoundingClientRect().width
+}
+
+function flexGap(element: HTMLElement): number {
+  const styles = window.getComputedStyle(element)
+  const value = Number.parseFloat(styles.columnGap || styles.gap)
+  return Number.isFinite(value) ? value : 0
+}
+
+export function CompactChipRow({ chips, overflowMode = 'count', className = '', 'data-testid': testId }: CompactChipRowProps) {
+  const rowRef = useRef<HTMLDivElement>(null)
+  const measureRef = useRef<HTMLDivElement>(null)
+  const moreMeasureRef = useRef<HTMLSpanElement>(null)
+  const [visibleCount, setVisibleCount] = useState(chips.length)
+  const canMeasure = typeof ResizeObserver !== 'undefined'
+  const shouldMeasure = overflowMode === 'count' && canMeasure
+
+  useLayoutEffect(() => {
+    if (!shouldMeasure) return
+
+    const updateVisibleCount = () => {
+      const row = rowRef.current
+      const measure = measureRef.current
+      if (!row || !measure) return
+
+      const containerWidth = row.clientWidth || row.getBoundingClientRect().width
+      if (containerWidth <= 0) {
+        setVisibleCount(chips.length)
+        return
+      }
+
+      const chipWidths = Array.from(measure.querySelectorAll('[data-compact-chip-measure]'))
+        .map((element) => measuredWidth(element))
+      const nextVisibleCount = getFittingCompactChipCount(
+        chipWidths,
+        flexGap(row),
+        containerWidth,
+        measuredWidth(moreMeasureRef.current),
+      )
+      setVisibleCount(nextVisibleCount)
+    }
+
+    const frame = window.requestAnimationFrame(updateVisibleCount)
+
+    if (!rowRef.current) {
+      return () => window.cancelAnimationFrame(frame)
+    }
+
+    const observer = new ResizeObserver(updateVisibleCount)
+    observer.observe(rowRef.current)
+    return () => {
+      window.cancelAnimationFrame(frame)
+      observer.disconnect()
+    }
+  }, [shouldMeasure, chips])
+
+  if (!chips.length) return null
+
+  const visibleCountForRender = shouldMeasure ? visibleCount : chips.length
+  const hiddenCount = Math.max(0, chips.length - visibleCountForRender)
+  const visibleChips = chips.slice(0, visibleCountForRender)
+
+  return (
+    <div className="entity-card-chip-row-wrap">
+      <div ref={rowRef} className={['entity-card-chip-slot', className].filter(Boolean).join(' ')} data-testid={testId}>
+        {visibleChips.map((chip) => (
+          <span key={chip.key} className="entity-card-chip">
+            {chip.node}
+          </span>
+        ))}
+        {hiddenCount > 0 ? (
+          <Chip data-testid="compact-chip-overflow">+{hiddenCount} {COPY.expander.more}</Chip>
+        ) : null}
+      </div>
+      {shouldMeasure ? (
+        <div ref={measureRef} className="entity-card-chip-measure" aria-hidden="true">
+          {chips.map((chip) => (
+            <span key={chip.key} className="entity-card-chip" data-compact-chip-measure>
+              {chip.node}
+            </span>
+          ))}
+          <span ref={moreMeasureRef} className="entity-card-chip">
+            <Chip>+{chips.length} {COPY.expander.more}</Chip>
+          </span>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 export function EntityCardMedia({
   title,
   imageUrl,
@@ -93,6 +222,7 @@ export function EntityCardMedia({
   const normalizedUrl = normalizedImageUrl(imageUrl)
   const [failedSrc, setFailedSrc] = useState<string | undefined>()
   const showImage = media === 'image' && Boolean(normalizedUrl && failedSrc !== normalizedUrl)
+  if (media === 'none') return null
 
   return (
     <div className={['entity-card-figure', className].filter(Boolean).join(' ')}>
@@ -103,10 +233,12 @@ export function EntityCardMedia({
           className="entity-card-image"
           onError={() => setFailedSrc(normalizedUrl)}
         />
-      ) : (
+      ) : media === 'monogram' ? (
         <div className="entity-card-monogram-fill" aria-hidden="true">
           <span className="entity-card-monogram">{entityMonogram(title)}</span>
         </div>
+      ) : (
+        <div className="entity-card-image-placeholder" aria-hidden="true" />
       )}
       {badge && <div className="entity-card-badge">{badge}</div>}
     </div>
@@ -121,6 +253,8 @@ export function EntityCard({
   imageUrl,
   media = 'image',
   chip,
+  compactChips,
+  compactChipOverflow = 'count',
   date,
   badge,
   meta,
@@ -134,11 +268,11 @@ export function EntityCard({
       to={href}
       data-testid={testId}
       onMouseEnter={onMouseEnter}
-      className={['entity-card', motionClassName, className].filter(Boolean).join(' ')}
+      className={['entity-card', media === 'none' ? 'entity-card--no-media' : '', motionClassName, className].filter(Boolean).join(' ')}
     >
-      {/* Text body — data hierarchy leads (Aria Item 4: name/roast first,
-          decoration second). Compact consumers position the shared media slot
-          top-right via the canonical EntityCard grid. */}
+      {media !== 'none' && (
+        <EntityCardMedia title={mediaTitle ?? title} imageUrl={imageUrl} media={media} badge={badge} />
+      )}
       <div className="entity-card-body">
         {eyebrow && (
           <p className="entity-card-eyebrow" title={eyebrow}>
@@ -153,20 +287,71 @@ export function EntityCard({
             {date}
           </div>
         )}
-        {chip && (
+        {compactChips?.length ? (
+          <CompactChipRow chips={compactChips} overflowMode={compactChipOverflow} />
+        ) : chip ? (
           <div className="entity-card-chip-slot">
             {chip}
           </div>
-        )}
+        ) : null}
         {meta && (
           <div className="entity-card__meta">
             {meta}
           </div>
         )}
       </div>
-
-      {/* Shared media slot — compact cards pin this top-right for all media types. */}
-      <EntityCardMedia title={mediaTitle ?? title} imageUrl={imageUrl} media={media} badge={badge} />
     </Link>
+  )
+}
+
+export function EntityButtonCard({
+  title,
+  mediaTitle,
+  eyebrow,
+  imageUrl,
+  media = 'image',
+  compactChips,
+  compactChipOverflow = 'count',
+  date,
+  badge,
+  className = '',
+  onClick,
+  onMouseEnter,
+  'data-testid': testId,
+  'data-entity-id': entityId,
+  'data-hardware-id': hardwareId,
+}: EntityButtonCardProps) {
+  return (
+    <button
+      type="button"
+      data-testid={testId}
+      data-entity-id={entityId}
+      data-hardware-id={hardwareId}
+      onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      className={['entity-card', 'entity-card--button', 'kaapi-motion-card', className].filter(Boolean).join(' ')}
+    >
+      {media !== 'none' && (
+        <EntityCardMedia title={mediaTitle ?? title} imageUrl={imageUrl} media={media} badge={badge} />
+      )}
+      <div className="entity-card-body">
+        {eyebrow && (
+          <p className="entity-card-eyebrow" title={eyebrow}>
+            {eyebrow}
+          </p>
+        )}
+        <p className="entity-card-title" title={title}>
+          {title}
+        </p>
+        {date && (
+          <div className="entity-card-date">
+            {date}
+          </div>
+        )}
+        {compactChips?.length ? (
+          <CompactChipRow chips={compactChips} overflowMode={compactChipOverflow} />
+        ) : null}
+      </div>
+    </button>
   )
 }

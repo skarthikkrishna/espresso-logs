@@ -29,7 +29,7 @@ function Wrapper({ children }: { children: React.ReactNode }) {
 }
 
 describe('ShotCard', () => {
-  it.each(['summary', 'row', 'list-card'] as const)('renders %s through the canonical summary content path', (variant) => {
+  it.each(['summary'] as const)('renders %s through the canonical summary content path', (variant) => {
     const { container } = render(
       <Wrapper>
         <ShotCard shot={shot} variant={variant} data-testid={variant} />
@@ -39,23 +39,43 @@ describe('ShotCard', () => {
     const card = screen.getByTestId(variant)
     expect(card).toHaveClass('shot-card-summary')
     expect(container.querySelector('.shot-row')).toBeNull()
-    expect(screen.getByRole('img', { name: 'Test Roaster — Test Bean' })).toHaveAttribute('src', '/static/catalog/test-bean.jpg')
+    expect(screen.queryByRole('img', { name: 'Test Roaster — Test Bean' })).toBeNull()
     expect(card).toHaveTextContent('2025-07-29')
     expect(container.querySelector('.entity-card-eyebrow')).toHaveTextContent('Test Roaster')
     expect(container.querySelector('.entity-card-date')).toHaveTextContent('2025-07-29')
-    expect(container.querySelector('.entity-card-body + .entity-card-figure')).toBeInTheDocument()
-    expect(container.querySelector('.kk-tc-metric-chip')).toHaveTextContent('18g → 36g')
+    expect(container.querySelector('.entity-card-figure')).toBeNull()
+    expect(card).toHaveClass('entity-card--no-media')
     expect(card).toHaveTextContent('Test Bean')
     expect(card).toHaveTextContent('Good Espresso')
-    expect(card).toHaveTextContent('18g → 36g')
     expect(card).toHaveTextContent('27s')
-    expect(card).toHaveTextContent('Grind 4.5')
+    expect(card).toHaveTextContent('1:2.0')
+    expect(screen.queryByTestId('shot-yield-chip')).toBeNull()
+    expect(container.querySelectorAll('.entity-card-chip-slot .kk-tc-chip, .entity-card-chip-slot .extraction-chip')).toHaveLength(3)
+    expect(screen.getByTestId('shot-time-chip')).toHaveClass('extraction-chip')
+    expect(screen.getByTestId('shot-ratio-chip')).toHaveClass('extraction-chip')
+    expect(card).not.toHaveTextContent('18g')
+    expect(card).not.toHaveTextContent('Grind 4.5')
+    expect(container.querySelector('.kk-tc-metric-chip')).toBeNull()
     expect(card).not.toHaveTextContent('Linea Mini')
-    expect(card).not.toHaveTextContent('Niche Zero')
     expect(card).not.toHaveTextContent('IMS')
   })
 
-  it('uses a monogram fallback for summaries when image_path is absent', () => {
+  it('renders brew-log compact chips in canonical priority order without grinder or raw dose', () => {
+    const { container } = render(
+      <Wrapper>
+        <ShotCard shot={{ ...shot, roast_level: 'Light' }} variant="list-card" data-testid="brew-card" />
+      </Wrapper>
+    )
+
+    const chipTexts = Array.from(container.querySelectorAll('.entity-card-chip-slot .kk-tc-chip, .entity-card-chip-slot .extraction-chip'))
+      .map((chip) => chip.textContent)
+    expect(chipTexts).toEqual(['Good Espresso', '1:2.0', '27s', '36g', 'Sour', 'Light'])
+    expect(screen.getByTestId('brew-card')).not.toHaveTextContent('4.5')
+    expect(screen.getByTestId('brew-card')).not.toHaveTextContent('18g')
+    expect(screen.getByTestId('brew-card')).not.toHaveTextContent('Niche Zero')
+  })
+
+  it('uses no media fallback for summaries when image_path is absent', () => {
     const { container } = render(
       <Wrapper>
         <ShotCard shot={{ ...shot, image_path: undefined }} variant="summary" />
@@ -63,10 +83,10 @@ describe('ShotCard', () => {
     )
 
     expect(screen.queryByRole('img')).toBeNull()
-    expect(container.querySelector('.entity-card-monogram')).toHaveTextContent('TR')
+    expect(container.querySelector('.entity-card-monogram')).toBeNull()
   })
 
-  it('allows Dashboard to force summary media to monogram even when image_path exists', () => {
+  it('can still render explicitly requested monogram media for approved placeholders', () => {
     const { container } = render(
       <Wrapper>
         <ShotCard shot={shot} variant="summary" media="monogram" />

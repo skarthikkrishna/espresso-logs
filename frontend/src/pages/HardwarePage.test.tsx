@@ -2,7 +2,7 @@
  * spec-043 T014 — HardwarePage behavior tests.
  *
  * Verifies the Wave-2b migration's load-bearing behavior (Rule 9 — intent, not presence):
- *   1. Browse grid groups items into the four categories.
+ *   1. Browse grid is flat and uses the shared Catalog entity-card grid.
  *   2. Selecting an item opens a DISTINCT detail layer (grid unmounted, not stacked below).
  *   3. In-page Back returns to the grid.
  *   4. Image upload calls the existing endpoint client and surfaces success state.
@@ -30,7 +30,14 @@ import type { HardwareItem } from '../types/entities'
 import HardwarePage from './HardwarePage'
 
 const HARDWARE: HardwareItem[] = [
-  { hardware_id: 'HW1', category: 'Machine', name: 'Lever Machine One' },
+  {
+    hardware_id: 'HW1',
+    category: 'Machine',
+    name: 'Lever Machine One',
+    purchase_date: '2025-11-15',
+    notes: 'Backflushed weekly and ready for daily service.',
+    product_url: 'https://example.test/lever-machine-one',
+  },
   { hardware_id: 'HW2', category: 'Grinder', name: 'Single Dose Grinder' },
   { hardware_id: 'HW3', category: 'Basket', name: 'Precision Basket 18g' },
   { hardware_id: 'HW4', category: 'Storage', name: 'Airtight Canister' },
@@ -58,13 +65,16 @@ beforeEach(() => {
 })
 
 describe('HardwarePage — browse grid', () => {
-  it('groups items into the four hardware categories', async () => {
+  it('renders a flat Catalog-matching grid with no category section headers', async () => {
     renderPage()
-    const sections = await screen.findAllByTestId('hardware-category-section')
-    expect(sections).toHaveLength(4)
+    const grid = await screen.findByTestId('hardware-grid')
+    expect(grid).toHaveClass('entity-card-grid')
+    expect(screen.queryByTestId('hardware-category-section')).not.toBeInTheDocument()
     for (const label of ['Machine', 'Grinder', 'Basket', 'Storage']) {
-      expect(screen.getByRole('heading', { name: label })).toBeInTheDocument()
+      expect(screen.queryByRole('heading', { name: label })).not.toBeInTheDocument()
+      expect(screen.getByText(label, { selector: '.kk-tc-chip' })).toBeInTheDocument()
     }
+    expect(screen.getAllByTestId('hardware-card')).toHaveLength(4)
   })
 })
 
@@ -80,6 +90,9 @@ describe('HardwarePage — distinct detail layer', () => {
     // Distinct layer — the browse grid is gone, not stacked underneath.
     expect(screen.queryByTestId('hardware-grid')).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Lever Machine One' })).toBeInTheDocument()
+    expect(screen.getByText('Nov 15, 2025')).toBeInTheDocument()
+    expect(screen.getByText('Backflushed weekly and ready for daily service.')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'View product →' })).toHaveAttribute('href', 'https://example.test/lever-machine-one')
   })
 
   it('returns to the grid from the in-page Back control', async () => {

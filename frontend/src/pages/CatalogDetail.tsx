@@ -23,13 +23,11 @@ import {
   AddBagAction,
   BackLink,
   BagCard,
+  DetailHeader,
   FormSection,
   RoastChip,
   Section,
   SectionHeader,
-  TakeoverCard,
-  TitleBlock,
-  TitleIcon,
   ToneButton,
   ToneInput,
   TonePageWrapper,
@@ -229,7 +227,7 @@ function CatalogDetailPage() {
   ) : null
 
   return (
-    <TonePageWrapper ref={routeRef} testId="catalog-detail">
+    <TonePageWrapper ref={routeRef} testId="catalog-detail" className="kk-detail-page catalog-detail-page">
 
       {/* ── Nav row: back link + tone toggle ─────────────────────────────── */}
       <div className="kk-b-page__nav">
@@ -237,23 +235,46 @@ function CatalogDetailPage() {
         <ToneToggle />
       </div>
 
-      {/* ── Single takeover card — ALL catalog content unified ──────────────── */}
-      <TakeoverCard>
+      <div className="kk-detail-shell">
 
-        {/* 1. Title section — bean icon left, name + roaster stacked right */}
-        <Section isTitle>
-          <TitleIcon
-            src={item.image_path && item.image_path !== brokenImageSrc ? item.image_path : null}
-            alt={item.bean_name}
-            monogram={item.bean_name?.charAt(0)?.toUpperCase()}
-            onError={() => setBrokenImageSrc(item.image_path ?? null)}
-          >
-            {imageOverlay}
-          </TitleIcon>
-          <TitleBlock title={item.bean_name} subtitle={item.roaster} />
-        </Section>
+        <DetailHeader
+          title={item.bean_name}
+          subtitle={item.roaster}
+          media={(item.image_path && item.image_path !== brokenImageSrc) || editing ? (
+            <>
+              {item.image_path && item.image_path !== brokenImageSrc ? (
+                <img src={item.image_path} alt={item.bean_name} onError={() => setBrokenImageSrc(item.image_path ?? null)} />
+              ) : (
+                <div className="kk-detail-header__media-placeholder" aria-hidden="true">
+                  {item.bean_name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              {imageOverlay}
+            </>
+          ) : undefined}
+          chips={item.roast_level ? <RoastChip level={item.roast_level} /> : undefined}
+          actions={!editing ? (
+            <>
+              <AddBagAction variant="hero" catalogId={id} onAdd={openAddBagForm} />
+              <ToneButton
+                variant="edit"
+                onClick={() => {
+                  setEditRoaster(item.roaster)
+                  setEditBeanName(item.bean_name)
+                  setEditRoastLevel(item.roast_level)
+                  setEditProductUrl(item.product_url ?? '')
+                  setEditError(null)
+                  setImageError(null)
+                  setEditing(true)
+                }}
+              >
+                Edit
+              </ToneButton>
+            </>
+          ) : undefined}
+        />
 
-        {/* 2. Identity section — roast chip + edit / edit form inline */}
+        {/* 2. Identity section — edit form/link only; chips/actions live in the unified header */}
         <Section>
           {editing ? (
             <div className="space-y-4">
@@ -331,25 +352,6 @@ function CatalogDetailPage() {
             </div>
           ) : (
             <div>
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                {item.roast_level && (
-                  <RoastChip level={item.roast_level} />
-                )}
-                <ToneButton
-                  variant="edit"
-                  onClick={() => {
-                    setEditRoaster(item.roaster)
-                    setEditBeanName(item.bean_name)
-                    setEditRoastLevel(item.roast_level)
-                    setEditProductUrl(item.product_url ?? '')
-                    setEditError(null)
-                    setImageError(null)
-                    setEditing(true)
-                  }}
-                >
-                  Edit
-                </ToneButton>
-              </div>
               {item.product_url ? (
                 <a
                   href={item.product_url}
@@ -366,10 +368,9 @@ function CatalogDetailPage() {
           )}
         </Section>
 
-        {/* 3. Actions section — Add Bag primary button or inline add-bag form */}
-        {!editing && (
+        {/* 3. Add-bag form — trigger lives in the unified header */}
+        {!editing && addingBag && (
           <Section>
-            {addingBag ? (
               <div className="space-y-3">
                 <div className="flex flex-wrap gap-3">
                   <div className="min-w-[140px] flex-1">
@@ -442,16 +443,11 @@ function CatalogDetailPage() {
                   </ToneButton>
                 </div>
               </div>
-            ) : (
-              <div className="flex flex-wrap items-center gap-3">
-                <AddBagAction variant="hero" catalogId={id} onAdd={openAddBagForm} />
-              </div>
-            )}
           </Section>
         )}
 
         {/* 4. Bags inventory section */}
-        <Section>
+        <Section className="catalog-bags-section">
           <SectionHeader>{COPY.catalog.bags}</SectionHeader>
           {bags.length === 0 ? (
             <p className="kk-tc-body-muted">{COPY.catalog.noBags}</p>
@@ -466,6 +462,7 @@ function CatalogDetailPage() {
                     key={bag.bag_id}
                     bag={bag}
                     variant="row"
+                    showRoast={false}
                     action={(
                       <>
                         {statusErrors[bag.bag_id] ? (
@@ -490,10 +487,11 @@ function CatalogDetailPage() {
         {/* 5. Brew history section */}
         <Section>
           <SectionHeader>{COPY.catalog.brewHistory}</SectionHeader>
-          {recent_shots.length === 0 ? (
-            <p className="kk-tc-body-muted">{COPY.catalog.noShots}</p>
-          ) : (
-            <div className="overflow-x-auto">
+          <div className="detail-panel">
+            {recent_shots.length === 0 ? (
+              <p className="kk-tc-body-muted">{COPY.catalog.noShots}</p>
+            ) : (
+              <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr>
@@ -520,11 +518,12 @@ function CatalogDetailPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </Section>
 
-      </TakeoverCard>
+      </div>
     </TonePageWrapper>
   )
 }

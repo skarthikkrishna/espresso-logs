@@ -6,11 +6,28 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import AddHardwareModal from '../components/AddHardwareModal'
 import LogMaintenanceModal from '../components/LogMaintenanceModal'
 import EditHardwareModal from '../components/EditHardwareModal'
-import { Badge, Button, EmptyState, GlassCard, LayerTransition, PageHeader, SectionHeading } from '../components/ui'
+import { Button, GlassCard } from '../components/ui'
+import {
+  Chip,
+  DetailHeader,
+  HardwareCard,
+  ImmersiveEmptyState,
+  ImmersiveListShell,
+  ListPageHeader,
+  ParamGrid,
+  ParamPair,
+  Section,
+  SectionHeader,
+  ToneButton,
+  TonePageWrapper,
+  ToneProvider,
+  ToneToggle,
+} from '../components/tone-system'
 import type { HardwareDetail, HardwareItem } from '../types/entities'
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
 import { householdKeys } from '../api/queryKeys'
 import { useKaapiMotion } from '../lib/motion'
+import { formatIsoDate } from '../utils/dates'
 import { COPY } from '../copy'
 
 function HardwareIcon({ category, className = 'h-16 w-16' }: { category: string; className?: string }) {
@@ -45,11 +62,11 @@ function HardwareIcon({ category, className = 'h-16 w-16' }: { category: string;
 }
 
 /**
- * Photo + image-upload surface for a single hardware item. Held in its own component
+ * Hero image + image-upload control for a single hardware item. Held in its own component
  * and remounted via `key={item.hardware_id}` by the parent, so the transient
  * upload/preview state resets cleanly when a different item is opened — no reset effect.
  */
-function HardwarePhotoCard({ item, householdId }: { item: HardwareItem; householdId: string | null | undefined }) {
+function HardwareHeroImage({ item, householdId }: { item: HardwareItem; householdId: string | null | undefined }) {
   const queryClient = useQueryClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
@@ -87,62 +104,48 @@ function HardwarePhotoCard({ item, householdId }: { item: HardwareItem; househol
   }
 
   return (
-    <GlassCard variant="content" className="space-y-4">
-      <h3 className="text-sm font-semibold">{COPY.hardware.photo}</h3>
-      <div className="overflow-hidden rounded-[var(--bevel-radius)] border border-[var(--kaapi-content-border)] bg-[var(--kaapi-content-surface-2)]">
-        {imagePath ? (
-          <img
-            src={imagePath}
-            alt={item.name}
-            className="max-h-56 w-full object-contain"
-            onError={() => setBrokenSrc(item.image_path ?? null)}
-          />
-        ) : (
-          <div className="flex h-40 items-center justify-center text-[var(--kaapi-content-muted)]">
-            <HardwareIcon category={item.category} />
-          </div>
-        )}
-      </div>
-      <div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          loading={uploading}
-          loadingText="Uploading…"
-        >
-          {item.image_path ? 'Replace image' : 'Upload image'}
-        </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          data-testid="hardware-image-input"
-          onChange={(e) => {
-            const f = e.target.files?.[0]
-            if (f) handleUpload(f)
-          }}
-        />
-        {uploading && (
-          <p role="status" className="mt-2 text-xs text-[var(--kaapi-content-muted)]">{COPY.hardware.uploadingImage}</p>
-        )}
-        {success && !uploading && (
-          <p role="status" data-testid="hardware-image-success" className="mt-2 text-xs text-[var(--kaapi-content-muted)]">
-            {COPY.hardware.imageUpdated}
-          </p>
-        )}
-        {error && (
-          <p role="alert" data-testid="hardware-image-error" className="mt-2 text-xs text-error">{error}</p>
-        )}
-      </div>
-    </GlassCard>
+    <>
+      {imagePath ? (
+        <img src={imagePath} alt={item.name} onError={() => setBrokenSrc(item.image_path ?? null)} />
+      ) : (
+        <div className="kk-detail-header__media-placeholder" data-testid="hardware-image-placeholder">
+          <HardwareIcon category={item.category} className="h-12 w-12" />
+        </div>
+      )}
+      <ToneButton
+        variant="edit"
+        className="hardware-detail-image-action"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={uploading}
+        aria-label={item.image_path ? 'Replace image' : 'Upload image'}
+      >
+        {uploading ? 'Uploading…' : item.image_path ? 'Replace image' : 'Upload image'}
+      </ToneButton>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        data-testid="hardware-image-input"
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) handleUpload(f)
+        }}
+      />
+      {uploading && (
+        <p role="status" className="hardware-detail-image-status kk-tc-body-muted">{COPY.hardware.uploadingImage}</p>
+      )}
+      {success && !uploading && (
+        <p role="status" data-testid="hardware-image-success" className="hardware-detail-image-status kk-tc-body-muted">
+          {COPY.hardware.imageUpdated}
+        </p>
+      )}
+      {error && (
+        <p role="alert" data-testid="hardware-image-error" className="hardware-detail-image-status kk-tc-error">{error}</p>
+      )}
+    </>
   )
 }
-
-const CATEGORY_ORDER: HardwareItem['category'][] = ['Machine', 'Grinder', 'Basket', 'Storage']
 
 export default function HardwarePage() {
   const activeHouseholdId = useHouseholdQueryScope()
@@ -229,191 +232,11 @@ export default function HardwarePage() {
     </div>
   )
 
-  const grouped = CATEGORY_ORDER.reduce<Record<HardwareItem['category'], HardwareItem[]>>((acc, cat) => {
-    acc[cat] = (hardware ?? []).filter((h) => h.category === cat)
-    return acc
-  }, { Machine: [], Grinder: [], Basket: [], Storage: [] })
-  const categoriesWithItems = CATEGORY_ORDER.filter((cat) => grouped[cat].length > 0)
   const selectedItem = detail?.item ?? hardware?.find((item) => item.hardware_id === selectedId)
+  const selectedPurchaseDate = formatIsoDate(selectedItem?.purchase_date)
 
-  return (
-    <div ref={routeRef} data-testid="motion-route-boundary" className="p-4 md:p-6 space-y-6">
-      <PageHeader
-        title="Hardware"
-        subtitle="GEAR / MAINTENANCE"
-        actions={selectedId ? undefined : <Button variant="primary" size="sm" onClick={() => setAddModal({ open: true })}>Add hardware</Button>}
-      />
-
-      {!hardware?.length ? (
-        <div data-testid="hardware-empty-state">
-          <div data-testid="fresh-household-empty-hardware">
-            <EmptyState
-              icon={<HardwareIcon category="Machine" />}
-              title={COPY.hardware.emptyTitle}
-              description={COPY.hardware.emptyBody}
-              action={<Button variant="primary" size="sm" onClick={() => setAddModal({ open: true })}>Add hardware</Button>}
-            />
-          </div>
-        </div>
-      ) : selectedId ? (
-        <LayerTransition
-          variant="side"
-          transitionKey={selectedId}
-          focusOnEnter
-          data-testid="hardware-detail-panel"
-          className="scroll-mt-4"
-        >
-          {detailLoading && !selectedItem ? (
-            <LoadingSpinner />
-          ) : selectedItem ? (
-            <div className="space-y-6">
-              <Button
-                data-testid="hardware-back-to-grid"
-                variant="ghost"
-                size="sm"
-                onClick={closeDetail}
-                className="px-0 text-amber-300 hover:text-amber-200"
-              >
-                {COPY.hardware.backToHardware}
-              </Button>
-
-              {/* Header block — espresso-dark chrome; operational content sits on the light cards below. */}
-              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div className="min-w-0 space-y-2">
-                  <Badge tone="neutral" emphasis="solid">{selectedItem.category}</Badge>
-                  <h2 className="font-display text-2xl font-bold text-white/90 break-words">{selectedItem.name}</h2>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setEditModal({ open: true, hardware: selectedItem })}>Edit</Button>
-                  {(selectedItem.category === 'Machine' || selectedItem.category === 'Grinder') && (
-                    <Button variant="secondary" size="sm" onClick={() => setLogModal({ open: true, hardware: selectedItem })}>
-                      Log maintenance
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              <HardwarePhotoCard key={selectedItem.hardware_id} item={selectedItem} householdId={activeHouseholdId} />
-
-              {/* Maintenance — Machine + Grinder only */}
-              {selectedItem.category !== 'Basket' && selectedItem.category !== 'Storage' && (
-                <GlassCard variant="content" className="space-y-3">
-                  <h3 className="text-sm font-semibold">{COPY.hardware.maintenanceLog}</h3>
-                  {detail?.maintenance?.length ? (
-                    <div>
-                      {detail.maintenance.map((m) => (
-                        <div key={m.maintenance_id} className="border-b border-[var(--kaapi-content-border)] py-3 last:border-0">
-                          <p className="text-sm font-medium text-[var(--kaapi-content-content)]">{m.date}</p>
-                          <p className="mt-1 text-sm text-[var(--kaapi-content-muted)]">
-                            {m.action_type}
-                            {m.notes && <span> · {m.notes}</span>}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-[var(--kaapi-content-muted)]">{COPY.hardware.noMaintenance}</p>
-                  )}
-                </GlassCard>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <Button
-                data-testid="hardware-back-to-grid"
-                variant="ghost"
-                size="sm"
-                onClick={closeDetail}
-                className="px-0 text-amber-300 hover:text-amber-200"
-              >
-                {COPY.hardware.backToHardware}
-              </Button>
-              <GlassCard variant="content" padding="lg" className="text-center">
-                <p className="text-sm text-[var(--kaapi-content-muted)]">{COPY.hardware.unavailable}</p>
-              </GlassCard>
-            </div>
-          )}
-        </LayerTransition>
-      ) : (
-        <div data-testid="hardware-list" className="space-y-7">
-          <div ref={gridRef} data-testid="hardware-grid" className="space-y-7">
-            {categoriesWithItems.map((cat) => (
-              <section key={cat} data-testid="hardware-category-section" className="space-y-3">
-                <SectionHeading
-                  title={cat}
-                  actions={(
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      onClick={() => setAddModal({ open: true, initialCategory: cat })}
-                      aria-label={`Add ${cat}`}
-                      className="text-amber-300 hover:text-amber-200"
-                    >
-                      {COPY.hardware.add}
-                    </Button>
-                  )}
-                />
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
-                  {grouped[cat].map((item) => (
-                    <GlassCard
-                      interactive
-                      variant="content"
-                      padding="none"
-                      data-testid="hardware-card"
-                      data-hardware-id={item.hardware_id}
-                      key={item.hardware_id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={(event) => {
-                        pressFeedback(event.currentTarget)
-                        openDetail(item.hardware_id)
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          pressFeedback(e.currentTarget)
-                          openDetail(item.hardware_id)
-                        }
-                      }}
-                      className="kaapi-motion-card overflow-hidden text-left outline-none focus-visible:ring-2 focus-visible:ring-amber-500/80"
-                    >
-                      <div className="flex h-40 items-center justify-center bg-[var(--kaapi-content-surface-2)]">
-                        {item.image_path ? (
-                          <>
-                            <img
-                              src={item.image_path}
-                              alt={item.name}
-                              className="h-full w-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none'
-                                const icon = e.currentTarget.nextElementSibling as HTMLElement | null
-                                if (icon) icon.style.display = 'flex'
-                              }}
-                            />
-                            <span aria-hidden="true" style={{ display: 'none' }} className="h-full w-full items-center justify-center text-[var(--kaapi-content-muted)]">
-                              <HardwareIcon category={item.category} />
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-[var(--kaapi-content-muted)]">
-                            <HardwareIcon category={item.category} />
-                          </span>
-                        )}
-                      </div>
-                      <div className="min-w-0 p-4">
-                        <Badge tone="neutral" emphasis="solid">{item.category}</Badge>
-                        <h3 title={item.name} className="mt-3 truncate font-display text-base font-bold leading-snug text-[var(--kaapi-content-content)]">{item.name}</h3>
-                        <p className="mt-1 text-xs text-[var(--kaapi-content-muted)]">{COPY.hardware.selectHint}</p>
-                      </div>
-                    </GlassCard>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        </div>
-      )}
-
+  const modalLayer = (
+    <>
       {addModal.open && (
         <AddHardwareModal
           initialCategory={addModal.initialCategory}
@@ -431,6 +254,157 @@ export default function HardwarePage() {
           onClose={() => setEditModal({ open: false })}
           onSaved={() => setEditModal({ open: false })} />
       )}
-    </div>
+    </>
+  )
+
+  return (
+    <ToneProvider>
+      {selectedId ? (
+        <TonePageWrapper ref={routeRef} testId="motion-route-boundary" className="kk-detail-page hardware-detail-page">
+          <div className="kk-b-page__nav">
+            <button
+              type="button"
+              data-testid="hardware-back-to-grid"
+              className="kk-tc-back-link"
+              onClick={closeDetail}
+            >
+              {COPY.hardware.backToHardware}
+            </button>
+            <ToneToggle />
+          </div>
+          {detailLoading && !selectedItem ? (
+            <LoadingSpinner />
+          ) : selectedItem ? (
+            <div data-testid="hardware-detail-panel" className="kk-detail-shell">
+              <DetailHeader
+                title={selectedItem.name}
+                eyebrow={selectedItem.maker}
+                media={<HardwareHeroImage key={selectedItem.hardware_id} item={selectedItem} householdId={activeHouseholdId} />}
+                chips={<Chip>{selectedItem.category}</Chip>}
+                actions={(
+                  <>
+                    <ToneButton variant="edit" onClick={() => setEditModal({ open: true, hardware: selectedItem })}>Edit</ToneButton>
+                    {(selectedItem.category === 'Machine' || selectedItem.category === 'Grinder') && (
+                      <ToneButton variant="primary" onClick={() => setLogModal({ open: true, hardware: selectedItem })}>
+                        Log maintenance
+                      </ToneButton>
+                    )}
+                  </>
+                )}
+              />
+
+                {(selectedItem.purchase_date || selectedItem.product_url) && (
+                  <Section>
+                    <SectionHeader>{COPY.hardware.details}</SectionHeader>
+                    <div className="detail-panel">
+                      <div className="hardware-detail-compact-params">
+                        <ParamGrid>
+                          {selectedPurchaseDate && (
+                            <ParamPair
+                              label="Purchase date"
+                              value={<time dateTime={selectedItem.purchase_date ?? undefined}>{selectedPurchaseDate}</time>}
+                            />
+                          )}
+                          {selectedItem.product_url && (
+                            <ParamPair
+                              label="Product URL"
+                              value={(
+                                <a
+                                  href={selectedItem.product_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="kk-tc-roaster-link"
+                                >
+                                  {COPY.hardware.viewProduct}
+                                </a>
+                              )}
+                            />
+                          )}
+                        </ParamGrid>
+                      </div>
+                    </div>
+                  </Section>
+                )}
+
+                {selectedItem.notes && (
+                  <Section className="hardware-detail-notes">
+                    <SectionHeader level="h3">Notes</SectionHeader>
+                    <p className="kk-tc-body">{selectedItem.notes}</p>
+                  </Section>
+                )}
+
+                {selectedItem.category !== 'Basket' && selectedItem.category !== 'Storage' && (
+                  <Section>
+                    <SectionHeader>{COPY.hardware.maintenanceLog}</SectionHeader>
+                    <div className="detail-panel">
+                      {detail?.maintenance?.length ? (
+                        <div className="hardware-maintenance-list">
+                          {detail.maintenance.map((m) => (
+                            <div key={m.maintenance_id} className="hardware-maintenance-row">
+                              <p className="hardware-maintenance-date kk-tc-body">{m.date}</p>
+                              <div className="hardware-maintenance-copy">
+                                <Chip data-testid="hardware-maintenance-action-chip">{m.action_type}</Chip>
+                                {m.notes && <p className="kk-tc-body-muted">{m.notes}</p>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="kk-tc-body-muted">{COPY.hardware.noMaintenance}</p>
+                      )}
+                    </div>
+                  </Section>
+                )}
+            </div>
+          ) : (
+            <div className="kk-detail-shell">
+              <div className="detail-panel">
+                <p className="kk-tc-body-muted">{COPY.hardware.unavailable}</p>
+              </div>
+            </div>
+          )}
+          {modalLayer}
+        </TonePageWrapper>
+      ) : (
+        <ImmersiveListShell ref={routeRef} testId="motion-route-boundary" className="hardware-list-page">
+          <div className="immersive-nav-row">
+            <ToneToggle />
+          </div>
+
+          <ListPageHeader title="Hardware" section="GEAR / MAINTENANCE">
+            <ToneButton variant="primary" onClick={() => setAddModal({ open: true })}>
+              Add hardware
+            </ToneButton>
+          </ListPageHeader>
+
+          {!hardware?.length ? (
+            <div data-testid="hardware-empty-state">
+              <div data-testid="fresh-household-empty-hardware">
+                <ImmersiveEmptyState
+                  icon={<HardwareIcon category="Machine" />}
+                  title={COPY.hardware.emptyTitle}
+                  description={COPY.hardware.emptyBody}
+                  action={<ToneButton variant="primary" onClick={() => setAddModal({ open: true })}>Add hardware</ToneButton>}
+                />
+              </div>
+            </div>
+          ) : (
+            <div ref={gridRef} data-testid="hardware-grid" className="entity-card-grid">
+              {hardware.map((item) => (
+                <HardwareCard
+                  key={item.hardware_id}
+                  item={item}
+                  data-testid="hardware-card"
+                  onPress={pressFeedback}
+                  onSelect={(selected) => openDetail(selected.hardware_id)}
+                />
+              ))}
+            </div>
+          )}
+
+          {modalLayer}
+        </ImmersiveListShell>
+      )}
+    </ToneProvider>
   )
 }

@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import type { DashboardBag, InventoryBag } from '../../types/entities'
-import { MetricChip, StatusChip } from './Chip'
-import { EntityCard, type EntityCardMediaMode } from './EntityCard'
+import { StatusChip } from './Chip'
+import { EntityCard, type CompactCardChip, type EntityCardMediaMode } from './EntityCard'
 import { RoastChip } from './RoastChip'
 
 export type BagCardVariant = 'card' | 'row' | 'reference'
@@ -15,6 +15,7 @@ interface BagCardProps {
   action?: ReactNode
   href?: string
   media?: EntityCardMediaMode
+  showRoast?: boolean
   className?: string
   'data-testid'?: string
 }
@@ -32,16 +33,22 @@ function formatBagDate(bag: BagLike): ReactNode | undefined {
   return bag.roast_date
 }
 
-function formatBagMetric(bag: BagLike): ReactNode | undefined {
-  if (!isDashboardBag(bag)) return undefined
-  const doseYield = bag.last_shot?.dose_in_g != null && bag.last_shot?.yield_out_g != null
-    ? `${bag.last_shot.dose_in_g}g → ${bag.last_shot.yield_out_g}g`
-    : undefined
-  return doseYield ? <MetricChip mono>{doseYield}</MetricChip> : undefined
-}
-
 function bagImagePath(bag: BagLike): string | undefined {
   return 'image_path' in bag ? bag.image_path : undefined
+}
+
+function compactBagChips(bag: BagLike): CompactCardChip[] {
+  const chips: CompactCardChip[] = []
+  const status = 'status' in bag ? bag.status : undefined
+
+  if (bag.roast_level) {
+    chips.push({ key: 'roast', node: <RoastChip level={bag.roast_level} /> })
+  }
+  if (status) {
+    chips.push({ key: 'status', node: <StatusChip status={status} data-testid="bag-status-chip" /> })
+  }
+
+  return chips
 }
 
 function splitRoasterBean(displayName: string): { roaster?: string; bean: string } {
@@ -55,7 +62,8 @@ export function BagCard({
   variant,
   action,
   href,
-  media = 'image',
+  media = 'none',
+  showRoast = true,
   className = '',
   'data-testid': testId,
 }: BagCardProps) {
@@ -65,16 +73,8 @@ export function BagCard({
 
   if (variant === 'card') {
     const date = formatBagDate(bag)
-    const metric = formatBagMetric(bag)
     const titleParts = splitRoasterBean(bag.display_name)
-    const status = 'status' in bag ? bag.status : undefined
-    const chips = (
-      <>
-        {bag.roast_level ? <RoastChip level={bag.roast_level} /> : null}
-        {status ? <StatusChip status={status} /> : null}
-        {metric}
-      </>
-    )
+    const chips = compactBagChips(bag)
 
     return (
       <EntityCard
@@ -85,7 +85,7 @@ export function BagCard({
         imageUrl={bagImagePath(bag)}
         media={media}
         date={date ? <span>{date}</span> : undefined}
-        chip={bag.roast_level || status || metric ? chips : undefined}
+        compactChips={chips}
         className={['bag-card-compact', className].filter(Boolean).join(' ')}
         data-testid={testId}
       />
@@ -106,11 +106,11 @@ export function BagCard({
         <p className="bag-card-row__title">{bag.display_name}</p>
         <div className="bag-card-row__meta">
           {'roast_date' in bag && bag.roast_date ? <span data-testid="bag-roast-date">{bag.roast_date}</span> : null}
-          {'status' in bag ? <StatusChip status={bag.status} data-testid="bag-status" /> : null}
         </div>
-        {bag.roast_level ? (
+        {(showRoast && bag.roast_level) || 'status' in bag ? (
           <div className="bag-card-row__chip-line">
-            <RoastChip level={bag.roast_level} />
+            {showRoast && bag.roast_level ? <RoastChip level={bag.roast_level} /> : null}
+            {'status' in bag ? <StatusChip status={bag.status} data-testid="bag-status" /> : null}
           </div>
         ) : null}
       </div>

@@ -68,15 +68,13 @@ beforeEach(() => {
   vi.mocked(listCatalog).mockResolvedValue(FIXTURE)
 })
 
-describe('CatalogList — portal regression', () => {
-  it('FAB renders in document.body, not inside component container', async () => {
+describe('CatalogList — add action placement', () => {
+  it('renders a contextual Add coffee CTA instead of a portalled FAB', async () => {
     const { container } = renderWithQuery(<CatalogList />)
 
-    const fab = await screen.findByRole('button', { name: /add coffee/i })
-
-    expect(fab).toBeInTheDocument()             // sanity: element exists
-    expect(container).not.toContainElement(fab) // NOT inside component root
-    expect(document.body).toContainElement(fab) // IS portalled to body
+    await screen.findByTestId('catalog-grid')
+    expect(container.querySelector('.immersive-fab')).toBeNull()
+    expect(container).toContainElement(screen.getByRole('button', { name: /add coffee/i }))
   })
 })
 

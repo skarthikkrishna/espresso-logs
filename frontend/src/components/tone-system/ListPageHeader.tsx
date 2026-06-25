@@ -19,7 +19,7 @@ interface ListPageHeaderProps {
   /** Eyebrow line — rarely used; omit for the standard 2-line layout. */
   eyebrow?: string
   /** Page title — e.g. "Catalog". Rendered large + bold (display font). */
-  title: string
+  title: ReactNode
   /** Descriptor below the title — e.g. "BEANS / INVENTORY". This is the
    *  standard second line for list pages; rendered uppercase + tracked. */
   section?: string

@@ -1,7 +1,7 @@
 """
 HardwareRepo — Sheets-backed repository for the Hardware tab.
 
-Schema columns (in order): Hardware_ID, Category, Name, Product_URL, Local_Image_Path
+Schema columns (in order): Hardware_ID, Category, Name, Maker, Product_URL, Local_Image_Path
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ class HardwareRepo(BaseRepo):
     """Repository for the Hardware (equipment inventory) tab."""
 
     TAB = _TAB
-    COLUMNS = ("Hardware_ID", "Category", "Name", "Product_URL", "Local_Image_Path")
+    COLUMNS = ("Hardware_ID", "Category", "Name", "Maker", "Product_URL", "Local_Image_Path")
 
     def __init__(
         self,

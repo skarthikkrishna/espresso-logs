@@ -71,6 +71,7 @@ class _Spec043SeedOut(BaseModel):
     bag_ids: dict[str, str]
     shot_ids: dict[str, str]
     hardware_ids: dict[str, str]
+    hardware: list[dict[str, str | None]]
     routes: dict[str, str]
 
 
@@ -745,14 +746,14 @@ async def api_e2e_spec043_seed(
         sa.text(
             """
             INSERT INTO hardware (
-              household_id, sheets_id, name, category, purchase_date, notes,
+              household_id, sheets_id, name, category, maker, purchase_date, notes,
               product_url, local_image_path
             )
             VALUES
               (
                 :hid, 'SPEC043_HW_MACHINE',
                 'La Marzocco Linea Micra Pearl White Home Espresso Machine',
-                'Machine', DATE '2025-11-15',
+                'Machine', 'La Marzocco', DATE '2025-11-15',
                 '9 bar reference profile; steam wand cleaned after milk drinks.',
                 'https://lamarzocco.com/linea-micra/',
                 '/static/spa/static/e2e-assets/spec-043/espresso-machine.jpg'
@@ -760,7 +761,7 @@ async def api_e2e_spec043_seed(
               (
                 :hid, 'SPEC043_HW_GRINDER',
                 'Weber Workshops EG-1 Onyx Flat Burr Grinder with Ultra Low Retention Funnel',
-                'Grinder', DATE '2025-09-20',
+                'Grinder', 'Weber Workshops', DATE '2025-09-20',
                 '80 mm burrs; espresso around 5.6–6.2 for current light roasts.',
                 'https://weberworkshops.com/products/eg-1',
                 '/static/spa/static/e2e-assets/spec-043/coffee-grinder.jpg'
@@ -768,7 +769,7 @@ async def api_e2e_spec043_seed(
               (
                 :hid, 'SPEC043_HW_BASKET',
                 'IMS Big Bang Precision Filter Basket 18–22 g Ridgeless B702TFH26.5BB',
-                'Basket', DATE '2026-01-05',
+                'Basket', 'IMS', DATE '2026-01-05',
                 'Daily basket used for 18.5 g recipes.',
                 '',
                 '/static/spa/static/e2e-assets/spec-043/filter-basket.jpg'
@@ -776,7 +777,7 @@ async def api_e2e_spec043_seed(
               (
                 :hid, 'SPEC043_HW_STORAGE',
                 'Fellow Atmos Vacuum Canister Matte Black 1.2 L Long Label Stress Fixture',
-                'Storage', DATE '2025-12-02',
+                'Storage', 'Fellow', DATE '2025-12-02',
                 'Freezer-to-counter staging for the active bag.',
                 'https://fellowproducts.com/products/atmos-vacuum-canister',
                 '/static/spa/static/e2e-assets/spec-043/storage-canister.jpg'
@@ -1020,6 +1021,32 @@ async def api_e2e_spec043_seed(
             "basket_long": "SPEC043_HW_BASKET",
             "storage_long": "SPEC043_HW_STORAGE",
         },
+        hardware=[
+            {
+                "hardware_id": "SPEC043_HW_MACHINE",
+                "name": "La Marzocco Linea Micra Pearl White Home Espresso Machine",
+                "category": "Machine",
+                "maker": "La Marzocco",
+            },
+            {
+                "hardware_id": "SPEC043_HW_GRINDER",
+                "name": "Weber Workshops EG-1 Onyx Flat Burr Grinder with Ultra Low Retention Funnel",
+                "category": "Grinder",
+                "maker": "Weber Workshops",
+            },
+            {
+                "hardware_id": "SPEC043_HW_BASKET",
+                "name": "IMS Big Bang Precision Filter Basket 18–22 g Ridgeless B702TFH26.5BB",
+                "category": "Basket",
+                "maker": "IMS",
+            },
+            {
+                "hardware_id": "SPEC043_HW_STORAGE",
+                "name": "Fellow Atmos Vacuum Canister Matte Black 1.2 L Long Label Stress Fixture",
+                "category": "Storage",
+                "maker": "Fellow",
+            },
+        ],
         routes={
             "dashboard": "/",
             "catalog_list": "/catalog",
