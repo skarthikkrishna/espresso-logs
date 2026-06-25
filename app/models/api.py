@@ -52,6 +52,10 @@ class MaintenanceEventOut(BaseModel):
 class BrewLogEntryOut(BaseModel):
     shot_id: str
     date: str
+    bag_id: str | None = None
+    machine_id: str | None = None
+    grinder_id: str | None = None
+    basket_id: str | None = None
     bag_display: str
     image_path: str | None = None
     roast_level: str | None = None

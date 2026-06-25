@@ -113,6 +113,10 @@ def _shot_to_out(
     return BrewLogEntryOut(
         shot_id=shot.get("Shot_ID", ""),
         date=shot.get("Date", ""),
+        bag_id=shot.get("Bag_ID") or None,
+        machine_id=shot.get("Machine_ID") or None,
+        grinder_id=shot.get("Grinder_ID") or None,
+        basket_id=shot.get("Basket_ID") or None,
         bag_display=bag_display,
         roast_level=roast_level,
         machine_name=machine_name,

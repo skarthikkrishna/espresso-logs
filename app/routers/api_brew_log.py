@@ -108,6 +108,10 @@ def _shot_to_out(shot: dict[str, Any], names: dict[str, Any]) -> BrewLogEntryOut
     return BrewLogEntryOut(
         shot_id=shot.get("Shot_ID", ""),
         date=shot.get("Date", ""),
+        bag_id=shot.get("Bag_ID") or None,
+        machine_id=shot.get("Machine_ID") or None,
+        grinder_id=shot.get("Grinder_ID") or None,
+        basket_id=shot.get("Basket_ID") or None,
         bag_display=names["bag_display"],
         image_path=names.get("image_path"),
         roast_level=names.get("roast_level"),
