@@ -37,14 +37,23 @@ export default function ExtractionReadout({ doseG, yieldG, timeSec, selectedTast
   const guidance = zone ? getZoneGuidance(zone) : null
   const selectedGuidance = selectedTaste ? getZoneGuidance(selectedTaste) : null
   const nullDoseFallback = (doseG == null || doseG === 0) && yieldG != null
+  const personalNote = zone && selectedTaste && zone !== selectedTaste
+    ? COPY.compass.personalNote(zone.toLowerCase(), selectedTaste.toLowerCase())
+    : null
   const helper =
-    guidance ??
-    selectedGuidance ??
-    (nullDoseFallback
-      ? COPY.compass.nullDose
-      : ratioText
-        ? COPY.compass.promptTime
-        : COPY.compass.promptDoseYield)
+    zone && selectedTaste && zone === selectedTaste
+      ? `Recipe and taste agree: ${zone}. ${guidance ?? ''}`.trim()
+      : zone && selectedTaste && personalNote
+        ? `Recipe suggests ${zone}. You tasted ${selectedTaste}.`
+        : zone
+          ? `Recipe suggests ${zone}. ${guidance ?? ''}`.trim()
+          : selectedTaste
+            ? `Your taste note is ${selectedTaste}. ${selectedGuidance ?? ''}`.trim()
+            : nullDoseFallback
+              ? COPY.compass.nullDose
+              : ratioText
+                ? COPY.compass.promptTime
+                : COPY.compass.promptDoseYield
   const family = zoneFamily(zone)
 
   useGSAP(
@@ -61,7 +70,7 @@ export default function ExtractionReadout({ doseG, yieldG, timeSec, selectedTast
   )
 
   return (
-    <div className="kk-extraction-readout" data-testid="extraction-readout" aria-live="polite">
+    <div id="extraction-compass-live-readout" className="kk-extraction-readout" data-testid="extraction-readout" aria-live="polite">
       <div className="kk-extraction-readout__metric">
         <span className="kk-extraction-readout__eyebrow">{COPY.brewLogDetail.extractionReadout.ratioLabel}</span>
         <span className="kk-extraction-readout__value">{ratioText ?? '—'}</span>
@@ -77,9 +86,14 @@ export default function ExtractionReadout({ doseG, yieldG, timeSec, selectedTast
             {COPY.compass.subjectiveTasteReadout(selectedTaste)}
           </span>
         )}
-        {zone && selectedTaste && zone !== selectedTaste && (
+        {personalNote && (
           <span className="kk-extraction-readout__note">
-            {COPY.compass.personalNote(zone.toLowerCase(), selectedTaste.toLowerCase())}
+            {personalNote}
+          </span>
+        )}
+        {zone && selectedTaste && zone !== selectedTaste && selectedGuidance && (
+          <span className="kk-extraction-readout__note">
+            {selectedGuidance}
           </span>
         )}
       </div>

@@ -1,4 +1,4 @@
-import { render, fireEvent, act } from '@testing-library/react';
+import { render, fireEvent, act, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import CompassChart from './CompassChart';
 
@@ -22,15 +22,15 @@ const x2 = PADDING.left + (2 * chartW) / 3  // ≈ 201.67
 describe('CompassChart', () => {
   it('renders_9_zones', () => {
     render(<CompassChart />);
-    const zones = document.querySelectorAll('g[style*="cursor:pointer"], g[style*="cursor: pointer"]');
+    const zones = screen.getAllByRole('gridcell');
     expect(zones).toHaveLength(9);
   });
 
   it('all_9_taste_labels_present', () => {
     const handler = vi.fn();
     render(<CompassChart onSelectZone={handler} />);
-    const groups = document.querySelectorAll('g[style*="cursor:pointer"], g[style*="cursor: pointer"]');
-    groups.forEach(g => fireEvent.click(g));
+    const cells = screen.getAllByRole('gridcell');
+    cells.forEach(cell => fireEvent.click(cell));
     expect(handler).toHaveBeenCalledTimes(9);
     const called = handler.mock.calls.map((c: unknown[]) => c[0] as string);
     const expected = [
@@ -44,23 +44,38 @@ describe('CompassChart', () => {
   it('click_fires_onSelectZone', () => {
     const handler = vi.fn();
     render(<CompassChart onSelectZone={handler} />);
-    // In the three-pass structure, zone labels are rendered outside cursor-pointer groups.
-    // Find the Sweet & balanced zone group directly — it is zones[4] (row 1, col 1 = centre).
-    const groups = document.querySelectorAll('g[style*="cursor:pointer"], g[style*="cursor: pointer"]');
-    expect(groups.length).toBe(9);
-    fireEvent.click(groups[4]);
+    const cells = screen.getAllByRole('gridcell');
+    expect(cells.length).toBe(9);
+    fireEvent.click(cells[4]);
     expect(handler).toHaveBeenCalledWith('Sweet & balanced');
+  });
+
+  it('keyboard_selects_zone_from_interactive_grid', () => {
+    const handler = vi.fn();
+    render(<CompassChart onSelectZone={handler} />);
+    const centreCell = screen.getByRole('gridcell', { name: /Sweet & balanced/i });
+
+    act(() => {
+      centreCell.focus();
+      fireEvent.keyDown(centreCell, { key: 'ArrowRight' });
+    });
+    const rightCell = screen.getByRole('gridcell', { name: /Bitter & astringent/i });
+    expect(rightCell).toHaveFocus();
+
+    act(() => {
+      fireEvent.keyDown(rightCell, { key: 'Enter' });
+    });
+    expect(handler).toHaveBeenCalledWith('Bitter & astringent');
   });
 
   it('selected_taste_highlighted', () => {
     render(<CompassChart selectedTaste="Bitter" />);
-    // Find all clickable zone groups
     const groups = Array.from(
-      document.querySelectorAll('g[style*="cursor:pointer"], g[style*="cursor: pointer"]')
+      document.querySelectorAll('svg g')
     );
-    // In the three-pass structure, zone labels are NOT inside cursor-pointer groups.
+    const zoneGroups = groups.slice(0, 9);
     // "Bitter" is zones[1] (row 0, col 1 = centre column, slow row).
-    const bitterGroup = groups[1];
+    const bitterGroup = zoneGroups[1];
     expect(bitterGroup).not.toBeNull();
     // Selected zone: first rect is transparent hit target; selected-only branch uses
     // the tone-adaptive selection fill token.
@@ -72,7 +87,7 @@ describe('CompassChart', () => {
     });
     expect(hasSelectionOverlay).toBe(true);
     // All other zones must NOT have the selected-only fill token.
-    groups
+    zoneGroups
       .filter((_, i) => i !== 1)
       .forEach(g => {
         const groupRects = g.querySelectorAll('rect');

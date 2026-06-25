@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import CompassChart from './CompassChart'
 import CompassInstrument3D from './CompassInstrument3D'
 import ExtractionReadout from './ExtractionReadout'
@@ -80,7 +80,6 @@ export default function ExtractionCompassPanel({
   const webGLSupport = useWebGLSupport()
   const { tone } = useTone()
   const [contextLost, setContextLost] = useState(false)
-  const selectorRefs = useRef<Array<HTMLButtonElement | null>>([])
   const lowPower = prefersSvgForDevice()
   const reason = fallbackReason(webGLSupport.supported, contextLost, lowPower, forceSvgFallback)
   const use3DInstrument = visualMode === '3d' && !reason
@@ -88,20 +87,6 @@ export default function ExtractionCompassPanel({
 
   const selectTaste = (taste: CompassZoneTaste | string) => {
     onSelectTaste?.(taste)
-  }
-
-  const handleSelectorKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
-    const current = EXTRACTION_COMPASS_ZONES[index]
-    if (!current) return
-    let nextIndex = index
-    if (event.key === 'ArrowRight') nextIndex = current.row * 3 + ((current.col + 1) % 3)
-    if (event.key === 'ArrowLeft') nextIndex = current.row * 3 + ((current.col + 2) % 3)
-    if (event.key === 'ArrowDown') nextIndex = ((current.row + 1) % 3) * 3 + current.col
-    if (event.key === 'ArrowUp') nextIndex = ((current.row + 2) % 3) * 3 + current.col
-    if (nextIndex !== index) {
-      event.preventDefault()
-      selectorRefs.current[nextIndex]?.focus()
-    }
   }
 
   return (
@@ -157,25 +142,6 @@ export default function ExtractionCompassPanel({
               <p className="kk-compass-taste-note__agreement">{COPY.compass.agreementNote}</p>
             )}
           </div>
-          {!use3DInstrument && (
-            <div className="kk-compass-zone-selector" aria-label={COPY.compass.subjectiveSelectorLabel}>
-              {EXTRACTION_COMPASS_ZONES.map((zone, index) => (
-                <button
-                  key={zone.id}
-                  ref={(node) => { selectorRefs.current[index] = node }}
-                  type="button"
-                  className="kk-compass-zone-selector__button"
-                  data-selected={zone.taste === model.selectedTaste ? 'true' : undefined}
-                  onClick={() => selectTaste(zone.taste)}
-                  onKeyDown={(event) => handleSelectorKeyDown(event, index)}
-                  aria-label={COPY.compass.selectTasteProfile(zone.taste)}
-                  aria-pressed={zone.taste === model.selectedTaste}
-                >
-                  {zone.taste}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </div>

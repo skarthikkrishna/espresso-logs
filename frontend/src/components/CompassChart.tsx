@@ -1,4 +1,4 @@
-import { useId, useMemo, useState, useRef, useEffect } from 'react'
+import { useId, useMemo, useState, useRef, useEffect, type KeyboardEvent } from 'react'
 import { gsap } from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { getZoneGuidance } from '../utils/zoneGuidance'
@@ -62,6 +62,7 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
     { id: 'sour',              taste: 'Sour',                 x: x1,           y: y2,          w: x2 - x1,                h: H - PADDING.bottom - y2             },
     { id: 'astringent-sour',   taste: 'Astringent & sour',    x: x2,           y: y2,          w: W - PADDING.right - x2, h: H - PADDING.bottom - y2, tspan: true },
   ]
+  const defaultFocusTaste = 'Sweet & balanced'
 
   const zonePalette: Record<string, { fill: string; stroke: string }> = {
     'Weak & sour': { fill: 'var(--kk-compass-svg-zone-weak-sour-fill)', stroke: 'var(--kk-compass-svg-zone-weak-sour-stroke)' },
@@ -96,6 +97,48 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
       targetDot.y >= z.y && targetDot.y < z.y + z.h
     )?.taste ?? null
   }, [targetDot])
+  const focusPriorityTaste = selectedTaste || activeZoneTaste || defaultFocusTaste
+  const [focusedTaste, setFocusedTaste] = useState<string | null>(null)
+  const rovingTaste = focusedTaste ?? focusPriorityTaste
+  const gridButtonRefs = useRef<Array<HTMLButtonElement | null>>([])
+
+  const focusZoneAt = (index: number) => {
+    const next = zones[index]
+    if (!next) return
+    setFocusedTaste(next.taste)
+    gridButtonRefs.current[index]?.focus()
+  }
+
+  const handleGridKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const current = zones[index]
+    if (!current) return
+    const row = Math.floor(index / 3)
+    const col = index % 3
+    let nextIndex = index
+
+    if (event.key === 'ArrowRight') nextIndex = row * 3 + ((col + 1) % 3)
+    if (event.key === 'ArrowLeft') nextIndex = row * 3 + ((col + 2) % 3)
+    if (event.key === 'ArrowDown') nextIndex = ((row + 1) % 3) * 3 + col
+    if (event.key === 'ArrowUp') nextIndex = ((row + 2) % 3) * 3 + col
+    if (event.key === 'Home') nextIndex = 0
+    if (event.key === 'End') nextIndex = zones.length - 1
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      onSelectZone?.(current.taste)
+      return
+    }
+
+    if (nextIndex !== index) {
+      event.preventDefault()
+      focusZoneAt(nextIndex)
+    }
+  }
+
+  const getCellAriaLabel = (taste: string) => {
+    const selectedState = taste === selectedTaste ? 'selected as your taste' : 'not selected as your taste'
+    const recipeState = taste === activeZoneTaste ? 'recipe diagnosis yes' : 'recipe diagnosis no'
+    return `${taste}, ${selectedState}, ${recipeState}.`
+  }
 
   // Show dot-zone guidance when we have live coordinates; fall back to
   // clicked-zone guidance so tapping a zone always surfaces actionable advice.
@@ -214,13 +257,15 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
   return (
     <div className="kk-compass-chart">
       <p className="kk-compass-chart__subtitle">{subtitle}</p>
-      <svg
-        ref={svgRef}
-        viewBox={`0 0 ${W} ${H}`}
-        className="kk-compass-chart__svg"
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-      >
+      <div className="kk-compass-chart__grid-wrap">
+        <svg
+          ref={svgRef}
+          viewBox={`0 0 ${W} ${H}`}
+          className="kk-compass-chart__svg"
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          aria-hidden="true"
+        >
         <defs>
           <radialGradient id={`${gradientIdPrefix}-meshAmber`} gradientUnits="userSpaceOnUse"
             cx={PADDING.left + chartW / 2} cy={PADDING.top + chartH / 2} r="90">
@@ -263,7 +308,7 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
           const isDotZone = z.taste === activeZoneTaste
           const palette = zonePalette[z.taste]
           return (
-            <g key={z.id} style={{ cursor: 'pointer' }} onClick={() => onSelectZone?.(z.taste)}>
+            <g key={z.id}>
               {/* Transparent hit target */}
               <rect x={z.x} y={z.y} width={z.w} height={z.h} fill="rgba(0,0,0,0)" />
               <rect x={z.x} y={z.y} width={z.w} height={z.h} fill={palette.fill} stroke={palette.stroke} strokeWidth="0.5" />
@@ -276,14 +321,14 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
                         stroke="var(--kk-compass-svg-selection-outer)" strokeWidth="2.0" />
                   <rect x={z.x+2} y={z.y+2} width={z.w-4} height={z.h-4}
                         fill="rgba(0,0,0,0)"
-                        stroke="var(--kk-compass-svg-selection-inner)" strokeWidth="1.5" opacity="0.9" />
+                        stroke="var(--kk-compass-taste-marker)" strokeWidth="1.5" opacity="0.95" />
                 </>
               )}
               {/* Selected only */}
               {sel && !isDotZone && (
                 <rect x={z.x} y={z.y} width={z.w} height={z.h}
                       fill="var(--kk-compass-svg-selected-fill)"
-                      stroke="var(--kk-compass-svg-selection-outer)" strokeWidth="1.5" />
+                      stroke="var(--kk-compass-taste-marker)" strokeWidth="2" />
               )}
               {/* Dot zone only */}
               {!sel && isDotZone && (
@@ -340,7 +385,7 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
             return (
               <text key={z.id + '-label'} x={cx} y={cy}
                     textAnchor="middle" dominantBaseline="middle"
-                    fontSize={9} fontFamily="Inter, sans-serif"
+                    fontSize={11} fontFamily="Inter, sans-serif"
                     className="kk-compass-chart__zone-label-svg">
                 <tspan x={cx} dy="-8">{parts[0]}</tspan>
                 <tspan x={cx} dy="16">{'& ' + parts[1]}</tspan>
@@ -349,10 +394,40 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
           })() : (
             <text key={z.id + '-label'} x={cx} y={cy}
                   textAnchor="middle" dominantBaseline="middle"
-                  fontSize={9} fontFamily="Inter, sans-serif"
+                  fontSize={11} fontFamily="Inter, sans-serif"
                   className="kk-compass-chart__zone-label-svg">
               {z.taste}
             </text>
+          )
+        })}
+
+        {/* Subjective taste marker — cell-level, categorical, distinct from recipe dot */}
+        {zones.map(z => {
+          const sel = z.taste === selectedTaste
+          if (!sel) return null
+          const badgeX = Math.min(z.x + z.w - 8, W - PADDING.right - 2)
+          const badgeY = z.y + 10
+          const diamondX = z.x + z.w - 14
+          const diamondY = z.y + 15
+          const agree = selectedTaste === activeZoneTaste
+          return (
+            <g key={`${z.id}-taste-marker`} pointerEvents="none">
+              <polygon
+                points={`${diamondX},${diamondY - 5} ${diamondX + 5},${diamondY} ${diamondX},${diamondY + 5} ${diamondX - 5},${diamondY}`}
+                fill="var(--kk-compass-taste-marker-bg)"
+                stroke="var(--kk-compass-taste-marker)"
+                strokeWidth="1.5"
+              />
+              <text
+                x={badgeX}
+                y={badgeY}
+                textAnchor="end"
+                dominantBaseline="middle"
+                className="kk-compass-chart__taste-badge-svg"
+              >
+                {agree ? 'Agree' : 'Taste'}
+              </text>
+            </g>
           )
         })}
 
@@ -363,17 +438,17 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
               stroke="var(--kk-compass-svg-axis-stroke)" strokeWidth="1" />
 
         {/* Zone boundary labels annotating the x1 and x2 gridlines — derived from grid, not zoneBoundaries */}
-        <text x={x1} y={PADDING.top + chartH + 12} textAnchor="middle" fontSize={9}
+        <text x={x1} y={PADDING.top + chartH + 12} textAnchor="middle" fontSize={10}
               className="kk-compass-chart__axis-value-svg">{ratioAtX1.toFixed(2)}</text>
-        <text x={x2} y={PADDING.top + chartH + 12} textAnchor="middle" fontSize={9}
+        <text x={x2} y={PADDING.top + chartH + 12} textAnchor="middle" fontSize={10}
               className="kk-compass-chart__axis-value-svg">{ratioAtX2.toFixed(2)}</text>
 
         {/* Axis labels — directional, no tick marks */}
         <text x={PADDING.left + chartW / 2} y={H - 5} textAnchor="middle"
-              fontSize={9} fontFamily="Inter, sans-serif"
+              fontSize={10} fontFamily="Inter, sans-serif"
               className="kk-compass-chart__axis-label-svg">{COPY.compass.axisRatio}</text>
         <text x={10} y={PADDING.top + chartH / 2} textAnchor="middle"
-              fontSize={9} fontFamily="Inter, sans-serif"
+              fontSize={10} fontFamily="Inter, sans-serif"
               className="kk-compass-chart__axis-label-svg"
               transform={`rotate(-90, 10, ${PADDING.top + chartH / 2})`}>{COPY.compass.axisTime}</text>
 
@@ -386,21 +461,30 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
 
         {/* Live dot */}
         {renderedDot != null && (
-          <g>
+          <g pointerEvents="none">
             <circle
               cx={renderedDot.x} cy={renderedDot.y} r="8"
-              fill="none" stroke="var(--kk-compass-svg-live-ping)" strokeWidth="1"
+              fill="none" stroke="var(--kk-compass-computed-ring)" strokeWidth="1"
               className="compass-ping"
               style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
             />
             <circle
-              cx={renderedDot.x} cy={renderedDot.y} r="8"
-              fill="none" stroke="var(--kk-compass-svg-live-ring)" strokeWidth="1.5" opacity="0.88"
+              cx={renderedDot.x} cy={renderedDot.y} r="9"
+              fill="none" stroke="var(--kk-compass-computed-ring)" strokeWidth="2" opacity="0.95"
             />
             <circle
-              cx={renderedDot.x} cy={renderedDot.y} r="5"
-              fill="var(--kk-compass-svg-live-dot)"
+              cx={renderedDot.x} cy={renderedDot.y} r="5.5"
+              fill="var(--kk-compass-computed-dot)"
             />
+            <text
+              x={Math.min(renderedDot.x + 23, W - PADDING.right)}
+              y={Math.max(renderedDot.y - 10, PADDING.top + 8)}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              className="kk-compass-chart__recipe-badge-svg"
+            >
+              Recipe
+            </text>
             {timeOutOfRange && (
               <text x={renderedDot.x} y={timeSec! < timeMin ? renderedDot.y + 16 : renderedDot.y - 16}
                     textAnchor="middle" fontSize={9} className="kk-compass-chart__out-of-range-svg" opacity="0.9">
@@ -409,10 +493,53 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
             )}
           </g>
         )}
-      </svg>
+        </svg>
+        <div
+          role="grid"
+          aria-label="Extraction compass. Select tasted profile."
+          aria-describedby="extraction-compass-live-readout"
+          className="kk-compass-chart__grid"
+        >
+          {[0, 1, 2].map(row => (
+            <div role="row" className="kk-compass-chart__grid-row" key={`row-${row}`}>
+              {zones.slice(row * 3, row * 3 + 3).map((zone, col) => {
+                const index = row * 3 + col
+                const selected = zone.taste === selectedTaste
+                const computed = zone.taste === activeZoneTaste
+                return (
+                  <button
+                    key={`${zone.id}-button`}
+                    ref={(node) => { gridButtonRefs.current[index] = node }}
+                    type="button"
+                    role="gridcell"
+                    className="kk-compass-chart__grid-cell"
+                    style={{
+                      left: `${(zone.x / W) * 100}%`,
+                      top: `${(zone.y / H) * 100}%`,
+                      width: `${(zone.w / W) * 100}%`,
+                      height: `${(zone.h / H) * 100}%`,
+                    }}
+                    data-selected={selected ? 'true' : undefined}
+                    data-computed={computed ? 'true' : undefined}
+                    aria-pressed={selected}
+                    aria-label={getCellAriaLabel(zone.taste)}
+                    tabIndex={zone.taste === rovingTaste ? 0 : -1}
+                    onFocus={() => setFocusedTaste(zone.taste)}
+                    onClick={() => onSelectZone?.(zone.taste)}
+                    onKeyDown={(event) => handleGridKeyDown(event, index)}
+                  >
+                    <span className="sr-only">{zone.taste}</span>
+                  </button>
+                )
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
       {showGuidance ? (
         <div className="kk-compass-guidance">
           <p
+            id="extraction-compass-live-readout"
             ref={guidanceRef}
             aria-live="polite"
             className="kk-compass-guidance__advice"

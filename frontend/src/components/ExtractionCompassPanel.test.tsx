@@ -40,16 +40,18 @@ describe('ExtractionCompassPanel', () => {
     expect(screen.getByText(/Your parameters suggest bitter & astringent/i)).toBeInTheDocument()
   })
 
-  it('provides keyboard-reachable subjective taste controls in fallback mode', () => {
+  it('selects subjective taste directly on the compass grid by pointer and keyboard', () => {
     const onSelectTaste = vi.fn()
     renderCompassPanel(<ExtractionCompassPanel onSelectTaste={onSelectTaste} forceSvgFallback />)
 
-    const sourButton = screen.getByRole('button', { name: 'Select tasted profile: Sour' })
+    expect(document.querySelector('.kk-compass-zone-selector')).toBeNull()
+
+    const sourButton = screen.getByRole('gridcell', { name: /^Sour, not selected as your taste/i })
     fireEvent.click(sourButton)
     expect(onSelectTaste).toHaveBeenCalledWith('Sour')
 
     fireEvent.keyDown(sourButton, { key: 'ArrowRight' })
-    expect(screen.getByRole('button', { name: 'Select tasted profile: Astringent & sour' })).toHaveFocus()
+    expect(screen.getByRole('gridcell', { name: /Astringent & sour/i })).toHaveFocus()
   })
 
   it('exposes a clear action for the subjective taste note', () => {

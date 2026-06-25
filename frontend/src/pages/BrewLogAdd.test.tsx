@@ -723,6 +723,8 @@ describe('BrewLogAdd', () => {
       // Ensure compass label is actually rendered (fails fast if label renamed/removed)
       const compassLabel = screen.getAllByText('Extraction compass')[0]
       expect(compassLabel).not.toBeNull()
+      expect(document.querySelector('.kk-compass-zone-selector')).toBeNull()
+      expect(screen.getAllByRole('gridcell')).toHaveLength(9)
 
       // H-4 fix: Tailwind responsive prefixes are literal class tokens.
       // classList.contains('grid-cols-2') returns FALSE for 'md:grid-cols-2'.

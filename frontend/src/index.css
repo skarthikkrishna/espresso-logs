@@ -3685,10 +3685,27 @@ select.input-styled,
   [data-tone="dark"] .brew-log-add-form {
     --kk-tc-input-bg: #2d2016;
     --kk-tc-input-border: 1px solid rgba(255, 247, 237, 0.28);
-    --kk-tc-input-placeholder: rgba(255, 247, 237, 0.70);
-    --kk-chip-bg: #35261a;
-    --kk-chip-text: #fff7ed;
-    --kk-chip-border: 1px solid rgba(255, 247, 237, 0.30);
+    --kk-tc-input-placeholder: rgba(255, 247, 237, 0.72);
+    --kk-compass-panel-bg: #221c16;
+    --kk-compass-instrument-readable-bg: #18100a;
+    --kk-compass-title-text: #fff7ed;
+    --kk-compass-body-text: #f5e6d3;
+    --kk-compass-muted-text: #d6cbbf;
+    --kk-compass-tertiary-text: #c9b89e;
+    --kk-compass-zone-label: #fff7ed;
+    --kk-compass-zone-label-halo: rgba(18, 11, 6, 0.96);
+    --kk-compass-computed-dot: #fff7ed;
+    --kk-compass-computed-ring: #fbbf24;
+    --kk-compass-computed-ring-shadow: rgba(251, 191, 36, 0.32);
+    --kk-compass-taste-marker: #67e8f9;
+    --kk-compass-taste-marker-bg: rgba(8, 47, 73, 0.72);
+    --kk-compass-agree-marker: #bbf7d0;
+    --kk-compass-svg-label: var(--kk-compass-zone-label);
+    --kk-compass-svg-label-halo: var(--kk-compass-zone-label-halo);
+    --kk-compass-svg-muted-label: var(--kk-compass-muted-text);
+    --kk-compass-svg-selection-outer: var(--kk-compass-taste-marker);
+    --kk-compass-svg-selection-inner: var(--kk-compass-computed-ring);
+    --kk-compass-svg-selected-fill: rgba(103, 232, 249, 0.10);
     --kk-chip-neutral-bg: #35261a;
     --kk-chip-neutral-text: #fff7ed;
     --kk-chip-neutral-border: rgba(255, 247, 237, 0.30);
@@ -3707,9 +3724,26 @@ select.input-styled,
     --kk-tc-input-bg: #ffffff;
     --kk-tc-input-border: 1px solid rgba(120, 53, 15, 0.28);
     --kk-tc-input-placeholder: #6b4a2f;
-    --kk-chip-bg: #f7ead8;
-    --kk-chip-text: #2d1608;
-    --kk-chip-border: 1px solid rgba(120, 53, 15, 0.22);
+    --kk-compass-panel-bg: #faf5ef;
+    --kk-compass-instrument-readable-bg: #f7ead8;
+    --kk-compass-title-text: #2d1608;
+    --kk-compass-body-text: #2d1608;
+    --kk-compass-muted-text: #5c3d1e;
+    --kk-compass-tertiary-text: #6b4a2f;
+    --kk-compass-zone-label: #2d1608;
+    --kk-compass-zone-label-halo: rgba(255, 247, 237, 0.92);
+    --kk-compass-computed-dot: #2d1608;
+    --kk-compass-computed-ring: #92400e;
+    --kk-compass-computed-ring-shadow: rgba(146, 64, 14, 0.24);
+    --kk-compass-taste-marker: #075985;
+    --kk-compass-taste-marker-bg: rgba(224, 242, 254, 0.96);
+    --kk-compass-agree-marker: #166534;
+    --kk-compass-svg-label: var(--kk-compass-zone-label);
+    --kk-compass-svg-label-halo: var(--kk-compass-zone-label-halo);
+    --kk-compass-svg-muted-label: var(--kk-compass-muted-text);
+    --kk-compass-svg-selection-outer: var(--kk-compass-taste-marker);
+    --kk-compass-svg-selection-inner: var(--kk-compass-computed-ring);
+    --kk-compass-svg-selected-fill: rgba(7, 89, 133, 0.10);
     --kk-chip-neutral-bg: #f7ead8;
     --kk-chip-neutral-text: #2d1608;
     --kk-chip-neutral-border: rgba(120, 53, 15, 0.22);
@@ -3809,9 +3843,9 @@ select.input-styled,
     min-width: 0;
     border: var(--kk-card-surface-border);
     border-radius: var(--kk-input-radius, 10px);
-    background: var(--kk-card-surface-bg-solid);
+    background: var(--kk-compass-panel-bg, var(--kk-card-surface-bg-solid));
     box-shadow: var(--kk-card-surface-shadow);
-    color: var(--kk-text-primary);
+    color: var(--kk-compass-title-text, var(--kk-text-primary));
     padding: 0.75rem;
   }
 
@@ -3824,12 +3858,10 @@ select.input-styled,
   }
 
   .kk-compass-panel__instrument {
-    --kk-text-secondary: rgba(245, 230, 211, 0.82);
-    --kk-text-tertiary: rgba(245, 230, 211, 0.68);
     overflow: hidden;
     border: 1px solid var(--kk-compass-instrument-border);
     border-radius: var(--kk-input-radius, 10px);
-    background: var(--kk-compass-instrument-bg);
+    background: var(--kk-compass-instrument-readable-bg, var(--kk-compass-instrument-bg));
     box-shadow: var(--kk-compass-instrument-shadow);
     padding: 0.5rem;
     isolation: isolate;
@@ -3837,7 +3869,7 @@ select.input-styled,
 
   .kk-compass-panel__fallback-note {
     margin: 0;
-    color: var(--kk-text-tertiary);
+    color: var(--kk-compass-tertiary-text, var(--kk-text-tertiary));
     font-size: 0.75rem;
     line-height: 1.35;
     text-align: center;
@@ -3938,13 +3970,13 @@ select.input-styled,
   .kk-compass-taste-note__summary,
   .kk-compass-taste-note__agreement {
     margin: 0;
-    color: var(--kk-text-secondary);
+    color: var(--kk-compass-muted-text, var(--kk-text-secondary));
     font-size: 0.875rem;
     line-height: 1.4;
   }
 
   .kk-compass-taste-note__summary span {
-    color: var(--kk-text-tertiary);
+    color: var(--kk-compass-muted-text, var(--kk-text-tertiary));
     font-size: 0.6875rem;
     font-weight: 700;
     letter-spacing: 0.12em;
@@ -3952,7 +3984,7 @@ select.input-styled,
   }
 
   .kk-compass-taste-note__summary strong {
-    color: var(--kk-text-primary);
+    color: var(--kk-compass-title-text, var(--kk-text-primary));
     font-weight: 800;
   }
 
@@ -3962,38 +3994,12 @@ select.input-styled,
     border: 1px solid var(--kaapi-content-border);
     border-radius: var(--kk-input-radius, 10px);
     background: var(--kaapi-content-surface-2);
-    color: var(--kk-text-primary);
+    color: var(--kk-compass-title-text, var(--kk-text-primary));
     cursor: pointer;
     font: inherit;
     font-size: 0.8125rem;
     font-weight: 800;
     padding: 0.55rem 0.8rem;
-  }
-
-  .kk-compass-zone-selector {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.35rem;
-  }
-
-  .kk-compass-zone-selector__button {
-    min-width: 2.75rem;
-    min-height: 2.75rem;
-    border: 1px solid var(--kaapi-content-border);
-    border-radius: calc(var(--kk-input-radius, 10px) * 0.75);
-    background: var(--kaapi-content-surface-2);
-    color: var(--kk-text-primary);
-    cursor: pointer;
-    font: inherit;
-    font-size: 0.6875rem;
-    font-weight: 800;
-    line-height: 1.08;
-    padding: 0.35rem;
-  }
-
-  .kk-compass-zone-selector__button[data-selected="true"] {
-    border-color: var(--kk-compass-taste-ring);
-    box-shadow: inset 0 0 0 1px rgba(190, 151, 87, 0.42);
   }
 
   .kk-compass-chart,
@@ -4006,6 +4012,43 @@ select.input-styled,
     gap: 0.25rem;
   }
 
+  .kk-compass-chart__grid-wrap {
+    position: relative;
+  }
+
+  .kk-compass-chart__grid {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+  }
+
+  .kk-compass-chart__grid-row {
+    display: contents;
+  }
+
+  .kk-compass-chart__grid-cell {
+    position: absolute;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: transparent;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .kk-compass-chart__grid-cell:hover,
+  .kk-compass-chart__grid-cell[data-selected="true"] {
+    box-shadow: inset 0 0 0 2px var(--kk-compass-taste-marker);
+  }
+
+  .kk-compass-chart__grid-cell:focus-visible {
+    outline: 2px solid var(--kk-compass-taste-marker);
+    outline-offset: 2px;
+    box-shadow: var(--kk-tc-input-focus-ring), inset 0 0 0 2px var(--kk-compass-taste-marker);
+  }
+
   .kk-compass-chart__subtitle,
   .kk-compass-guidance__advice,
   .kk-compass-guidance__note,
@@ -4016,8 +4059,9 @@ select.input-styled,
   }
 
   .kk-compass-chart__subtitle {
-    color: var(--kk-text-secondary);
-    font-size: 0.75rem;
+    color: var(--kk-compass-body-text, var(--kk-text-secondary));
+    font-size: 0.875rem;
+    font-weight: 700;
   }
 
   .kk-compass-chart__svg {
@@ -4037,6 +4081,8 @@ select.input-styled,
     stroke-linejoin: round;
     stroke-width: 2px;
     paint-order: stroke fill;
+    font-weight: 800;
+    line-height: 1.05;
   }
 
   .kk-compass-chart__axis-label-svg,
@@ -4046,6 +4092,26 @@ select.input-styled,
     stroke-linejoin: round;
     stroke-width: 1.5px;
     paint-order: stroke fill;
+  }
+
+  .kk-compass-chart__recipe-badge-svg,
+  .kk-compass-chart__taste-badge-svg {
+    stroke: var(--kk-compass-svg-label-halo);
+    stroke-linejoin: round;
+    stroke-width: 1.5px;
+    font-size: 8px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    paint-order: stroke fill;
+    text-transform: uppercase;
+  }
+
+  .kk-compass-chart__recipe-badge-svg {
+    fill: var(--kk-compass-computed-ring);
+  }
+
+  .kk-compass-chart__taste-badge-svg {
+    fill: var(--kk-compass-taste-marker);
   }
 
   .kk-compass-chart__out-of-range-svg {
@@ -4062,18 +4128,18 @@ select.input-styled,
 
   .kk-compass-guidance__advice {
     min-height: 2.5rem;
-    color: var(--kk-text-primary);
-    font-size: 0.875rem;
+    color: var(--kk-compass-body-text, var(--kk-text-primary));
+    font-size: 1rem;
     overflow-wrap: anywhere;
   }
 
   .kk-compass-guidance__note {
-    color: var(--kk-text-secondary);
+    color: var(--kk-compass-muted-text, var(--kk-text-secondary));
     font-size: 0.8125rem;
   }
 
   .kk-compass-guidance__legend {
-    color: var(--kk-text-tertiary);
+    color: var(--kk-compass-tertiary-text, var(--kk-text-tertiary));
     font-size: 0.75rem;
   }
 
@@ -4093,15 +4159,15 @@ select.input-styled,
   }
 
   .kk-form-page .kk-extraction-readout__eyebrow {
-    color: var(--kk-text-tertiary);
-    font-size: 0.6875rem;
+    color: var(--kk-compass-muted-text, var(--kk-text-tertiary));
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
   }
 
   .kk-form-page .kk-extraction-readout__value {
-    color: var(--kk-text-primary);
+    color: var(--kk-compass-title-text, var(--kk-text-primary));
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
     font-size: clamp(1.5rem, 6vw, 2rem);
     font-weight: 700;
@@ -4110,13 +4176,13 @@ select.input-styled,
 
   .kk-form-page .kk-extraction-readout__guidance,
   .kk-form-page .kk-extraction-readout__note {
-    color: var(--kk-text-secondary);
+    color: var(--kk-compass-body-text, var(--kk-text-secondary));
     font-size: 0.875rem;
     line-height: 1.4;
   }
 
   .kk-form-page .kk-extraction-readout__note {
-    color: var(--kk-text-tertiary);
+    color: var(--kk-compass-muted-text, var(--kk-text-tertiary));
     font-size: 0.8125rem;
   }
 
@@ -4224,8 +4290,8 @@ select.input-styled,
     }
 
     .kk-compass-3d__zone-button,
-    .kk-compass-taste-note__clear,
-    .kk-compass-zone-selector__button {
+    .kk-compass-chart__grid-cell,
+    .kk-compass-taste-note__clear {
       transition: none;
     }
   }
