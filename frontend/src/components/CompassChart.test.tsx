@@ -76,6 +76,16 @@ describe('CompassChart', () => {
     expect(marker!.style.left).toBe('100%')
   })
 
+  it('anchors the Sour recipe marker inside its computed cell', () => {
+    render(<CompassChart doseG={18} yieldG={41.4} timeSec={27.6} selectedTaste="Weak & sour" />)
+    const sourCell = screen.getByRole('gridcell', { name: /Sour, not selected as your taste, recipe diagnosis yes/i })
+    const marker = sourCell.querySelector<HTMLElement>('.kk-compass-chart__recipe-marker-wrap')
+
+    expect(marker).not.toBeNull()
+    expect(parseFloat(marker!.style.left)).toBeCloseTo(65, 5)
+    expect(parseFloat(marker!.style.top)).toBeCloseTo(72, 5)
+  })
+
   it('null-dose fallback renders without a recipe marker', () => {
     expect(() => render(<CompassChart yieldG={36} timeSec={30} />)).not.toThrow()
     expect(document.querySelector('.kk-compass-chart__recipe-marker-wrap')).toBeNull()

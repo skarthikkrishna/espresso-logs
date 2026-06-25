@@ -74,8 +74,10 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
   const activeZoneTaste = useMemo(() => {
     if (targetDot == null) return null
     return zones.find(z =>
-      targetDot.x >= z.x && targetDot.x < z.x + z.w &&
-      targetDot.y >= z.y && targetDot.y < z.y + z.h,
+      targetDot.x >= z.x &&
+      (targetDot.x < z.x + z.w || (z.col === 2 && targetDot.x <= z.x + z.w)) &&
+      targetDot.y >= z.y &&
+      (targetDot.y < z.y + z.h || (z.row === 2 && targetDot.y <= z.y + z.h)),
     )?.taste ?? null
   }, [targetDot, zones])
   const focusPriorityTaste = selectedTaste || activeZoneTaste || defaultFocusTaste
@@ -163,6 +165,21 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
                 onClick={() => onSelectZone?.(zone.taste)}
                 onKeyDown={(event) => handleGridKeyDown(event, index)}
               >
+                {computed && targetDot && (
+                  <div
+                    className="kk-compass-chart__recipe-marker-wrap"
+                    style={{ left: targetDot.left, top: targetDot.top }}
+                    aria-hidden="true"
+                  >
+                    <span className="kk-compass-chart__recipe-tag">Recipe</span>
+                    <span className="kk-compass-chart__recipe-marker" />
+                    {timeOutOfRange && (
+                      <span className="kk-compass-chart__out-of-range">
+                        {timeSec! < timeMin ? 'Fast shot' : 'Slow shot'}
+                      </span>
+                    )}
+                  </div>
+                )}
                 {selected && (
                   <>
                     <span className="kk-compass-chart__taste-tag">Taste</span>
@@ -175,21 +192,6 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
               </button>
             )
           })}
-          {targetDot && (
-            <div
-              className="kk-compass-chart__recipe-marker-wrap"
-              style={{ left: targetDot.left, top: targetDot.top }}
-              aria-hidden="true"
-            >
-              <span className="kk-compass-chart__recipe-tag">Recipe</span>
-              <span className="kk-compass-chart__recipe-marker" />
-              {timeOutOfRange && (
-                <span className="kk-compass-chart__out-of-range">
-                  {timeSec! < timeMin ? 'Fast shot' : 'Slow shot'}
-                </span>
-              )}
-            </div>
-          )}
           {nullDoseFallback && (
             <p className="kk-compass-chart__null-dose">{COPY.compass.addDose}</p>
           )}
