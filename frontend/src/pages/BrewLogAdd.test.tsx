@@ -21,6 +21,7 @@ import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query'
+import { MemoryRouter } from 'react-router-dom'
 
 // ---------------------------------------------------------------------------
 // Module mocks — hoisted before any import of the mocked module
@@ -107,14 +108,18 @@ function renderWithQuery(ui: React.ReactElement) {
     },
   })
   const rendered = render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>{ui}</MemoryRouter>
+    </QueryClientProvider>
   )
   return {
     queryClient,
     ...rendered,
     rerender: (nextUi: React.ReactElement) =>
       rendered.rerender(
-        <QueryClientProvider client={queryClient}>{nextUi}</QueryClientProvider>
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter>{nextUi}</MemoryRouter>
+        </QueryClientProvider>
       ),
   }
 }
@@ -523,7 +528,7 @@ describe('BrewLogAdd', () => {
 
     // Wait for onSettled to reset isSubmittingRef (error message appears)
     await waitFor(() => {
-      expect(document.querySelector('.text-error')).not.toBeNull()
+      expect(document.querySelector('[role="alert"]')).not.toBeNull()
     })
 
     // Second submit — retry
@@ -604,7 +609,7 @@ describe('BrewLogAdd', () => {
     })
     // Wait for error state so isSubmittingRef is reset
     await waitFor(() => {
-      expect(document.querySelector('.text-error')).not.toBeNull()
+      expect(document.querySelector('[role="alert"]')).not.toBeNull()
     })
     const firstKey = vi.mocked(submitShot).mock.calls[0][0].idempotency_key
 
@@ -637,7 +642,7 @@ describe('BrewLogAdd', () => {
 
     await waitFor(() => {
       // Ensure compass label is actually rendered (fails fast if label renamed/removed)
-      const compassLabel = screen.getByText('Extraction compass')
+      const compassLabel = screen.getAllByText('Extraction compass')[0]
       expect(compassLabel).not.toBeNull()
 
       // H-4 fix: Tailwind responsive prefixes are literal class tokens.
