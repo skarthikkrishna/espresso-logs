@@ -166,6 +166,7 @@ function BrewLogAddPage() {
     setIsDirty(bagWasDirty)
     setDoseG('')
     setYieldG('')
+    setTimeSec('')
     setGrindSetting('')
     setMachineId('')
     setGrinderId('')
@@ -211,6 +212,8 @@ function BrewLogAddPage() {
       setDoseG(String(defaults.dose_in_g))
     if (!dirtyFields.current.has('yieldG') && defaults.yield_out_g != null)
       setYieldG(String(defaults.yield_out_g))
+    if (!dirtyFields.current.has('timeSec') && defaults.time_sec != null)
+      setTimeSec(String(defaults.time_sec))
     if (!dirtyFields.current.has('grindSetting') && defaults.grind_setting)
       setGrindSetting(defaults.grind_setting)
 
@@ -437,7 +440,7 @@ function BrewLogAddPage() {
               onClick={() => setAdvancedOpen(v => !v)}
               aria-expanded={advancedOpen}
               aria-controls="advanced-fields"
-              className="brew-log-add-form__advanced-toggle"
+              className="kk-tc-section brew-log-add-form__advanced-toggle"
             >
               {advancedOpen ? COPY.brewLog.fewerOptions : COPY.brewLog.moreOptions}
               <span aria-hidden="true">{advancedOpen ? '↑' : '↓'}</span>

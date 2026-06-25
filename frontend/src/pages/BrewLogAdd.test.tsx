@@ -228,6 +228,7 @@ describe('BrewLogAdd', () => {
     vi.mocked(getDefaults).mockResolvedValue({
       dose_in_g: '18',
       yield_out_g: '36',
+      time_sec: '28',
       grind_setting: '12',
     })
 
@@ -241,6 +242,7 @@ describe('BrewLogAdd', () => {
     // Wait for defaults to apply to the dose field
     await waitFor(() => {
       expect(screen.getByLabelText('Dose (g)')).toHaveValue(18)
+      expect(screen.getByLabelText('Time (s)')).toHaveValue(28)
     })
   })
 

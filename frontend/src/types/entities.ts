@@ -86,6 +86,7 @@ export interface DefaultsPayload {
   storage_method?: string;
   dose_in_g?: number | string;
   yield_out_g?: number | string; // NEW — from basket-history Level 0 lookup
+  time_sec?: number | string;
   grind_setting?: string;
 }
 
