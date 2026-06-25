@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.catalog import CatalogBean
 from app.models.inventory import InventoryBag
-from app.repos.sql.tenant import row_household_id_or_context
+from app.repos.sql.tenant import current_household_id, row_household_id_or_context
 
 
 def _to_date(val: Any) -> datetime.date | None:
@@ -79,6 +79,9 @@ class SqlInventoryRepo:
         q = select(InventoryBag, CatalogBean.sheets_id.label("catalog_sheets_id")).outerjoin(
             CatalogBean, InventoryBag.catalog_id == CatalogBean.id
         )
+        household_id = await current_household_id(self._db)
+        if household_id is not None:
+            q = q.where(InventoryBag.household_id == household_id)
         if status is not None:
             q = q.where(InventoryBag.status == status)
         result = await self._db.execute(q)
@@ -89,6 +92,9 @@ class SqlInventoryRepo:
         q = select(InventoryBag, CatalogBean.sheets_id.label("catalog_sheets_id")).outerjoin(
             CatalogBean, InventoryBag.catalog_id == CatalogBean.id
         )
+        household_id = await current_household_id(self._db)
+        if household_id is not None:
+            q = q.where(InventoryBag.household_id == household_id)
         result = await self._db.execute(q)
         return [self._to_dict(bag, cat_id) for bag, cat_id in result.all()]
 
@@ -99,6 +105,9 @@ class SqlInventoryRepo:
             .outerjoin(CatalogBean, InventoryBag.catalog_id == CatalogBean.id)
             .where(InventoryBag.sheets_id == bag_id)
         )
+        household_id = await current_household_id(self._db)
+        if household_id is not None:
+            q = q.where(InventoryBag.household_id == household_id)
         result = await self._db.execute(q)
         row = result.one_or_none()
         if row is None:
