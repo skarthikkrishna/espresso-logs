@@ -55,6 +55,8 @@ vi.mock('../api/defaults', () => ({
 }))
 
 vi.mock('../api/brewLog', () => ({
+  brewLogDetailQueryKey: (id: string, householdId?: string | null) => ['households', householdId ?? 'no-household', 'brew-log-detail', id],
+  getBrewLogDetail: vi.fn(),
   submitShot: vi.fn().mockResolvedValue({ shot_id: 'SH-TEST-001' }),
 }))
 
@@ -70,7 +72,7 @@ vi.mock('../contexts/AuthContext', () => ({
 import { listInventory } from '../api/inventory'
 import { listHardware } from '../api/hardware'
 import { getDefaults } from '../api/defaults'
-import { submitShot } from '../api/brewLog'
+import { getBrewLogDetail, submitShot } from '../api/brewLog'
 import BrewLogAdd from './BrewLogAdd'
 
 // ---------------------------------------------------------------------------
@@ -131,6 +133,11 @@ beforeEach(() => {
     { hardware_id: 'B01', category: 'Basket', name: 'IMS' },
   ])
   vi.mocked(getDefaults).mockResolvedValue({})
+  vi.mocked(getBrewLogDetail).mockResolvedValue({
+    shot_id: 'shot-similar',
+    date: '2026-06-24',
+    bag_display: 'Blue Bottle — Kenya Kiambu',
+  })
 })
 
 // ===========================================================================
@@ -251,6 +258,78 @@ describe('BrewLogAdd', () => {
 
     expect(await screen.findByText(/finished or unavailable/i)).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Bag' })).toBeInTheDocument()
+  })
+
+  it('prefills a reload-safe similar shot from route-key IDs and recipe fields', async () => {
+    searchParamsMock.value = new URLSearchParams('similar_shot_id=shot-similar')
+    vi.mocked(listHardware).mockResolvedValue([
+      { hardware_id: 'B01', category: 'Basket', name: 'IMS' },
+      { hardware_id: 'M01', category: 'Machine', name: 'Linea Mini' },
+      { hardware_id: 'G01', category: 'Grinder', name: 'P64' },
+      { hardware_id: 'S01', category: 'Storage', name: 'Frozen — Glass Tube' },
+    ])
+    vi.mocked(getBrewLogDetail).mockResolvedValue({
+      shot_id: 'shot-similar',
+      date: '2026-06-24',
+      bag_id: 'BB-2024-01-L-001',
+      machine_id: 'M01',
+      grinder_id: 'G01',
+      basket_id: 'B01',
+      bag_display: 'Blue Bottle — Kenya Kiambu',
+      dose_in_g: 18,
+      yield_out_g: 40,
+      time_sec: 29,
+      grind_setting: '4.2',
+      storage_method: 'Frozen — Glass Tube',
+      shot_eligibility: 'Good Espresso',
+      taste_summary: 'Sweet & Balanced',
+      user_notes: 'Repeat this recipe',
+    })
+
+    renderWithQuery(<BrewLogAdd />)
+
+    expect(await screen.findByRole('combobox', { name: 'Bag' })).toHaveValue('BB-2024-01-L-001')
+    await waitFor(() => {
+      expect(screen.getByLabelText('Dose (g)')).toHaveValue(18)
+      expect(screen.getByLabelText('Yield (g)')).toHaveValue(40)
+      expect(screen.getByLabelText('Time (s)')).toHaveValue(29)
+      expect(screen.getByLabelText('Basket')).toHaveValue('B01')
+      expect(screen.getByLabelText(/shot eligibility/i)).toHaveValue('Good Espresso')
+      expect(screen.getByLabelText('Machine')).toHaveValue('M01')
+      expect(screen.getByLabelText('Grinder')).toHaveValue('G01')
+      expect(screen.getByLabelText('Grind setting')).toHaveValue('4.2')
+      expect(screen.getByLabelText('Storage method')).toHaveValue('Frozen — Glass Tube')
+      expect(screen.getByLabelText('Notes')).toHaveValue('Repeat this recipe')
+    })
+  })
+
+  it('does not overwrite a dirty field when similar-shot prefill arrives late', async () => {
+    searchParamsMock.value = new URLSearchParams('similar_shot_id=shot-similar')
+    let resolveSimilar!: (value: Awaited<ReturnType<typeof getBrewLogDetail>>) => void
+    vi.mocked(getBrewLogDetail).mockReturnValue(new Promise((resolve) => {
+      resolveSimilar = resolve
+    }))
+
+    renderWithQuery(<BrewLogAdd />)
+
+    const bagSelect = await screen.findByRole('combobox', { name: 'Bag' })
+    fireEvent.change(bagSelect, { target: { value: 'BB-2024-01-L-001' } })
+    const doseInput = screen.getByLabelText('Dose (g)')
+    fireEvent.change(doseInput, { target: { value: '20' } })
+
+    resolveSimilar({
+      shot_id: 'shot-similar',
+      date: '2026-06-24',
+      bag_id: 'BB-2024-01-L-001',
+      bag_display: 'Blue Bottle — Kenya Kiambu',
+      dose_in_g: 18,
+      yield_out_g: 36,
+    })
+
+    await waitFor(() => {
+      expect(doseInput).toHaveValue(20)
+      expect(screen.getByLabelText('Yield (g)')).toHaveValue(36)
+    })
   })
 
   // ── Test 4: Dirty dose field is protected after bag is already selected ─────

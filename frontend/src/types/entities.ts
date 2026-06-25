@@ -43,6 +43,10 @@ export interface MaintenanceEvent {
 
 export interface BrewLogEntry {
   shot_id: string; // route key only — NEVER displayed
+  bag_id?: string | null; // route key only — NEVER displayed
+  machine_id?: string | null; // route key only — NEVER displayed
+  grinder_id?: string | null; // route key only — NEVER displayed
+  basket_id?: string | null; // route key only — NEVER displayed
   date: string;
   bag_display: string; // "Roaster — Bean name"
   image_path?: string;

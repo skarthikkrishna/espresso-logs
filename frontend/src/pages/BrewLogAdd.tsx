@@ -4,18 +4,20 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listInventory } from '../api/inventory'
 import { listHardware } from '../api/hardware'
 import { getDefaults } from '../api/defaults'
-import { submitShot } from '../api/brewLog'
+import { brewLogDetailQueryKey, getBrewLogDetail, submitShot } from '../api/brewLog'
 import { brewLogListQueryKey, dashboardQueryKey, defaultsQueryKey, householdKeys, inventoryQueryKey } from '../api/queryKeys'
 import LoadingSpinner from '../components/LoadingSpinner'
 import CompassChart from '../components/CompassChart'
 import { getBasketDefaults } from '../utils/basketDefaults'
 import { deriveZoneBoundaries } from '../utils/zoneBoundaries'
+import { ShotPrefillAdapter, type ShotPrefillValues } from '../utils/shotPrefillAdapter'
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
 import { Button, FormField, Input, PageHeader, Select, Textarea, ActionExpander } from '../components/ui'
 import { useKaapiMotion } from '../lib/motion'
 import { COPY } from '../copy'
 
 const ELIGIBILITY_OPTIONS = ['Reject', 'Passable', 'Good Espresso', 'God Shot'] as const
+type DirtyField = keyof ShotPrefillValues
 
 export default function BrewLogAdd() {
   const navigate = useNavigate()
@@ -25,6 +27,7 @@ export default function BrewLogAdd() {
   const routeRef = useRef<HTMLDivElement>(null)
   const { routeEnter } = useKaapiMotion({ scope: routeRef })
   const requestedBagId = searchParams.get('bag_id')?.trim() ?? ''
+  const similarShotId = searchParams.get('similar_shot_id')?.trim() ?? ''
   const [bagId, setBagId] = useState('')
   const [bagParamNotice, setBagParamNotice] = useState<string | null>(null)
   const [doseG, setDoseG] = useState('')
@@ -42,9 +45,11 @@ export default function BrewLogAdd() {
   // Dirty-field tracking (BC-1, BC-8, FE-1)
   // useRef keeps the set current inside every closure without appearing in dep arrays.
   // Never use useState here — a stale closure over useState value silently skips dirty guards.
-  const dirtyFields = useRef<Set<'dose' | 'yield' | 'grind' | 'basket'>>(new Set())
+  const dirtyFields = useRef<Set<DirtyField>>(new Set())
   const userSelectedBagRef = useRef(false)
   const handledRequestedBagRef = useRef<string | null>(null)
+  const handledSimilarShotRef = useRef<string | null>(null)
+  const suppressNextBagResetRef = useRef(false)
 
   // Progressive disclosure (BC-4, FR-009)
   const [advancedOpen, setAdvancedOpen] = useState<boolean>(false)
@@ -86,6 +91,12 @@ export default function BrewLogAdd() {
     enabled: !!bagId,
   })
 
+  const { data: similarShot, isError: similarShotIsError } = useQuery({
+    queryKey: brewLogDetailQueryKey(similarShotId, activeHouseholdId),
+    queryFn: () => getBrewLogDetail(similarShotId),
+    enabled: !!similarShotId,
+  })
+
   /* eslint-disable react-hooks/set-state-in-effect -- Query-param bag resolution synchronizes URL state after inventory data loads. */
   useEffect(() => {
     if (!requestedBagId) {
@@ -121,8 +132,11 @@ export default function BrewLogAdd() {
   // prev-guard pattern both block updates on bag switch).
   useEffect(() => {
     if (!bagId) return
+    if (suppressNextBagResetRef.current) {
+      suppressNextBagResetRef.current = false
+      return
+    }
     dirtyFields.current = new Set()
-    /* eslint-disable react-hooks/set-state-in-effect -- Controlled reset: bagId is the sole dep; none of these setters modify bagId, so no cascade. */
     setDoseG('')
     setYieldG('')
     setGrindSetting('')
@@ -130,34 +144,60 @@ export default function BrewLogAdd() {
     setGrinderId('')
     setBasketId('')
     setStorageMethod('')
-    /* eslint-enable react-hooks/set-state-in-effect */
   }, [bagId])
+
+  useEffect(() => {
+    if (!similarShotId || !similarShot) return
+    if (handledSimilarShotRef.current === similarShotId) return
+
+    const prefill = ShotPrefillAdapter.fromBrewLogEntry(similarShot)
+    const applyClean = (field: DirtyField, apply: (value: string) => void) => {
+      const value = prefill[field]
+      if (!value || dirtyFields.current.has(field)) return
+      apply(value)
+    }
+
+    if (prefill.bagId && !dirtyFields.current.has('bagId')) {
+      suppressNextBagResetRef.current = true
+      setBagId(prefill.bagId)
+    }
+    applyClean('machineId', setMachineId)
+    applyClean('grinderId', setGrinderId)
+    applyClean('basketId', setBasketId)
+    applyClean('doseG', setDoseG)
+    applyClean('yieldG', setYieldG)
+    applyClean('timeSec', setTimeSec)
+    applyClean('grindSetting', setGrindSetting)
+    applyClean('storageMethod', setStorageMethod)
+    applyClean('eligibility', setEligibility)
+    applyClean('tasteSummary', setTasteSummary)
+    applyClean('notes', setNotes)
+    setAdvancedOpen(true)
+    handledSimilarShotRef.current = similarShotId
+  }, [similarShot, similarShotId])
 
   // Apply bag-level defaults (Level 0/1) with dirty-field guards
   useEffect(() => {
     if (!defaults) return
 
-    if (!dirtyFields.current.has('dose') && defaults.dose_in_g != null)
+    if (!dirtyFields.current.has('doseG') && defaults.dose_in_g != null)
       setDoseG(String(defaults.dose_in_g))
-    if (!dirtyFields.current.has('yield') && defaults.yield_out_g != null)
+    if (!dirtyFields.current.has('yieldG') && defaults.yield_out_g != null)
       setYieldG(String(defaults.yield_out_g))
-    if (!dirtyFields.current.has('grind') && defaults.grind_setting)
+    if (!dirtyFields.current.has('grindSetting') && defaults.grind_setting)
       setGrindSetting(defaults.grind_setting)
 
-    // Hardware/storage — always applied from bag defaults (no dirty-field guard).
-    // These fields are set once when bag defaults load and are not typically
-    // edited mid-flight. Basket is the exception: changing basket re-triggers
-    // the defaults query, so a dirty-field guard is required below.
-    /* eslint-disable react-hooks/set-state-in-effect -- One-way defaults hydration: storage/machine/grinder setters don't affect the query key; setBasketId is bounded by a dirty-field guard and a stable API response, so no cascade loop. */
-    if (defaults.storage_method) setStorageMethod(defaults.storage_method)
-    if (defaults.machine_id) setMachineId(defaults.machine_id)
-    if (defaults.grinder_id) setGrinderId(defaults.grinder_id)
-    if (!dirtyFields.current.has('basket') && defaults.basket_id) setBasketId(defaults.basket_id)
-    /* eslint-enable react-hooks/set-state-in-effect */
+    // Hardware/storage defaults are late-arriving API data and must respect dirty fields.
+    if (!dirtyFields.current.has('storageMethod') && defaults.storage_method) setStorageMethod(defaults.storage_method)
+    if (!dirtyFields.current.has('machineId') && defaults.machine_id) setMachineId(defaults.machine_id)
+    if (!dirtyFields.current.has('grinderId') && defaults.grinder_id) setGrinderId(defaults.grinder_id)
+    if (!dirtyFields.current.has('basketId') && defaults.basket_id) setBasketId(defaults.basket_id)
 
     // Auto-expand advanced section (BC-4, FR-009) — also when machine/grinder defaults are set
-    if (defaults.grind_setting || defaults.storage_method || defaults.machine_id || defaults.grinder_id)
+    if (defaults.grind_setting || defaults.storage_method || defaults.machine_id || defaults.grinder_id) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Defaults hydration controls disclosure after async data arrives.
       setAdvancedOpen(true)
+    }
   }, [defaults])
 
   // Basket-type fallback defaults (Level 1+) — only when no bag history exists
@@ -175,9 +215,9 @@ export default function BrewLogAdd() {
     const profile = getBasketDefaults(basket.name)
     if (!profile) return
 
-    if (!dirtyFields.current.has('dose'))  setDoseG(String(profile.dose_in_g))
-    if (!dirtyFields.current.has('yield')) setYieldG(String(profile.yield_out_g))
-    if (!dirtyFields.current.has('grind')) {
+    if (!dirtyFields.current.has('doseG'))  setDoseG(String(profile.dose_in_g))
+    if (!dirtyFields.current.has('yieldG')) setYieldG(String(profile.yield_out_g))
+    if (!dirtyFields.current.has('grindSetting')) {
       setGrindSetting(String(profile.grind_setting))
       // Do not auto-expand — the user controls the advanced section toggle
     }
@@ -255,6 +295,7 @@ export default function BrewLogAdd() {
             onChange={(e) => {
               userSelectedBagRef.current = true
               setBagParamNotice(null)
+              dirtyFields.current.add('bagId')
               setBagId(e.target.value)
             }}
             required
@@ -285,7 +326,7 @@ export default function BrewLogAdd() {
                 step="0.1"
                 min="0"
                 value={doseG}
-                onChange={(e) => { dirtyFields.current.add('dose'); setDoseG(e.target.value) }}
+                onChange={(e) => { dirtyFields.current.add('doseG'); setDoseG(e.target.value) }}
               />
             </FormField>
             <FormField label="Yield (g)" htmlFor="brew-log-yield">
@@ -295,7 +336,7 @@ export default function BrewLogAdd() {
                 step="0.1"
                 min="0"
                 value={yieldG}
-                onChange={(e) => { dirtyFields.current.add('yield'); setYieldG(e.target.value) }}
+                onChange={(e) => { dirtyFields.current.add('yieldG'); setYieldG(e.target.value) }}
               />
             </FormField>
             <FormField label="Time (s)" htmlFor="brew-log-time">
@@ -304,7 +345,7 @@ export default function BrewLogAdd() {
                 type="number"
                 min="0"
                 value={timeSec}
-                onChange={(e) => setTimeSec(e.target.value)}
+                onChange={(e) => { dirtyFields.current.add('timeSec'); setTimeSec(e.target.value) }}
               />
             </FormField>
           </div>
@@ -327,7 +368,7 @@ export default function BrewLogAdd() {
                 <Select
                   id="brew-log-basket"
                   value={basketId}
-                  onChange={e => { dirtyFields.current.add('basket'); setBasketId(e.target.value) }}
+                  onChange={e => { dirtyFields.current.add('basketId'); setBasketId(e.target.value) }}
                 >
                   <option value="">{COPY.brewLogAdd.selectBasket}</option>
                   {baskets.map(b => (
@@ -342,7 +383,7 @@ export default function BrewLogAdd() {
               <Select
                 id="brew-log-shot-eligibility"
                 value={eligibility}
-                onChange={e => setEligibility(e.target.value)}
+                onChange={e => { dirtyFields.current.add('eligibility'); setEligibility(e.target.value) }}
                 required
               >
                 <option value="">{COPY.brewLogAdd.selectPlaceholder}</option>
@@ -397,7 +438,7 @@ export default function BrewLogAdd() {
               <Select
                 id="brew-log-machine"
                 value={machineId}
-                onChange={e => setMachineId(e.target.value)}
+                onChange={e => { dirtyFields.current.add('machineId'); setMachineId(e.target.value) }}
                 disabled={hardwareIsLoading}
               >
                 <option value="">{COPY.brewLogAdd.selectMachine}</option>
@@ -410,7 +451,7 @@ export default function BrewLogAdd() {
               <Select
                 id="brew-log-grinder"
                 value={grinderId}
-                onChange={e => setGrinderId(e.target.value)}
+                onChange={e => { dirtyFields.current.add('grinderId'); setGrinderId(e.target.value) }}
                 disabled={hardwareIsLoading}
               >
                 <option value="">{COPY.brewLogAdd.selectGrinder}</option>
@@ -429,7 +470,7 @@ export default function BrewLogAdd() {
                 id="brew-log-grind-setting"
                 type="text"
                 value={grindSetting}
-                onChange={(e) => { dirtyFields.current.add('grind'); setGrindSetting(e.target.value) }}
+                onChange={(e) => { dirtyFields.current.add('grindSetting'); setGrindSetting(e.target.value) }}
               />
             </FormField>
 
@@ -438,7 +479,7 @@ export default function BrewLogAdd() {
               <Select
                 id="brew-log-storage-method"
                 value={storageMethod}
-                onChange={e => setStorageMethod(e.target.value)}
+                onChange={e => { dirtyFields.current.add('storageMethod'); setStorageMethod(e.target.value) }}
                 disabled={hardwareIsLoading}
               >
                 <option value="">{COPY.brewLogAdd.selectStorage}</option>
@@ -455,13 +496,16 @@ export default function BrewLogAdd() {
               id="brew-log-notes"
               rows={3}
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(e) => { dirtyFields.current.add('notes'); setNotes(e.target.value) }}
             />
           </FormField>
         </div>
 
         {mutation.isError && (
           <p className="text-error text-sm">{COPY.brewLogAdd.saveError}</p>
+        )}
+        {similarShotIsError && (
+          <p role="alert" className="text-error text-sm">Could not load the similar shot. You can still log a new shot.</p>
         )}
 
         <Button
