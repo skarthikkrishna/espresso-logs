@@ -1,7 +1,13 @@
+import { useRef } from 'react'
+import { gsap } from 'gsap'
+import { useGSAP } from '@gsap/react'
 import { getBrewRatio, getCompassZoneTaste } from '../utils/extractionCompass'
 import { getZoneGuidance } from '../utils/zoneGuidance'
 import type { ZoneBoundaries } from '../utils/zoneBoundaries'
+import { usePrefersReducedMotion } from '../lib/motion/usePrefersReducedMotion'
 import { COPY } from '../copy'
+
+gsap.registerPlugin(useGSAP)
 
 interface ExtractionReadoutProps {
   doseG?: number | null
@@ -23,6 +29,8 @@ function formatRatio(ratio: number | null): string | null {
 }
 
 export default function ExtractionReadout({ doseG, yieldG, timeSec, selectedTaste, zoneBoundaries }: ExtractionReadoutProps) {
+  const guidanceRef = useRef<HTMLSpanElement>(null)
+  const prefersReducedMotion = usePrefersReducedMotion()
   const ratio = getBrewRatio(doseG, yieldG)
   const ratioText = formatRatio(ratio)
   const zone = ratioText && timeSec != null ? getCompassZoneTaste(doseG, yieldG, timeSec, zoneBoundaries) : null
@@ -39,6 +47,19 @@ export default function ExtractionReadout({ doseG, yieldG, timeSec, selectedTast
         : COPY.compass.promptDoseYield)
   const family = zoneFamily(zone)
 
+  useGSAP(
+    () => {
+      const guidance = guidanceRef.current
+      if (!guidance) return
+      if (prefersReducedMotion) {
+        gsap.set(guidance, { opacity: 1, y: 0 })
+        return
+      }
+      gsap.fromTo(guidance, { opacity: 0.42, y: 4 }, { opacity: 1, y: 0, duration: 0.28, ease: 'power2.out' })
+    },
+    { dependencies: [helper, prefersReducedMotion] },
+  )
+
   return (
     <div className="kk-extraction-readout" data-testid="extraction-readout" aria-live="polite">
       <div className="kk-extraction-readout__metric">
@@ -50,7 +71,7 @@ export default function ExtractionReadout({ doseG, yieldG, timeSec, selectedTast
         <span className={`kk-zone-chip kk-zone-chip--${family}`}>
           {zone ?? (timeSec == null ? COPY.brewLogDetail.extractionReadout.timeNeeded : COPY.brewLogDetail.extractionReadout.unavailable)}
         </span>
-        <span className="kk-extraction-readout__guidance">{helper}</span>
+        <span ref={guidanceRef} className="kk-extraction-readout__guidance">{helper}</span>
         {selectedTaste && (
           <span className="kk-extraction-readout__note">
             {COPY.compass.subjectiveTasteReadout(selectedTaste)}

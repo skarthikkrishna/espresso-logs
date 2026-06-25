@@ -9,6 +9,20 @@ function renderCompassPanel(ui: ReactElement) {
 }
 
 describe('ExtractionCompassPanel', () => {
+  it('uses the GSAP-enhanced SVG compass by default and parks the 3D instrument', () => {
+    renderCompassPanel(
+      <ExtractionCompassPanel
+        doseG={18}
+        yieldG={36}
+        timeSec={35}
+      />,
+    )
+
+    expect(screen.queryByTestId('compass-3d-instrument')).not.toBeInTheDocument()
+    expect(document.querySelector('.kk-compass-chart__svg')).not.toBeNull()
+    expect(screen.getByTestId('extraction-readout')).toBeInTheDocument()
+  })
+
   it('falls back to the SVG compass without WebGL and keeps accessible readout content', () => {
     renderCompassPanel(
       <ExtractionCompassPanel

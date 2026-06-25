@@ -235,6 +235,7 @@
   --kk-compass-svg-selection-inner: #d97706;
   --kk-compass-svg-agreement-fill: rgba(255, 255, 255, 0.10);
   --kk-compass-svg-selected-fill: rgba(255, 255, 255, 0.06);
+  --kk-compass-svg-zone-bloom: rgba(255, 247, 237, 0.16);
   --kk-compass-svg-live-ping: #f59e0b;
   --kk-compass-svg-live-ring: #d97706;
   --kk-compass-svg-live-dot: #fff7ed;
@@ -3681,6 +3682,61 @@ select.input-styled,
     padding-left: 0;
   }
 
+  [data-tone="dark"] .brew-log-add-form {
+    --kk-tc-input-bg: #2d2016;
+    --kk-tc-input-border: 1px solid rgba(255, 247, 237, 0.28);
+    --kk-tc-input-placeholder: rgba(255, 247, 237, 0.70);
+    --kk-chip-bg: #35261a;
+    --kk-chip-text: #fff7ed;
+    --kk-chip-border: 1px solid rgba(255, 247, 237, 0.30);
+    --kk-chip-neutral-bg: #35261a;
+    --kk-chip-neutral-text: #fff7ed;
+    --kk-chip-neutral-border: rgba(255, 247, 237, 0.30);
+    --kk-chip-success-bg: #12351f;
+    --kk-chip-success-text: #bbf7d0;
+    --kk-chip-success-border: rgba(187, 247, 208, 0.32);
+    --kk-chip-brand-bg: #4a2e0b;
+    --kk-chip-brand-text: #fde68a;
+    --kk-chip-brand-border: rgba(253, 230, 138, 0.34);
+    --kk-chip-danger-bg: #441818;
+    --kk-chip-danger-text: #fecaca;
+    --kk-chip-danger-border: rgba(254, 202, 202, 0.34);
+  }
+
+  [data-tone="beige"] .brew-log-add-form {
+    --kk-tc-input-bg: #ffffff;
+    --kk-tc-input-border: 1px solid rgba(120, 53, 15, 0.28);
+    --kk-tc-input-placeholder: #6b4a2f;
+    --kk-chip-bg: #f7ead8;
+    --kk-chip-text: #2d1608;
+    --kk-chip-border: 1px solid rgba(120, 53, 15, 0.22);
+    --kk-chip-neutral-bg: #f7ead8;
+    --kk-chip-neutral-text: #2d1608;
+    --kk-chip-neutral-border: rgba(120, 53, 15, 0.22);
+    --kk-chip-success-bg: #dcfce7;
+    --kk-chip-success-text: #14532d;
+    --kk-chip-success-border: rgba(20, 83, 45, 0.24);
+    --kk-chip-brand-bg: #fef3c7;
+    --kk-chip-brand-text: #78350f;
+    --kk-chip-brand-border: rgba(120, 53, 15, 0.28);
+    --kk-chip-danger-bg: #fee2e2;
+    --kk-chip-danger-text: #7f1d1d;
+    --kk-chip-danger-border: rgba(127, 29, 29, 0.24);
+  }
+
+  [data-tone="dark"] .brew-log-add-form__advanced-toggle {
+    border-color: rgba(255, 247, 237, 0.30);
+    background: #2d2016;
+    color: #fff7ed;
+    box-shadow: 0 8px 20px -16px rgba(0, 0, 0, 0.72);
+  }
+
+  [data-tone="dark"] .brew-log-add-form__advanced-toggle:hover {
+    border-color: rgba(255, 247, 237, 0.42);
+    background: #3a2a1d;
+    color: #fff7ed;
+  }
+
   .kk-form-page .input-styled,
   .kk-form-page .select.input-styled,
   .kk-form-page select.input-styled,
@@ -3725,6 +3781,21 @@ select.input-styled,
     min-width: 2.75rem;
     justify-content: space-between;
     gap: 0.5rem;
+    border: 1px solid rgba(120, 53, 15, 0.30);
+    background: rgba(247, 234, 216, 0.98);
+    color: var(--kk-text-primary);
+    box-shadow: 0 8px 20px -18px rgba(45, 22, 8, 0.32);
+  }
+
+  .brew-log-add-form__advanced-toggle:hover {
+    border-color: rgba(120, 53, 15, 0.40);
+    background: rgba(180, 83, 9, 0.10);
+    color: var(--kk-text-primary);
+  }
+
+  .brew-log-add-form__advanced-toggle:focus-visible {
+    outline: none;
+    box-shadow: var(--kk-tc-input-focus-ring), 0 8px 20px -18px rgba(45, 22, 8, 0.32);
   }
 
   .brew-log-add-form__field-helper {
@@ -3738,7 +3809,7 @@ select.input-styled,
     min-width: 0;
     border: var(--kk-card-surface-border);
     border-radius: var(--kk-input-radius, 10px);
-    background: var(--kk-card-surface-bg);
+    background: var(--kk-card-surface-bg-solid);
     box-shadow: var(--kk-card-surface-shadow);
     color: var(--kk-text-primary);
     padding: 0.75rem;
@@ -3750,6 +3821,18 @@ select.input-styled,
     display: grid;
     gap: 0.875rem;
     min-width: 0;
+  }
+
+  .kk-compass-panel__instrument {
+    --kk-text-secondary: rgba(245, 230, 211, 0.82);
+    --kk-text-tertiary: rgba(245, 230, 211, 0.68);
+    overflow: hidden;
+    border: 1px solid var(--kk-compass-instrument-border);
+    border-radius: var(--kk-input-radius, 10px);
+    background: var(--kk-compass-instrument-bg);
+    box-shadow: var(--kk-compass-instrument-shadow);
+    padding: 0.5rem;
+    isolation: isolate;
   }
 
   .kk-compass-panel__fallback-note {
@@ -3943,6 +4026,11 @@ select.input-styled,
     height: auto;
   }
 
+  .kk-compass-chart__zone-bloom {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
   .kk-compass-chart__zone-label-svg {
     fill: var(--kk-compass-svg-label);
     stroke: var(--kk-compass-svg-label-halo);
@@ -4036,7 +4124,7 @@ select.input-styled,
     display: inline-flex;
     align-items: center;
     width: fit-content;
-    border: 1px solid var(--kk-chip-border);
+    border: var(--kk-chip-border);
     border-radius: var(--kk-input-radius, 10px);
     background: var(--kk-chip-bg);
     color: var(--kk-chip-text);
@@ -4129,6 +4217,10 @@ select.input-styled,
   @media (prefers-reduced-motion: reduce) {
     .compass-ping {
       animation: none;
+    }
+
+    .kk-compass-chart__zone-bloom {
+      transform: none;
     }
 
     .kk-compass-3d__zone-button,

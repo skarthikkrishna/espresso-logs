@@ -1,8 +1,13 @@
-import { useMemo, useState, useRef, useEffect } from 'react'
+import { useId, useMemo, useState, useRef, useEffect } from 'react'
+import { gsap } from 'gsap'
+import { useGSAP } from '@gsap/react'
 import { getZoneGuidance } from '../utils/zoneGuidance'
 import type { ZoneBoundaries } from '../utils/zoneBoundaries'
 import { DEFAULT_COMPASS_BOUNDARIES, getBrewRatio } from '../utils/extractionCompass'
+import { usePrefersReducedMotion } from '../lib/motion/usePrefersReducedMotion'
 import { COPY } from '../copy'
+
+gsap.registerPlugin(useGSAP)
 
 export interface CompassChartProps {
   doseG?: number | null
@@ -72,6 +77,9 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
 
   const dotX = ratio != null ? xScale(Math.min(RATIO_MAX, Math.max(RATIO_MIN, ratio))) : null
   const dotY = timeSec != null ? yScale(Math.min(timeMax, Math.max(timeMin, timeSec))) : null
+  const targetDot = useMemo(() => (
+    dotX != null && dotY != null ? { x: dotX, y: dotY } : null
+  ), [dotX, dotY])
 
   // Null-dose fallback: yieldG present but doseG null/zero — show callout, no dot
   const nullDoseFallback = (doseG == null || doseG === 0) && yieldG != null
@@ -82,12 +90,12 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
   // Detect which zone the live dot falls in (pixel-coordinate boundary check)
   // zones is derived from constants so [dotX, dotY] deps are sufficient
   const activeZoneTaste = useMemo(() => {
-    if (dotX == null || dotY == null) return null
+    if (targetDot == null) return null
     return zones.find(z =>
-      dotX >= z.x && dotX < z.x + z.w &&
-      dotY >= z.y && dotY < z.y + z.h
+      targetDot.x >= z.x && targetDot.x < z.x + z.w &&
+      targetDot.y >= z.y && targetDot.y < z.y + z.h
     )?.taste ?? null
-  }, [dotX, dotY])
+  }, [targetDot])
 
   // Show dot-zone guidance when we have live coordinates; fall back to
   // clicked-zone guidance so tapping a zone always surfaces actionable advice.
@@ -115,31 +123,92 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
           ? 'Enter yield and dose for extraction diagnosis'
           : 'Enter shot time to see your extraction position'
 
-  const [aurora, setAurora] = useState<{ cx: number; cy: number } | null>(null)
+  const gradientIdPrefix = useId().replace(/:/g, '')
+  const prefersReducedMotion = usePrefersReducedMotion()
+  const [displayDot, setDisplayDot] = useState(targetDot)
+  const dotPositionRef = useRef(targetDot ?? { x: 0, y: 0 })
+  const renderedDot = prefersReducedMotion ? targetDot : displayDot
+  const [auroraVisible, setAuroraVisible] = useState(false)
   const svgRef = useRef<SVGSVGElement>(null)
-  const rafRef = useRef<number>(0)
+  const bloomRef = useRef<SVGRectElement>(null)
+  const auroraGradientRef = useRef<SVGRadialGradientElement>(null)
+  const auroraOverlayRef = useRef<SVGRectElement>(null)
+  const guidanceRef = useRef<HTMLParagraphElement>(null)
 
-  // Cleanup rAF on unmount to prevent setState-on-unmounted warning
   useEffect(() => {
-    return () => cancelAnimationFrame(rafRef.current)
-  }, [])
+    if (targetDot == null) {
+      return undefined
+    }
+
+    if (prefersReducedMotion) {
+      dotPositionRef.current = targetDot
+      return undefined
+    }
+
+    const tween = gsap.to(dotPositionRef.current, {
+      x: targetDot.x,
+      y: targetDot.y,
+      duration: 0.45,
+      ease: 'power3.out',
+      onUpdate: () => setDisplayDot({ ...dotPositionRef.current }),
+    })
+    return () => {
+      tween.kill()
+    }
+  }, [prefersReducedMotion, targetDot])
+
+  useGSAP(
+    () => {
+      const bloom = bloomRef.current
+      if (!bloom) return
+      if (prefersReducedMotion) {
+        gsap.set(bloom, { attr: { opacity: 0.32 }, scale: 1, transformOrigin: '50% 50%' })
+        return
+      }
+      gsap.fromTo(
+        bloom,
+        { attr: { opacity: 0.18 }, scale: 0.985, transformOrigin: '50% 50%' },
+        { attr: { opacity: 0.46 }, scale: 1.035, duration: 1.8, ease: 'sine.inOut', repeat: -1, yoyo: true },
+      )
+    },
+    { scope: svgRef, dependencies: [activeZoneTaste, prefersReducedMotion] },
+  )
+
+  useGSAP(
+    () => {
+      const guidance = guidanceRef.current
+      if (!guidance) return
+      if (prefersReducedMotion) {
+        gsap.set(guidance, { opacity: 1, y: 0 })
+        return
+      }
+      gsap.fromTo(guidance, { opacity: 0.42, y: 4 }, { opacity: 1, y: 0, duration: 0.28, ease: 'power2.out' })
+    },
+    { dependencies: [guidanceText, prefersReducedMotion] },
+  )
 
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    cancelAnimationFrame(rafRef.current)
-    rafRef.current = requestAnimationFrame(() => {
-      if (!svgRef.current) return
-      const rect = svgRef.current.getBoundingClientRect()
-      const svgW = rect.width || W    // fallback for jsdom
-      const svgH = rect.height || H
-      const cx = (e.clientX - rect.left) * (W / svgW)
-      const cy = (e.clientY - rect.top)  * (H / svgH)
-      setAurora({ cx, cy })
-    })
+    if (prefersReducedMotion || !svgRef.current || !auroraGradientRef.current || !auroraOverlayRef.current) return
+    const rect = svgRef.current.getBoundingClientRect()
+    const svgW = rect.width || W
+    const svgH = rect.height || H
+    const cx = (e.clientX - rect.left) * (W / svgW)
+    const cy = (e.clientY - rect.top)  * (H / svgH)
+    setAuroraVisible(true)
+    gsap.to(auroraGradientRef.current, { attr: { cx, cy }, duration: 0.32, ease: 'power3.out' })
+    gsap.to(auroraOverlayRef.current, { opacity: 1, duration: 0.18, ease: 'power2.out' })
   }
 
   const handleMouseLeave = () => {
-    cancelAnimationFrame(rafRef.current)
-    setAurora(null)
+    setAuroraVisible(false)
+    if (!auroraOverlayRef.current) {
+      return
+    }
+    gsap.to(auroraOverlayRef.current, {
+      opacity: 0,
+      duration: prefersReducedMotion ? 0 : 0.18,
+      ease: 'power2.out',
+    })
   }
 
   return (
@@ -153,34 +222,38 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
         onMouseLeave={handleMouseLeave}
       >
         <defs>
-          <radialGradient id="meshAmber" gradientUnits="userSpaceOnUse"
+          <radialGradient id={`${gradientIdPrefix}-meshAmber`} gradientUnits="userSpaceOnUse"
             cx={PADDING.left + chartW / 2} cy={PADDING.top + chartH / 2} r="90">
             <stop offset="0%"   stopColor="var(--kk-compass-svg-mesh-amber-start)" />
             <stop offset="100%" stopColor="var(--kk-compass-svg-mesh-amber-end)" />
           </radialGradient>
-          <radialGradient id="meshRust" gradientUnits="userSpaceOnUse"
+          <radialGradient id={`${gradientIdPrefix}-meshRust`} gradientUnits="userSpaceOnUse"
             cx={PADDING.left} cy={PADDING.top} r="100">
             <stop offset="0%"   stopColor="var(--kk-compass-svg-mesh-rust-start)" />
             <stop offset="100%" stopColor="var(--kk-compass-svg-mesh-rust-end)" />
           </radialGradient>
-          <radialGradient id="meshCerulean" gradientUnits="userSpaceOnUse"
+          <radialGradient id={`${gradientIdPrefix}-meshCerulean`} gradientUnits="userSpaceOnUse"
             cx={PADDING.left + chartW} cy={PADDING.top + chartH} r="100">
             <stop offset="0%"   stopColor="var(--kk-compass-svg-mesh-cerulean-start)" />
             <stop offset="100%" stopColor="var(--kk-compass-svg-mesh-cerulean-end)" />
           </radialGradient>
-          <radialGradient id="meshSlate" gradientUnits="userSpaceOnUse"
+          <radialGradient id={`${gradientIdPrefix}-meshSlate`} gradientUnits="userSpaceOnUse"
             cx={PADDING.left + chartW} cy={PADDING.top + chartH / 2} r="80">
             <stop offset="0%"   stopColor="var(--kk-compass-svg-mesh-slate-start)" />
             <stop offset="100%" stopColor="var(--kk-compass-svg-mesh-slate-end)" />
           </radialGradient>
 
-          {aurora && (
-            <radialGradient id="auroraGrad" gradientUnits="userSpaceOnUse"
-              cx={aurora.cx} cy={aurora.cy} r="80">
-              <stop offset="0%"   stopColor="var(--kk-compass-svg-aurora-start)" />
-              <stop offset="100%" stopColor="var(--kk-compass-svg-aurora-end)" />
-            </radialGradient>
-          )}
+          <radialGradient
+            ref={auroraGradientRef}
+            id={`${gradientIdPrefix}-auroraGrad`}
+            gradientUnits="userSpaceOnUse"
+            cx={PADDING.left + chartW / 2}
+            cy={PADDING.top + chartH / 2}
+            r="80"
+          >
+            <stop offset="0%"   stopColor="var(--kk-compass-svg-aurora-start)" />
+            <stop offset="100%" stopColor="var(--kk-compass-svg-aurora-end)" />
+          </radialGradient>
 
         </defs>
 
@@ -214,10 +287,20 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
               )}
               {/* Dot zone only */}
               {!sel && isDotZone && (
-                <rect x={z.x} y={z.y} width={z.w} height={z.h}
-                      fill="rgba(0,0,0,0)"
-                      stroke="var(--kk-compass-svg-selection-inner)" strokeWidth="1.5" opacity="0.9"
-                      strokeDasharray="3 2" />
+                <>
+                  <rect
+                    ref={bloomRef}
+                    className="kk-compass-chart__zone-bloom"
+                    x={z.x} y={z.y} width={z.w} height={z.h}
+                    fill="var(--kk-compass-svg-zone-bloom)"
+                    opacity="0.32"
+                    pointerEvents="none"
+                  />
+                  <rect x={z.x} y={z.y} width={z.w} height={z.h}
+                        fill="rgba(0,0,0,0)"
+                        stroke="var(--kk-compass-svg-selection-inner)" strokeWidth="1.5" opacity="0.9"
+                        strokeDasharray="3 2" />
+                </>
               )}
               {/* Baseline hairline grid */}
               {!sel && !isDotZone && (
@@ -231,19 +314,22 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
 
         {/* Mesh background — 4 radial overlays */}
         <rect x={PADDING.left} y={PADDING.top} width={chartW} height={chartH}
-              fill="url(#meshAmber)" pointerEvents="none" />
+              fill={`url(#${gradientIdPrefix}-meshAmber)`} pointerEvents="none" />
         <rect x={PADDING.left} y={PADDING.top} width={chartW} height={chartH}
-              fill="url(#meshRust)" pointerEvents="none" />
+              fill={`url(#${gradientIdPrefix}-meshRust)`} pointerEvents="none" />
         <rect x={PADDING.left} y={PADDING.top} width={chartW} height={chartH}
-              fill="url(#meshCerulean)" pointerEvents="none" />
+              fill={`url(#${gradientIdPrefix}-meshCerulean)`} pointerEvents="none" />
         <rect x={PADDING.left} y={PADDING.top} width={chartW} height={chartH}
-              fill="url(#meshSlate)" pointerEvents="none" />
+              fill={`url(#${gradientIdPrefix}-meshSlate)`} pointerEvents="none" />
 
-        {aurora && (
-          <rect data-testid="aurora-overlay"
-                x={PADDING.left} y={PADDING.top} width={chartW} height={chartH}
-                fill="url(#auroraGrad)" pointerEvents="none" />
-        )}
+        <rect
+          ref={auroraOverlayRef}
+          data-testid={auroraVisible ? 'aurora-overlay' : undefined}
+          x={PADDING.left} y={PADDING.top} width={chartW} height={chartH}
+          fill={`url(#${gradientIdPrefix}-auroraGrad)`}
+          pointerEvents="none"
+          opacity={auroraVisible ? 1 : 0}
+        />
 
         {/* Pass 3 — Zone labels (above gradient) */}
         {zones.map(z => {
@@ -299,24 +385,24 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
         )}
 
         {/* Live dot */}
-        {dotX != null && dotY != null && (
+        {renderedDot != null && (
           <g>
             <circle
-              cx={dotX} cy={dotY} r="8"
+              cx={renderedDot.x} cy={renderedDot.y} r="8"
               fill="none" stroke="var(--kk-compass-svg-live-ping)" strokeWidth="1"
               className="compass-ping"
               style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
             />
             <circle
-              cx={dotX} cy={dotY} r="8"
+              cx={renderedDot.x} cy={renderedDot.y} r="8"
               fill="none" stroke="var(--kk-compass-svg-live-ring)" strokeWidth="1.5" opacity="0.88"
             />
             <circle
-              cx={dotX} cy={dotY} r="5"
+              cx={renderedDot.x} cy={renderedDot.y} r="5"
               fill="var(--kk-compass-svg-live-dot)"
             />
             {timeOutOfRange && (
-              <text x={dotX} y={timeSec! < timeMin ? dotY + 16 : dotY - 16}
+              <text x={renderedDot.x} y={timeSec! < timeMin ? renderedDot.y + 16 : renderedDot.y - 16}
                     textAnchor="middle" fontSize={9} className="kk-compass-chart__out-of-range-svg" opacity="0.9">
                 {timeSec! < timeMin ? '▼ Fast shot' : '▲ Slow shot'}
               </text>
@@ -327,6 +413,7 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
       {showGuidance ? (
         <div className="kk-compass-guidance">
           <p
+            ref={guidanceRef}
             aria-live="polite"
             className="kk-compass-guidance__advice"
           >

@@ -21,6 +21,7 @@ interface ExtractionCompassPanelProps {
   onSelectTaste?: (taste: string) => void
   zoneBoundaries?: ZoneBoundaries
   forceSvgFallback?: boolean
+  visualMode?: 'svg' | '3d'
 }
 
 type NavigatorWithConnection = Navigator & {
@@ -66,6 +67,7 @@ export default function ExtractionCompassPanel({
   onSelectTaste,
   zoneBoundaries,
   forceSvgFallback = false,
+  visualMode = 'svg',
 }: ExtractionCompassPanelProps) {
   const model: ExtractionCompassViewModel = useMemo(() => buildExtractionCompassViewModel({
     doseG,
@@ -81,7 +83,8 @@ export default function ExtractionCompassPanel({
   const selectorRefs = useRef<Array<HTMLButtonElement | null>>([])
   const lowPower = prefersSvgForDevice()
   const reason = fallbackReason(webGLSupport.supported, contextLost, lowPower, forceSvgFallback)
-  const useSvgFallback = Boolean(reason)
+  const use3DInstrument = visualMode === '3d' && !reason
+  const showSvgFallbackNote = visualMode === '3d' || forceSvgFallback
 
   const selectTaste = (taste: CompassZoneTaste | string) => {
     onSelectTaste?.(taste)
@@ -106,7 +109,7 @@ export default function ExtractionCompassPanel({
       <span id="extraction-compass-label" className="sr-only">{COPY.brewLogAdd.extractionCompass}</span>
       <div className="kk-compass-panel__body">
         <div className="kk-compass-panel__instrument">
-          {useSvgFallback ? (
+          {!use3DInstrument ? (
             <>
               <CompassChart
                 doseG={doseG}
@@ -117,7 +120,9 @@ export default function ExtractionCompassPanel({
                 zoneBoundaries={zoneBoundaries}
                 showGuidance={false}
               />
-              <p className="kk-compass-panel__fallback-note" role="status">{reason}</p>
+              {showSvgFallbackNote && reason && (
+                <p className="kk-compass-panel__fallback-note" role="status">{reason}</p>
+              )}
             </>
           ) : (
             <CompassInstrument3D
@@ -152,7 +157,7 @@ export default function ExtractionCompassPanel({
               <p className="kk-compass-taste-note__agreement">{COPY.compass.agreementNote}</p>
             )}
           </div>
-          {useSvgFallback && (
+          {!use3DInstrument && (
             <div className="kk-compass-zone-selector" aria-label={COPY.compass.subjectiveSelectorLabel}>
               {EXTRACTION_COMPASS_ZONES.map((zone, index) => (
                 <button
