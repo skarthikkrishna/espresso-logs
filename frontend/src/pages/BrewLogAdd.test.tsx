@@ -81,6 +81,7 @@ import { listInventory } from '../api/inventory'
 import { listHardware } from '../api/hardware'
 import { getDefaults } from '../api/defaults'
 import { getBrewLogDetail, submitShot } from '../api/brewLog'
+import { defaultsQueryKey } from '../api/queryKeys'
 import BrewLogAdd from './BrewLogAdd'
 
 // ---------------------------------------------------------------------------
@@ -107,13 +108,12 @@ const SECOND_FAKE_BAG = {
 }
 
 /** Wraps component in a fresh QueryClientProvider (retries disabled for fast tests). */
-function renderWithQuery(ui: React.ReactElement) {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-      mutations: { retry: false },
-    },
-  })
+function renderWithQuery(ui: React.ReactElement, queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { retry: false },
+    mutations: { retry: false },
+  },
+})) {
   const rendered = render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>{ui}</MemoryRouter>
@@ -243,6 +243,62 @@ describe('BrewLogAdd', () => {
     await waitFor(() => {
       expect(screen.getByLabelText('Dose (g)')).toHaveValue(18)
       expect(screen.getByLabelText('Time (s)')).toHaveValue(28)
+    })
+  })
+
+  it('refetches stale cached defaults so newly added time_sec hydrates the Time field', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false, staleTime: 60_000 },
+        mutations: { retry: false },
+      },
+    })
+    queryClient.setQueryData(defaultsQueryKey(FAKE_BAG.bag_id, '', 'hh-1'), {
+      dose_in_g: '18',
+      yield_out_g: '36',
+    })
+    vi.mocked(getDefaults).mockResolvedValue({
+      dose_in_g: '18',
+      yield_out_g: '36',
+      time_sec: '28',
+    })
+
+    renderWithQuery(<BrewLogAdd />, queryClient)
+
+    const bagSelect = await screen.findByRole('combobox', { name: 'Bag' })
+    fireEvent.change(bagSelect, { target: { value: FAKE_BAG.bag_id } })
+
+    await waitFor(() => {
+      expect(vi.mocked(getDefaults)).toHaveBeenCalledWith(FAKE_BAG.bag_id, undefined)
+      expect(screen.getByLabelText('Time (s)')).toHaveValue(28)
+    })
+  })
+
+  it('does not overwrite a dirty Time field when defaults with time_sec arrive late', async () => {
+    let resolveDefaults!: (value: Awaited<ReturnType<typeof getDefaults>>) => void
+    vi.mocked(getDefaults).mockReturnValue(new Promise((resolve) => {
+      resolveDefaults = resolve
+    }))
+
+    renderWithQuery(<BrewLogAdd />)
+
+    const bagSelect = await screen.findByRole('combobox', { name: 'Bag' })
+    fireEvent.change(bagSelect, { target: { value: FAKE_BAG.bag_id } })
+    await waitFor(() => {
+      expect(vi.mocked(getDefaults)).toHaveBeenCalledWith(FAKE_BAG.bag_id, undefined)
+    })
+
+    const timeInput = screen.getByLabelText('Time (s)')
+    fireEvent.change(timeInput, { target: { value: '31' } })
+    resolveDefaults({
+      dose_in_g: '18',
+      yield_out_g: '36',
+      time_sec: '28',
+    })
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Dose (g)')).toHaveValue(18)
+      expect(timeInput).toHaveValue(31)
     })
   })
 

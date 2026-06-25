@@ -113,6 +113,8 @@ function BrewLogAddPage() {
     queryKey: defaultsQueryKey(bagId, basketId, activeHouseholdId),
     queryFn: () => getDefaults(bagId, basketId || undefined),
     enabled: !!bagId,
+    staleTime: 0,
+    refetchOnMount: 'always',
   })
 
   const { data: similarShot, isError: similarShotIsError } = useQuery({
