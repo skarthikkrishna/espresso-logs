@@ -21,6 +21,8 @@ describe('ExtractionCompassPanel', () => {
     expect(screen.queryByTestId('compass-3d-instrument')).not.toBeInTheDocument()
     expect(screen.getByTestId('compass-gradient-matrix')).toBeInTheDocument()
     expect(screen.getByTestId('extraction-readout')).toBeInTheDocument()
+    expect(screen.queryByText(/add shot helper/i)).not.toBeInTheDocument()
+    expect(screen.getByRole('group', { name: /extraction compass/i })).toBeInTheDocument()
   })
 
   it('falls back to the SVG compass without WebGL and keeps accessible readout content', () => {

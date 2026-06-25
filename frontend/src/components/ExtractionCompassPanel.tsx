@@ -92,12 +92,9 @@ export default function ExtractionCompassPanel({
   return (
     <div className="kk-compass-panel" role="group" aria-labelledby="extraction-compass-label">
       <div className="kk-compass-panel__header">
-        <div>
-          <p className="kk-compass-panel__eyebrow">Add shot helper</p>
-          <h2 id="extraction-compass-label" className="kk-compass-panel__title">{COPY.brewLogAdd.extractionCompass}</h2>
-        </div>
+        <h2 id="extraction-compass-label" className="sr-only">{COPY.brewLogAdd.extractionCompass}</h2>
         <ul className="kk-compass-panel__legend" aria-label="Marker legend">
-          <li><span className="kk-compass-panel__legend-symbol kk-compass-panel__legend-symbol--recipe" aria-hidden="true" /> Recipe diagnosis</li>
+          <li><span className="kk-compass-panel__legend-symbol kk-compass-panel__legend-symbol--recipe" aria-hidden="true" /> Recipe</li>
           <li><span className="kk-compass-panel__legend-symbol kk-compass-panel__legend-symbol--taste" aria-hidden="true" /> Your taste</li>
         </ul>
       </div>

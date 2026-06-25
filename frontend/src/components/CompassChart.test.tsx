@@ -46,7 +46,7 @@ describe('CompassChart', () => {
     expect(handler).toHaveBeenCalledWith('Bitter & astringent')
   })
 
-  it('marks selected taste with a cyan badge and selected state', () => {
+  it('marks selected taste with a restrained taste marker and selected state', () => {
     render(<CompassChart selectedTaste="Bitter" />)
     const bitter = screen.getByRole('gridcell', { name: /^Bitter, selected as your taste/i })
     expect(bitter).toHaveAttribute('data-selected', 'true')
