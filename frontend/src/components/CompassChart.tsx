@@ -11,9 +11,10 @@ export interface CompassChartProps {
   selectedTaste?: string
   onSelectZone?: (taste: string) => void
   zoneBoundaries?: ZoneBoundaries
+  showGuidance?: boolean
 }
 
-export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, onSelectZone, zoneBoundaries }: CompassChartProps) {
+export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, onSelectZone, zoneBoundaries, showGuidance = true }: CompassChartProps) {
   const W = 300, H = 220
   const PADDING = { top: 20, right: 20, bottom: 52, left: 45 }
   const chartW = W - PADDING.left - PADDING.right   // 235
@@ -96,6 +97,13 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
       : selectedTaste
         ? getZoneGuidance(selectedTaste)
         : null
+  const guidanceText =
+    guidance ??
+    (nullDoseFallback
+      ? COPY.compass.nullDose
+      : ratio != null && timeSec == null
+        ? COPY.compass.promptTime
+        : COPY.compass.promptDoseYield)
 
   // Smarter subtitle text (P2)
   const subtitle =
@@ -135,12 +143,12 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
   }
 
   return (
-    <div className="w-full">
-      <p className="text-xs text-amber-200/50 mb-0 text-center">{subtitle}</p>
+    <div className="kk-compass-chart">
+      <p className="kk-compass-chart__subtitle">{subtitle}</p>
       <svg
         ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
-        className="w-full"
+        className="kk-compass-chart__svg"
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
@@ -322,22 +330,24 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
           </g>
         )}
       </svg>
-      <div className="flex flex-col gap-1 mt-1">
-        <p
-          aria-live="polite"
-          className="text-xs text-amber-200/80 text-center min-h-[2.5rem] break-words"
-        >
-          {guidance ?? ''}
-        </p>
-        {activeZoneTaste && selectedTaste && activeZoneTaste !== selectedTaste && (
-          <p className="text-xs text-amber-200/50 text-center">
-            {COPY.compass.personalNote(activeZoneTaste.toLowerCase(), selectedTaste.toLowerCase())}
+      {showGuidance ? (
+        <div className="kk-compass-guidance">
+          <p
+            aria-live="polite"
+            className="kk-compass-guidance__advice"
+          >
+            {guidanceText}
           </p>
-        )}
-        <p className="text-xs text-amber-200/30 text-center">
-          {COPY.compass.legend}
-        </p>
-      </div>
+          {activeZoneTaste && selectedTaste && activeZoneTaste !== selectedTaste && (
+            <p className="kk-compass-guidance__note">
+              {COPY.compass.personalNote(activeZoneTaste.toLowerCase(), selectedTaste.toLowerCase())}
+            </p>
+          )}
+          <p className="kk-compass-guidance__legend">
+            {COPY.compass.legend}
+          </p>
+        </div>
+      ) : null}
     </div>
   )
 }

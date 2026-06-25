@@ -450,6 +450,10 @@ export const COPY = {
     axisRatio: 'Sour  ←  Ratio  →  Bitter',
     axisTime: 'Fast ↕ Slow',
     addDose: 'Add dose →',
+    promptDoseYield: 'Enter dose and yield for extraction guidance.',
+    promptTime: 'Add shot time to see the live extraction zone.',
+    nullDose: 'Add dose before reading extraction guidance.',
+    selectedTasteNote: (taste: string) => `Selected taste note: ${taste}.`,
     personalNote: (suggested: string, tasted: string) =>
       `Your parameters suggest ${suggested}, but you tasted ${tasted} — taste is personal!`,
     legend: '⬤ Your shot \u00A0·\u00A0 Zones = extraction outcome',

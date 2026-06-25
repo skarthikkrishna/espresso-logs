@@ -49,6 +49,7 @@ export { AddBeanAction } from './actions/AddBeanAction'
 export type { AddBeanActionVariant } from './actions/AddBeanAction'
 
 // Form atoms
+export { EntityFormSection } from './EntityFormSection'
 export { FormSection } from './FormSection'
 export { ToneInput } from './ToneInput'
 export { ToneSelect } from './ToneSelect'

@@ -115,12 +115,12 @@ describe('CompassChart', () => {
     expect(cx).toBeLessThanOrEqual(280);
   });
 
-  // ── T023: guidance text absent when no active zone ───────────────────────
-  it('guidance text is absent (empty) when yieldG and timeSec are null', () => {
+  // ── T023: guidance helper present before enough data exists ──────────────
+  it('guidance helper prompts for dose and yield when yieldG and timeSec are null', () => {
     render(<CompassChart onSelectZone={() => {}} />);
     const liveRegion = document.querySelector('[aria-live="polite"]');
     expect(liveRegion).not.toBeNull();
-    expect(liveRegion!.textContent?.trim()).toBe('');
+    expect(liveRegion!.textContent).toMatch(/enter dose and yield/i);
   });
 
   // ── T023: guidance text present for Sweet & balanced zone ────────────────

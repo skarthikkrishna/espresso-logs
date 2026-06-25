@@ -8,16 +8,15 @@ import { brewLogDetailQueryKey, getBrewLogDetail, submitShot } from '../api/brew
 import { brewLogListQueryKey, dashboardQueryKey, defaultsQueryKey, householdKeys, inventoryQueryKey } from '../api/queryKeys'
 import LoadingSpinner from '../components/LoadingSpinner'
 import CompassChart from '../components/CompassChart'
+import ExtractionReadout from '../components/ExtractionReadout'
 import { getBasketDefaults } from '../utils/basketDefaults'
 import { deriveZoneBoundaries } from '../utils/zoneBoundaries'
 import { ShotPrefillAdapter, type ShotPrefillValues } from '../utils/shotPrefillAdapter'
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
 import {
   EntityFormActions,
+  EntityFormSection,
   FormPageShell,
-  FormSection,
-  Section,
-  SectionHeader,
   ToneButton,
   ToneInput,
   ToneProvider,
@@ -333,11 +332,9 @@ function BrewLogAddPage() {
         formClassName="brew-log-add-form"
         testId="brew-log-add-page"
       >
-        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:gap-6 lg:items-start">
-          <div className="space-y-4 min-w-0">
-            <Section>
-              <SectionHeader>Shot recipe</SectionHeader>
-              <FormSection>
+        <div className="brew-log-add-form__main">
+          <div className="brew-log-add-form__recipe-stack">
+            <EntityFormSection title="Shot recipe">
                 <ToneSelect
                   label="Bag"
                   id="brew-log-bag"
@@ -358,13 +355,13 @@ function BrewLogAddPage() {
                   ))}
                 </ToneSelect>
                 {requestedBagId && !inventory && (
-                  <p className="kk-tc-body-muted text-xs">{COPY.brewLogAdd.checkingBag}</p>
+                  <p className="kk-tc-body-muted brew-log-add-form__field-helper">{COPY.brewLogAdd.checkingBag}</p>
                 )}
                 {bagParamNotice && (
-                  <p role="status" className="kk-tc-body-muted text-xs">{bagParamNotice}</p>
+                  <p role="status" className="kk-tc-body-muted brew-log-add-form__field-helper">{bagParamNotice}</p>
                 )}
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="brew-log-add-form__field-grid brew-log-add-form__field-grid--three">
                   <ToneInput
                     label="Dose (g)"
                     id="brew-log-dose"
@@ -393,7 +390,7 @@ function BrewLogAddPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div className="brew-log-add-form__field-grid brew-log-add-form__field-grid--two">
                   {hardwareIsLoading && (
                     <ToneSelect label="Basket" id="brew-log-basket" disabled>
                       <option>{COPY.brewLogAdd.loadingBaskets}</option>
@@ -431,14 +428,12 @@ function BrewLogAddPage() {
                     ))}
                   </ToneSelect>
                 </div>
-              </FormSection>
-            </Section>
+            </EntityFormSection>
           </div>
 
-          <Section className="mt-6 min-w-0 lg:mt-0">
-            <SectionHeader>{COPY.brewLogAdd.extractionCompass}</SectionHeader>
+          <EntityFormSection title={COPY.brewLogAdd.extractionCompass} className="brew-log-add-form__compass-section">
             <div
-              className="rounded-[var(--bevel-radius)] border border-[var(--glass-border)] bg-[var(--kaapi-frame-surface)] p-3 w-full"
+              className="kk-compass-panel"
               role="group"
               aria-labelledby="extraction-compass-label"
             >
@@ -450,9 +445,16 @@ function BrewLogAddPage() {
                 selectedTaste={tasteSummary}
                 onSelectZone={(value) => { markDirty('tasteSummary'); setTasteSummary(value) }}
                 zoneBoundaries={zoneBoundaries}
+                showGuidance={false}
+              />
+              <ExtractionReadout
+                doseG={doseG ? parseFloat(doseG) : null}
+                yieldG={yieldG ? parseFloat(yieldG) : null}
+                timeSec={timeSec ? parseFloat(timeSec) : null}
+                selectedTaste={tasteSummary}
               />
             </div>
-          </Section>
+          </EntityFormSection>
         </div>
 
         <ToneButton
@@ -461,17 +463,15 @@ function BrewLogAddPage() {
           onClick={() => setAdvancedOpen(v => !v)}
           aria-expanded={advancedOpen}
           aria-controls="advanced-fields"
-          className="min-h-[2.75rem] min-w-[2.75rem] justify-between gap-2"
+          className="brew-log-add-form__advanced-toggle"
         >
           {advancedOpen ? COPY.brewLog.fewerOptions : COPY.brewLog.moreOptions}
           <span aria-hidden="true">{advancedOpen ? '↑' : '↓'}</span>
         </ToneButton>
 
         <div id="advanced-fields" hidden={!advancedOpen}>
-          <Section>
-            <SectionHeader>Advanced details</SectionHeader>
-            <FormSection>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <EntityFormSection title="Advanced details">
+              <div className="brew-log-add-form__field-grid brew-log-add-form__field-grid--two">
                 <ToneSelect
                   label="Machine"
                   id="brew-log-machine"
@@ -499,7 +499,7 @@ function BrewLogAddPage() {
                 </ToneSelect>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div className="brew-log-add-form__field-grid brew-log-add-form__field-grid--two">
                 <ToneInput
                   label="Grind setting"
                   id="brew-log-grind-setting"
@@ -529,8 +529,7 @@ function BrewLogAddPage() {
                 value={notes}
                 onChange={(e) => { markDirty('notes'); setNotes(e.target.value) }}
               />
-            </FormSection>
-          </Section>
+          </EntityFormSection>
         </div>
       </FormPageShell>
     </div>

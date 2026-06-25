@@ -23,7 +23,7 @@ function fallbackStatus({
   isSubmitting,
 }: Pick<EntityFormActionsProps, 'disabled' | 'isDirty' | 'isSubmitting'>): string | undefined {
   if (isSubmitting) return 'Saving…'
-  if (disabled) return 'Actions unavailable.'
+  if (disabled) return undefined
   if (isDirty) return 'Unsaved changes.'
   return undefined
 }

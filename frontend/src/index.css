@@ -3526,8 +3526,250 @@ select.input-styled,
   }
 }
 
-/* ── Brew-log canonical list composition ────────────────────────────────── */
-.brew-log-card-grid {
+  /* ── Canonical entity form sections ──────────────────────────────────────── */
+  .kk-entity-form-section {
+    --kk-form-section-title-gap: 0.75rem;
+    display: grid;
+    gap: var(--kk-form-section-title-gap);
+    min-width: 0;
+  }
+
+  .kk-entity-form-section .kk-tc-section-header {
+    margin-left: 0;
+  }
+
+  .kk-entity-form-section__body {
+    display: grid;
+    gap: 0.75rem;
+    min-width: 0;
+    padding-left: 0;
+  }
+
+  .kk-form-page .input-styled,
+  .kk-form-page .select.input-styled,
+  .kk-form-page select.input-styled,
+  .kk-form-page .textarea.input-styled,
+  .kk-form-page textarea.input-styled {
+    background: var(--kk-tc-input-bg);
+    border: var(--kk-tc-input-border);
+    border-radius: var(--kk-input-radius, 10px);
+    color: var(--kk-tc-input-text);
+    min-height: 2.75rem;
+    font-size: 1rem;
+  }
+
+  .kk-form-page .input-styled::placeholder,
+  .kk-form-page textarea.input-styled::placeholder {
+    color: var(--kk-tc-input-placeholder);
+  }
+
+  .kk-form-page .input-styled:focus,
+  .kk-form-page .input-styled:focus-visible,
+  .kk-form-page select.input-styled:focus,
+  .kk-form-page textarea.input-styled:focus {
+    outline: none;
+    border-color: var(--kk-tc-input-focus-border);
+    box-shadow: var(--kk-tc-input-focus-ring);
+  }
+
+  .brew-log-add-form__main,
+  .brew-log-add-form__recipe-stack,
+  .brew-log-add-form__field-grid {
+    display: grid;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .brew-log-add-form__main {
+    gap: 1rem;
+  }
+
+  .brew-log-add-form__advanced-toggle {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .brew-log-add-form__field-helper {
+    font-size: 0.8125rem;
+  }
+
+  .kk-compass-panel {
+    display: grid;
+    gap: 0.875rem;
+    width: 100%;
+    min-width: 0;
+    border: var(--kk-card-surface-border);
+    border-radius: var(--kk-input-radius, 10px);
+    background: var(--kk-card-surface-bg);
+    box-shadow: var(--kk-card-surface-shadow);
+    color: var(--kk-text-primary);
+    padding: 0.75rem;
+  }
+
+  .kk-compass-chart,
+  .kk-compass-guidance {
+    display: grid;
+    min-width: 0;
+  }
+
+  .kk-compass-chart {
+    gap: 0.25rem;
+  }
+
+  .kk-compass-chart__subtitle,
+  .kk-compass-guidance__advice,
+  .kk-compass-guidance__note,
+  .kk-compass-guidance__legend {
+    margin: 0;
+    text-align: center;
+    line-height: 1.35;
+  }
+
+  .kk-compass-chart__subtitle {
+    color: var(--kk-text-secondary);
+    font-size: 0.75rem;
+  }
+
+  .kk-compass-chart__svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .kk-compass-guidance {
+    gap: 0.25rem;
+  }
+
+  .kk-compass-guidance__advice {
+    min-height: 2.5rem;
+    color: var(--kk-text-primary);
+    font-size: 0.875rem;
+    overflow-wrap: anywhere;
+  }
+
+  .kk-compass-guidance__note {
+    color: var(--kk-text-secondary);
+    font-size: 0.8125rem;
+  }
+
+  .kk-compass-guidance__legend {
+    color: var(--kk-text-tertiary);
+    font-size: 0.75rem;
+  }
+
+  .kk-form-page .kk-extraction-readout {
+    display: grid;
+    gap: 0.75rem;
+    border-top: var(--kk-card-surface-border);
+    padding-top: 0.875rem;
+  }
+
+  .kk-form-page .kk-extraction-readout__metric,
+  .kk-form-page .kk-extraction-readout__zone {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+
+  .kk-form-page .kk-extraction-readout__eyebrow {
+    color: var(--kk-text-tertiary);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .kk-form-page .kk-extraction-readout__value {
+    color: var(--kk-text-primary);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: clamp(1.5rem, 6vw, 2rem);
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .kk-form-page .kk-extraction-readout__guidance,
+  .kk-form-page .kk-extraction-readout__note {
+    color: var(--kk-text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+
+  .kk-form-page .kk-extraction-readout__note {
+    color: var(--kk-text-tertiary);
+    font-size: 0.8125rem;
+  }
+
+  .kk-form-page .kk-zone-chip {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    border: 1px solid var(--kk-chip-border);
+    border-radius: var(--kk-input-radius, 10px);
+    background: var(--kk-chip-bg);
+    color: var(--kk-chip-text);
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .kk-form-page .kk-zone-chip--under {
+    border-color: transparent;
+    background: rgba(14, 116, 144, 0.14);
+    color: var(--kk-chip-success-text, #0e7490);
+  }
+
+  .kk-form-page .kk-zone-chip--balanced {
+    border-color: transparent;
+    background: var(--kk-chip-brand-bg);
+    color: var(--kk-chip-brand-text);
+  }
+
+  .kk-form-page .kk-zone-chip--over {
+    border-color: transparent;
+    background: var(--kk-chip-danger-bg);
+    color: var(--kk-chip-danger-text);
+  }
+
+  @media (min-width: 640px) {
+    .brew-log-add-form__field-grid--three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .kk-form-page .kk-extraction-readout {
+      grid-template-columns: minmax(7rem, 0.75fr) minmax(0, 1.25fr);
+      align-items: start;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .brew-log-add-form__field-grid--two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .brew-log-add-form__main {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 20rem);
+      align-items: start;
+      gap: 1.5rem;
+    }
+
+    .brew-log-add-form__compass-section {
+      align-self: start;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .compass-ping {
+      animation: none;
+    }
+  }
+
+  /* ── Brew-log canonical list composition ────────────────────────────────── */
+  .brew-log-card-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0.75rem;

@@ -39,6 +39,16 @@ describe('EntityFormActions', () => {
     expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled()
   })
 
+  it('keeps a disabled primary action silent unless contextual status is provided', () => {
+    const { rerender } = render(<EntityFormActions primaryLabel="Save" disabled />)
+
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
+
+    rerender(<EntityFormActions primaryLabel="Save" disabled statusMessage="Select a bag to log this shot." />)
+    expect(screen.getByRole('status')).toHaveTextContent('Select a bag to log this shot.')
+  })
+
   it('wires button callbacks and assertive errors while keeping submit as the default primary type', () => {
     const handlePrimary = vi.fn()
     const handleSecondary = vi.fn()
