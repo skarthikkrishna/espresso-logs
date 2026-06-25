@@ -457,6 +457,17 @@ export const COPY = {
     personalNote: (suggested: string, tasted: string) =>
       `Your parameters suggest ${suggested}, but you tasted ${tasted} — taste is personal!`,
     legend: '⬤ Your shot \u00A0·\u00A0 Zones = extraction outcome',
+    computedDiagnosisLabel: 'Computed from recipe',
+    subjectiveTasteLabel: 'You tasted',
+    subjectiveSelectorLabel: 'Select tasted profile',
+    clearTasteNote: 'Clear taste note',
+    agreementNote: 'Your recipe and taste note agree.',
+    noTasteNote: 'No taste note selected',
+    svgFallback: 'Showing the static compass because 3D rendering is unavailable.',
+    contextLostFallback: 'Showing the static compass because the 3D renderer was interrupted.',
+    lowPowerFallback: 'Showing the static compass to reduce device load.',
+    selectTasteProfile: (taste: string) => `Select tasted profile: ${taste}`,
+    subjectiveTasteReadout: (taste: string) => `You tasted: ${taste}`,
   },
   dashboard: {
     loadError: "Couldn't load dashboard",

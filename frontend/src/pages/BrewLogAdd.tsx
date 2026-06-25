@@ -7,8 +7,7 @@ import { getDefaults } from '../api/defaults'
 import { brewLogDetailQueryKey, getBrewLogDetail, submitShot } from '../api/brewLog'
 import { brewLogListQueryKey, dashboardQueryKey, defaultsQueryKey, householdKeys, inventoryQueryKey } from '../api/queryKeys'
 import LoadingSpinner from '../components/LoadingSpinner'
-import CompassChart from '../components/CompassChart'
-import ExtractionReadout from '../components/ExtractionReadout'
+import ExtractionCompassPanel from '../components/ExtractionCompassPanel'
 import { getBasketDefaults } from '../utils/basketDefaults'
 import { deriveZoneBoundaries } from '../utils/zoneBoundaries'
 import { ShotPrefillAdapter, type ShotPrefillValues } from '../utils/shotPrefillAdapter'
@@ -511,28 +510,14 @@ function BrewLogAddPage() {
           </div>
 
           <EntityFormSection title={COPY.brewLogAdd.extractionCompass} className="brew-log-add-form__compass-section">
-            <div
-              className="kk-compass-panel"
-              role="group"
-              aria-labelledby="extraction-compass-label"
-            >
-              <span id="extraction-compass-label" className="sr-only">{COPY.brewLogAdd.extractionCompass}</span>
-              <CompassChart
-                doseG={doseG ? parseFloat(doseG) : null}
-                yieldG={yieldG ? parseFloat(yieldG) : null}
-                timeSec={timeSec ? parseFloat(timeSec) : null}
-                selectedTaste={tasteSummary}
-                onSelectZone={(value) => { markDirty('tasteSummary'); setTasteSummary(value) }}
-                zoneBoundaries={zoneBoundaries}
-                showGuidance={false}
-              />
-              <ExtractionReadout
-                doseG={doseG ? parseFloat(doseG) : null}
-                yieldG={yieldG ? parseFloat(yieldG) : null}
-                timeSec={timeSec ? parseFloat(timeSec) : null}
-                selectedTaste={tasteSummary}
-              />
-            </div>
+            <ExtractionCompassPanel
+              doseG={doseG ? parseFloat(doseG) : null}
+              yieldG={yieldG ? parseFloat(yieldG) : null}
+              timeSec={timeSec ? parseFloat(timeSec) : null}
+              selectedTaste={tasteSummary}
+              onSelectTaste={(value) => { markDirty('tasteSummary'); setTasteSummary(value) }}
+              zoneBoundaries={zoneBoundaries}
+            />
           </EntityFormSection>
         </div>
       </FormPageShell>

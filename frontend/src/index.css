@@ -180,6 +180,29 @@
   --kaapi-ambient-depth-teal: rgba(115, 74, 55, 0.16);
   --kaapi-ambient-static-gradient: radial-gradient(circle at 18% 22%, rgba(180, 83, 9, 0.18), transparent 34%), radial-gradient(circle at 78% 18%, rgba(190, 151, 87, 0.10), transparent 28%), radial-gradient(circle at 55% 82%, rgba(115, 74, 55, 0.12), transparent 36%), linear-gradient(135deg, #120b06 0%, #1a1209 42%, #22160b 72%, #0f0905 100%);
 
+  /* Option C extraction compass — visualization-only tokens. Operational cards,
+     controls, and readout stay on solid warm surfaces; depth/glint is quarantined
+     inside the instrument renderer. */
+  --kk-compass-instrument-bg: radial-gradient(circle at 28% 24%, rgba(245, 158, 11, 0.18), transparent 34%), radial-gradient(circle at 76% 78%, rgba(190, 151, 87, 0.12), transparent 32%), linear-gradient(145deg, #120b06 0%, #1a1209 48%, #24160a 100%);
+  --kk-compass-instrument-border: rgba(245, 230, 211, 0.16);
+  --kk-compass-instrument-shadow: inset 0 1px 0 rgba(255, 247, 237, 0.08), inset 0 -22px 54px rgba(0, 0, 0, 0.28);
+  --kk-compass-zone-0-0: #78350f;
+  --kk-compass-zone-0-1: #b45309;
+  --kk-compass-zone-0-2: #7f1d1d;
+  --kk-compass-zone-1-0: #734a37;
+  --kk-compass-zone-1-1: #f59e0b;
+  --kk-compass-zone-1-2: #92400e;
+  --kk-compass-zone-2-0: #0e7490;
+  --kk-compass-zone-2-1: #0891b2;
+  --kk-compass-zone-2-2: #4b2f23;
+  --kk-compass-groove: #f5e6d3;
+  --kk-compass-live-dot: #fff7ed;
+  --kk-compass-taste-ring: #be9757;
+  --kk-compass-contact-shadow: #000000;
+  --kk-compass-key-light: #f59e0b;
+  --kk-compass-rim-light: #be9757;
+  --kk-compass-ambient-light: #1a1209;
+
   /* Named motion / fluidity grammar (wired into primitives + ambient in T006).
      Values per handoff: instant 100 / micro 160 / enter 340 / route 560 /
      ambient-settle 900ms; card stagger 36ms, section stagger 70ms; clip reveal
@@ -3608,6 +3631,175 @@ select.input-styled,
     padding: 0.75rem;
   }
 
+  .kk-compass-panel__body,
+  .kk-compass-panel__instrument,
+  .kk-compass-panel__readout {
+    display: grid;
+    gap: 0.875rem;
+    min-width: 0;
+  }
+
+  .kk-compass-panel__fallback-note {
+    margin: 0;
+    color: var(--kk-text-tertiary);
+    font-size: 0.75rem;
+    line-height: 1.35;
+    text-align: center;
+  }
+
+  .kk-compass-3d {
+    position: relative;
+    min-height: 17.5rem;
+    overflow: hidden;
+    border: 1px solid var(--kk-compass-instrument-border);
+    border-radius: var(--kk-input-radius, 10px);
+    background: var(--kk-compass-instrument-bg);
+    box-shadow: var(--kk-compass-instrument-shadow);
+    isolation: isolate;
+  }
+
+  .kk-compass-3d__canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .kk-compass-3d__labels {
+    position: absolute;
+    inset: 1rem 0.75rem 0.9rem;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(3.25rem, 1fr));
+    gap: 0.25rem;
+    transform: perspective(32rem) rotateX(8deg) rotateY(-4deg);
+    transform-origin: center;
+  }
+
+  .kk-compass-3d__zone-button {
+    display: flex;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    border: 1px solid transparent;
+    border-radius: calc(var(--kk-input-radius, 10px) * 0.75);
+    background: transparent;
+    color: rgba(245, 230, 211, 0.9);
+    cursor: pointer;
+    font: inherit;
+    padding: 0.3rem;
+    text-align: center;
+    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.72);
+  }
+
+  .kk-compass-3d__zone-button:focus-visible {
+    outline: 2px solid var(--kk-compass-taste-ring);
+    outline-offset: 2px;
+  }
+
+  .kk-compass-3d__zone-button[data-computed="true"] {
+    border-color: rgba(255, 247, 237, 0.72);
+    box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.55), 0 0 22px rgba(245, 158, 11, 0.16);
+  }
+
+  .kk-compass-3d__zone-button[data-selected="true"] {
+    border-color: var(--kk-compass-taste-ring);
+    background: rgba(190, 151, 87, 0.12);
+  }
+
+  .kk-compass-3d__zone-label {
+    max-width: 6.5rem;
+    font-size: clamp(0.62rem, 2.7vw, 0.75rem);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.05;
+  }
+
+  .kk-compass-3d__marker-label {
+    border-radius: 999px;
+    background: rgba(18, 11, 6, 0.7);
+    color: rgba(255, 247, 237, 0.92);
+    font-size: 0.55rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    padding: 0.17rem 0.28rem;
+    text-transform: uppercase;
+  }
+
+  .kk-compass-taste-note {
+    display: grid;
+    gap: 0.45rem;
+    border-top: var(--kk-card-surface-border);
+    padding-top: 0.75rem;
+  }
+
+  .kk-compass-taste-note__summary,
+  .kk-compass-taste-note__agreement {
+    margin: 0;
+    color: var(--kk-text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+
+  .kk-compass-taste-note__summary span {
+    color: var(--kk-text-tertiary);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .kk-compass-taste-note__summary strong {
+    color: var(--kk-text-primary);
+    font-weight: 800;
+  }
+
+  .kk-compass-taste-note__clear {
+    width: fit-content;
+    min-height: 2.75rem;
+    border: 1px solid var(--kaapi-content-border);
+    border-radius: var(--kk-input-radius, 10px);
+    background: var(--kaapi-content-surface-2);
+    color: var(--kk-text-primary);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 800;
+    padding: 0.55rem 0.8rem;
+  }
+
+  .kk-compass-zone-selector {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.35rem;
+  }
+
+  .kk-compass-zone-selector__button {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    border: 1px solid var(--kaapi-content-border);
+    border-radius: calc(var(--kk-input-radius, 10px) * 0.75);
+    background: var(--kaapi-content-surface-2);
+    color: var(--kk-text-primary);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    line-height: 1.08;
+    padding: 0.35rem;
+  }
+
+  .kk-compass-zone-selector__button[data-selected="true"] {
+    border-color: var(--kk-compass-taste-ring);
+    box-shadow: inset 0 0 0 1px rgba(190, 151, 87, 0.42);
+  }
+
   .kk-compass-chart,
   .kk-compass-guidance {
     display: grid;
@@ -3748,6 +3940,15 @@ select.input-styled,
     .brew-log-add-form__field-grid--two {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
+    .kk-compass-panel__body {
+      grid-template-columns: minmax(17rem, 0.95fr) minmax(14rem, 1.05fr);
+      align-items: start;
+    }
+
+    .kk-compass-3d {
+      min-height: 19rem;
+    }
   }
 
   @media (min-width: 1024px) {
@@ -3790,6 +3991,12 @@ select.input-styled,
   @media (prefers-reduced-motion: reduce) {
     .compass-ping {
       animation: none;
+    }
+
+    .kk-compass-3d__zone-button,
+    .kk-compass-taste-note__clear,
+    .kk-compass-zone-selector__button {
+      transition: none;
     }
   }
 
