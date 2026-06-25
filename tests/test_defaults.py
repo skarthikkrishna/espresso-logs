@@ -211,7 +211,7 @@ def _patch_use_postgres_false():
 
 @pytest.mark.asyncio
 async def test_defaults_level1():
-    """Level 1: most recent shot for this bag → returns 6 snake_case fields."""
+    """Level 1: most recent shot for this bag → returns 7 snake_case fields."""
     brew_repo, inv_repo, cat_repo = _make_repos(
         brew_log_rows=[_SHOT_A.copy(), _SHOT_B.copy()],
         inventory_rows=[_BAG_A.copy()],
@@ -222,6 +222,7 @@ async def test_defaults_level1():
     assert result["machine_id"] == "M01"
     assert result["grinder_id"] == "G01"
     assert result["dose_in_g"] == 17.5
+    assert result["time_sec"] == 27
     assert result["grind_setting"] == 4.0
     assert result["storage_method"] == "Frozen — Glass Tube"
     # basket_id is empty → must be omitted
@@ -269,6 +270,7 @@ async def test_defaults_level2_same_roaster():
     assert result["machine_id"] == "M02"
     assert result["grinder_id"] == "G02"
     assert result["dose_in_g"] == 19.0
+    assert result["time_sec"] == 30
     assert result["grind_setting"] == 5.0
     assert "shot_eligibility" not in result
 
@@ -286,6 +288,7 @@ async def test_defaults_level2_skipped_when_no_catalog_id():
     result = await get_defaults("XX20250401M", brew_repo, inv_repo, cat_repo)
     # Level 2 skipped (no catalog_id) → Level 3 picks up SHOT_C (same roast level "Medium")
     assert result["machine_id"] == "M01"
+    assert result["time_sec"] == 26
     assert result["grind_setting"] == 3.5
 
 
@@ -445,6 +448,7 @@ async def test_defaults_level0_basket_filtered():
     # Most recent B01 shot is SH-L0-03 (2025-04-28): dose=19.0, yield=38.0, grind=11.5
     assert result["dose_in_g"] == 19.0
     assert result["yield_out_g"] == 38.0
+    assert result["time_sec"] == 30
     assert result["grind_setting"] == 11.5
 
     # B02 noise shot values must NOT be returned

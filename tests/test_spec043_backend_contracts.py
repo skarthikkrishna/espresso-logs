@@ -464,6 +464,48 @@ async def test_sql_brew_log_list_and_detail_are_household_scoped(
         assert ids_two[key] not in {detail_one.json()[key], items_one[0][key]}
 
 
+async def test_sql_defaults_endpoint_includes_time_sec_and_is_household_scoped(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Defaults must include extraction time without leaking another household's bag."""
+    _require_sql_backend(monkeypatch)
+    household_one = uuid.uuid4()
+    user_one = uuid.uuid4()
+    ids_one = await _seed_sql_household(household_one, user_one, uuid.uuid4().hex[:8])
+    household_two = uuid.uuid4()
+    user_two = uuid.uuid4()
+    ids_two = await _seed_sql_household(household_two, user_two, uuid.uuid4().hex[:8])
+    active = {"household_id": household_one, "user_id": user_one}
+    _install_sql_overrides(active)
+
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            own_defaults = await client.get(f"/api/defaults/{ids_one['bag_id']}")
+            leaked_defaults = await client.get(f"/api/defaults/{ids_two['bag_id']}")
+
+            active["household_id"] = household_two
+            active["user_id"] = user_two
+            second_household_defaults = await client.get(f"/api/defaults/{ids_two['bag_id']}")
+    finally:
+        _clear_overrides()
+
+    assert own_defaults.status_code == 200, own_defaults.text
+    assert leaked_defaults.status_code == 200, leaked_defaults.text
+    assert second_household_defaults.status_code == 200, second_household_defaults.text
+
+    own_body = own_defaults.json()
+    leaked_body = leaked_defaults.json()
+    second_body = second_household_defaults.json()
+
+    assert own_body["machine_id"] == ids_one["machine_id"]
+    assert own_body["time_sec"] == "28"
+    assert leaked_body["machine_id"] is None
+    assert leaked_body["time_sec"] is None
+    assert ids_two["machine_id"] not in {own_body["machine_id"], leaked_body["machine_id"]}
+    assert second_body["machine_id"] == ids_two["machine_id"]
+    assert second_body["time_sec"] == "28"
+
+
 async def test_hardware_update_parity_covers_all_six_displayed_fields() -> None:
     """The edit endpoint must persist every field already displayed by hardware detail."""
     existing = {

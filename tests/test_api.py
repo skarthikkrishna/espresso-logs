@@ -704,9 +704,12 @@ async def test_api_defaults_by_bag_authenticated():
         "basket_id",
         "storage_method",
         "dose_in_g",
+        "yield_out_g",
+        "time_sec",
         "grind_setting",
     ):
         assert key in data
+    assert data["time_sec"] == "28.0"
 
 
 @pytest.mark.asyncio

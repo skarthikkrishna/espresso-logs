@@ -109,6 +109,7 @@ class DefaultsOut(BaseModel):
     storage_method: str | None = None
     dose_in_g: str | None = None
     yield_out_g: str | None = None  # ← NEW (T004): basket-history Level 0 lookup
+    time_sec: str | None = None
     grind_setting: str | None = None
 
 

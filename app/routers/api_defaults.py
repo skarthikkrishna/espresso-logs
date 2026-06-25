@@ -43,6 +43,9 @@ async def api_get_defaults(
         yield_out_g=str(defaults_dict["yield_out_g"])
         if defaults_dict.get("yield_out_g") is not None
         else None,
+        time_sec=str(defaults_dict["time_sec"])
+        if defaults_dict.get("time_sec") is not None
+        else None,
         grind_setting=str(defaults_dict["grind_setting"])
         if defaults_dict.get("grind_setting") is not None
         else None,
