@@ -187,6 +187,8 @@ async def api_brew_log_detail(
 
 
 class _BrewLogCreateBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     bag_id: str
     machine_id: str = ""
     grinder_id: str = ""
