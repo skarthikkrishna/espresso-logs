@@ -10,6 +10,7 @@ import {
 } from '../utils/extractionCompassViewModel'
 import type { CompassZoneTaste } from '../utils/extractionCompass'
 import { useWebGLSupport } from '../lib/motion/useWebGLSupport'
+import { useTone } from '../contexts/ToneContext'
 import { COPY } from '../copy'
 
 interface ExtractionCompassPanelProps {
@@ -75,6 +76,7 @@ export default function ExtractionCompassPanel({
   }), [doseG, selectedTaste, timeSec, yieldG, zoneBoundaries])
   const reducedMotion = usePrefersReducedMotion()
   const webGLSupport = useWebGLSupport()
+  const { tone } = useTone()
   const [contextLost, setContextLost] = useState(false)
   const selectorRefs = useRef<Array<HTMLButtonElement | null>>([])
   const lowPower = prefersSvgForDevice()
@@ -119,6 +121,7 @@ export default function ExtractionCompassPanel({
             </>
           ) : (
             <CompassInstrument3D
+              key={tone}
               model={model}
               zones={EXTRACTION_COMPASS_ZONES}
               reducedMotion={reducedMotion}

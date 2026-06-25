@@ -202,6 +202,53 @@
   --kk-compass-key-light: #f59e0b;
   --kk-compass-rim-light: #be9757;
   --kk-compass-ambient-light: #1a1209;
+  --kk-compass-zone-label: #fff7ed;
+  --kk-compass-zone-label-shadow: 0 1px 5px rgba(0, 0, 0, 0.72);
+  --kk-compass-marker-bg: rgba(18, 11, 6, 0.7);
+  --kk-compass-marker-text: rgba(255, 247, 237, 0.92);
+  --kk-compass-computed-border: rgba(255, 247, 237, 0.72);
+  --kk-compass-computed-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.55), 0 0 22px rgba(245, 158, 11, 0.16);
+  --kk-compass-selected-fill: rgba(190, 151, 87, 0.12);
+  --kk-compass-svg-zone-weak-sour-fill: rgba(103, 232, 249, 0.18);
+  --kk-compass-svg-zone-weak-sour-stroke: rgba(103, 232, 249, 0.42);
+  --kk-compass-svg-zone-sour-fill: rgba(103, 232, 249, 0.22);
+  --kk-compass-svg-zone-sour-stroke: rgba(103, 232, 249, 0.48);
+  --kk-compass-svg-zone-astringent-sour-fill: rgba(14, 116, 144, 0.22);
+  --kk-compass-svg-zone-astringent-sour-stroke: rgba(14, 116, 144, 0.50);
+  --kk-compass-svg-zone-weak-sweet-fill: rgba(20, 184, 166, 0.18);
+  --kk-compass-svg-zone-weak-sweet-stroke: rgba(20, 184, 166, 0.42);
+  --kk-compass-svg-zone-sweet-balanced-fill: rgba(245, 158, 11, 0.24);
+  --kk-compass-svg-zone-sweet-balanced-stroke: rgba(245, 158, 11, 0.56);
+  --kk-compass-svg-zone-bitter-astringent-fill: rgba(220, 38, 38, 0.20);
+  --kk-compass-svg-zone-bitter-astringent-stroke: rgba(220, 38, 38, 0.48);
+  --kk-compass-svg-zone-weak-bitter-fill: rgba(180, 83, 9, 0.18);
+  --kk-compass-svg-zone-weak-bitter-stroke: rgba(180, 83, 9, 0.42);
+  --kk-compass-svg-zone-bitter-fill: rgba(217, 119, 6, 0.22);
+  --kk-compass-svg-zone-bitter-stroke: rgba(217, 119, 6, 0.50);
+  --kk-compass-svg-zone-harsh-bitter-fill: rgba(185, 28, 28, 0.22);
+  --kk-compass-svg-zone-harsh-bitter-stroke: rgba(185, 28, 28, 0.52);
+  --kk-compass-svg-label: #fff7ed;
+  --kk-compass-svg-label-halo: rgba(18, 11, 6, 0.92);
+  --kk-compass-svg-muted-label: rgba(245, 230, 211, 0.72);
+  --kk-compass-svg-axis-stroke: rgba(200, 134, 10, 0.24);
+  --kk-compass-svg-selection-outer: rgba(245, 230, 211, 0.90);
+  --kk-compass-svg-selection-inner: #d97706;
+  --kk-compass-svg-agreement-fill: rgba(255, 255, 255, 0.10);
+  --kk-compass-svg-selected-fill: rgba(255, 255, 255, 0.06);
+  --kk-compass-svg-live-ping: #f59e0b;
+  --kk-compass-svg-live-ring: #d97706;
+  --kk-compass-svg-live-dot: #fff7ed;
+  --kk-compass-svg-out-of-range: #fbbf24;
+  --kk-compass-svg-mesh-amber-start: rgba(245, 158, 11, 0.22);
+  --kk-compass-svg-mesh-amber-end: rgba(217, 119, 6, 0);
+  --kk-compass-svg-mesh-rust-start: rgba(185, 28, 28, 0.16);
+  --kk-compass-svg-mesh-rust-end: rgba(185, 28, 28, 0);
+  --kk-compass-svg-mesh-cerulean-start: rgba(103, 232, 249, 0.14);
+  --kk-compass-svg-mesh-cerulean-end: rgba(103, 232, 249, 0);
+  --kk-compass-svg-mesh-slate-start: rgba(15, 118, 110, 0.12);
+  --kk-compass-svg-mesh-slate-end: rgba(15, 118, 110, 0);
+  --kk-compass-svg-aurora-start: rgba(217, 119, 6, 0.18);
+  --kk-compass-svg-aurora-end: rgba(217, 119, 6, 0);
 
   /* Named motion / fluidity grammar (wired into primitives + ambient in T006).
      Values per handoff: instant 100 / micro 160 / enter 340 / route 560 /
@@ -2777,6 +2824,72 @@ select.input-styled,
   --kk-page-bg-overlay-brew: linear-gradient(160deg, rgba(245, 235, 220, 0.86), rgba(232, 210, 180, 0.90));
   --kk-page-bg-overlay-catalog: linear-gradient(160deg, rgba(245, 235, 220, 0.86), rgba(232, 210, 180, 0.90));
   --kk-page-bg-overlay-hardware: linear-gradient(160deg, rgba(245, 235, 220, 0.86), rgba(232, 210, 180, 0.90));
+  --kk-compass-instrument-bg: radial-gradient(circle at 28% 24%, rgba(180, 83, 9, 0.12), transparent 34%), radial-gradient(circle at 76% 78%, rgba(14, 116, 144, 0.10), transparent 32%), linear-gradient(145deg, #fff7ed 0%, #f7ead8 50%, #ead8c0 100%);
+  --kk-compass-instrument-border: rgba(120, 53, 15, 0.24);
+  --kk-compass-instrument-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), inset 0 -22px 54px rgba(120, 53, 15, 0.10);
+  --kk-compass-zone-0-0: #ead0b8;
+  --kk-compass-zone-0-1: #e3b879;
+  --kk-compass-zone-0-2: #e5b4ae;
+  --kk-compass-zone-1-0: #ddd0bd;
+  --kk-compass-zone-1-1: #f4c76f;
+  --kk-compass-zone-1-2: #d6b193;
+  --kk-compass-zone-2-0: #b9dde4;
+  --kk-compass-zone-2-1: #a9d7e2;
+  --kk-compass-zone-2-2: #d2c2b4;
+  --kk-compass-groove: #6b4a2f;
+  --kk-compass-live-dot: #2d1608;
+  --kk-compass-taste-ring: #92400e;
+  --kk-compass-contact-shadow: #6b4a2f;
+  --kk-compass-key-light: #fff7ed;
+  --kk-compass-rim-light: #b45309;
+  --kk-compass-ambient-light: #fff7ed;
+  --kk-compass-zone-label: #2d1608;
+  --kk-compass-zone-label-shadow: 0 1px 2px rgba(255, 247, 237, 0.90), 0 0 6px rgba(255, 247, 237, 0.72);
+  --kk-compass-marker-bg: rgba(255, 247, 237, 0.92);
+  --kk-compass-marker-text: #2d1608;
+  --kk-compass-computed-border: rgba(120, 53, 15, 0.78);
+  --kk-compass-computed-shadow: inset 0 0 0 1px rgba(146, 64, 14, 0.50), 0 0 18px rgba(146, 64, 14, 0.12);
+  --kk-compass-selected-fill: rgba(146, 64, 14, 0.10);
+  --kk-compass-svg-zone-weak-sour-fill: rgba(14, 116, 144, 0.16);
+  --kk-compass-svg-zone-weak-sour-stroke: rgba(14, 116, 144, 0.38);
+  --kk-compass-svg-zone-sour-fill: rgba(14, 116, 144, 0.20);
+  --kk-compass-svg-zone-sour-stroke: rgba(14, 116, 144, 0.46);
+  --kk-compass-svg-zone-astringent-sour-fill: rgba(21, 94, 117, 0.20);
+  --kk-compass-svg-zone-astringent-sour-stroke: rgba(21, 94, 117, 0.48);
+  --kk-compass-svg-zone-weak-sweet-fill: rgba(22, 101, 52, 0.14);
+  --kk-compass-svg-zone-weak-sweet-stroke: rgba(22, 101, 52, 0.34);
+  --kk-compass-svg-zone-sweet-balanced-fill: rgba(146, 64, 14, 0.18);
+  --kk-compass-svg-zone-sweet-balanced-stroke: rgba(146, 64, 14, 0.46);
+  --kk-compass-svg-zone-bitter-astringent-fill: rgba(185, 28, 28, 0.14);
+  --kk-compass-svg-zone-bitter-astringent-stroke: rgba(185, 28, 28, 0.40);
+  --kk-compass-svg-zone-weak-bitter-fill: rgba(120, 53, 15, 0.14);
+  --kk-compass-svg-zone-weak-bitter-stroke: rgba(120, 53, 15, 0.36);
+  --kk-compass-svg-zone-bitter-fill: rgba(146, 64, 14, 0.18);
+  --kk-compass-svg-zone-bitter-stroke: rgba(146, 64, 14, 0.44);
+  --kk-compass-svg-zone-harsh-bitter-fill: rgba(127, 29, 29, 0.16);
+  --kk-compass-svg-zone-harsh-bitter-stroke: rgba(127, 29, 29, 0.42);
+  --kk-compass-svg-label: #2d1608;
+  --kk-compass-svg-label-halo: rgba(255, 247, 237, 0.94);
+  --kk-compass-svg-muted-label: #5c3d1e;
+  --kk-compass-svg-axis-stroke: rgba(120, 53, 15, 0.38);
+  --kk-compass-svg-selection-outer: rgba(45, 22, 8, 0.70);
+  --kk-compass-svg-selection-inner: #92400e;
+  --kk-compass-svg-agreement-fill: rgba(255, 247, 237, 0.34);
+  --kk-compass-svg-selected-fill: rgba(146, 64, 14, 0.08);
+  --kk-compass-svg-live-ping: #92400e;
+  --kk-compass-svg-live-ring: #78350f;
+  --kk-compass-svg-live-dot: #2d1608;
+  --kk-compass-svg-out-of-range: #92400e;
+  --kk-compass-svg-mesh-amber-start: rgba(146, 64, 14, 0.14);
+  --kk-compass-svg-mesh-amber-end: rgba(146, 64, 14, 0);
+  --kk-compass-svg-mesh-rust-start: rgba(185, 28, 28, 0.10);
+  --kk-compass-svg-mesh-rust-end: rgba(185, 28, 28, 0);
+  --kk-compass-svg-mesh-cerulean-start: rgba(14, 116, 144, 0.10);
+  --kk-compass-svg-mesh-cerulean-end: rgba(14, 116, 144, 0);
+  --kk-compass-svg-mesh-slate-start: rgba(22, 101, 52, 0.08);
+  --kk-compass-svg-mesh-slate-end: rgba(22, 101, 52, 0);
+  --kk-compass-svg-aurora-start: rgba(146, 64, 14, 0.14);
+  --kk-compass-svg-aurora-end: rgba(146, 64, 14, 0);
 }
 
 
@@ -3689,12 +3802,12 @@ select.input-styled,
     border: 1px solid transparent;
     border-radius: calc(var(--kk-input-radius, 10px) * 0.75);
     background: transparent;
-    color: rgba(245, 230, 211, 0.9);
+    color: var(--kk-compass-zone-label);
     cursor: pointer;
     font: inherit;
     padding: 0.3rem;
     text-align: center;
-    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.72);
+    text-shadow: var(--kk-compass-zone-label-shadow);
   }
 
   .kk-compass-3d__zone-button:focus-visible {
@@ -3703,13 +3816,13 @@ select.input-styled,
   }
 
   .kk-compass-3d__zone-button[data-computed="true"] {
-    border-color: rgba(255, 247, 237, 0.72);
-    box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.55), 0 0 22px rgba(245, 158, 11, 0.16);
+    border-color: var(--kk-compass-computed-border);
+    box-shadow: var(--kk-compass-computed-shadow);
   }
 
   .kk-compass-3d__zone-button[data-selected="true"] {
     border-color: var(--kk-compass-taste-ring);
-    background: rgba(190, 151, 87, 0.12);
+    background: var(--kk-compass-selected-fill);
   }
 
   .kk-compass-3d__zone-label {
@@ -3722,8 +3835,8 @@ select.input-styled,
 
   .kk-compass-3d__marker-label {
     border-radius: 999px;
-    background: rgba(18, 11, 6, 0.7);
-    color: rgba(255, 247, 237, 0.92);
+    background: var(--kk-compass-marker-bg);
+    color: var(--kk-compass-marker-text);
     font-size: 0.55rem;
     font-weight: 800;
     letter-spacing: 0.08em;
@@ -3830,6 +3943,31 @@ select.input-styled,
     height: auto;
   }
 
+  .kk-compass-chart__zone-label-svg {
+    fill: var(--kk-compass-svg-label);
+    stroke: var(--kk-compass-svg-label-halo);
+    stroke-linejoin: round;
+    stroke-width: 2px;
+    paint-order: stroke fill;
+  }
+
+  .kk-compass-chart__axis-label-svg,
+  .kk-compass-chart__axis-value-svg {
+    fill: var(--kk-compass-svg-muted-label);
+    stroke: var(--kk-compass-svg-label-halo);
+    stroke-linejoin: round;
+    stroke-width: 1.5px;
+    paint-order: stroke fill;
+  }
+
+  .kk-compass-chart__out-of-range-svg {
+    fill: var(--kk-compass-svg-out-of-range);
+    stroke: var(--kk-compass-svg-label-halo);
+    stroke-linejoin: round;
+    stroke-width: 1.5px;
+    paint-order: stroke fill;
+  }
+
   .kk-compass-guidance {
     gap: 0.25rem;
   }
@@ -3909,8 +4047,8 @@ select.input-styled,
 
   .kk-form-page .kk-zone-chip--under {
     border-color: transparent;
-    background: rgba(14, 116, 144, 0.14);
-    color: var(--kk-chip-success-text, #0e7490);
+    background: var(--kk-chip-success-bg);
+    color: var(--kk-chip-success-text);
   }
 
   .kk-form-page .kk-zone-chip--balanced {

@@ -62,26 +62,26 @@ describe('CompassChart', () => {
     // "Bitter" is zones[1] (row 0, col 1 = centre column, slow row).
     const bitterGroup = groups[1];
     expect(bitterGroup).not.toBeNull();
-    // Selected zone: first rect is transparent hit target; second rect is the selection overlay
-    // with rgba(255,255,255,0.06) fill (selected-only branch).
+    // Selected zone: first rect is transparent hit target; selected-only branch uses
+    // the tone-adaptive selection fill token.
     const rects = bitterGroup.querySelectorAll('rect');
     let hasSelectionOverlay = false;
     rects.forEach(rect => {
       const fill = rect.getAttribute('fill') ?? '';
-      if (fill.includes('255,255,255')) hasSelectionOverlay = true;
+      if (fill === 'var(--kk-compass-svg-selected-fill)') hasSelectionOverlay = true;
     });
     expect(hasSelectionOverlay).toBe(true);
-    // All other zones must NOT have a white-fill selection overlay
+    // All other zones must NOT have the selected-only fill token.
     groups
       .filter((_, i) => i !== 1)
       .forEach(g => {
         const groupRects = g.querySelectorAll('rect');
-        let hasWhiteFill = false;
+        let hasSelectedFill = false;
         groupRects.forEach(r => {
           const fill = r.getAttribute('fill') ?? '';
-          if (fill.includes('255,255,255')) hasWhiteFill = true;
+          if (fill === 'var(--kk-compass-svg-selected-fill)') hasSelectedFill = true;
         });
-        expect(hasWhiteFill).toBe(false);
+        expect(hasSelectedFill).toBe(false);
       });
   });
 

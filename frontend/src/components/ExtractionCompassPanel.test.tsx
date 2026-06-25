@@ -1,10 +1,16 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import type { ReactElement } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import ExtractionCompassPanel from './ExtractionCompassPanel'
+import { ToneProvider } from '../contexts/ToneContext'
+
+function renderCompassPanel(ui: ReactElement) {
+  return render(<ToneProvider>{ui}</ToneProvider>)
+}
 
 describe('ExtractionCompassPanel', () => {
   it('falls back to the SVG compass without WebGL and keeps accessible readout content', () => {
-    render(
+    renderCompassPanel(
       <ExtractionCompassPanel
         doseG={18}
         yieldG={48}
@@ -22,7 +28,7 @@ describe('ExtractionCompassPanel', () => {
 
   it('provides keyboard-reachable subjective taste controls in fallback mode', () => {
     const onSelectTaste = vi.fn()
-    render(<ExtractionCompassPanel onSelectTaste={onSelectTaste} forceSvgFallback />)
+    renderCompassPanel(<ExtractionCompassPanel onSelectTaste={onSelectTaste} forceSvgFallback />)
 
     const sourButton = screen.getByRole('button', { name: 'Select tasted profile: Sour' })
     fireEvent.click(sourButton)
@@ -34,7 +40,7 @@ describe('ExtractionCompassPanel', () => {
 
   it('exposes a clear action for the subjective taste note', () => {
     const onSelectTaste = vi.fn()
-    render(
+    renderCompassPanel(
       <ExtractionCompassPanel
         selectedTaste="Sour"
         onSelectTaste={onSelectTaste}
