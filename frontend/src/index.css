@@ -3435,6 +3435,50 @@ select.input-styled,
   }
 }
 
+/* ── Canonical entity form shell ─────────────────────────────────────────── */
+.kk-form-page {
+  overflow-x: clip;
+  padding-bottom: var(--mobile-content-bottom-padding);
+}
+
+.kk-form-page__shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.kk-form-page__form,
+.kk-form-page__body {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.kk-form-page__status,
+.kk-form-page__error {
+  border-radius: 12px;
+  border: var(--kk-card-surface-border);
+  background: var(--kk-card-surface-bg);
+  box-shadow: var(--kk-card-surface-shadow);
+  color: var(--kk-text-primary);
+  padding: 0.875rem 1rem;
+}
+
+.kk-form-page__error {
+  color: var(--kaapi-content-error, var(--kk-tc-error-color, #fca5a5));
+}
+
+.kk-form-page__actions {
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .kk-form-page__shell,
+  .kk-form-page__form,
+  .kk-form-page__body {
+    gap: 1.25rem;
+  }
+}
+
 /* ── Brew-log canonical list composition ────────────────────────────────── */
 .brew-log-card-grid {
   display: grid;

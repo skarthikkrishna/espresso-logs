@@ -13,6 +13,8 @@ export { ToneProvider, useTone } from '../../contexts/ToneContext'
 
 // Page shell
 export { TonePageWrapper } from './TonePageWrapper'
+export { FormPageShell } from './FormPageShell'
+export type { FormPageShellProps } from './FormPageShell'
 export { TakeoverCard } from './TakeoverCard'
 export { BackLink } from './BackLink'
 export { ToneToggle } from './ToneToggle'
