@@ -338,7 +338,7 @@ function BrewLogAddPage() {
       >
         <div className="brew-log-add-form__main">
           <div className="brew-log-add-form__recipe-stack">
-            <EntityFormSection title="Shot recipe">
+            <EntityFormSection title="Shot recipe" className="brew-log-add-form__recipe-section">
                 <ToneSelect
                   label="Bag"
                   id="brew-log-bag"
@@ -446,7 +446,7 @@ function BrewLogAddPage() {
               <span aria-hidden="true">{advancedOpen ? '↑' : '↓'}</span>
             </ToneButton>
 
-            <div id="advanced-fields" hidden={!advancedOpen}>
+            <div id="advanced-fields" className="brew-log-add-form__advanced-fields" hidden={!advancedOpen}>
               <EntityFormSection title="Advanced details">
                   <div className="brew-log-add-form__field-grid brew-log-add-form__field-grid--two">
                     <ToneSelect
