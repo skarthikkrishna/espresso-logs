@@ -28,7 +28,7 @@ def db_override() -> AsyncMock:
 
 
 async def test_admin_can_start_import_wizard(db_override: AsyncMock) -> None:
-    """GET /import creates a DB-backed import session and sets a cookie."""
+    """GET /api/import creates a DB-backed import session and sets a cookie."""
     mock_db = db_override
     import_session_id = uuid.uuid4()
     import_session = SimpleNamespace(id=import_session_id)
@@ -44,7 +44,7 @@ async def test_admin_can_start_import_wizard(db_override: AsyncMock) -> None:
     ):
         mock_db.commit = AsyncMock()
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            resp = await client.get("/import")
+            resp = await client.get("/api/import")
 
     app.dependency_overrides.pop(require_admin, None)
 
@@ -69,7 +69,7 @@ async def test_import_session_cookie_uses_two_hour_max_age(db_override: AsyncMoc
     ):
         mock_db.commit = AsyncMock()
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            resp = await client.get("/import")
+            resp = await client.get("/api/import")
 
     app.dependency_overrides.pop(require_admin, None)
 
