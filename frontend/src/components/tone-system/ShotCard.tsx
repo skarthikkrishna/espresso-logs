@@ -45,7 +45,7 @@ function compactShotChips(shot: BrewLogEntry, variant: ShotCardVariant): Compact
   if ((isHomeCompact || isBrewLogCompact) && ratio != null) {
     chips.push({
       key: 'ratio',
-      node: <ExtractionChip variant="brand" data-testid="shot-ratio-chip">1:{ratio.toFixed(1)}</ExtractionChip>,
+      node: <ExtractionChip variant="neutral" data-testid="shot-ratio-chip">1:{ratio.toFixed(1)}</ExtractionChip>,
     })
   }
   if ((isHomeCompact || isBrewLogCompact) && shot.time_sec != null) {
@@ -57,7 +57,7 @@ function compactShotChips(shot: BrewLogEntry, variant: ShotCardVariant): Compact
   if (isBrewLogCompact && shot.yield_out_g != null) {
     chips.push({
       key: 'yield',
-      node: <ExtractionChip variant="brand" data-testid="shot-yield-chip">{shot.yield_out_g}g</ExtractionChip>,
+      node: <ExtractionChip variant="neutral" data-testid="shot-yield-chip">{shot.yield_out_g}g</ExtractionChip>,
     })
   }
   if (isBrewLogCompact && zone) {

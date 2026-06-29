@@ -6,6 +6,12 @@ describe('household background route map', () => {
     expect(getAppShellBackgroundToken('/profile')).toBe('bg-profile-household')
     expect(getAppShellBackgroundToken('/household/settings')).toBe('bg-household-settings')
     expect(getAppShellBackgroundToken('/brew-log')).toBe('bg-brew-log')
+    expect(getAppShellBackgroundToken('/import')).toBe('bg-catalog')
+    expect(getAppShellBackgroundToken('/import/review')).toBe('bg-catalog')
+  })
+
+  it('keeps import off the household transition fallback scrim', () => {
+    expect(getAppShellBackgroundToken('/import')).not.toBe('bg-household-transition')
   })
 
   it('maps standalone auth, invite, and guest routes to approved tokens', () => {

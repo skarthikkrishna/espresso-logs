@@ -2,8 +2,12 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const cssPath = join(process.cwd(), 'src/index.css')
+const importWizardPath = join(process.cwd(), 'src/pages/ImportWizard.tsx')
+const sidebarPath = join(process.cwd(), 'src/components/Sidebar.tsx')
 const exceptionsPath = join(process.cwd(), 'scripts/tone-exceptions.json')
 const css = readFileSync(cssPath, 'utf8')
+const importWizardSource = readFileSync(importWizardPath, 'utf8')
+const sidebarSource = readFileSync(sidebarPath, 'utf8')
 const lines = css.split(/\r?\n/)
 const exceptions = JSON.parse(readFileSync(exceptionsPath, 'utf8'))
 const flatteningAllowlist = new Map(
@@ -220,6 +224,23 @@ const localizedFadeValuePattern = /(?:linear-gradient\(|(?:-webkit-)?mask(?:-ima
 
 let failed = false
 const legibilityViolations = []
+
+for (const forbiddenClass of ['btn', 'btn-outline', 'btn-sm', 'btn-bevel']) {
+  if (new RegExp(`(?<![A-Za-z0-9_-])${forbiddenClass}(?![A-Za-z0-9_-])`).test(importWizardSource)) {
+    console.error(`::error file=src/pages/ImportWizard.tsx::ImportWizard must use tone-system actions, not DaisyUI .${forbiddenClass}`)
+    failed = true
+  }
+}
+
+if (sidebarSource.includes('/static/img/kaapi-kadai-mark.svg')) {
+  console.error('::error file=src/components/Sidebar.tsx::Sidebar must use the shared inline BrandMarkGlyph, not /static/img/kaapi-kadai-mark.svg')
+  failed = true
+}
+
+if (sidebarSource.includes('kk-sidebar-brand')) {
+  console.error('::error file=src/components/Sidebar.tsx::Sidebar must render the split kk-sidebar-wordmark identity, not the old kk-sidebar-brand plain text system')
+  failed = true
+}
 
 for (const [name, foregroundToken, backgroundTokens] of legibilityChecks) {
   const background = resolveStack('[data-tone="beige"]', backgroundTokens)

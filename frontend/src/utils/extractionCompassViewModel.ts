@@ -103,7 +103,7 @@ function buildPrimaryGuidance({
   if (ratioText && computedTaste && selected && computedTaste === selected) {
     return {
       text: `At ${ratioText}, recipe and taste agree on ${computedTaste} — ${correction}.`,
-      action,
+      action: null,
     }
   }
   if (ratioText && computedTaste && selected) {

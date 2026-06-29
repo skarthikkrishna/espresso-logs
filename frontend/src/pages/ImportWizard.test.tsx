@@ -8,9 +8,13 @@
  *   3. Preview pairs status with label/icon (Ready / Needs fix) using the validate logic.
  *   4. Import sends valid rows to the existing API and advances to Done; invalid rows skip.
  *   5. Back returns to the Upload step.
+ *
+ * Updated for spec-043 T023 migration: ImportWizard now uses WizardShell (ToneProvider
+ * + BackLink/ToneToggle via react-router-dom). MemoryRouter wrapper added to all renders.
  */
 import React from 'react'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('../api/catalog', () => ({ createCatalogItem: vi.fn() }))
@@ -26,8 +30,16 @@ import ImportWizard from './ImportWizard'
 
 const CSV = ['roaster,bean_name,roast_level', 'Blue Tokai,Attikan Estate,Medium', 'solo,,'].join('\n')
 
+function renderWizard() {
+  return render(
+    <MemoryRouter>
+      <ImportWizard />
+    </MemoryRouter>,
+  )
+}
+
 async function uploadCsvAndPreview() {
-  const { container } = render(<ImportWizard />)
+  const { container } = renderWizard()
   const input = container.querySelector('#import-csv') as HTMLInputElement
   const file = new File([CSV], 'import.csv', { type: 'text/csv' })
   fireEvent.change(input, { target: { files: [file] } })
@@ -44,7 +56,7 @@ beforeEach(() => {
 
 describe('ImportWizard — accessible stepper', () => {
   it('renders segmented progress with the current step marked', () => {
-    render(<ImportWizard />)
+    renderWizard()
     const nav = screen.getByRole('navigation', { name: /import progress/i })
     expect(nav).toBeInTheDocument()
     for (const label of ['Upload', 'Preview', 'Done']) {
@@ -52,6 +64,20 @@ describe('ImportWizard — accessible stepper', () => {
     }
     const current = nav.querySelector('[aria-current="step"]')
     expect(current).toHaveTextContent('Upload')
+  })
+})
+
+describe('ImportWizard — tone action contract', () => {
+  it('renders the example CSV action through the tone secondary/edit grammar', () => {
+    const { container } = renderWizard()
+    const link = screen.getByTestId('import-example-csv-link')
+
+    expect(link).toHaveClass('kk-tc-btn')
+    expect(link).toHaveClass('kk-tc-btn--edit')
+    for (const forbidden of ['btn', 'btn-outline', 'btn-sm', 'btn-bevel']) {
+      expect(link.classList.contains(forbidden)).toBe(false)
+      expect(container.querySelector(`.${forbidden}`)).toBeNull()
+    }
   })
 })
 

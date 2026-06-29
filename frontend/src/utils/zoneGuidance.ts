@@ -11,15 +11,15 @@
 // All 9 keys below match these exact strings character-for-character (case, spacing, & symbol).
 
 const ZONE_GUIDANCE: Readonly<Record<string, string>> = {
-  'Sweet & balanced':    'Ideal extraction — ratio 1.7–2.3, time 25–35 s. Keep these parameters.',
-  'Bitter':              'Over-extracted — try a coarser grind or reduce shot time by 3–5 s.',
-  'Harsh & bitter':      'Strongly over-extracted — coarsen grind and pull a shorter, tighter ratio.',
-  'Weak & bitter':       'High ratio + slow pull — the puck may be channelling. Adjust dose or distribution, then try a coarser grind.',
-  'Sour':                'Under-extracted — try a finer grind or extend shot time by 3–5 s.',
-  'Weak & sour':         'Under-extracted and diluted — grind finer and lower your brew ratio (less yield).',
-  'Astringent & sour':   'Uneven extraction — check distribution and levelling, then grind slightly finer.',
-  'Bitter & astringent': 'Over-extracted with high yield — coarsen grind and reduce your yield (lower ratio).',
-  'Weak & sweet':        'Good taste but too diluted — reduce yield slightly (aim for ratio ≤ 2.3).',
+  'Sweet & balanced':    'Dialled in — ratio and time are in the ideal window. Keep these parameters.',
+  'Bitter':              'Grind too fine for this ratio — go one step coarser to cut extraction.',
+  'Harsh & bitter':      'Strongly over-extracted — coarsen the grind, then reduce yield if still harsh.',
+  'Weak & bitter':       'Fast shot at high ratio — check for channeling. Improve distribution, then lower yield.',
+  'Sour':                'Grind too coarse for this ratio — go one step finer to raise extraction.',
+  'Weak & sour':         'Under-extracted and thin — grind finer: it raises both strength and extraction at once.',
+  'Astringent & sour':   'Uneven extraction — improve puck distribution and tamp before touching the grind.',
+  'Bitter & astringent': 'Over-extracted at high yield — reduce yield first, then coarsen if still bitter.',
+  'Weak & sweet':        'Good flavour, under-strength — reduce yield on the next shot to concentrate it.',
 } as const
 
 /**

@@ -33,7 +33,12 @@ describe('Sidebar — brand appears once on desktop', () => {
         <Sidebar />
       </MemoryRouter>,
     )
+    const wordmarks = screen.getAllByLabelText('Kaapi Kadai')
     expect(screen.getAllByTestId('brand-mark')).toHaveLength(1)
-    expect(screen.getAllByText('Kaapi Kadai')).toHaveLength(1)
+    expect(wordmarks).toHaveLength(1)
+    expect(wordmarks[0].querySelector('.kk-sidebar-wordmark__kaapi')).toHaveTextContent('Kaapi')
+    expect(wordmarks[0].querySelector('.kk-sidebar-wordmark__kadai')).toHaveTextContent('Kadai')
+    expect(wordmarks[0].querySelector('svg')).toBeInTheDocument()
+    expect(wordmarks[0].querySelector('img')).toBeNull()
   })
 })

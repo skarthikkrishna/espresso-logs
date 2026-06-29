@@ -164,14 +164,17 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
                 onFocus={() => setFocusedTaste(zone.taste)}
                 onClick={() => onSelectZone?.(zone.taste)}
                 onKeyDown={(event) => handleGridKeyDown(event, index)}
+                onMouseMove={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect()
+                  e.currentTarget.style.setProperty('--glow-x', `${((e.clientX - rect.left) / rect.width) * 100}%`)
+                  e.currentTarget.style.setProperty('--glow-y', `${((e.clientY - rect.top) / rect.height) * 100}%`)
+                }}
               >
                 {computed && targetDot && (
                   <div
                     className="kk-compass-chart__recipe-marker-wrap"
-                    style={{ left: targetDot.left, top: targetDot.top }}
                     aria-hidden="true"
                   >
-                    <span className="kk-compass-chart__recipe-tag">Recipe</span>
                     <span className="kk-compass-chart__recipe-marker" />
                     {timeOutOfRange && (
                       <span className="kk-compass-chart__out-of-range">
@@ -181,10 +184,7 @@ export default function CompassChart({ doseG, yieldG, timeSec, selectedTaste, on
                   </div>
                 )}
                 {selected && (
-                  <>
-                    <span className="kk-compass-chart__taste-tag">Taste</span>
-                    <span className="kk-compass-chart__taste-marker" aria-hidden="true" />
-                  </>
+                  <span className="kk-compass-chart__taste-marker" aria-hidden="true" />
                 )}
                 <span className="kk-compass-chart__cell-label">
                   {labelParts.length === 2 ? <>{labelParts[0]} <span>&amp; {labelParts[1]}</span></> : zone.taste}

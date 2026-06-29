@@ -1,7 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Kaapi Kadai — filter coffee davara and tumbler">
-  <rect width="200" height="200" rx="44" fill="#1a1209"></rect>
-  <g transform="translate(100 100) scale(0.82) translate(-100 -94.5)" fill="#f5e6d3">
-    <g fill="none" stroke="#f5e6d3" stroke-linecap="round" stroke-width="6.5">
+  <g fill="currentColor">
+    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="6.5">
       <path d="M90 44 q-9 -9 0 -18 q9 -9 0 -18" opacity="0.5"></path>
       <path d="M110 44 q9 -9 0 -18 q-9 -9 0 -16" opacity="0.32"></path>
     </g>

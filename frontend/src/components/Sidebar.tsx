@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import HouseholdSwitcher from './HouseholdSwitcher'
 import { useAuth } from '../contexts/AuthContext'
 import { COPY } from '../copy'
+import { BrandMarkGlyph } from './brand/BrandMarkGlyph'
 
 interface NavItem {
   path: string
@@ -56,21 +57,21 @@ const monogramFor = (name: string): string =>
 export default function Sidebar() {
   const { user } = useAuth()
   const displayName = user?.display_name ?? user?.username ?? 'Profile'
+  const [kaapi = 'Kaapi', kadai = 'Kadai'] = COPY.shell.brand.split(' ')
 
   return (
     <aside
       data-testid="sidebar"
       className="nav-shell hidden h-full w-64 shrink-0 flex-col border-r lg:flex"
     >
-      <div className="flex items-center gap-3 px-6 py-6">
-        <img
-          src="/static/img/kaapi-kadai-mark.svg"
-          alt=""
-          className="h-8 w-8 shrink-0"
-          aria-hidden="true"
-          data-testid="brand-mark"
-        />
-        <span className="kk-sidebar-brand text-xl font-display font-bold">{COPY.shell.brand}</span>
+      <div className="px-6 py-6">
+        <span className="kk-sidebar-wordmark" aria-label={COPY.shell.brand}>
+          <span className="kk-sidebar-wordmark__word kk-sidebar-wordmark__kaapi">{kaapi}</span>
+          <span className="kk-sidebar-wordmark__medallion" aria-hidden="true" data-testid="brand-mark">
+            <BrandMarkGlyph className="kk-sidebar-wordmark__glyph" />
+          </span>
+          <span className="kk-sidebar-wordmark__word kk-sidebar-wordmark__kadai">{kadai}</span>
+        </span>
       </div>
 
       <HouseholdSwitcher variant="desktop" />
@@ -82,7 +83,7 @@ export default function Sidebar() {
             to={item.path}
             end={item.path === '/'}
             className={({ isActive }) =>
-              `kk-sidebar-nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-[var(--motion-duration-micro)] ${
+              `kk-sidebar-nav-link flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors duration-[var(--motion-duration-micro)] ${
                 isActive ? 'kk-sidebar-nav-link--active' : ''
               }`
             }
@@ -104,13 +105,13 @@ export default function Sidebar() {
         {user?.picture_url ? (
           <img src={user.picture_url} alt="" className="h-10 w-10 rounded-full object-cover" />
         ) : (
-          <span className="grid h-10 w-10 place-items-center rounded-full bg-amber-500/20 text-sm font-semibold text-amber-300" aria-hidden="true">
+          <span className="kk-sidebar-profile-monogram grid h-10 w-10 place-items-center rounded-full" aria-hidden="true">
             {monogramFor(displayName)}
           </span>
         )}
         <span className="min-w-0">
-          <span className="block truncate text-sm font-medium">{displayName}</span>
-          <span className="kk-sidebar-profile-label block text-xs">Profile</span>
+          <span className="kk-sidebar-profile-name block truncate">{displayName}</span>
+          <span className="kk-sidebar-profile-label block">Profile</span>
         </span>
       </NavLink>
 

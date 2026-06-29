@@ -9,6 +9,7 @@ import { COPY } from '../copy/registry'
 import type { BrewLogEntry } from '../types/entities'
 import { useAuth, useHouseholdQueryScope } from '../contexts/AuthContext'
 import { useKaapiMotion } from '../lib/motion'
+import { BrandMarkGlyph } from '../components/brand/BrandMarkGlyph'
 import { ToneProvider } from '../contexts/ToneContext'
 import {
   AddBagAction,
@@ -30,8 +31,11 @@ function HomeWordmark() {
   const [kaapi, kadai] = COPY.shell.brand.split(' ')
   return (
     <span className="kk-home-wordmark" aria-label={COPY.shell.brand}>
-      <span className="kk-home-wordmark__line kk-home-wordmark__kaapi">{kaapi}</span>
-      <span className="kk-home-wordmark__line kk-home-wordmark__kadai">{kadai}</span>
+      <span className="kk-home-wordmark__word kk-home-wordmark__kaapi">{kaapi}</span>
+      <span className="kk-home-wordmark__medallion" aria-hidden="true">
+        <BrandMarkGlyph className="kk-home-wordmark__glyph" />
+      </span>
+      <span className="kk-home-wordmark__word kk-home-wordmark__kadai">{kadai}</span>
     </span>
   )
 }

@@ -4,7 +4,6 @@ import { useGSAP } from '@gsap/react'
 import type { ZoneBoundaries } from '../utils/zoneBoundaries'
 import { buildExtractionCompassViewModel } from '../utils/extractionCompassViewModel'
 import { usePrefersReducedMotion } from '../lib/motion/usePrefersReducedMotion'
-import { COPY } from '../copy'
 
 gsap.registerPlugin(useGSAP)
 
@@ -37,20 +36,6 @@ export default function ExtractionReadout({ doseG, yieldG, timeSec, selectedTast
   return (
     <section id="extraction-compass-live-readout" className="kk-extraction-readout" data-testid="extraction-readout" aria-labelledby="extraction-readout-title">
       <p className="kk-extraction-readout__eyebrow" id="extraction-readout-title">Live guidance</p>
-      <div className="kk-extraction-readout__metric-grid" aria-label="Current extraction state">
-        <div className="kk-extraction-readout__metric">
-          <span className="kk-extraction-readout__metric-label">{COPY.brewLogDetail.extractionReadout.ratioLabel}</span>
-          <span className="kk-extraction-readout__metric-value">{model.ratioText ?? '—'}</span>
-        </div>
-        <div className="kk-extraction-readout__metric">
-          <span className="kk-extraction-readout__metric-label">{COPY.compass.computedDiagnosisLabel}</span>
-          <span className="kk-extraction-readout__metric-value">{model.computedTaste ?? (model.timeSec == null ? COPY.brewLogDetail.extractionReadout.timeNeeded : COPY.brewLogDetail.extractionReadout.unavailable)}</span>
-        </div>
-        <div className="kk-extraction-readout__metric">
-          <span className="kk-extraction-readout__metric-label">{COPY.compass.subjectiveTasteLabel}</span>
-          <span className="kk-extraction-readout__metric-value">{model.selectedTaste || COPY.compass.noTasteNote}</span>
-        </div>
-      </div>
       <p ref={guidanceRef} className="kk-extraction-readout__guidance" aria-live="polite">
         {model.primaryGuidanceText}
       </p>

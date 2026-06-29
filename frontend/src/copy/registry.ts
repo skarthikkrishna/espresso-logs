@@ -581,6 +581,7 @@ export const COPY = {
     progressAria: 'Import progress',
     title: 'Bring in your coffee data',
     importingInto: 'Importing into:',
+    csvFileLabel: 'CSV file',
     uploadFile: 'Upload file',
     uploadIntro:
       'Choose a CSV exported from your spreadsheet. Kaapi Kadai previews the file first, so you can fix rows before saving anything.',
