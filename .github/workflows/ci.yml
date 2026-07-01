@@ -19,7 +19,7 @@ jobs:
     outputs:
       should-run: ${{ steps.check.outputs.should-run }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Check for recent commits
@@ -39,7 +39,7 @@ jobs:
     needs: check-activity
     if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -51,7 +51,7 @@ jobs:
     needs: check-activity
     if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -63,7 +63,7 @@ jobs:
     needs: check-activity
     if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -75,7 +75,7 @@ jobs:
     needs: check-activity
     if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -87,7 +87,7 @@ jobs:
     needs: check-activity
     if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -99,7 +99,7 @@ jobs:
     needs: check-activity
     if: github.event_name != 'schedule' || needs.check-activity.outputs.should-run == 'true'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -135,7 +135,7 @@ jobs:
         ports:
           - 5432:5432
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -183,7 +183,7 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
         with:
           node-version: '20.19'
@@ -198,7 +198,7 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
         with:
           node-version: '20.19'
@@ -213,7 +213,7 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
         with:
           node-version: '20.19'
@@ -233,7 +233,7 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
         with:
           node-version: '20.19'
@@ -261,7 +261,7 @@ jobs:
     container:
       image: semgrep/semgrep:latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - run: semgrep --config=p/python --config=p/typescript --config=p/react --config=p/secrets --error .
 
   # ── Permanent secret scanning gate (12th required check) ────────────────
@@ -273,7 +273,7 @@ jobs:
       pull-requests: read
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: gitleaks/gitleaks-action@v3.0.0
