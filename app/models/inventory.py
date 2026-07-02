@@ -14,6 +14,13 @@ class InventoryBag(Base):
     """A bag of coffee beans in the household inventory."""
 
     __tablename__ = "inventory_bags"
+    __table_args__ = (
+        sa.UniqueConstraint(
+            "household_id",
+            "sheets_id",
+            name="uq_inventory_bags_household_sheets_id",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(as_uuid=True),
@@ -35,7 +42,7 @@ class InventoryBag(Base):
     weight_g: Mapped[float | None] = mapped_column(sa.Numeric(7, 1, asdecimal=False), nullable=True)
     purchase_url: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     notes: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
-    sheets_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True, unique=True)
+    sheets_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     sheets_catalog_id: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     beans: Mapped[str | None] = mapped_column(sa.Text, nullable=True)
     display_name: Mapped[str | None] = mapped_column(sa.Text, nullable=True)

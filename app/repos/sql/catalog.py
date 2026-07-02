@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.catalog import CatalogBean
-from app.repos.sql.tenant import row_household_id_or_context
+from app.repos.sql.tenant import household_read_scope, row_household_id_or_context
 
 
 class SqlCatalogRepo:
@@ -24,7 +24,10 @@ class SqlCatalogRepo:
         household_id = await row_household_id_or_context(self._db, row)
         if sheets_id:
             result = await self._db.execute(
-                select(CatalogBean).where(CatalogBean.sheets_id == sheets_id)
+                select(CatalogBean).where(
+                    CatalogBean.sheets_id == sheets_id,
+                    CatalogBean.household_id == household_id,
+                )
             )
             existing = result.scalar_one_or_none()
         else:
@@ -66,15 +69,23 @@ class SqlCatalogRepo:
         """No-op — Sheets row deletion has no SQL equivalent."""
 
     async def list(self) -> list[dict[str, Any]]:
-        """Return all catalog entries."""
-        result = await self._db.execute(select(CatalogBean))
+        """Return catalog entries for the active household."""
+        scope = await household_read_scope(self._db, CatalogBean)
+        if not scope.has_context:
+            return []
+        result = await self._db.execute(select(CatalogBean).where(scope.require_predicate()))
         rows = result.scalars().all()
         return [self._to_dict(row) for row in rows]
 
     async def get(self, catalog_id: str) -> dict[str, Any] | None:
-        """Fetch a single catalog entry by Sheets ID."""
+        """Fetch a single catalog entry by Sheets ID within the active household."""
+        scope = await household_read_scope(self._db, CatalogBean)
+        if not scope.has_context:
+            return None
         result = await self._db.execute(
-            select(CatalogBean).where(CatalogBean.sheets_id == catalog_id)
+            select(CatalogBean).where(
+                scope.require_predicate(), CatalogBean.sheets_id == catalog_id
+            )
         )
         row = result.scalar_one_or_none()
         return self._to_dict(row) if row else None

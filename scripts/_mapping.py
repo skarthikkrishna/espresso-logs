@@ -88,9 +88,10 @@ CATALOG_TABLE = sa.Table(
     sa.Column("notes", sa.Text(), nullable=True),
     sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
     # 0004 additions
-    sa.Column("sheets_id", sa.Text(), nullable=True, unique=True),
+    sa.Column("sheets_id", sa.Text(), nullable=True),
     sa.Column("product_url", sa.Text(), nullable=True),
     sa.Column("local_image_path", sa.Text(), nullable=True),
+    sa.UniqueConstraint("household_id", "sheets_id", name="uq_catalog_household_sheets_id"),
 )
 
 INVENTORY_BAGS_TABLE = sa.Table(
@@ -105,12 +106,17 @@ INVENTORY_BAGS_TABLE = sa.Table(
     sa.Column("notes", sa.Text(), nullable=True),
     sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
     # 0004 additions
-    sa.Column("sheets_id", sa.Text(), nullable=True, unique=True),
+    sa.Column("sheets_id", sa.Text(), nullable=True),
     sa.Column("beans", sa.Text(), nullable=True),
     sa.Column("display_name", sa.Text(), nullable=True),
     sa.Column("roast_level", sa.Text(), nullable=True),
     sa.Column("status", sa.Text(), nullable=True),
     sa.Column("storage_method", sa.Text(), nullable=True),
+    sa.UniqueConstraint(
+        "household_id",
+        "sheets_id",
+        name="uq_inventory_bags_household_sheets_id",
+    ),
 )
 
 HARDWARE_TABLE = sa.Table(
@@ -124,9 +130,10 @@ HARDWARE_TABLE = sa.Table(
     sa.Column("notes", sa.Text(), nullable=True),
     sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
     # 0004 additions
-    sa.Column("sheets_id", sa.Text(), nullable=True, unique=True),
+    sa.Column("sheets_id", sa.Text(), nullable=True),
     sa.Column("product_url", sa.Text(), nullable=True),
     sa.Column("local_image_path", sa.Text(), nullable=True),
+    sa.UniqueConstraint("household_id", "sheets_id", name="uq_hardware_household_sheets_id"),
 )
 
 MAINTENANCE_LOG_TABLE = sa.Table(
@@ -140,7 +147,12 @@ MAINTENANCE_LOG_TABLE = sa.Table(
     sa.Column("notes", sa.Text(), nullable=True),
     sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
     # 0004 additions
-    sa.Column("sheets_id", sa.Text(), nullable=True, unique=True),
+    sa.Column("sheets_id", sa.Text(), nullable=True),
+    sa.UniqueConstraint(
+        "household_id",
+        "sheets_id",
+        name="uq_maintenance_log_household_sheets_id",
+    ),
 )
 
 BREW_LOG_TABLE = sa.Table(
@@ -158,7 +170,7 @@ BREW_LOG_TABLE = sa.Table(
     sa.Column("brewed_at", sa.DateTime(timezone=True), nullable=True),
     sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
     # 0004 additions
-    sa.Column("sheets_id", sa.Text(), nullable=True, unique=True),
+    sa.Column("sheets_id", sa.Text(), nullable=True),
     sa.Column("bag_id", sa.Text(), nullable=True),
     sa.Column("machine_id", sa.Text(), nullable=True),
     sa.Column("grinder_id", sa.Text(), nullable=True),
@@ -168,6 +180,7 @@ BREW_LOG_TABLE = sa.Table(
     sa.Column("taste_summary", sa.Text(), nullable=True),
     sa.Column("ai_feedback", sa.Text(), nullable=True),
     sa.Column("storage_method", sa.Text(), nullable=True),
+    sa.UniqueConstraint("household_id", "sheets_id", name="uq_brew_log_household_sheets_id"),
 )
 
 # ---------------------------------------------------------------------------
@@ -478,7 +491,7 @@ async def bulk_upsert(
     table: sa.Table,
     rows: list[dict[str, Any]],
 ) -> int:
-    """Upsert rows into table, conflicting on sheets_id. Returns count of rows processed."""
+    """Upsert rows into table, conflicting on household-local sheets_id."""
     if not rows:
         return 0
     household_id = _single_household_id(rows)
@@ -491,7 +504,7 @@ async def bulk_upsert(
         stmt = pg_insert(table).values(rows)
         set_cols = {col: stmt.excluded[col] for col in rows[0] if col not in ("id", "created_at")}
         upsert_stmt = stmt.on_conflict_do_update(
-            index_elements=["sheets_id"],
+            index_elements=["household_id", "sheets_id"],
             set_=set_cols,
         )
         await conn.execute(upsert_stmt)

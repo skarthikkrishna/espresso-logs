@@ -822,7 +822,8 @@ def test_spec043_introduced_no_schema_or_roast_ownership_migration() -> None:
         "0013_refresh_token_rotated_at",
         "0014_brew_log_idempotency_rls",
         "0015_spec040_link_token_contracts",
-        "0016_add_hardware_maker",
+        "0016_per_household_sheets_id_uniqueness",
+        "0017_add_hardware_maker",
     }
     version_dir = Path("alembic/versions")
     actual_versions = {path.stem for path in version_dir.glob("*.py") if path.name != "__init__.py"}

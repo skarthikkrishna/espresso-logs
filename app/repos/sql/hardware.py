@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.hardware import Hardware
-from app.repos.sql.tenant import current_household_id, row_household_id_or_context
+from app.repos.sql.tenant import household_read_scope, row_household_id_or_context
 
 
 def _to_date(val: Any) -> datetime.date | None:
@@ -30,10 +30,12 @@ class SqlHardwareRepo:
         sheets_id = row.get("Hardware_ID")
         household_id = await row_household_id_or_context(self._db, row)
         if sheets_id:
-            q = select(Hardware).where(Hardware.sheets_id == sheets_id)
-            if household_id is not None:
-                q = q.where(Hardware.household_id == household_id)
-            result = await self._db.execute(q)
+            result = await self._db.execute(
+                select(Hardware).where(
+                    Hardware.sheets_id == sheets_id,
+                    Hardware.household_id == household_id,
+                )
+            )
             existing = result.scalar_one_or_none()
         else:
             existing = None
@@ -76,23 +78,24 @@ class SqlHardwareRepo:
         return ""
 
     async def list(self, category: str | None = None) -> list[dict[str, Any]]:
-        """Return hardware items, optionally filtered by category."""
-        q = select(Hardware)
-        household_id = await current_household_id(self._db)
-        if household_id is not None:
-            q = q.where(Hardware.household_id == household_id)
+        """Return active-household hardware items, optionally filtered by category."""
+        scope = await household_read_scope(self._db, Hardware)
+        if not scope.has_context:
+            return []
+        q = select(Hardware).where(scope.require_predicate())
         if category is not None:
             q = q.where(Hardware.category == category)
         result = await self._db.execute(q)
         return [self._to_dict(r) for r in result.scalars().all()]
 
     async def get(self, hardware_id: str) -> dict[str, Any] | None:
-        """Fetch a single hardware item by Sheets Hardware_ID."""
-        q = select(Hardware).where(Hardware.sheets_id == hardware_id)
-        household_id = await current_household_id(self._db)
-        if household_id is not None:
-            q = q.where(Hardware.household_id == household_id)
-        result = await self._db.execute(q)
+        """Fetch a single hardware item by Sheets Hardware_ID within the active household."""
+        scope = await household_read_scope(self._db, Hardware)
+        if not scope.has_context:
+            return None
+        result = await self._db.execute(
+            select(Hardware).where(scope.require_predicate(), Hardware.sheets_id == hardware_id)
+        )
         row = result.scalar_one_or_none()
         return self._to_dict(row) if row else None
 

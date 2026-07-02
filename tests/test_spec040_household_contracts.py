@@ -96,7 +96,8 @@ def _fake_invitation(
     invitation.invited_email = invited_email
     invitation.invited_role = "member"
     invitation.status = status
-    invitation.invited_at = datetime.datetime(2026, 6, 9, tzinfo=UTC)
+    # Anchor to now so this valid pending invite never becomes a wall-clock time-bomb.
+    invitation.invited_at = datetime.datetime.now(tz=UTC)
     invitation.expires_at = invitation.invited_at + datetime.timedelta(hours=72)
     invitation.accepted_at = None
     invitation.revoked_at = None

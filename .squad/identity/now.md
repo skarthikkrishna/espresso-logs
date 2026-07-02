@@ -85,3 +85,20 @@ This file has:
 - Nothing has been pushed. All work is local.
 - Before any push: run all four local CI-equivalent checks (`ruff check`, `ruff format --check`, `mypy --strict`, pytest). All four must pass. Then ask operator explicitly for push approval.
 - No push, PR, or deploy authorized until explicit operator approval.
+
+---
+
+## Preserved record — spec-042 US3 session close (2026-06-13, merged from household_fixes)
+
+> Carried across the `household_fixes` → `feat/043-design-coherence` merge because this branch's
+> `now.md` superseded the spec-042 close state before it reached any ledger. Historical record only;
+> the live state is the spec-043 PAUSED section above.
+
+- Branch at close: `household_test_fixtures`, forked from `household_fixes`.
+- Focus completed: spec-042 US3 app-layer tenant-isolation remediation plus the spec-040 invitation-fixture fix across `espresso-logs` and the spec repo.
+- Completed spec-042 read-scoping tasks T027-T033: `HouseholdReadScope` helper; catalog, inventory, hardware, maintenance, and brew-log read and join scoping; startup and readiness runtime RLS assertions.
+- Completed SQL isolation coverage, RLS metadata checks, dashboard/defaults/fresh-household isolation coverage, and CI gate work for T034-T037 and T040.
+- Completed the spec-040 invitation-fixture time-bomb fix.
+- Completed per-household composite `sheets_id` uniqueness migration 0016 and write-path scoping for T038-T039 via Maya decision, Priya clarify, Quinn gate, and Alex implementation.
+- Verification at close: ruff check, ruff format check, and mypy strict all passed; pytest 824 passed / 0 failed / 13 skipped; coverage 86.75%; Playwright 167 passed / 1 skipped.
+- PR `skarthikkrishna/espresso-logs#117` was opened against `household_fixes`; GitHub CI only runs on PRs to `main`, so local CI-parity plus Playwright were the gate for that branch.
