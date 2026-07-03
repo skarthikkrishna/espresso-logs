@@ -1,7 +1,7 @@
 import type { RefObject } from 'react'
 import { gsap } from 'gsap'
 import { useGSAP } from '@gsap/react'
-import { kaapiEase, kaapiMotionTokens } from './tokens'
+import { kaapiEase, kaapiGrammarEase, kaapiMotionDepth, kaapiMotionGrammar, kaapiMotionTokens } from './tokens'
 import { usePrefersReducedMotion } from './usePrefersReducedMotion'
 
 gsap.registerPlugin(useGSAP)
@@ -91,6 +91,42 @@ export function useKaapiMotion(options: UseKaapiMotionOptions = {}) {
     return gsap.to(target, { scale: 0.96, duration: kaapiMotionTokens.quick, ease: kaapiEase.out, yoyo: true, repeat: 1, clearProps: 'transform' })
   })
 
+  // ── spec-043 T006: named-grammar reveals (clip/text) + section stagger ──────
+  const clipDistance = `${kaapiMotionDepth.clipRevealDistanceEm}em`
+
+  const clipReveal = contextSafe((target: MotionTarget) => {
+    if (prefersReducedMotion) {
+      return setFinal(target, { opacity: 1, y: 0, clipPath: 'inset(0 0 0% 0)', clearProps: 'transform,clipPath' })
+    }
+    return gsap.fromTo(
+      target,
+      { opacity: 0, y: clipDistance, clipPath: 'inset(0 0 100% 0)' },
+      { opacity: 1, y: 0, clipPath: 'inset(0 0 0% 0)', duration: kaapiMotionGrammar.enter, ease: kaapiGrammarEase.emphasized, clearProps: 'transform,clipPath' },
+    )
+  })
+
+  const textReveal = contextSafe((target: MotionTarget, stagger: number = kaapiMotionGrammar.staggerSection) => {
+    if (prefersReducedMotion) {
+      return setFinal(target, { opacity: 1, y: 0, clipPath: 'inset(0 0 0% 0)', clearProps: 'transform,clipPath' })
+    }
+    return gsap.fromTo(
+      target,
+      { opacity: 0, y: clipDistance, clipPath: 'inset(0 0 100% 0)' },
+      { opacity: 1, y: 0, clipPath: 'inset(0 0 0% 0)', duration: kaapiMotionGrammar.enter, stagger, ease: kaapiGrammarEase.emphasized, clearProps: 'transform,clipPath' },
+    )
+  })
+
+  const sectionStagger = contextSafe((target: MotionTarget) => {
+    if (prefersReducedMotion) {
+      return setFinal(target, { opacity: 1, y: 0, clearProps: 'transform' })
+    }
+    return gsap.fromTo(
+      target,
+      { opacity: 0, y: 16 },
+      { opacity: 1, y: 0, duration: kaapiMotionGrammar.enter, stagger: kaapiMotionGrammar.staggerSection, ease: kaapiGrammarEase.standard, clearProps: 'transform' },
+    )
+  })
+
   return {
     prefersReducedMotion,
     routeEnter,
@@ -99,5 +135,8 @@ export function useKaapiMotion(options: UseKaapiMotionOptions = {}) {
     modalOpen,
     detailOnSelect,
     pressFeedback,
+    clipReveal,
+    textReveal,
+    sectionStagger,
   }
 }

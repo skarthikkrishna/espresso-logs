@@ -1,0 +1,11 @@
+{
+  "toneFlatteningAllowlist": [
+    {
+      "family": "primary-btn",
+      "owner": "Aria",
+      "spec": "spec-043",
+      "reason": "Operator explicitly directed 'Leave the CTA as is'; Aria preserves the accepted amber primary CTA across dark and beige tones. Contrast remains AA in both tones, so this is an intentional brand/CTA exception rather than accidental tone flattening.",
+      "expires": "only if the operator reopens primary CTA design"
+    }
+  ]
+}

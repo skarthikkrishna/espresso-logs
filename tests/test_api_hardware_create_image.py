@@ -7,10 +7,11 @@ import json
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from fastapi import HTTPException
 from httpx import ASGITransport, AsyncClient
 from itsdangerous import TimestampSigner
 
-from app.deps import get_llm_client, get_sheets_client
+from app.deps import current_household_membership, get_llm_client, get_sheets_client
 from app.main import app
 from app.repos.base import get_process_cache
 from app.routers.api_hardware import _hw_to_out
@@ -238,6 +239,83 @@ async def test_create_with_invalid_product_url_scheme():
         )
 
     assert resp.status_code == 422
+
+
+async def test_upload_hardware_image_success_uses_existing_store_without_external_call():
+    """POST /api/hardware/{id}/image validates and returns the stored image path."""
+    with patch(
+        "app.routers.api_hardware.upload_image",
+        new_callable=AsyncMock,
+        return_value="/static/uploads/hardware-test.png",
+    ) as mock_upload:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post(
+                "/api/hardware/M01/image",
+                files={"file": ("machine.png", b"\x89PNG\r\n\x1a\n", "image/png")},
+                cookies={"session": _AUTHED_COOKIE},
+            )
+
+    assert resp.status_code == 200
+    assert resp.json() == {"image_path": "/static/uploads/hardware-test.png"}
+    mock_upload.assert_awaited_once()
+    args = mock_upload.await_args.args
+    assert args[0] == b"\x89PNG\r\n\x1a\n"
+    assert args[1] == "image/png"
+    assert args[2].startswith("hardware-images/M01-")
+
+
+async def test_upload_hardware_image_rejects_invalid_file_without_storage_call():
+    """Upload validation rejects non-image files before storage is invoked."""
+    with patch("app.routers.api_hardware.upload_image", new_callable=AsyncMock) as mock_upload:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post(
+                "/api/hardware/M01/image",
+                files={"file": ("not-image.txt", b"not image", "text/plain")},
+                cookies={"session": _AUTHED_COOKIE},
+            )
+
+    assert resp.status_code == 422
+    assert resp.json()["detail"] == "file must be a JPEG, PNG, or WebP image."
+    mock_upload.assert_not_awaited()
+
+
+async def test_upload_hardware_image_returns_not_found_without_storage_call():
+    """Unknown hardware IDs return 404 and do not attempt image storage."""
+    with patch("app.routers.api_hardware.upload_image", new_callable=AsyncMock) as mock_upload:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post(
+                "/api/hardware/M99/image",
+                files={"file": ("machine.jpg", b"\xff\xd8\xff", "image/jpeg")},
+                cookies={"session": _AUTHED_COOKIE},
+            )
+
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "Hardware item not found"
+    mock_upload.assert_not_awaited()
+
+
+async def test_upload_hardware_image_requires_household_authorization():
+    """The endpoint uses the household auth dependency before touching storage."""
+
+    async def _forbid_membership():
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    app.dependency_overrides[current_household_membership] = _forbid_membership
+    try:
+        with patch("app.routers.api_hardware.upload_image", new_callable=AsyncMock) as mock_upload:
+            async with AsyncClient(
+                transport=ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                resp = await client.post(
+                    "/api/hardware/M01/image",
+                    files={"file": ("machine.webp", b"RIFFxxxxWEBP", "image/webp")},
+                    cookies={"session": _AUTHED_COOKIE},
+                )
+    finally:
+        app.dependency_overrides.pop(current_household_membership, None)
+
+    assert resp.status_code == 403
+    mock_upload.assert_not_awaited()
 
 
 async def test_hw_to_out_reads_local_image_path():

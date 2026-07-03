@@ -142,6 +142,36 @@ describe('Button — icon prop', () => {
   })
 })
 
+describe('Button — bevel contract (T004 — shared shadow/radius source)', () => {
+  // index.css drives the actual box-shadow/border-radius from tokens on .btn-bevel,
+  // so every variant carrying .btn-bevel shares an identical computed bevel. jsdom
+  // does not apply external CSS, so we assert the class-level contract hook here.
+  it('primary, secondary and outline all carry the shared btn-bevel hook', () => {
+    const beveled = ['primary', 'secondary', 'outline'] as const
+    for (const variant of beveled) {
+      const { unmount } = render(<Button variant={variant}>{variant}</Button>)
+      expect(screen.getByRole('button', { name: variant })).toHaveClass('btn-bevel')
+      unmount()
+    }
+  })
+
+  it('flat variants (ghost, danger) do NOT carry btn-bevel', () => {
+    const flat = ['ghost', 'danger'] as const
+    for (const variant of flat) {
+      const { unmount } = render(<Button variant={variant}>{variant}</Button>)
+      expect(screen.getByRole('button', { name: variant })).not.toHaveClass('btn-bevel')
+      unmount()
+    }
+  })
+
+  it('disabled beveled button keeps the btn-bevel hook (CSS zeroes its shadow)', () => {
+    render(<Button variant="primary" disabled>Save</Button>)
+    const btn = screen.getByRole('button', { name: 'Save' })
+    expect(btn).toHaveClass('btn-bevel')
+    expect(btn).toBeDisabled()
+  })
+})
+
 describe('Button — forwardRef', () => {
   it('forwards ref to the underlying <button> DOM element', () => {
     const ref = createRef<HTMLButtonElement>()

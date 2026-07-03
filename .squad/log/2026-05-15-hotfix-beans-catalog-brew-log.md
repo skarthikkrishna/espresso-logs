@@ -66,7 +66,7 @@ The initial migrate step was attempting to read `DATABASE_URL` from the `APP_SEC
 - Destructured `isError` from `useQuery` for the inventory query
 - Added inline error / retry prompt when inventory query fails (was silent, rendered empty dropdown)
 
-### tf-infra (PR #26 — merged)
+### infra repo (PR #26 — merged)
 
 **`secrets.tf`** — new resource: `cloudbuild_database_url_accessor`
 - `roles/secretmanager.secretAccessor` on `DATABASE_URL` secret for Cloud Build SA
@@ -83,7 +83,7 @@ The initial migrate step was attempting to read `DATABASE_URL` from the `APP_SEC
 1. Initial investigation — Priya routed as DIRECT_PERMITTED (three bounded frontend/config bugs)
 2. Backend investigation revealed DATABASE_URL injection gap in `cloudbuild.yaml`
 3. Tariq identified IAM prerequisite — Cloud Build SA lacked `secretAccessor` + `cloudsql.client`
-4. tf-infra PR #26 opened, merged, `terraform apply` run — IAM grants materialised
+4. infra repo PR #26 opened, merged, `terraform apply` run — IAM grants materialised
 5. Migration 0006 applied manually to production database
 6. `cloudbuild.yaml` fixed (DATABASE_URL injection + migrate step)
 7. Frontend fixes: `AddBeanModal` validation, `BrewLogAdd` error state
@@ -105,7 +105,7 @@ The initial migrate step was attempting to read `DATABASE_URL` from the `APP_SEC
 ## Artifacts
 
 - **Decisions inbox merged:** 5 files → `.squad/decisions.md`
-- **tf-infra PR:** #26 (merged)
+- **infra repo PR:** #26 (merged)
 - **espresso-logs PR:** #73 (open)
 - **Commit range (espresso-logs):** see PR #73
-- **tf-infra commit:** `23d1236`
+- **infra repo commit:** `23d1236`

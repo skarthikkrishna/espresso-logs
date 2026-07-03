@@ -1,0 +1,22 @@
+# Spec-043 evidence database — isolated from the operator dev database.
+# Start/stop with `make spec043-evidence-up` / `make spec043-evidence-down`.
+services:
+  spec043-evidence-db:
+    image: postgres:15
+    container_name: espresso-logs-spec043-evidence-db
+    environment:
+      POSTGRES_USER: espresso
+      POSTGRES_PASSWORD: espresso
+      POSTGRES_DB: spec043_evidence
+    ports:
+      - "5433:5432"
+    volumes:
+      - espresso_logs_spec043_evidence_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U espresso -d spec043_evidence"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  espresso_logs_spec043_evidence_data:

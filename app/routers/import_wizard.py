@@ -30,7 +30,7 @@ from app.services.importer import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(dependencies=[Depends(require_admin)])
+router = APIRouter(prefix="/api/import", dependencies=[Depends(require_admin)])
 
 _IMPORT_SESSION_COOKIE = "import_session_id"
 _IMPORT_FILE_PREFIX = "coffee_import_"
@@ -187,7 +187,7 @@ async def _enrich_catalog_images(
     return list(await asyncio.gather(*[_enrich_one(row) for row in catalog_rows]))
 
 
-@router.get("/import")
+@router.get("")
 async def start_import_wizard(
     response: Response,
     membership: HouseholdMember = Depends(require_admin),
@@ -204,7 +204,7 @@ async def start_import_wizard(
         httponly=True,
         secure=True,
         samesite="lax",
-        path="/import",
+        path="/api/import",
         max_age=7200,
     )
     return {"session_id": str(import_session.id)}

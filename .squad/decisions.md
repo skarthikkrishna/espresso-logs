@@ -1,5 +1,50 @@
 # Decisions Archive
 
+
+## 2026-06-13: Spec-043 T008 Hardware Image Upload Closeout
+
+### Decision: Tariq routing — implementation fan-out authorized (Spec-043)
+- **Agent:** Tariq
+- **Date:** 2026-06-13T20:49:25-07:00
+- **Status:** MERGED
+- **Classification:** IMPLEMENTATION_AUTHORIZED
+- **Source drop:** `.squad/decisions/inbox/20260613T204925-0700-spec043-implementation-routing.md`
+- **Scope:** Proceed with Spec-043 implementation fan-out from the committed espresso-logs handoff summary after Aria and Quinn gates were recorded as green.
+- **Carried constraints:** Preserve ambient-token source-of-truth notes, enforce copy allowlists at render and accessibility sinks, manage browser-matrix runtime deliberately, keep artifacts sanitized, and do not push, open a PR, deploy, or publish artifacts during implementation waves.
+- **Outcome:** This decision authorized implementation work only; it did not authorize external publication or repository push.
+
+### Decision: Alex routing — DIRECT_PERMITTED (Spec-043 T008 backend image upload)
+- **Agent:** Alex
+- **Date:** 2026-06-13T21:00:36-07:00
+- **Status:** MERGED
+- **Classification:** DIRECT_PERMITTED
+- **Source drop:** `.squad/decisions/inbox/20260613T210036-0700-spec043-t008-alex-routing.md`
+- **Scope:** Implement the bounded backend/API hardware image upload contract for T008 using existing authorization, repository, validation, and typed response patterns.
+- **Permitted work:** Add `POST /api/hardware/{id}/image`, update the hardware image field through existing abstractions, return typed image/hardware response data, and add focused tests without external storage dependencies.
+- **Out of scope:** Image-store redesign, schema migration, auth or household-model redesign, infrastructure changes, deployment, pushing, PR creation, or external artifact publication.
+- **Outcome:** T008 implementation was completed locally in the preceding application commit with backend tests added; no push, PR, or deployment occurred.
+
+### Decision: Tariq routing — DIRECT_PERMITTED (PR #108 process and CI triage items)
+- **Agent:** Tariq
+- **Date:** 2026-06-07
+- **Status:** MERGED
+- **Classification:** DIRECT_PERMITTED
+- **Source drops:** `.squad/decisions/inbox/20260607-130425-pr-routing.md`, `.squad/decisions/inbox/20260607-131119-pr108-ci-test-failure-routing.md`, `.squad/decisions/inbox/20260607-132654-tariq-route-pr108-session-close.md`, `.squad/decisions/inbox/20260607-133133-pr108-ci-triage-recovery-routing.md`, `.squad/decisions/inbox/20260607-1335-pr108-ci-routing.md`
+- **Scope:** Process-only PR workflow, CI failure triage, RCA/session closure, and bounded CI role-separation remediation routing for PR #108.
+- **Key decision:** Direct triage and bounded CI/process remediation were permitted; product, frontend, application behavior, deployment, merge, review request, production data, and secret access remained out of scope.
+- **Validation constraint:** Any eventual push still required the full local CI-equivalent check suite and explicit operator approval.
+- **Sanitization note:** Archived summary omits local filesystem paths, database connection details, external run identifiers, and other operational identifiers from the source drops.
+
+### Decision: Alex routing — DIRECT_PERMITTED (PR #109 bounded remediation)
+- **Agent:** Alex
+- **Date:** 2026-06-07
+- **Status:** MERGED
+- **Classification:** DIRECT_PERMITTED
+- **Source drops:** `.squad/decisions/inbox/20260607T142439-0700-pr109-alex-routing.md`, `.squad/decisions/inbox/20260607T143708-0700-pr109-main-conflict-routing.md`
+- **Scope:** Bounded remediation and conflict resolution for the existing PR #109 backend/API hardening work.
+- **Permitted work:** Preserve fail-closed catalog image upload validation, preserve fail-closed persistence-unavailable behavior, resolve main-branch conflicts, and run directly relevant tests/checks.
+- **Out of scope:** Unrelated API or UI behavior, schema changes, production operations, deployment, merge, or push without the required validation and operator approval.
+- **Sanitization note:** Archived summary omits repository-local absolute paths and external URLs from the source drops.
 ## 2026-06-13: Spec-042 US3 Isolation and Sheets ID Closeout Decisions
 
 ### Decision Drop: Alex Routing Decision — spec-042 remediation
@@ -741,6 +786,7 @@ Existing Quinn internal review context suffices for this bounded PR remediation 
 - **Scope:** Bounded recovery for already-approved Spec-039 implementation/validation blockers only.
 - **Permitted owners:** Alex for backend/API/test remediation, Finn for frontend/UI/cache/accessibility remediation, Quinn for E2E harness/selectors/fixture evidence and validation reruns.
 - **Out of scope:** New feature behavior, broad cache rewrites, production data/log/image access, deploys, pushes, or PR/review requests.
+- **Quinn gate:** Filesystem verification in `governance-hub` found `specs/039-ui-data-freshness-bug-evidence/quinn-gate.md`; frontmatter status was `APPROVED_WITH_NOTES`.
 - **Quinn gate:** Filesystem verification in the spec repo found `specs/039-ui-data-freshness-bug-evidence/quinn-gate.md`; frontmatter status was `APPROVED_WITH_NOTES`.
 - **Validation sequence:** Fix bounded blockers, rerun T32, then T33, then T34; pause for Tariq triage on any validation failure.
 
@@ -753,6 +799,7 @@ Existing Quinn internal review context suffices for this bounded PR remediation 
 - **Scope:** E2E harness and evidence remediation limited to `frontend/e2e/spec039-seed.ts`, `frontend/e2e/spec039-ui-data-freshness.spec.ts`, and `frontend/playwright.config.ts` only if browser-state isolation required it.
 - **Permitted fixes:** Protected API probes with active synthetic-session authorization, unambiguous Medium locator, session/browser-state hard-navigation stability, and seed-derived B07 dose expectation reconciliation.
 - **Out of scope:** Application behavior changes, backend/API changes, frontend product component changes, broad cache rewrites, non-Spec-039 tests, production/external provider access, deploys, pushes, or PR/review activity.
+- **Quinn gate:** Existing `governance-hub/specs/039-ui-data-freshness-bug-evidence/quinn-gate.md` was noted as `APPROVED_WITH_NOTES`; coordinator still had to verify the filesystem artifact before implementation.
 - **Quinn gate:** Existing the spec repo's `specs/039-ui-data-freshness-bug-evidence/quinn-gate.md` was noted as `APPROVED_WITH_NOTES`; coordinator still had to verify the filesystem artifact before implementation.
 - **Handling:** Preserve unrelated worktree changes; touch only scoped harness/config files for this remediation.
 
@@ -803,6 +850,9 @@ Existing Quinn internal review context suffices for this bounded PR remediation 
 - **Classification:** DIRECT_PERMITTED
 - **drop_id:** 20260607T025734-0700-finn-aria-gate-routing
 - **Source drop:** `.squad/decisions/inbox/20260607T025734-0700-finn-aria-gate-routing.md`
+- **Operator Request:** Aria must review the existing Spec-039 artifacts and create/commit only `governance-hub/specs/039-ui-data-freshness-bug-evidence/aria-gate.md`.
+- **Rationale:** This was a self-contained gate-artifact step over already-created `spec.md`, `plan.md`, and `compliance.md`; no new product scope, implementation, or app-repo change was authorized.
+- **Scope:** Create and commit only the Spec-039 Aria gate in `governance-hub`; do not modify `espresso-logs`, other SpecKit artifacts, or push.
 - **Operator Request:** Aria must review the existing Spec-039 artifacts and create/commit only the spec repo's `specs/039-ui-data-freshness-bug-evidence/aria-gate.md`.
 - **Rationale:** This was a self-contained gate-artifact step over already-created `spec.md`, `plan.md`, and `compliance.md`; no new product scope, implementation, or app-repo change was authorized.
 - **Scope:** Create and commit only the Spec-039 Aria gate in the spec repo; do not modify `espresso-logs`, other SpecKit artifacts, or push.
@@ -819,7 +869,12 @@ Existing Quinn internal review context suffices for this bounded PR remediation 
 - **Classification:** SPECKIT_REQUIRED
 - **drop_id:** 2026-06-06-tariq-squad-governance-spec-routing
 - **Operator Request:** Build a spec for cross-repo Squad governance covering: charter drift, CI debug loops, multi-repo parallel implementation, hub-and-spoke Squad model, privacy/security gates, retro ceremony with artifact pruning, and sustainable cleanup model.
-- **Rationale:** Multi-repo, cross-cutting governance touching new Squad protocols, per-repo Squad infrastructure, privacy/security gate definitions, retro ceremony design, and automation tradeoff. None are bounded single-file changes; all span three repos (the spec repo, `espresso-logs`, `tf-infra`).
+- **Rationale:** Multi-repo, cross-cutting governance touching new Squad protocols, per-repo Squad infrastructure, privacy/security gate definitions, retro ceremony design, and automation tradeoff. None are bounded single-file changes; all span three repos (`governance-hub`, `espresso-logs`, `the infra repo`).
+- **SpecKit Hub:** `governance-hub`. All gate artifacts land there. This drop is a local routing record in `espresso-logs` only.
+- **Scope:** Cross-repo charter normalization; hub-and-spoke handoff protocol; privacy/security gates; retro ceremony; artifact cleanup model; automation tradeoff.
+- **No-Push Constraint:** Binding. All commits local only.
+- **Outcome:** Priya specify + clarify complete (commits `e5ebd8d`, `f993f85` in `governance-hub-spec-038` worktree). Spec frontmatter `status: clarified`.
+- **Rationale:** Multi-repo, cross-cutting governance touching new Squad protocols, per-repo Squad infrastructure, privacy/security gate definitions, retro ceremony design, and automation tradeoff. None are bounded single-file changes; all span three repos (the spec repo, `espresso-logs`, the infra repo).
 - **SpecKit Hub:** the spec repo. All gate artifacts land there. This drop is a local routing record in `espresso-logs` only.
 - **Scope:** Cross-repo charter normalization; hub-and-spoke handoff protocol; privacy/security gates; retro ceremony; artifact cleanup model; automation tradeoff.
 - **No-Push Constraint:** Binding. All commits local only.
@@ -833,8 +888,8 @@ Existing Quinn internal review context suffices for this bounded PR remediation 
 - **drop_id:** 2026-06-06-spec038-tasks-routing
 - **Operator Request:** "Let's go for it — When will we start making changes to the other repos?"
 - **Rationale:** Active SpecKit cycle at tasks phase. Spec-038 specified + clarified + planned. `tasks.md` not yet committed; implementation not authorised in any repo.
-- **Scope:** `speckit.tasks` only. Zero implementation edits to espresso-logs or tf-infra permitted.
-- **Timing Answer:** Other repos (espresso-logs, tf-infra) begin receiving changes only after: (1) `tasks.md` committed, (2) Quinn gate approved, (3) `git ls-files` confirms gate file, (4) fan-out authorised. First writes: T012 (espresso-logs), T021 (tf-infra).
+- **Scope:** `speckit.tasks` only. Zero implementation edits to espresso-logs or the infra repo permitted.
+- **Timing Answer:** Other repos (espresso-logs, the infra repo) begin receiving changes only after: (1) `tasks.md` committed, (2) Quinn gate approved, (3) `git ls-files` confirms gate file, (4) fan-out authorised. First writes: T012 (espresso-logs), T021 (the infra repo).
 - **No-Push Constraint:** Binding. All commits local only.
 - **Outcome (this session):** Tariq generated `tasks.md` (commit `16f9300`); Quinn gate committed `quinn-gate.md` (commit `1418752`) with `status: APPROVED_WITH_NOTES`. Implementation fan-out not yet started.
 
@@ -1045,6 +1100,7 @@ SELECT rolname, rolbypassrls FROM pg_roles WHERE rolname = 'app_admin';
 If the row is absent, run:
 ```sql
 CREATE ROLE app_admin BYPASSRLS;
+GRANT app_admin TO app_runtime;
 GRANT app_admin TO <application_runtime_role>;
 ```
 as a Cloud SQL superuser before enabling RLS enforcement in the application.
@@ -1207,6 +1263,7 @@ because `Result[Any].rowcount` is not typed in SQLAlchemy's mypy stubs.
 ### tariq-p1-runbook-20260521-085119.md
 # P.1 Decision Drop — Runbook update
 
+**Task:** [P.1] Runbook update (from `governance-hub/specs/034-m5-household-roles/tasks.md`)
 **Task:** [P.1] Runbook update (from the spec repo's `specs/034-m5-household-roles/tasks.md`)
 
 **Owner:** Tariq (TPM)
@@ -1236,6 +1293,11 @@ Update M5 migration phase status in `docs/requirements/spec-kit_phases.md`:
 
 ### ✅ Verification Results
 
+**File:** `governance-hub/docs/requirements/spec-kit_phases.md`
+
+**M5 Row (current state):**
+```
+| M5 | Household, Roles & Sheets Write-Disable | 🟡 in progress | spec-034 · feat/034-m5-household-roles (espresso-logs) · spec/034-m5-household-roles (governance-hub) |
 **File:** `<the spec repo>/docs/requirements/spec-kit_phases.md`
 
 **M5 Row (current state):**
@@ -1246,6 +1308,7 @@ Update M5 migration phase status in `docs/requirements/spec-kit_phases.md`:
 **Status:** ✅ Correct. Matches P.1 acceptance criteria:
 - Status: `🟡 in progress` ✓
 - Branch names included: `feat/034-m5-household-roles` (espresso-logs) ✓
+- Branch names included: `spec/034-m5-household-roles` (governance-hub) ✓
 - Branch names included: `spec/034-m5-household-roles` (the spec repo) ✓
 - Spec number noted: `spec-034` ✓
 
@@ -1255,6 +1318,8 @@ Update M5 migration phase status in `docs/requirements/spec-kit_phases.md`:
 
 **Rationale:**
 - espresso-logs is the **application** repository (all app code)
+- governance-hub is the **specification** repository (specs, plans, tasks)
+- Progress tracking for migration phases logically belongs in governance-hub (single source of truth)
 - the spec repo is the **specification** repository (specs, plans, tasks)
 - Progress tracking for migration phases logically belongs in the spec repo (single source of truth)
 - No requirement identified to replicate this file in espresso-logs
@@ -1262,6 +1327,7 @@ Update M5 migration phase status in `docs/requirements/spec-kit_phases.md`:
 **Verification command outputs:**
 ```
 espresso-logs/docs/requirements/: engineering_architecture_v2.md, functional-spec-v2.md
+governance-hub/docs/requirements/: spec-kit_phases.md
 the spec repo's `docs/requirements/`: spec-kit_phases.md
 ```
 
@@ -1279,6 +1345,7 @@ Searched espresso-logs docs for phase/migration progress trackers:
 
 **Rationale:** 
 - P.1 was already completed as part of speckit.tasks phase
+- No uncommitted changes in espresso-logs or governance-hub
 - No uncommitted changes in espresso-logs or the spec repo
 - Both repos have clean working trees on their respective M5 branches
 - No new work is needed
@@ -1289,6 +1356,9 @@ Searched espresso-logs docs for phase/migration progress trackers:
 
 | Criterion | Status | Evidence |
 |-----------|--------|----------|
+| M5 row shows `🟡 in progress` | ✅ Pass | governance-hub line 699 |
+| Branch names noted (espresso-logs) | ✅ Pass | `feat/034-m5-household-roles` in Notes column |
+| Branch names noted (governance-hub) | ✅ Pass | `spec/034-m5-household-roles` in Notes column |
 | M5 row shows `🟡 in progress` | ✅ Pass | the spec repo line 699 |
 | Branch names noted (espresso-logs) | ✅ Pass | `feat/034-m5-household-roles` in Notes column |
 | Branch names noted (the spec repo) | ✅ Pass | `spec/034-m5-household-roles` in Notes column |
@@ -1300,12 +1370,14 @@ Searched espresso-logs docs for phase/migration progress trackers:
 
 ```bash
 # Expected: returns M5 row with 🟡 in progress
+cd <governance-hub-root>
 cd <the spec repo>
 grep "M5" docs/requirements/spec-kit_phases.md
 ```
 
 **Result:**
 ```
+| M5 | Household, Roles & Sheets Write-Disable | 🟡 in progress | spec-034 · feat/034-m5-household-roles (espresso-logs) · spec/034-m5-household-roles (governance-hub) |
 | M5 | Household, Roles & Sheets Write-Disable | 🟡 in progress | spec-034 · feat/034-m5-household-roles (espresso-logs) · spec/034-m5-household-roles (the spec repo) |
 ```
 
@@ -1317,6 +1389,7 @@ grep "M5" docs/requirements/spec-kit_phases.md
 
 **P.1 task status: COMPLETE**
 
+P.1 (Runbook update) was successfully completed as part of the speckit.tasks phase. The M5 row in the governance-hub progress tracker has been updated to `🟡 in progress` with all required branch names and spec number. No further action required.
 P.1 (Runbook update) was successfully completed as part of the speckit.tasks phase. The M5 row in the spec repo progress tracker has been updated to `🟡 in progress` with all required branch names and spec number. No further action required.
 
 ---
@@ -1416,6 +1489,7 @@ Alex is authorised to implement the following 7 backend items, no more, no less:
 ### CRITICAL — Security
 1. **Remove runtime BYPASSRLS grant; enforce FORCE ROW LEVEL SECURITY**
    - File: `alembic/versions/0007_m5_schema_corrections.py:146-171`
+   - Remove `GRANT app_admin TO app_runtime`; add `ALTER TABLE … FORCE ROW LEVEL SECURITY` where appropriate; extend RLS policies to `pending_invitations`, `guest_tokens`, `household_members`.
    - Remove `GRANT app_admin TO <application_runtime_role>`; add `ALTER TABLE … FORCE ROW LEVEL SECURITY` where appropriate; extend RLS policies to `pending_invitations`, `guest_tokens`, `household_members`.
    - Tests: integration tests must run under the non-bypass runtime role.
 
@@ -1475,6 +1549,7 @@ All four local checks must pass before any push:
 
 Two changes were assessed:
 
+1. **`alembic/versions/0007_m5_schema_corrections.py`** — Remove the `GRANT app_admin TO app_runtime` block; add `FORCE ROW LEVEL SECURITY` for each of the five tenant-scoped tables (alongside the existing `ENABLE ROW LEVEL SECURITY` statements); update `downgrade()` to mirror; add a comment block explaining why `BYPASSRLS` must never be granted to the runtime role.
 1. **`alembic/versions/0007_m5_schema_corrections.py`** — Remove the `GRANT app_admin TO <application_runtime_role>` block; add `FORCE ROW LEVEL SECURITY` for each of the five tenant-scoped tables (alongside the existing `ENABLE ROW LEVEL SECURITY` statements); update `downgrade()` to mirror; add a comment block explaining why `BYPASSRLS` must never be granted to the runtime role.
 
 2. **`app/routers/api_auth.py`** — Add shared-household boundary validation to `POST /auth/admin/reset-password` so an admin can only reset passwords for users who share the same household. Return 404 (not 403) if the target user is not a member of the caller's household, using `HouseholdRepo` (already imported) and the `household_id` available on the `HouseholdMember` returned by `require_admin`.
@@ -1489,6 +1564,9 @@ Two changes were assessed:
 
 #### Item 1 — Migration security hardening
 
+- The migration `0007` already exists and already contains both the `ENABLE RLS` block and the `GRANT app_admin TO app_runtime` block.
+- `FORCE ROW LEVEL SECURITY` is a complementary DDL modifier that prevents table owners from bypassing RLS policies. Adding it alongside `ENABLE RLS` is a security tightening of an already-defined intent, not a new feature.
+- Removing the `GRANT app_admin TO app_runtime` block removes a security gap introduced in the same migration: granting `BYPASSRLS` membership to the runtime role defeats the entire RLS model for tenant isolation.
 - The migration `0007` already exists and already contains both the `ENABLE RLS` block and the `GRANT app_admin TO <application_runtime_role>` block.
 - `FORCE ROW LEVEL SECURITY` is a complementary DDL modifier that prevents table owners from bypassing RLS policies. Adding it alongside `ENABLE RLS` is a security tightening of an already-defined intent, not a new feature.
 - Removing the `GRANT app_admin TO <application_runtime_role>` block removes a security gap introduced in the same migration: granting `BYPASSRLS` membership to the runtime role defeats the entire RLS model for tenant isolation.
@@ -1691,6 +1769,7 @@ The following scope is permitted under this decision:
 - Must follow `SPREADSHEET_ID=dummy` + `FakeSheetsClient` pattern (no live sheets in tests)
 - Must pass all four local CI checks before any push: `ruff check`, `ruff format --check`, `mypy --strict`, `pytest`
 - Must not push without explicit operator affirmative
+- Quinn gate (`specs/034/quinn-gate.md` in `governance-hub` repo) should be verified if this work is intended to formally close the QE mandate; if the gate doesn't yet exist, the implementation agent should flag this to the operator rather than proceeding to push
 - Quinn gate (`specs/034/quinn-gate.md` in the spec repo) should be verified if this work is intended to formally close the QE mandate; if the gate doesn't yet exist, the implementation agent should flag this to the operator rather than proceeding to push
 
 ## 2026-05-23
@@ -2469,6 +2548,9 @@ Decision drop generated 2026-06-05T14:00 PDT
 | **Date** | 2026-06-06 |
 | **Drop file** | `charter-reconciliation-20260606-tariq-scribe.md` |
 | **Agent** | Tariq (reconciliation trigger author) |
+| **Decision** | Tariq charter updated to `v3.1-espresso` (T015); Scribe charter updated to `v2.1-espresso` (T016). Both derived from `governance-hub` canonical versions. Zero type-(c) behavioral contradictions. Reconciliation complete for this cycle. Four type-(b) non-blocking stale items tracked in `charter-audit.md`. |
+| **Canonical refs** | Tariq: `governance-hub/.squad/agents/tariq/charter.md` v3.1; Scribe: `governance-hub/.squad/agents/scribe/charter.md` v2.1 |
+| **Next reconciliation trigger** | Any charter update to `governance-hub/.squad/agents/tariq/` or `scribe/` after commit `a01523d` |
 | **Decision** | Tariq charter updated to `v3.1-espresso` (T015); Scribe charter updated to `v2.1-espresso` (T016). Both derived from the spec repo canonical versions. Zero type-(c) behavioral contradictions. Reconciliation complete for this cycle. Four type-(b) non-blocking stale items tracked in `charter-audit.md`. |
 | **Canonical refs** | Tariq: the spec repo's `.squad/agents/tariq/charter.md` v3.1; Scribe: the spec repo's `.squad/agents/scribe/charter.md` v2.1 |
 | **Next reconciliation trigger** | Any charter update to the spec repo's `.squad/agents/tariq/` or `scribe/` after commit `a01523d` |
@@ -2489,3 +2571,626 @@ Decision drop generated 2026-06-05T14:00 PDT
 - **Rationale:** Bounded process/git correction for an already validated local work unit; no product scope or code behavior changed by the branch correction itself.
 - **Scope:** Create `fix/spec-039-production-readiness` from `origin/main`, cherry-pick the validated implementation and routing-drop commits, preserve local commits, and stop before any push.
 - **Outcome:** New branch `fix/spec-039-production-readiness` was created from `origin/main`; validated work was cherry-picked; Ralph resolved the `.squad/identity/now.md` conflict; an empty duplicate cherry-pick was skipped; no push, deploy, PR creation, production data access, or secrets access occurred.
+---
+
+---
+node_id: decision-spec043-aria-stage1-prototype-redo
+node_type: routing_decision
+spec_id: spec-043
+title: "Aria Stage-1 routing — prototype-first redo contract"
+created_at: 2026-06-14T16:12:35.074-07:00
+status: recorded
+owner: aria
+---
+
+# Aria Stage-1 routing — spec-043 prototype-first redo
+
+Decision: DIRECT_PERMITTED for Stage-1 design-contract authoring only.
+
+Scope confirmed: Catalog detail, Brew-log detail, and shared primitives used by those two pages. No application code, CSS, route implementation, session-close artifacts, or app-wide rollout are authorized by this decision.
+
+Rationale: the prior built UI was rejected as an incoherent half-migration. The corrective next step is a principle-led Aria contract that Finn can build from, with explicit assumptions and operator questions instead of silent invention.
+
+Contract artifact: written to the coordinator-provided session-state prototype folder as `aria-contract.md`.
+
+Binding handoff points for Finn:
+
+- readability is a system across surface, transparency, blur, color, contrast, density, and positioning;
+- use the ordered diagnostic: surface contract, layer discipline, scrim, density, color, de-redundancy;
+- retune `.btn-bevel` into a modern tactile button foundation instead of keeping heavy dark bevel shadows;
+- keep one canonical solid warm content surface for operational content;
+- preserve glass only as intentional chrome, overlay, modal, or sheet treatment;
+- stop and escalate uncovered cases rather than inventing unreviewed visual rules.
+
+Privacy gate check: this decision contains no credentials, service account identifiers, infrastructure identifiers, user PII, or operational topology details.
+
+---
+
+---
+spec_id: spec-043
+agent: Finn
+created_at: 2026-06-14T20:26:00-07:00
+status: implemented-local
+privacy_gate: reviewed
+---
+
+# spec-043 prototype redo — frontend implementation note
+
+Implemented the scoped prototype redo for Catalog detail and Brew-log detail only.
+
+- Catalog detail now uses the `kk-proto-043` scoped wrapper, a header readability zone, scoped prototype button/surface/chip treatments, and an intentional warm catalog placeholder with monogram secondary.
+- Brew-log detail now uses the same scoped wrapper and header treatment, an outline-danger Delete trigger, and a compact static extraction readout replacing the detail-page 3D extraction visualization.
+- `/brew-log/add` CompassChart keeps its existing layout, math, labels, click behavior, and guidance behavior; only the diagnostic color palette was harmonized.
+- New reusable extraction helpers preserve the existing default Compass ratio and zone behavior for detail readout use.
+
+Validation run locally in `frontend/`:
+
+1. `npm run lint` — passed
+2. `npm run build` — passed
+3. `npm test` — passed
+
+No sensitive operational identifiers or private data are included in this decision drop.
+
+---
+
+# Decision Drop — spec-043 Aria extraction visualization addendum
+
+Date: 2026-06-14T20:15:59.428-07:00
+Owner: Aria
+Scope: spec-043 prototype-first redo visual design addendum
+
+## Decision
+
+Appended `## 12. Stage-1 Addendum — operator decisions + extraction viz specs` to the Aria Stage-1 contract in the session-state artifact.
+
+Recorded operator decisions:
+
+1. Catalog demo imagery uses an intentional generic placeholder; no fake/demo asset sourcing.
+2. Extraction visualization is split: keep `/brew-log/add` CompassChart but harmonize colors; remove the Brew-log detail 3D lamp and replace with a compact readout.
+3. Long names wrap; no truncation.
+4. Delete uses readable outline-danger emphasis.
+5. Button feel remains the lighter-modern bevel for live operator judgement.
+6. Stage-2 approval is operator live localhost judgement, with screenshots still produced as evidence.
+
+## Visualization specs
+
+- **CompassChart:** keep the dark instrument-panel concept. Replace rainbow zone coloring with a diverging diagnostic palette: cool cyan/teal for under-extracted/sour, amber/gold for balanced/target, and restrained rust/red for over-extracted/bitter. Labels, gridlines, selected zone, and the live shot marker are specified for AA legibility on the dark panel.
+- **Brew-log detail:** do not render `ExtractionBrewVizMotion` / `ExtractionBrewViz3D` / `ExtractionBrewVizFallback` on the detail page. Replace with a compact static readout showing brew ratio (`yield / dose` formatted as `1:X.X`) and an extraction zone label derived from existing Compass zone logic.
+
+## Implementation boundary
+
+Prototype scope is Catalog detail + Brew-log detail + CompassChart color harmonization on `/brew-log/add` only. No other add-page changes and no other routes are authorized by this addendum.
+
+## Open questions surfaced
+
+1. Should the compact detail readout include the one-sentence `getZoneGuidance()` text, or only ratio + zone chip?
+2. If Brew-log detail has machine name but not roast level, should implementation use machine-specific time boundaries plus default ratio boundaries, or default both axes?
+
+---
+
+---
+spec_id: spec-043
+agent: Coordinator (directive capture)
+created_at: 2026-06-14T21:15:39-07:00
+status: operator-feedback-redirection
+privacy_gate: reviewed
+---
+
+# spec-043 prototype redo — operator review at the approval gate (REDIRECTION, not approval)
+
+Operator reviewed prototype commit `982e0b0` (Catalog detail + Brew-log detail) on local
+`http://localhost:8000`. Verdict: promising but not approved — another Aria→Finn prototype
+pass is required. Feedback captured verbatim, organized by page, so it survives chat truncation.
+
+## Catalog detail (screenshot eb6f42)
+
+- "The Roaster/Bean/Edit together do not need such a big card." — card is oversized for its content.
+- "I quite like how nice the card background looks." — KEEP the card background treatment.
+- "The Roast Level and Edit chip look incongruent to the frosted glass." — chips clash with the frosted surface.
+- "The roaster image and roaster link should've actually been on the main card. I don't know why they even split?" — un-split: roaster image + link belong on the main card.
+- "Add Bag and Finish Bag are not aligned." — alignment bug between the two buttons.
+- "Finish Bag button hover and highlight focus is nice, but the button squircle seems still like an alpha stage design." — hover/focus good; squircle shape looks unfinished.
+
+## Brew-log detail — extraction compass (screenshot 52f15a)
+
+- "The grid lines border is not required for the extraction compass — the rest of the compass is nicer." — remove the compass grid-line border; rest of compass is good.
+- "Hover over the more options is different here than hover over the finish bag button on the catalog detail page." — hover states are INCONSISTENT across pages; unify them.
+- "The card doesn't seem to have changed from before and it still seems incongruent from the rest of the page." — this card was not actually updated; still clashes.
+- "I'm beginning to think you might not be able to land my vision without some level of frosted/opaque/liquid glass type translucence. I was really hoping that we'd be able to land something with the color palette tonality, but you're not getting there." — pure solid color-tonality is NOT landing; translucence is wanted back.
+
+## Brew-log detail — the promising view (screenshot 597aaf)
+
+- "This actually shows me some promise towards the vision that we set out to." — closest to target so far.
+- "I still don't know if there is value in keeping frosted glass and the beige cards separate — can you show me something together? Like cream/beige, but with the slightest hint of translucence?" — KEY ASK: merge the two; cream/beige WITH a faint translucence, not separate systems.
+- "The font, color on the card, everything else is quite spot on." — typography + color on this card are correct; keep.
+- "The orange line above the brew ratio seems unnecessary? Was there text in white hidden behind it?" — investigate the orange line above brew ratio; possibly white text hidden behind it.
+- "You're being inconsistent with section/card headers — AI Summary feels like the summary text, not like a section header." — section/card header hierarchy is inconsistent; "AI Summary" reads as body, not a header.
+- "While the mobile view looks great, the page isn't responsively resizing to a desktop friendly size when I go full desktop. There's so much wasted space." — desktop responsiveness broken; mobile-good layout does not scale up; wasted space at full width.
+
+## Cross-cutting design hypothesis from operator
+
+- "If you choose to just have a frosted overlay on top of the bg-image, then you can actually avoid having cards and borders to make the page feel more open and expansive."
+  → Explore: a single frosted overlay over the background image MAY remove the need for cards/borders entirely, yielding a more open, expansive page.
+
+## Synthesized direction for the next prototype pass
+
+1. Bring back intentional translucence — pure solid cream tonality alone is not landing the vision.
+2. Prototype a MERGED surface: cream/beige with the slightest hint of translucence (one system, not frosted-glass-vs-beige split).
+3. Evaluate the frosted-overlay-on-bg-image option that lets the page drop cards/borders for openness.
+4. Fix concrete defects: oversized Roaster/Bean card; un-split roaster image+link onto main card; Add Bag/Finish Bag alignment; button squircle shape; compass grid-line border; cross-page hover-state consistency; orange line above brew ratio; section/card header hierarchy.
+5. Fix desktop responsiveness — the layout must scale from mobile to full desktop without wasted space.
+6. KEEP what works: catalog card background, the promising-view typography + color, Finish Bag hover/focus.
+
+## Notes
+
+- This is operator redirection at the prototype approval gate. No global rollout. Scope stays Catalog detail + Brew-log detail.
+- No push, PR, or deploy authorized. No sensitive identifiers in this drop.
+
+---
+
+---
+spec_id: spec-043
+agent: Coordinator (directive capture)
+created_at: 2026-06-14T23:00:00-07:00
+status: operator-correction
+privacy_gate: reviewed
+---
+
+# spec-043 — operator correction: Option B built wrong + Option A defects
+
+Operator reviewed the first Option B build (card-less attempt) live. Verdict: **implemented wrong.**
+Also gave actionable Option A defects. Captured verbatim so nothing is lost.
+
+## Option B was NOT what was asked — try again
+
+Operator, verbatim:
+- "Option B was not implemented correctly at all. The cardless approach would have leaned in with a frosted glass on the background image of the page, and had no card. This provides a bland, gray card on top of the image but is still a card nonetheless. I want you to try Option B again."
+
+### Root cause of the miss
+Aria's first Option B contract (§4.1) specified `.kk-proto-043.kk-b-overlay` as a CONTAINED pane: warm tint fill + `border-radius` + big `box-shadow` + centered `max-width` (42–54rem). Rendered, that is a discrete, bland, gray-ish CARD floating on the photo — still a card. That is the exact thing the operator did not want.
+
+### Corrected Option B vision (binding)
+1. The frosted glass is a **PAGE-LEVEL / FULL-BLEED** treatment over the route **background image** — NOT a contained pane.
+2. **No card at all:** no card box-shadow, no rounded floating panel, no narrow centered max-width that creates a visible card boundary on the page.
+3. Content sits **directly on the frosted page**.
+4. **Lean IN to liquid/frosted glass:** the route image must be genuinely visible THROUGH the frost (glass quality), not hidden behind an opaque, muddy cream/gray fill. The "bland gray" came from ~82% cream over the heavy dark route scrim = muddy. Fix it — reduce muddiness, let the image read as frosted glass, keep text legible via the system (blur + tint + localized scrim behind text + positioning), not via a card.
+
+## Option A defects (A itself was "a decent attempt", coherent + quality — keep that)
+
+Operator, verbatim:
+- "option A was a decent attempt and I appreciate the coherence and quality of work shown there except, surprisingly the top card - The buttons and chips were too cluttered together, and the hover color flip on the delete and edit shot buttons completely ruined the look and was illegible"
+
+Two concrete fixes (these ALSO apply to Option B's top action area / shared button language):
+1. **Top action area too cluttered** — the buttons and chips at the top are cramped together. Needs spacing / arrangement / hierarchy.
+2. **Delete & Edit shot buttons: hover color-flip is illegible** — the hover state inverts colors and "completely ruined the look and was illegible." Redesign these hover states to stay legible (no jarring inversion / contrast loss).
+
+## Next step
+- Aria re-specs Option B with the corrected full-bleed frosted-glass-on-page understanding + fixes the two button/clutter defects (shared with A's header).
+- Finn rebuilds Option B from the clean Option A baseline (commit 1eb24bd), discarding the first wrong-B implementation.
+- Option A is preserved at commit 1eb24bd. No push/PR/deploy. No sensitive identifiers in this drop.
+
+---
+
+---
+spec_id: spec-043
+agent: Coordinator (directive capture)
+created_at: 2026-06-15T05:00:00-07:00
+status: operator-correction
+privacy_gate: reviewed
+---
+
+# spec-043 — operator correction on Option B r2: the "takeover single card"
+
+Operator reviewed Option B r2 (full-bleed 62% cream frosted page) live. Verdict: progress in the
+right direction, but not there. Provided a reference image. Captured verbatim + analysis.
+
+## Operator feedback (verbatim)
+- "This is progress in the right direction, but still not all the way there."
+- "I'm saying either go beige or dark, frosted glass - Don't do white/gray for the background."
+- "The hero card for the brew log title is still not nice."
+- "I would rather that the entire page background have no card."
+- "And going back to the no gray thing, I'm adding a governance-hub/tmp/sample.jpeg to help you understand what I mean by a takeover single card. Notice that all text falls into a nice, single beveled frosted glass card rather than segregation."
+
+## Reference image
+Operator-provided reference preserved at:
+`~/.copilot/session-state/b1b751a3-2959-4b2a-b35f-1bb5c589aed4/files/spec043-prototype-v2/reference-takeover-card.jpeg`
+(source: governance-hub/tmp/sample.jpeg — ephemeral)
+
+### Coordinator analysis of the reference
+A landing-page composition ("Where Leavés Breathe"). Key structural cues the operator is pointing at:
+1. **ONE single large frosted-glass "takeover" card** holds ALL content — nav, headline, body
+   paragraph, secondary text, attribution, two inset image thumbnails, and social icons — unified
+   in a single surface. No segregation into multiple cards/wells/boxes.
+2. **Dark frosted glass** — a smoky/charcoal translucent panel; the forest photo is frosted/blurred
+   THROUGH it and sharp BELOW it. Light/white text on the dark glass. NOT white/gray, NOT beige (in
+   this particular example).
+3. **Beveled, soft-rounded** card with a subtle light rim/bevel; the bottom edge is an organic
+   sweeping curve (liquid-glass character), revealing the sharp background photo below the card.
+4. Content differentiated by typography + spacing WITHIN the one card — not by sub-cards.
+
+## What r2 got wrong (to fix)
+- r2's 62% cream over a lightened scrim reads as washed-out white/gray — REJECTED. Commit to a real
+  tone: **beige frosted glass OR dark frosted glass**, never the muddy white/gray middle.
+- r2 still has a separate "hero card" for the brew-log title — REMOVE; the title is just the top of
+  the single takeover card.
+- r2 segregates content with inset wells (extraction readout, form) + hairline dividers — REMOVE the
+  segregation; ALL content lives in ONE unified frosted-glass takeover card. Differentiate by
+  typography/spacing only (forms still get usable input styling, but not a "well card").
+
+## Binding direction for the next pass
+- A SINGLE beveled frosted-glass "takeover" card/surface that IS the page content area (full-bleed),
+  holding ALL brew-log detail content unified — no segregation, no separate hero, no sub-wells.
+- Tone: beige OR dark frosted glass (operator to confirm which) — never white/gray.
+- Lean into the liquid-glass character (bevel, soft rim, photo frosted through the glass).
+
+## Open fork (asked to operator)
+beige frosted glass vs dark frosted glass (reference shows dark). Awaiting operator's pick.
+
+## Status
+- Option A preserved at commit 1eb24bd. Option B r2 uncommitted in working tree. No push/PR/deploy.
+- No sensitive identifiers in this drop.
+
+---
+
+---
+spec_id: spec-043
+agent: Coordinator (directive capture + palette snapshot)
+created_at: 2026-06-15T07:10:00-07:00
+status: operator-approved-direction + P2-intent + rollout-plan
+privacy_gate: reviewed
+---
+
+# spec-043 — v3 takeover card APPROVED; P2 universal light/dark toggle; palette snapshot; catalog replication plan
+
+## Operator verdict on v3 (Brew-log detail takeover card)
+- "This is so good! Almost a perfect rendition of what I was looking for!"
+- Nitpick (DONE): "Roaster — Bean / 2026-06-13 should be the first thing on the top." → title block moved to top of card.
+
+## NEW directive 1 — P2: universal light/dark mode toggle
+- "I love the beige/dark button on the top right - I would like it to be universally applicable for the website as a light/dark mode toggle. So keep that in mind, and keep a snapshot of all the palettes, colors and tones you used. We can refine that when we build light mode in the UI in the future as a P2."
+- INTENT: the prototype tone toggle (`.kk-tc--dark` / `.kk-tc--beige`) becomes the seed for a SITE-WIDE light/dark mode toggle. Future P2 work. Preserve the palette snapshot below.
+
+## NEW directive 2 — replicate on Catalog detail, show first
+- "replicate this design for the catalog detail page, show me first"
+- Build the takeover-card design on Catalog detail (`/catalog/:id`), present to operator for approval. No global rollout yet.
+
+## NEW directive 3 — then unify globally (GATED on directive-2 approval)
+- "and then when I approve it, then you can go change all base components and unify implementation"
+- ONLY after the operator approves the Catalog-detail replication: change base components + unify the implementation app-wide. NOT before.
+
+## Earlier Catalog-detail complaints to FOLD INTO the replication (from 2026-06-14T21-15-39 drop, screenshot eb6f42)
+- Roaster/Bean/Edit card is oversized for its content.
+- Roast Level + Edit chips look incongruent to the frosted glass.
+- Roaster image + roaster link should be on the MAIN card — they were wrongly split out; un-split.
+- "Add Bag" and "Finish Bag" buttons are not aligned.
+- Finish Bag button squircle shape looks alpha-stage (hover/focus itself was liked).
+- (KEEP: the catalog card background was liked.)
+
+---
+
+## PALETTE / TONE SNAPSHOT (v3 takeover card — source of truth: frontend/src/index.css)
+
+### Shared geometry + typography (`:root`)
+- radius 16px · padding 32px/24px · max-width 720px · blur 24px
+- title 24px/700 · subtitle 14px · section-header 13px/600 tracking 0.05em · body 15px/1.6 · label 12px · value 16px · section-gap 32px
+
+### DARK tone (`.kk-tc--dark` — smoky charcoal espresso glass, light text; default, matches operator reference)
+- surface `rgba(24,16,10,0.72)` · solid-fallback `#1a120c`
+- text primary `#fff7ed` · secondary `#e8ddd4` · tertiary `#c4b5a8`
+- link `#fbbf24` · link-hover `#fcd34d`
+- bevel `inset 1px 1px 0 0 rgba(255,247,237,0.12), inset -1px -1px 0 0 rgba(0,0,0,0.25), 0 8px 32px -4px rgba(0,0,0,0.5)`
+- border `1px solid rgba(255,247,237,0.08)` · section-header `#e8ddd4`
+- input: bg `rgba(45,32,22,0.6)` border `rgba(255,247,237,0.15)` text `#fff7ed` placeholder `rgba(255,247,237,0.5)` focus-border `rgba(251,191,36,0.6)` focus-ring `0 0 0 3px rgba(251,191,36,0.15)`
+- chip: bg `rgba(255,247,237,0.1)` text `#e8ddd4` border `rgba(255,247,237,0.15)`; verified bg `rgba(34,197,94,0.15)`/text `#86efac`; ai bg `rgba(251,191,36,0.15)`/text `#fcd34d`; danger bg `rgba(239,68,68,0.12)`/text `#fca5a5`
+- edit btn: rest bg `rgba(255,247,237,0.1)`/text `#e8ddd4`/border `rgba(255,247,237,0.15)`; hover bg `rgba(255,247,237,0.18)`/text `#fff7ed`/border `rgba(255,247,237,0.25)`; active bg `rgba(255,247,237,0.25)`; focus-ring `0 0 0 3px rgba(251,191,36,0.25)`
+- danger btn: rest bg `rgba(239,68,68,0.12)`/text `#fca5a5`/border `rgba(239,68,68,0.2)`; hover bg `rgba(239,68,68,0.22)`/text `#fecaca`/border `rgba(239,68,68,0.35)`; active bg `rgba(239,68,68,0.32)`/text `#fee2e2`/border `rgba(239,68,68,0.5)`; focus-ring `0 0 0 3px rgba(239,68,68,0.25)`
+
+### BEIGE tone (`.kk-tc--beige` — committed warm cream glass, dark text; NOT washed-out)
+- surface `rgba(245,235,220,0.78)` · solid-fallback `#f5ebdc`
+- text primary `#2d1608` · secondary `#4a3728` · tertiary `#6b5344`
+- link `#92400e` · link-hover `#78350f`
+- bevel `inset 1px 1px 0 0 rgba(255,255,255,0.45), inset -1px -1px 0 0 rgba(139,90,43,0.15), 0 8px 32px -4px rgba(45,22,8,0.2)`
+- border `1px solid rgba(139,90,43,0.12)` · section-header `#4a3728`
+- input: bg `rgba(235,220,200,0.7)` border `rgba(139,90,43,0.2)` text `#2d1608` placeholder `rgba(45,22,8,0.45)` focus-border `rgba(146,64,14,0.6)` focus-ring `0 0 0 3px rgba(146,64,14,0.12)`
+- chip: bg `rgba(45,22,8,0.08)` text `#4a3728` border `rgba(45,22,8,0.12)`; verified bg `rgba(22,163,74,0.12)`/text `#166534`; ai bg `rgba(146,64,14,0.12)`/text `#92400e`; danger bg `rgba(185,28,28,0.1)`/text `#b91c1c`
+- edit btn: rest bg `rgba(45,22,8,0.08)`/text `#4a3728`/border `rgba(45,22,8,0.12)`; hover bg `rgba(45,22,8,0.14)`/text `#2d1608`/border `rgba(45,22,8,0.2)`; active bg `rgba(45,22,8,0.2)`; focus-ring `0 0 0 3px rgba(146,64,14,0.15)`
+- danger btn: rest bg `rgba(185,28,28,0.1)`/text `#b91c1c`/border `rgba(185,28,28,0.15)`; hover bg `rgba(185,28,28,0.18)`/text `#991b1b`/border `rgba(185,28,28,0.25)`; active bg `rgba(185,28,28,0.26)`/text `#7f1d1d`/border `rgba(185,28,28,0.35)`; focus-ring `0 0 0 3px rgba(185,28,28,0.15)`
+
+### Glass mechanics
+- frosting via `backdrop-filter: blur(24px)` on the CARD; `@supports not (backdrop-filter)` → solid surface fallback; `prefers-reduced-transparency` → solid.
+- tone-aware route scrim via `.app-bg.bg-brew-log:has(~ main .kk-takeover-card.kk-tc--{tone})` — no shell edits.
+- when takeover card mounted, `#main-content:has(.kk-b-page)` made transparent to avoid double-frost.
+
+Full per-line values + AA proofs: aria-contract-v3-takeover-card.md §15 (session files). Real source of truth: frontend/src/index.css (:root + .kk-tc--dark + .kk-tc--beige blocks).
+
+## Status
+- Brew-log detail v3 (with title-on-top) built locally, uncommitted. Option A safe at 1eb24bd.
+- Next: Aria adapts takeover card → Catalog detail (reusing the SAME tone tokens, addressing earlier catalog complaints) → Finn builds → operator review. No push/PR/deploy. No sensitive identifiers in this drop.
+
+---
+
+---
+spec_id: spec-043
+agent: Coordinator (directive capture)
+created_at: 2026-06-15T08:40:03-07:00
+status: operator-feedback-refinement
+privacy_gate: reviewed
+---
+
+# spec-043 — operator side-by-side review (catalog vs brew-log detail): 4 refinements
+
+Operator reviewed Catalog detail and Brew-log detail side by side. Verdict: "directionally correct
+and I'm supremely impressed. Good job!" Four gaps to fix (verbatim + analysis).
+
+## 1. AI Summary renders Markdown as plaintext (BUG)
+- Verbatim: "AI Summary on Brew Details seems to be a Markdown format being returned by the LLM but we're printing it out as plaintext"
+- The LLM (Gemini/Claude) returns Markdown; the Brew-log detail AI Summary section prints it as raw plaintext (so `**bold**`, bullets, headings show as literal markup).
+- Fix: render the AI summary as Markdown, styled to fit the takeover-card prose (use `--kk-tc-text-*` tokens; safe rendering — no raw HTML injection). Apply on both tones.
+
+## 2. Catalog detail typography/spacing not consistent with Brew-log detail
+- Verbatim: "Catalog detail doesn't replicate Brew Log Details in terms of reusing font sizing, spacing and typography to identify section headers, text, and sections in general."
+- Catalog must reuse the SAME takeover type/section system as brew-log: `.kk-tc-title`, `.kk-tc-subtitle`, `.kk-tc-section`, `.kk-tc-section-header`, body/label/value sizes, section-gap — so section headers, body text, and section rhythm read identically across both pages.
+
+## 3. Bean icon placement
+- Verbatim: "Shouldn't the Bean Icon be next to the roaster and bean name? And not the Light/Edit?"
+- Currently the bean image sits in the identity row alongside the Roast Level chip + Edit button. Operator wants the bean icon NEXT TO the title (roaster + bean name), not next to the roast-level/edit controls. Move the bean icon to the title block.
+
+## 4. Roast Level chip — espresso gradation
+- Verbatim: "For Bean Roast Level, I think you can do espresso gradation of the chip from beige to dark espresso brown right? To provide a bit of balance and color?"
+- Make the roast-level chip color a gradation mapped to roast level: light roast → beige, progressively darker → dark espresso brown for dark roast. Adds tasteful balance/color. Specify the per-roast-level color mapping for BOTH tones (must stay legible/AA on each glass tone). This is design token work → Aria designs the gradient mapping.
+
+## Routing
+- Aria: spec #4 (roast-level beige→espresso gradient mapping, both tones, AA), confirm #3 layout (bean icon in title block), codify #2 (catalog reuses brew-log type/section tokens), and the #1 markdown prose styling on the card.
+- Finn: implement all 4 (incl. a safe Markdown renderer for #1 — add react-markdown or equivalent if not already present; do NOT render raw HTML).
+- Scope: Catalog detail + Brew-log detail (the AI summary #1 is on brew-log). Still prototype phase; global base-component unify remains gated. No push/PR/deploy. No sensitive identifiers in this drop.
+
+---
+
+---
+spec_id: spec-043
+agent: Coordinator (directive capture)
+created_at: 2026-06-15T10:30:11-07:00
+status: operator-directive-phase-transition
+privacy_gate: reviewed
+---
+
+# spec-043 → component-system rebuild: operator directive to "take it forward"
+
+Operator approved the two-page takeover prototype ("this is perfect") and authorized the
+global, principle-grounded reusable-component rebuild across the whole app.
+
+## Nitpick (fold into rebuild, not a one-off patch)
+- "I would like the Roast Level capitalization to be in sync with the rest of the website. 'Light' is better than 'LIGHT'."
+- Source: `.kk-tc-chip` forces `text-transform: uppercase` (frontend/src/index.css). → Establish a PRINCIPLED casing rule (chips/labels render canonical casing; no forced uppercase unless a defined system rule). Fix as part of the reusable chip component.
+
+## The directive (verbatim, binding)
+- "Build reusable components where each action is grounded in principle not an edge-case or template. Focus is 100% on re-usability of components. Not a single UI component on a single page should be a one-off coded entity."
+- "If you think it would be more effective, have a checklist per page and per API endpoint and API method to make sure that components are not orphaned, isolated or one-offs."
+- "Your design needs to incorporate every single thing that works here, every principle that we have refined, and then apply it to the map of every single API route and resource we just built under V2."
+- Spec choice offered: "re-use the existing spec 043 as is, or recreate it from scratch (while archiving the existing version - don't just overwrite) or just tell me that the product spec is largely fine and only the technical specification requires changes."
+- "take a screenshot using Playwright of the two pages as they are right now, and keep checking against this guided northstar of principles."
+- "kill the server and get started on the plan review and rebuilding."
+
+## Interpretation / scope
+- This authorizes the previously-gated GLOBAL ROLLOUT + base-component UNIFY phase — but with a hard mandate: reusability-first, principle-grounded, zero one-offs, full coverage of the V2 surface map (62 endpoints, all pages).
+- DELIVER A PLAN FOR OPERATOR REVIEW FIRST (spec-approach recommendation + reusable component architecture + principles northstar + per-page/per-endpoint reusability checklist). Do NOT rebuild before the operator approves the plan.
+
+## Orchestration (this session)
+- Maya: technical architecture + spec-approach recommendation (reuse / recreate+archive / product-fine-technical-only).
+- Aria: codify the principles northstar → reusable component design-system contract (every refined principle, incl. casing rule).
+- Quinn: capture northstar Playwright screenshots of brew-log detail + catalog detail, both tones, mobile+desktop (e2e bypass harness), against the current approved build.
+- Tariq (next, after Maya+Aria): per-page + per-endpoint/method reusability checklist + rollout sequencing across the V2 map.
+- Coordinator synthesizes → plan for operator review.
+
+## Status
+- All design work + V2 map remain uncommitted on the design branch. Option A safe at 1eb24bd. No push/PR/deploy. No sensitive identifiers in this drop.
+
+---
+
+---
+spec_id: spec-043
+agent: Coordinator (operator approval)
+created_at: 2026-06-15T11:05:00-07:00
+status: PLAN APPROVED — rebuild authorized
+privacy_gate: reviewed
+---
+
+# spec-043 component-system rebuild — PLAN APPROVED by operator
+
+Operator reviewed the synthesized plan (Maya architecture + Aria principles northstar +
+Tariq per-page/per-endpoint checklist + Quinn northstar screenshots) and APPROVED proceeding,
+with these binding refinements:
+
+## Approved decisions
+1. **Spec approach (c):** product spec is fine; only the technical/engineering spec changes (lives in governance-hub). No recreate/archive of spec-043.
+2. **Single PR to `household_fixes`** (NOT main; NOT 11 separate PRs). Commits accumulate on the branch (feat/043-design-coherence off household_fixes).
+3. **Phase-gated localhost review:** after each phase, if it yields a deployable/viewable entity, show operator on localhost → get approval → proceed. Token/library phases (no visual diff) need no gate; first gate is the anchor pages rendering identically.
+4. **Tone persistence: YES** — persist the dark/beige choice to `localStorage`. This is the seed for the P2 site-wide light/dark mode.
+5. **Hardware:** split into List + Detail routes.
+6. **Guest view:** default tone, no special handling (non-issue).
+7. **App-shell / nav chrome:** leave AS-IS (DaisyUI styling + existing GSAP motion — `LayerTransition`, `useKaapiMotion`). Do NOT extend the tone system into the GSAP-animated shell now; full shell toning is deferred to the P2 light/dark work. (Operator flagged scope-creep risk; this avoids it — GSAP=animation, tone=surface color, orthogonal.)
+8. **HeroVisualFrame / CompassChart: NOT exempt.** After the UI is built to spec, Aria runs a screenshot principle-review of these viz components against the northstar; if they clash with the vision, she returns clean fix recommendations for the operator.
+
+## Execution
+- Foundation first: Phase 0 (promote ~84 `--kk-tc-*` tokens + tone classes to a global token layer, no visual diff) + Phase 1 (build the shared, reusable component library per Maya's 4-layer architecture + a Tone provider with localStorage persistence) + Phase 2a (re-point the 2 approved anchor pages to consume ONLY the shared library — must render IDENTICALLY to the northstar screenshots; casing fix folded into the shared Chip).
+- Then phase-by-phase rollout across the V2 map per Tariq's sequencing, each deployable phase gated by operator localhost approval.
+- Grounded in Aria's 12-principle northstar; enforced by per-page/per-endpoint coverage matrices + an ESLint no-one-off gate; legacy one-off systems retired in the final cleanup phase.
+
+## Northstar references
+- Visual: files/northstar-screenshots/ (8). Principles: files/rebuild-plan/aria-principles-northstar.md. Architecture: files/rebuild-plan/maya-technical-plan.md. Checklist: files/rebuild-plan/tariq-rollout-checklist.md. Surface map: docs/requirements/surface-api-map.md.
+
+No push/PR/deploy yet. Option A safe at 1eb24bd. No sensitive identifiers in this drop.
+
+---
+
+---
+spec_id: spec-043
+agent: Coordinator (directive capture)
+created_at: 2026-06-15T11:26:48-07:00
+status: process-refinement
+privacy_gate: reviewed
+---
+
+# spec-043 rebuild — operator process refinement: new components get Aria design + localhost preview
+
+Operator added a binding workflow rule for the rollout phases (verbatim):
+
+"There will be new components that crop up in other pages that aren't on these two pages. When
+you encounter those, maybe work through your design agent for that page, have an opinion about
+how that new component should behave and be templatized, and then show me how that page would
+look on localhost before you proceed."
+
+## Encoded per-page rollout loop (Phase 2b onward)
+For each page being migrated:
+1. Identify components on it NOT already in the shared library (new vs the two anchors).
+2. For EACH new component, **Aria designs it first**: a principled opinion on behavior + how it
+   templatizes into the shared, reusable library (grounded in the 12-principle northstar; never a one-off).
+3. Finn extends the shared library with the new component(s), then migrates the page to shared components.
+4. **Show the page on localhost → get operator approval → only then proceed** to the next page/phase.
+
+## Notes
+- Reinforces the existing reusability mandate (no one-offs) + the design-through-Squad-agent pattern + phase-gated localhost approval.
+- Applies to rollout phases; the in-flight foundation (Phase 0/1/2a, anchors only) introduces no new components.
+- No sensitive identifiers in this drop.
+
+---
+
+---
+spec_id: spec-043
+agent: Coordinator (operator review — foundation regressions + new north-star)
+created_at: 2026-06-15T12:10:33-07:00
+status: foundation-fixes + design-northstar-addition
+privacy_gate: reviewed
+---
+
+# spec-043 foundation review: 4 detail-page fixes + the list-vs-detail glass north-star
+
+Operator reviewed the foundation (anchors on the new tone-system library) on localhost. Found
+regressions + gave a major new design north-star. Verbatim + analysis.
+
+## Foundation detail-page issues (fix before rollout)
+1. **Catalog detail lost the monogram style on the tile.** "Catalog detail page lost the monogram style on the tile." → The extracted `TitleIcon` placeholder regressed; restore the monogram/placeholder design from the northstar.
+2. **Brew detail should also have the monogram/bean image next to the title.** "the brew detail page should also probably have the monogram/bean image next to the title?" → Consistency: apply the TitleBlock-with-icon to brew-log detail too.
+3. **Section header hierarchy broken in markdown.** "Section headers don't seem like before… shot analysis header from AI in markdown looks bigger than the AI summary section heading." (screenshot dd9ee7: "AI FEEDBACK" eyebrow vs a large serif "Shot Analysis & Recommendation" from the LLM markdown) → MarkdownProse heading scale must sit UNDER the section-header hierarchy; the section header is the anchor.
+4. **Extraction readout messed up (was the highlight).** "Extraction details, which were the highlight before completely looks messed up." (screenshot bb5ac4: "Brew ratio1:1.9" jammed; "Extraction zoneSweet & balancedIdeal extraction" — zone chip + label/value lost spacing) → restore ParamGrid/ParamPair label-value spacing + zone-chip margins to the northstar.
+
+## NEW design north-star / primitive (#5 — binding, verbatim)
+"The detail view of anything - Hardware, household, brew log, catalog bean etc and any cards on the UI, catalog cards, hardware cards, home page cards, etc should follow the glass design you have going on. For the 'main' or summary pages just listing things - it should continue to feel immersive and blended by just adding a blur on the background and having everything without a card (like it is today in prod, but with the aesthetic guidelines of our new workstream)."
+
+### Interpretation (Aria to codify; flag ambiguities)
+- **Detail views** (brew-log, catalog bean, hardware, household, …) → the GLASS takeover card treatment.
+- **Entity CARDS anywhere** (catalog cards, hardware cards, home/dashboard cards) → GLASS treatment.
+- **Main / summary / LIST pages** (pages that just list things) → NO page-level card; immersive + blended via a BLUR on the background, content directly on it (card-less), per the new aesthetic. "Like it is today in prod" but with our workstream's guidelines.
+- Reconciliation: the earlier rejected Option-B "card-less full-bleed frosted page" was mis-scoped to DETAIL pages; it is actually the correct model for LIST/summary pages. Not wasted.
+- This refines the shell architecture (Maya shells A–E + Tariq assignments): a distinct card-less immersive LIST shell vs the glass DETAIL/card shell. Update for the list-phase rollout.
+
+## Process improvement (coordinator)
+- The foundation "identical render" claim was verified only via lint/build/tests, not visually — regressions (#1,#4) slipped through. ADD a visual parity check (Quinn screenshots vs northstar / Aria screenshot review) BEFORE re-showing the operator, every phase.
+
+## Routing
+- Aria: fix-spec for #1–#4 (grounded in northstar screenshots) + codify #5 north-star into the principles northstar + define the card-less immersive LIST shell.
+- Finn: implement #1–#4 in the tone-system components.
+- Quinn: visual screenshot verification vs northstar before re-checkpoint.
+- Maya/Tariq: fold #5 into shell architecture + sequencing for the list phases.
+- No push/PR/deploy. Option A safe at 1eb24bd. No sensitive identifiers in this drop.
+
+---
+
+---
+spec_id: spec-043
+agent: Coordinator (operator feedback — catalog summary)
+created_at: 2026-06-15T13:40:00-07:00
+status: catalog-summary-refinements
+privacy_gate: reviewed
+---
+
+# spec-043 catalog summary (list page) — operator refinements
+
+Operator reviewed the card-less immersive catalog list. "Otherwise, great job so far." Two refinements
+(both on REUSABLE tone-system components → propagate to all future list pages / entity cards):
+
+1. **Monogram fills the entire figure space** (verbatim: "The monogram - Can it take over the entire image space instead of being a small tile?"). EntityCard's no-image fallback: the monogram should fill the whole figure/image area (large, tone-aware warm treatment), NOT a small centered tile. (The old CatalogCardFigure filled the figure with a large `font-display` monogram — reinstate that fill behavior in the new EntityCard, tone-aware.)
+
+2. **Two-line list header, drop the third heading** (verbatim: "I don't need 3 separate headings on the page. You can just say Catalog (keep it the way it is), put Beans/Inventory where it says Coffee Library and get rid of that Coffee Library phrase altogether."). On the ListPageHeader for catalog: keep the "Catalog" title as-is; remove the top "BEANS / INVENTORY" eyebrow AND the "COFFEE LIBRARY" section label; render "BEANS / INVENTORY" in the position where "COFFEE LIBRARY" was (below the title). Net: "Catalog" + "BEANS / INVENTORY" (2 lines). Principle for list pages: 2-line header (title + one descriptor), not 3.
+
+## Routing
+- Finn: implement both on the reusable components (EntityCard figure monogram-fill; ListPageHeader/CatalogList 2-line header). Re-verify visually + localhost.
+- These are component-level (reusable) changes, not page one-offs.
+- No push/PR/deploy. No sensitive identifiers in this drop.
+
+---
+spec_id: spec-043
+agent: Coordinator (operator feedback — dashboard + beige tone)
+created_at: 2026-06-15T15:40:00-07:00
+status: dashboard-fixes + immersive-beige-tone-fix
+privacy_gate: reviewed
+---
+
+# spec-043 dashboard review + the immersive beige "light mode" grey issue
+
+Operator reviewed the dashboard live and agreed with the coordinator's assessments, plus a key new system-level finding.
+
+## Operator-confirmed issues (dashboard)
+1. **Hero viz clashes.** The `HeroVisualFrame`/`DashboardHeroMotion` renders as a BRIGHT white/cream panel floating on the dark immersive frost — reads as a jarring bright rectangle, not part of the frost. (Coordinator + Quinn + operator agree; Aria's review said "coheres as-is" — OVERRIDDEN by operator. The palette is warm/on-brand per Aria, but the bright-contained-panel floats. Fix: integrate it — likely a tone-aware viz surface so it doesn't pop as bright white on the dark tone.)
+2. **Bag monograms wrong.** All Active-Bags EntityCards show a large "RE" monogram instead of per-bag initials (likely deriving from "REady to brew" or the wrong field). BUG — fix the monogram derivation for dashboard bag cards.
+3. **"Log a shot" primary CTA is weak** — renders as faint plain text on the frost; should be a proper primary button.
+4. **EntityCards faint on the dark tone** — blend too much; increase glass presence on dark without losing the blended feel.
+
+## NEW system-level finding (operator verbatim)
+"the home page and catalog summary page have still the grey tone for the 'light mode' - The brew and catalog detail page are a lot more natural and neutral with beige."
+- ROOT CAUSE: the `ImmersiveListShell` BEIGE frost (~55% beige `rgba(245,235,220,0.55)`) over the blurred dark route photo lets the dark bleed through → reads GREY/muddy. The detail takeover card beige (~78% `rgba(245,235,220,0.78)`) is more opaque → clean, natural beige.
+- FIX: raise/adjust the immersive shell BEIGE frost so the "light mode" reads as a clean, natural, neutral beige matching the detail pages (accept less photo show-through in beige/light mode; the dark tone's atmospheric bleed is fine). This is a REUSABLE component fix → fixes BOTH home + catalog summary at once.
+
+## Routing
+- Aria fix-spec: (A) immersive shell BEIGE tonality → natural beige matching detail (exact value); (B) hero viz integration (tone-aware so it doesn't float as bright white on dark); (E) EntityCard presence on dark.
+- Finn: implement Aria's A/B/E + (C) bag monogram bug + (D) "Log a shot" primary CTA.
+- Re-verify visually BOTH tones (esp. beige no longer grey, hero viz integrated) before re-showing operator.
+- No push. No sensitive identifiers in this drop.
+---
+spec_id: spec-043
+agent: Coordinator (operator PAUSE — RED pages)
+created_at: 2026-06-15T15:55:00-07:00
+status: PAUSED — home + catalog summary RED; rollout halted
+privacy_gate: reviewed
+---
+
+# spec-043 — PAUSE: home + catalog summary marked RED, rollout halted
+
+Operator is out of time and is pausing the rebuild here. "Pause the work, identify all feedback and
+mark the home page and catalog summary page as red - We're not proceeding beyond this. Add this to
+your document so that we can restart from here later."
+
+## Final operator feedback (this review)
+- "I really dislike the random visualization on the home page with the 2d coffee graphics. Let's get rid of it." → **REMOVE the hero viz entirely** (HeroVisualFrame / DashboardHeroMotion / DashboardHero3D / DashboardHeroFallback) from the dashboard. This SUPERSEDES the earlier "integrate the viz" fix (B) — it is now a removal, not an integration.
+- "the home page suddenly has gone completely monochromatic, I don't know why" → the dashboard reads washed-out/monochrome (the grey beige + faint cards + lack of color/contrast). Restore color/contrast.
+
+## Page status
+- **GREEN (approved, committed 71f60d2):** Brew-log detail, Catalog detail (glass takeover cards).
+- **RED (need rework — DO NOT proceed past these):** Home/Dashboard, Catalog summary (immersive list shell).
+- Foundation (tone-system library + ToneContext) = good; the RED is about the immersive list pages.
+- Rollout PAUSED — no further pages (p2b–p10 not started).
+
+## Consolidated OPEN feedback for the RED pages (the restart to-do list)
+### Catalog summary (`/catalog`, CatalogList.tsx) — RED
+1. BEIGE "light mode" reads GREY/muddy (immersive shell beige frost ~55% over dark photo). Fix: raise immersive beige opacity to match the detail pages' natural beige (~78%). Reusable ImmersiveListShell fix → also fixes home. [Aria fix-spec §A: files/rebuild-plan/aria-dashboard-fixes.md]
+2. Glass EntityCards too faint on the DARK tone — increase card presence. [Aria fix-spec §E]
+
+### Home/Dashboard (`/`, Dashboard.tsx) — RED
+1. **REMOVE the 2D coffee-graphics hero viz** entirely (operator dislikes it). Replace with nothing / a simpler hero, TBD on restart.
+2. Page reads **monochromatic** — restore color/contrast (the beige fix + card presence + ensure roast chips / warm accents show).
+3. BEIGE "light mode" grey (same immersive beige fix as catalog).
+4. **Bag monograms show "RE"** (bug) — all Active-Bags cards show "RE" instead of per-bag initials; fix the monogram derivation.
+5. **"Log a shot" primary CTA is weak** plain text — make it a proper primary button.
+6. EntityCards faint on dark (same as catalog).
+
+## Restart point (how to resume later)
+1. Apply Aria's fix-spec `files/rebuild-plan/aria-dashboard-fixes.md` (promoted to docs): §A immersive BEIGE frost → natural beige; §E EntityCard dark presence. (Ignore its §B viz-integration — the viz is being REMOVED, not integrated.)
+2. Remove the hero viz from Dashboard.tsx (+ decide a replacement hero treatment).
+3. Fix the bag monogram bug + the "Log a shot" primary CTA.
+4. Re-verify BOTH tones (beige natural not grey; not monochromatic; cards present) on home + catalog summary.
+5. Only then resume the rollout (p2b–p10 per Tariq's checklist).
+
+## State
+- Dashboard build (Finn-7) is UNCOMMITTED — will be committed as WIP/RED checkpoint at this pause. No push.
+- Aria fix-spec (aria-4) was in flight for §A/§E (still useful); §B (viz integration) is moot.
+- No sensitive identifiers in this drop.

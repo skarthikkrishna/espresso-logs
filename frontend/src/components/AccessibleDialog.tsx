@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
+import { useKaapiMotion } from '../lib/motion'
 
 type DialogSize = 'sm' | 'md' | 'lg' | 'bottom'
 
@@ -22,9 +23,16 @@ const focusableSelector = [
 
 export default function AccessibleDialog({ open, title, description, size = 'md', onClose, children }: AccessibleDialogProps) {
   const surfaceRef = useRef<HTMLDivElement>(null)
+  const backdropRef = useRef<HTMLDivElement>(null)
   const returnFocusRef = useRef<HTMLElement | null>(null)
+  const { modalOpen } = useKaapiMotion({ scope: backdropRef })
   const titleId = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-dialog-title`
   const descriptionId = description ? `${titleId}-description` : undefined
+
+  useEffect(() => {
+    if (!open || !surfaceRef.current) return
+    modalOpen(surfaceRef.current, backdropRef.current)
+  }, [open, modalOpen])
 
   useEffect(() => {
     if (!open) return undefined
@@ -77,6 +85,7 @@ export default function AccessibleDialog({ open, title, description, size = 'md'
 
   return (
     <div
+      ref={backdropRef}
       className={`modal modal-open glass-modal-backdrop ${size === 'bottom' ? 'modal-bottom sm:modal-middle' : ''}`}
       role="presentation"
       onMouseDown={(event) => {

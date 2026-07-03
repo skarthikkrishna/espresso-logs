@@ -2,15 +2,20 @@ interface DashboardHeroFallbackProps {
   className?: string
   maxHeight?: number
   testId?: string
+  /** When true, fill the parent HeroVisualFrame (absolute inset-0, no own chrome). */
+  fill?: boolean
 }
 
-export default function DashboardHeroFallback({ className = '', maxHeight = 220, testId = 'dashboard-hero-3d-fallback' }: DashboardHeroFallbackProps) {
+export default function DashboardHeroFallback({ className = '', maxHeight = 220, testId = 'dashboard-hero-3d-fallback', fill = false }: DashboardHeroFallbackProps) {
+  const layout = fill
+    ? `absolute inset-0 h-full w-full ${className}`
+    : `relative rounded-[var(--bevel-radius)] border border-amber-400/15 ${className}`
   return (
     <div
       data-testid={testId}
       aria-hidden="true"
-      className={`relative flex items-center justify-center overflow-hidden rounded-[var(--bevel-radius)] border border-amber-400/15 bg-[radial-gradient(circle_at_50%_35%,rgba(245,158,11,0.20),rgba(26,18,9,0.18)_42%,rgba(8,5,3,0.62)_100%)] ${className}`}
-      style={{ maxHeight, minHeight: Math.min(maxHeight, 180) }}
+      className={`flex items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_50%_35%,rgba(245,158,11,0.20),rgba(26,18,9,0.18)_42%,rgba(8,5,3,0.62)_100%)] ${layout}`}
+      style={fill ? undefined : { maxHeight, minHeight: Math.min(maxHeight, 180) }}
     >
       <svg viewBox="0 0 320 220" className="h-full w-full max-w-[22rem] opacity-95 drop-shadow-[0_0_28px_rgba(245,158,11,0.20)]" role="presentation">
         <path d="M145 30c-18 20-8 37 6 53 16 18 20 36 3 55" fill="none" stroke="#f5e6d3" strokeWidth="10" strokeLinecap="round" opacity="0.82" />

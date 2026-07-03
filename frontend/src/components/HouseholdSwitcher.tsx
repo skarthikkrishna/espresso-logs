@@ -3,13 +3,11 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import AccessibleDialog from './AccessibleDialog'
 import type { Membership } from '../types/entities'
+import { COPY } from '../copy'
 
 interface HouseholdSwitcherProps {
   variant: 'desktop' | 'mobile'
 }
-
-const truncateHouseholdName = (name: string): string =>
-  name.length > 24 ? `${name.slice(0, 21)}…` : name
 
 const memberCountLabel = (membership: Membership): string => {
   if (membership.member_count == null) return 'Members unavailable'
@@ -107,7 +105,7 @@ export default function HouseholdSwitcher({ variant }: HouseholdSwitcherProps) {
           title={current.household_name}
         >
           <span className="min-w-0">
-            <span className="block truncate text-sm text-amber-100">{truncateHouseholdName(current.household_name)}</span>
+            <span className="block truncate text-sm text-amber-100">{current.household_name}</span>
             <span className="block text-xs text-base-content/55">{memberCountLabel(current)}</span>
           </span>
           <span className="badge badge-outline badge-sm capitalize">{current.role}</span>
@@ -129,7 +127,7 @@ export default function HouseholdSwitcher({ variant }: HouseholdSwitcherProps) {
                 />
               ))}
               <Link to="/household/new" className="btn btn-ghost min-h-11 w-full justify-start text-amber-300 no-underline" onClick={() => setOpen(false)}>
-                + Create new household
+                + {COPY.household.createNew}
               </Link>
             </div>
             {error ? <p className="mt-2 px-2 text-xs text-error" role="alert">{error}</p> : null}
@@ -154,13 +152,13 @@ export default function HouseholdSwitcher({ variant }: HouseholdSwitcherProps) {
         >
           <span className="min-w-0">
             <span className="block truncate text-xs uppercase tracking-[0.16em] text-base-content/45">Household</span>
-            <span className="block truncate text-sm text-amber-100">{truncateHouseholdName(current.household_name)}</span>
+            <span className="block truncate text-sm kk-household-name">{current.household_name}</span>
           </span>
         </button>
       ) : (
         <div className="min-w-0 flex-1 px-2 py-1" aria-label={`Active household ${current.household_name}`}>
           <span className="block truncate text-xs uppercase tracking-[0.16em] text-base-content/45">Household</span>
-          <span className="block truncate text-sm text-amber-100">{truncateHouseholdName(current.household_name)}</span>
+          <span className="block truncate text-sm kk-household-name">{current.household_name}</span>
         </div>
       )}
       <AccessibleDialog
@@ -181,7 +179,7 @@ export default function HouseholdSwitcher({ variant }: HouseholdSwitcherProps) {
             />
           ))}
           <Link to="/household/new" className="btn btn-outline btn-bevel w-full no-underline" onClick={() => setOpen(false)}>
-            + Create new household
+            + {COPY.household.createNew}
           </Link>
           {error ? <p className="text-sm text-error" role="alert">{error}</p> : null}
         </div>

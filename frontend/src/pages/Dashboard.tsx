@@ -1,26 +1,75 @@
-import { useEffect, useRef } from 'react'
-import { createPortal } from 'react-dom'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { listBrewLog } from '../api/brewLog'
 import { getDashboard } from '../api/dashboard'
 import { brewLogListQueryKey, dashboardQueryKey } from '../api/queryKeys'
 import type { BrewLogPage } from '../api/brewLog'
-import DashboardHeroMotion from '../components/motion/DashboardHeroMotion'
-import { Badge, Button, EmptyState, GlassCard, PageHeader, SectionHeading } from '../components/ui'
+import { COPY } from '../copy/registry'
 import type { BrewLogEntry } from '../types/entities'
 import { useAuth, useHouseholdQueryScope } from '../contexts/AuthContext'
 import { useKaapiMotion } from '../lib/motion'
+import { BrandMarkGlyph } from '../components/brand/BrandMarkGlyph'
+import { ToneProvider } from '../contexts/ToneContext'
+import {
+  AddBagAction,
+  BagCard,
+  ImmersiveEmptyState,
+  ImmersiveListShell,
+  ListPageHeader,
+  LogShotAction,
+  SectionHeader,
+  ShotCard,
+  ShotRowSkeleton,
+  StatTile,
+  StatTileSkeleton,
+  ToneButton,
+  ToneToggle,
+} from '../components/tone-system'
+
+function HomeWordmark() {
+  const [kaapi, kadai] = COPY.shell.brand.split(' ')
+  return (
+    <span className="kk-home-wordmark" aria-label={COPY.shell.brand}>
+      <span className="kk-home-wordmark__word kk-home-wordmark__kaapi">{kaapi}</span>
+      <span className="kk-home-wordmark__medallion" aria-hidden="true">
+        <BrandMarkGlyph className="kk-home-wordmark__glyph" />
+      </span>
+      <span className="kk-home-wordmark__word kk-home-wordmark__kadai">{kadai}</span>
+    </span>
+  )
+}
+
+
+function HomeHeroHeader() {
+  return (
+    <ListPageHeader
+      title={<HomeWordmark />}
+      section="Personal Shot Journal"
+      titleTestId="dashboard-heading"
+      className="dashboard-page-header"
+    />
+  )
+}
+
+function DashboardStatsPanel({ children }: { children: ReactNode }) {
+  return (
+    <div
+      className="dashboard-stats-panel dashboard-stats-panel--underbar"
+      aria-label={COPY.dashboard.summaryAria}
+    >
+      {children}
+    </div>
+  )
+}
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const activeHouseholdId = useHouseholdQueryScope()
-  const { activeMembership } = useAuth()
+  const { memberships } = useAuth()
   const routeRef = useRef<HTMLDivElement>(null)
   const cardListRef = useRef<HTMLDivElement>(null)
-  const fabRef = useRef<HTMLButtonElement>(null)
-  const { routeEnter, staggerCards, fabMount, pressFeedback } = useKaapiMotion({ scope: routeRef })
-  const householdName = activeMembership?.household_name ?? 'your household'
+  const { routeEnter, staggerCards } = useKaapiMotion({ scope: routeRef })
 
   const { data: bags, isLoading, isError, error, refetch } = useQuery({
     queryKey: dashboardQueryKey(activeHouseholdId),
@@ -34,198 +83,181 @@ export default function Dashboard() {
   })
 
   useEffect(() => {
-    if (routeRef.current) routeEnter(routeRef.current)
-  }, [routeEnter])
+    if (!isLoading && !isError && routeRef.current) routeEnter(routeRef.current)
+  }, [isLoading, isError, routeEnter])
 
   useEffect(() => {
     const cards = cardListRef.current?.querySelectorAll('.kaapi-motion-card')
     if (cards?.length) staggerCards(cards)
   }, [bags, recentShots, staggerCards])
 
-  useEffect(() => {
-    if (fabRef.current) fabMount(fabRef.current)
-  }, [fabMount])
+  const householdCount = memberships.length
+  const heroGridClass = 'dashboard-hero-grid dashboard-hero-grid--stats-underbar'
 
   if (isLoading) return (
-    <div className="p-4 md:p-6 space-y-3" data-testid="motion-card-list">
-      {[1, 2, 3].map((i) => (
-        <GlassCard key={i} className="animate-pulse">
-          <div className="mb-2 h-4 w-3/4 rounded bg-amber-900/40" />
-          <div className="h-3 w-1/2 rounded bg-amber-900/30" />
-        </GlassCard>
-      ))}
-    </div>
+    <ToneProvider>
+      <ImmersiveListShell ref={routeRef} testId="motion-route-boundary" className="dashboard-home">
+        <div className="immersive-nav-row">
+          <ToneToggle />
+        </div>
+        <div className={heroGridClass}>
+          <div className="dashboard-hero-copy">
+            <HomeHeroHeader />
+            <DashboardStatsPanel>
+              <StatTileSkeleton />
+              <StatTileSkeleton />
+              <StatTileSkeleton />
+            </DashboardStatsPanel>
+          </div>
+        </div>
+        <div className="dashboard-layout">
+          <div className="dashboard-rails">
+            <section data-testid="dashboard-hero-card" className="dashboard-card-section dashboard-card-section--active">
+              <SectionHeader testId="dashboard-active-bags-heading">Active bags</SectionHeader>
+              <div className="dashboard-fit-rail dashboard-fit-rail--bags entity-card-grid">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="entity-card--skeleton" aria-hidden="true">
+                    <div className="entity-card__skeleton-line" style={{ width: '75%' }} />
+                    <div className="entity-card__skeleton-line" style={{ width: '50%' }} />
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section className="dashboard-card-section dashboard-card-section--recent">
+              <SectionHeader>Recent shots</SectionHeader>
+              <div className="dashboard-fit-rail dashboard-fit-rail--shots shot-row-list">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <ShotRowSkeleton key={i} />
+                ))}
+              </div>
+            </section>
+          </div>
+        </div>
+      </ImmersiveListShell>
+    </ToneProvider>
   )
 
   if (isError) return (
-    <div className="p-4 md:p-6">
-      <GlassCard padding="lg" className="text-center">
-        <p className="font-medium text-amber-200">Couldn't load dashboard</p>
-        <p className="mt-1 text-sm text-amber-400/70">{(error as Error)?.message}</p>
-        <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-3 border-amber-600 text-amber-200">
-          Retry
-        </Button>
-      </GlassCard>
-    </div>
+    <ToneProvider>
+      <ImmersiveListShell ref={routeRef} testId="motion-route-boundary" className="dashboard-home">
+        <div className="immersive-nav-row">
+          <ToneToggle />
+        </div>
+        <ImmersiveEmptyState
+          title={COPY.dashboard.loadError}
+          description={(error as Error)?.message}
+          action={
+            <ToneButton variant="edit" onClick={() => refetch()}>
+              {COPY.actions.retry}
+            </ToneButton>
+          }
+        />
+      </ImmersiveListShell>
+    </ToneProvider>
   )
 
   const hasBags = Boolean(bags?.length)
   const hasRecentShots = recentShots.length > 0
   const showFreshEmpty = !hasBags && !hasRecentShots
+  const allBagsRoute = '/catalog'
 
   return (
-    <div ref={routeRef} data-testid="motion-route-boundary" className="p-4 md:p-6 space-y-6 md:space-y-8">
-      <PageHeader subtitle={`HOME / ${householdName}`} title="Kaapi Kadai" />
-
-      <GlassCard data-testid="dashboard-hero-card" padding="lg" className="overflow-hidden">
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.75fr)] lg:items-center">
-          <div className="space-y-5">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-300/65">Today at {householdName}</p>
-              <h1
-                data-testid="dashboard-heading"
-                className="mt-3 font-display font-bold leading-[0.92] tracking-tight text-amber-50 drop-shadow-[0_0_24px_rgba(245,158,11,0.16)] [font-size:clamp(2.5rem,14vw,4.25rem)] md:[font-size:clamp(4rem,8vw,6.5rem)]"
-              >
-                Brew with intention.
-              </h1>
-            </div>
-            <p className="max-w-2xl text-base leading-7 text-amber-100/78 md:text-lg">
-              Track active bags, recent shots, and household context from one warm espresso-dark cockpit.
-            </p>
-            <div className="grid grid-cols-3 gap-2 sm:max-w-lg">
-              <div className="rounded-[var(--bevel-radius)] border border-white/10 bg-black/10 p-3">
-                <p className="text-3xl font-bold text-amber-50">{bags?.length ?? 0}</p>
-                <p className="text-xs uppercase tracking-[0.16em] text-amber-200/55">Active bags</p>
-              </div>
-              <div className="rounded-[var(--bevel-radius)] border border-white/10 bg-black/10 p-3">
-                <p className="text-3xl font-bold text-amber-50">{recentShots.length}</p>
-                <p className="text-xs uppercase tracking-[0.16em] text-amber-200/55">Recent</p>
-              </div>
-              <div className="rounded-[var(--bevel-radius)] border border-white/10 bg-black/10 p-3">
-                <p className="text-3xl font-bold text-amber-50">1</p>
-                <p className="text-xs uppercase tracking-[0.16em] text-amber-200/55">Household</p>
-              </div>
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button variant="primary" onClick={() => navigate('/brew-log/add')}>Log a shot</Button>
-              <Button variant="outline" onClick={() => navigate('/catalog')}>Manage catalog</Button>
-            </div>
-          </div>
-          <DashboardHeroMotion maxHeight={240} />
+    <ToneProvider>
+      <ImmersiveListShell ref={routeRef} testId="motion-route-boundary" className="dashboard-home">
+        <div className="immersive-nav-row">
+          <ToneToggle />
         </div>
-      </GlassCard>
 
-      <div ref={cardListRef} data-testid="motion-card-list" className="space-y-6">
-        <section>
-          <SectionHeading title="Active bags" testId="dashboard-active-bags-heading" />
-          {showFreshEmpty ? (
-            <div data-testid="dashboard-empty-state">
-              <div data-testid="fresh-household-empty-dashboard">
-                <EmptyState
-                  icon={<span aria-hidden="true" className="text-3xl">☕</span>}
-                  title="No coffee data yet"
-                  description="Add your first bag or import a CSV to start this household with clean data."
-                  action={(
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <Button variant="primary" size="sm" onClick={() => navigate('/catalog')}>Add your first bag</Button>
-                      <Button variant="outline" size="sm" onClick={() => navigate('/import')}>Import CSV</Button>
-                    </div>
-                  )}
-                />
-              </div>
+        <div className={heroGridClass}>
+          <div className="dashboard-hero-copy">
+            <HomeHeroHeader />
+            <div className="hero-actions">
+              <LogShotAction variant="hero" />
+              <ToneButton variant="edit" onClick={() => navigate('/catalog')}>
+                {COPY.dashboard.manageCatalog}
+              </ToneButton>
             </div>
-          ) : hasBags ? (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {bags?.map((bag) => (
-                <GlassCard
-                  key={bag.bag_id}
-                  interactive
-                  className="kaapi-motion-card"
-                  onClick={() => navigate(`/brew-log/add?bag_id=${encodeURIComponent(bag.bag_id)}`)}
-                >
-                  <p className="text-xs uppercase tracking-[0.18em] text-amber-300/55">Ready to brew</p>
-                  <p className="mt-2 font-display text-lg font-bold leading-snug text-amber-50">{bag.display_name}</p>
-                  {bag.roast_level && <Badge className="mt-3">{bag.roast_level}</Badge>}
-                  {bag.days_since_last_shot != null && (
-                    <p className="mt-3 text-sm text-amber-200/60">
-                      {bag.days_since_last_shot === 0 ? 'Last shot: today' : `Last shot: ${bag.days_since_last_shot}d ago`}
-                    </p>
-                  )}
-                  {bag.last_shot?.dose_in_g && bag.last_shot?.yield_out_g && (
-                    <p className="mt-2 font-mono text-sm text-amber-300/80">
-                      {bag.last_shot.dose_in_g}g → {bag.last_shot.yield_out_g}g
-                    </p>
-                  )}
-                </GlassCard>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              title="No active bags yet"
-              description="Add a bag from your catalog before logging household shots."
-              action={<Button variant="primary" size="sm" onClick={() => navigate('/catalog')}>Go to catalog</Button>}
-            />
-          )}
-        </section>
-
-        <section>
-          <SectionHeading title="Recent shots" />
-          {!hasRecentShots ? (
-            <GlassCard className="kaapi-motion-card">
-              <p className="text-sm text-amber-200/70">No shots logged yet.</p>
-            </GlassCard>
-          ) : (
-            <div className="grid gap-3 md:grid-cols-2">
-              {recentShots.map((shot: BrewLogEntry) => (
-                <Link key={shot.shot_id} to={`/brew-log/${shot.shot_id}`} className="kaapi-motion-card block no-underline">
-                  <GlassCard interactive className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-amber-100">{shot.bag_display}</p>
-                      <p className="text-xs text-amber-200/50">{shot.date}</p>
-                    </div>
-                    {shot.dose_in_g != null && shot.yield_out_g != null && (
-                      <span className="shrink-0 rounded-[var(--bevel-radius)] border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 font-mono text-xs text-amber-200">
-                        {shot.dose_in_g}g → {shot.yield_out_g}g
-                      </span>
-                    )}
-                  </GlassCard>
-                </Link>
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
-
-      <div data-testid="dashboard-final-cta" className="pb-2">
-        <GlassCard className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="font-display text-xl font-bold text-amber-50">Ready for the next shot?</p>
-            <p className="text-sm text-amber-200/65">This in-flow action stays clear of the mobile nav stack.</p>
+            <DashboardStatsPanel>
+              <StatTile value={bags?.length ?? 0} label="Active bags" />
+              <StatTile value={recentShots.length} label="Recent" />
+              <StatTile value={householdCount} label="Household" />
+            </DashboardStatsPanel>
           </div>
-          <Button variant="primary" onClick={() => navigate('/brew-log/add')}>Log shot</Button>
-        </GlassCard>
-      </div>
+        </div>
 
-      {createPortal(
-        <Button
-          ref={fabRef}
-          data-testid="dashboard-fab"
-          aria-label="Log a shot"
-          className="btn-circle fixed right-[max(1rem,env(safe-area-inset-right))] bottom-[var(--mobile-fab-offset)] z-50 lg:hidden"
-          size="lg"
-          variant="primary"
-          onMouseDown={() => fabRef.current && pressFeedback(fabRef.current)}
-          onClick={() => navigate('/brew-log/add')}
-          icon={(
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          )}
-        >
-          <span className="sr-only">Log a shot</span>
-        </Button>,
-        document.body,
-      )}
-    </div>
+        <div className="dashboard-layout">
+          <div ref={cardListRef} className="dashboard-rails" data-testid="motion-card-list">
+            <section
+              data-testid="dashboard-hero-card"
+              className="dashboard-card-section dashboard-card-section--active"
+            >
+              <div className="dashboard-section-header-row">
+                <SectionHeader testId="dashboard-active-bags-heading">Active bags</SectionHeader>
+                <Link className="dashboard-view-all-link" to={allBagsRoute}>{COPY.dashboard.viewAll}</Link>
+              </div>
+              {showFreshEmpty ? (
+                <div data-testid="dashboard-empty-state">
+                  <div data-testid="fresh-household-empty-dashboard">
+                    <ImmersiveEmptyState
+                      icon={<span aria-hidden="true" className="text-3xl">☕</span>}
+                      title={COPY.dashboard.emptyTitle}
+                      description={COPY.dashboard.emptyBody}
+                      action={
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                          <AddBagAction variant="empty" />
+                          <ToneButton variant="edit" onClick={() => navigate('/import')}>
+                            {COPY.dashboard.importCsv}
+                          </ToneButton>
+                        </div>
+                      }
+                    />
+                  </div>
+                </div>
+              ) : hasBags ? (
+                <div className="bag-card-stack dashboard-fit-rail dashboard-fit-rail--bags dashboard-entity-card-stack">
+                  {bags?.map((bag) => {
+                    return (
+                      <BagCard
+                        key={bag.bag_id}
+                        bag={bag}
+                        variant="card"
+                      />
+                    )
+                  })}
+                </div>
+              ) : (
+                <ImmersiveEmptyState
+                  title={COPY.dashboard.noActiveBagsTitle}
+                  description={COPY.dashboard.noActiveBagsBody}
+                  action={
+                    <AddBagAction variant="empty" />
+                  }
+                />
+              )}
+            </section>
+            <section className="dashboard-card-section dashboard-card-section--recent">
+              <div className="dashboard-section-header-row">
+                <SectionHeader>Recent shots</SectionHeader>
+                <Link className="dashboard-view-all-link" to="/brew-log">{COPY.dashboard.viewAll}</Link>
+              </div>
+
+              {!hasRecentShots ? (
+                <ImmersiveEmptyState title={COPY.dashboard.noShots} />
+              ) : (
+                <div className="shot-row-list dashboard-fit-rail dashboard-fit-rail--shots dashboard-entity-card-stack">
+                  {recentShots.map((shot: BrewLogEntry) => (
+                    <ShotCard
+                      key={shot.shot_id}
+                      shot={shot}
+                      variant="summary"
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+        </div>
+      </ImmersiveListShell>
+    </ToneProvider>
   )
 }

@@ -92,7 +92,7 @@ CANONICAL_COLUMNS: dict[str, list[str]] = {
         "Product_URL",
         "Local_Image_Path",
     ],
-    "Hardware": ["Hardware_ID", "Category", "Name"],
+    "Hardware": ["Hardware_ID", "Category", "Name", "Maker"],
     "Inventory": [
         "Bag_ID",
         "Beans",

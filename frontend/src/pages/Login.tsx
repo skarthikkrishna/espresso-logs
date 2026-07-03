@@ -19,6 +19,8 @@ import axios from 'axios'
 import { login, getMe } from '../api/auth'
 import { useAuth } from '../contexts/AuthContext'
 import StandaloneHouseholdShell from '../components/StandaloneHouseholdShell'
+import { Button, FormField, Input, LayerTransition } from '../components/ui'
+import { COPY } from '../copy'
 
 // ---------------------------------------------------------------------------
 // Google icon (inline SVG — no external dependency)
@@ -143,7 +145,7 @@ export default function Login() {
         } catch {
           if (cancelled) return
           setIsOAuthProcessing(false)
-          setFormError('Google sign-in failed. Please try again.')
+          setFormError(COPY.auth.googleFailed)
         }
       })()
     } else {
@@ -151,7 +153,7 @@ export default function Login() {
         await Promise.resolve()
         if (cancelled) return
         setIsOAuthProcessing(false)
-        setFormError('Google sign-in failed. Please try again.')
+        setFormError(COPY.auth.googleFailed)
       })()
     }
 
@@ -171,8 +173,8 @@ export default function Login() {
     setFormError(null)
 
     // Client-side required-field validation
-    const usernameErr = username.trim() ? null : 'Username is required'
-    const passwordErr = password ? null : 'Password is required'
+    const usernameErr = username.trim() ? null : COPY.auth.usernameRequired
+    const passwordErr = password ? null : COPY.auth.passwordRequired
     setFieldErrors({ username: usernameErr, password: passwordErr })
     if (usernameErr) {
       usernameRef.current?.focus()
@@ -194,16 +196,16 @@ export default function Login() {
     } catch (err) {
       if (axios.isAxiosError(err)) {
         if (err.response?.status === 401) {
-          setFormError('Invalid username or password')
+          setFormError(COPY.auth.invalidCredentials)
         } else if (err.response?.status === 429) {
-          setFormError('Too many failed attempts. Try again in 15 minutes.')
+          setFormError(COPY.auth.rateLimited)
         } else if (!err.response) {
-          setFormError('Unable to connect. Please check your connection.')
+          setFormError(COPY.auth.connectionError)
         } else {
-          setFormError('An unexpected error occurred. Please try again.')
+          setFormError(COPY.auth.unexpectedError)
         }
       } else {
-        setFormError('Unable to connect. Please check your connection.')
+        setFormError(COPY.auth.connectionError)
       }
       // Focus first invalid field for accessibility
       usernameRef.current?.focus()
@@ -220,12 +222,12 @@ export default function Login() {
     return (
       <StandaloneHouseholdShell background="bg-auth-login" align="right">
         <div className="w-full max-w-sm">
-          <div className="glass-card card-bevel p-6 text-center">
-            <h1 id="oauth-heading" className="sr-only">Signing in</h1>
-            <span className="loading loading-spinner loading-lg text-primary" aria-label="Signing in" />
-            <p className="mt-4 text-base-content/70">Signing you in…</p>
+          <div className="kaapi-content-surface p-6 text-center">
+            <h1 id="oauth-heading" className="sr-only">{COPY.auth.signingInAria}</h1>
+            <span className="loading loading-spinner loading-lg text-primary" aria-label={COPY.auth.signingInAria} />
+            <p className="mt-4 text-[var(--kaapi-content-muted)]">{COPY.auth.oauthBody}</p>
             {inviteToken ? (
-              <p className="mt-2 text-sm text-amber-200/70">Your household invitation will continue after Google sign-in.</p>
+              <p className="mt-2 text-sm text-[var(--kaapi-content-muted)]">{COPY.auth.oauthInviteNote}</p>
             ) : null}
           </div>
         </div>
@@ -239,15 +241,15 @@ export default function Login() {
 
   return (
     <StandaloneHouseholdShell background="bg-auth-login" align="right" labelledBy="login-heading">
-      <div className="w-full max-w-sm">
-        <div className="glass-card card-bevel p-6">
-          <h1 id="login-heading" className="font-display text-2xl text-base-content text-center mb-6">
-            Sign in
+      <LayerTransition variant="route" className="w-full max-w-sm">
+        <div className="kaapi-content-surface p-6">
+          <h1 id="login-heading" className="font-display text-2xl text-[var(--kaapi-content-content)] text-center mb-6">
+            {COPY.auth.signIn}
           </h1>
 
           {inviteToken ? (
             <div className="alert alert-info card-bevel mb-4 text-sm">
-              <span>A household invitation is ready. Sign in to review and accept it.</span>
+              <span>{COPY.auth.loginInviteBanner}</span>
             </div>
           ) : null}
 
@@ -267,96 +269,84 @@ export default function Login() {
               void handleSubmit(e)
             }}
             noValidate
+            className="space-y-4"
           >
-            {/* Username */}
-            <div className="form-control w-full mb-4">
-              <label htmlFor="login-username" className="label">
-                <span className="label-text text-sm font-medium">Username</span>
-              </label>
-              <input
+            <FormField
+              label={COPY.auth.usernameLabel}
+              htmlFor="login-username"
+              error={fieldErrors.username}
+              errorId="login-username-error"
+            >
+              <Input
                 ref={usernameRef}
                 id="login-username"
                 name="username"
                 type="text"
                 autoComplete="username"
                 required
-                className={`input input-bordered input-styled w-full ${fieldErrors.username ? 'input-error' : ''}`}
+                error={Boolean(fieldErrors.username)}
                 aria-invalid={fieldErrors.username ? 'true' : 'false'}
                 aria-describedby={fieldErrors.username ? 'login-username-error' : formError ? 'login-form-error' : undefined}
                 value={username}
                 onChange={(e) => { setUsername(e.target.value); setFieldErrors((fe) => ({ ...fe, username: null })) }}
               />
-              {fieldErrors.username && (
-                <p id="login-username-error" className="text-error text-sm mt-1" role="alert" aria-live="polite">
-                  {fieldErrors.username}
-                </p>
-              )}
-            </div>
+            </FormField>
 
-            {/* Password */}
-            <div className="form-control w-full mb-6">
-              <label htmlFor="login-password" className="label">
-                <span className="label-text text-sm font-medium">Password</span>
-              </label>
-              <input
+            <FormField
+              label={COPY.auth.passwordLabel}
+              htmlFor="login-password"
+              error={fieldErrors.password}
+              errorId="login-password-error"
+            >
+              <Input
                 ref={passwordRef}
                 id="login-password"
                 name="password"
                 type="password"
                 autoComplete="current-password"
                 required
-                className={`input input-bordered input-styled w-full ${fieldErrors.password ? 'input-error' : ''}`}
+                error={Boolean(fieldErrors.password)}
                 aria-invalid={fieldErrors.password ? 'true' : 'false'}
                 aria-describedby={fieldErrors.password ? 'login-password-error' : formError ? 'login-form-error' : undefined}
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setFieldErrors((fe) => ({ ...fe, password: null })) }}
               />
-              {fieldErrors.password && (
-                <p id="login-password-error" className="text-error text-sm mt-1" role="alert" aria-live="polite">
-                  {fieldErrors.password}
-                </p>
-              )}
-            </div>
+            </FormField>
 
-            <button
+            <Button
               type="submit"
-              className="btn btn-primary w-full btn-bevel"
-              disabled={isSubmitting}
+              variant="primary"
+              fullWidth
+              loading={isSubmitting}
+              loadingText={COPY.auth.signingIn}
             >
-              {isSubmitting ? (
-                <>
-                  <span className="loading loading-spinner loading-sm" />
-                  Signing in...
-                </>
-              ) : (
-                'Sign in'
-              )}
-            </button>
+              {COPY.auth.signIn}
+            </Button>
           </form>
 
-          <div className="divider text-xs text-base-content/50">or</div>
+          <div className="divider text-xs text-[var(--kaapi-content-muted)]">{COPY.auth.orDivider}</div>
 
           <a
             href={googleHref}
             className="btn btn-outline btn-bevel w-full"
-            aria-label="Sign in with Google"
+            aria-label={COPY.auth.googleSignIn}
           >
             <GoogleIcon />
-            Sign in with Google
+            {COPY.auth.googleSignIn}
           </a>
 
-          <p className="text-sm text-base-content/60 text-center mt-4">
-            Forgotten your password? Contact your household admin.
+          <p className="text-sm text-[var(--kaapi-content-muted)] text-center mt-4">
+            {COPY.auth.forgotPassword}
           </p>
 
-          <p className="text-center text-sm mt-4">
-            Don&apos;t have an account?{' '}
-            <Link to={authQuery ? `/register?${authQuery}` : '/register'} className="link link-hover text-amber-400">
-              Register
+          <p className="text-center text-sm mt-4 text-[var(--kaapi-content-content)]">
+            {COPY.auth.noAccountPrompt}{' '}
+            <Link to={authQuery ? `/register?${authQuery}` : '/register'} className="link link-hover font-medium text-[var(--kaapi-content-content)]">
+              {COPY.auth.registerCta}
             </Link>
           </p>
         </div>
-      </div>
+      </LayerTransition>
     </StandaloneHouseholdShell>
   )
 }

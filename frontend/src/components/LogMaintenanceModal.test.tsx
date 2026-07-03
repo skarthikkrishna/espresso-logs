@@ -158,4 +158,11 @@ describe('LogMaintenanceModal', () => {
       expect(defaultProps.onSaved).toHaveBeenCalled()
     })
   })
+
+  it('closes modal (calls onClose) when Escape is pressed', () => {
+    const onClose = vi.fn()
+    render(<LogMaintenanceModal {...defaultProps} onClose={onClose} />, { wrapper })
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
 })

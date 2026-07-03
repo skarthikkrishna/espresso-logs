@@ -62,6 +62,7 @@ describe('HouseholdGuestView', () => {
     )
 
     await waitFor(() => expect(screen.getByRole('heading', { name: /home espresso bar/i })).toBeInTheDocument())
+    expect(screen.getByTestId('motion-route-boundary')).toBeInTheDocument()
     expect(screen.getByText(/read-only household view/i)).toBeInTheDocument()
     expect(screen.queryByText(/guest-secret-key/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/11111111-1111-4111-8111-111111111111/i)).not.toBeInTheDocument()

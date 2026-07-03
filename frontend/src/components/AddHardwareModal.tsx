@@ -4,6 +4,9 @@ import { createHardware } from '../api/hardware'
 import type { HardwareDetail, HardwareItem } from '../types/entities'
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
 import { householdKeys } from '../api/queryKeys'
+import AccessibleDialog from './AccessibleDialog'
+import { FormField, Input, Select, ModalFooter } from './ui'
+import { COPY } from '../copy'
 
 interface AddHardwareModalProps {
   initialCategory?: HardwareItem['category']
@@ -42,82 +45,64 @@ export default function AddHardwareModal({ initialCategory, onClose, onSaved }: 
       onSaved(item.hardware_id)
     },
     onError: () => {
-      setSaveError("Couldn't save hardware. Please try again.")
+      setSaveError(COPY.modals.addHardware.saveError)
     },
   })
 
   const canSave = category !== '' && name.trim().length > 0 && !isPending
 
   return (
-    <dialog className="modal modal-open glass-modal-backdrop" open>
-      <div className="modal-box bg-stone-900 border border-amber-900/30 glass-modal-surface">
-        <h3 className="font-semibold text-lg text-amber-300 mb-4">Add hardware</h3>
+    <AccessibleDialog open title={COPY.modals.addHardware.title} onClose={onClose}>
+      <div className="kaapi-content-surface space-y-4 p-4 sm:p-5">
+        <FormField label={COPY.modals.addHardware.categoryLabel} htmlFor="add-hardware-category">
+          <Select
+            id="add-hardware-category"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            <option value="">{COPY.modals.addHardware.categoryPlaceholder}</option>
+            {CATEGORIES.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </Select>
+        </FormField>
 
-        <div className="flex flex-col gap-3">
-          {/* Category */}
-          <div>
-            <label className="label text-sm text-amber-200/70 mb-1">Category</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="select select-bordered select-sm w-full input-styled"
-            >
-              <option value="">Select category…</option>
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
+        <FormField label={COPY.modals.addHardware.nameLabel} htmlFor="add-hardware-name">
+          <Input
+            id="add-hardware-name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={COPY.modals.addHardware.namePlaceholder}
+          />
+        </FormField>
 
-          {/* Name */}
-          <div>
-            <label className="label text-sm text-amber-200/70 mb-1">Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Breville Barista Express"
-              className="input input-bordered input-sm w-full input-styled"
-            />
-          </div>
+        {/* Product URL — type="url" for mobile keyboard + browser URL hints */}
+        <FormField
+          label={COPY.modals.addHardware.urlLabel}
+          htmlFor="add-hardware-url"
+          hint={COPY.modals.addHardware.urlHint}
+        >
+          <Input
+            id="add-hardware-url"
+            type="url"
+            value={productUrl}
+            onChange={(e) => setProductUrl(e.target.value)}
+            placeholder={COPY.modals.addHardware.urlPlaceholder}
+          />
+        </FormField>
 
-          {/* Product URL — type="url" for mobile keyboard + browser URL hints */}
-          <div>
-            <label className="label text-sm text-amber-200/70 mb-1">
-              Product URL <span className="text-amber-400/50">(optional — for auto-image)</span>
-            </label>
-            <input
-              type="url"
-              value={productUrl}
-              onChange={(e) => setProductUrl(e.target.value)}
-              placeholder="https://…"
-              className="input input-bordered input-sm w-full input-styled"
-            />
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="modal-action mt-4 flex-col items-stretch gap-2">
-          {saveError && (
-            <p className="text-xs text-red-400 text-center w-full">{saveError}</p>
-          )}
-          <div className="flex justify-end gap-2">
-            <button onClick={onClose} className="btn btn-sm btn-ghost text-amber-300/70">
-              Cancel
-            </button>
-            <button
-              onClick={() => mutate()}
-              disabled={!canSave}
-              className="btn btn-sm btn-primary btn-bevel"
-            >
-              {isPending
-                ? <span className="loading loading-spinner loading-xs" />
-                : 'Save hardware'}
-            </button>
-          </div>
-        </div>
+        <ModalFooter
+          status={saveError}
+          secondary={{ label: COPY.actions.cancel, onClick: onClose }}
+          primary={{
+            label: COPY.modals.addHardware.save,
+            onClick: () => mutate(),
+            loading: isPending,
+            disabled: !canSave,
+          }}
+        />
       </div>
-      <form method="dialog" className="modal-backdrop" onClick={onClose} />
-    </dialog>
+    </AccessibleDialog>
   )
 }

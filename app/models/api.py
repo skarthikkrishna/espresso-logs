@@ -29,7 +29,15 @@ class HardwareItemOut(BaseModel):
     hardware_id: str
     category: str
     name: str
+    maker: str | None = None
+    purchase_date: str | None = None
+    notes: str | None = None
+    product_url: str | None = None
     image_path: str | None = None
+
+
+class HardwareImageUploadOut(BaseModel):
+    image_path: str
 
 
 class MaintenanceEventOut(BaseModel):
@@ -44,7 +52,12 @@ class MaintenanceEventOut(BaseModel):
 class BrewLogEntryOut(BaseModel):
     shot_id: str
     date: str
+    bag_id: str | None = None
+    machine_id: str | None = None
+    grinder_id: str | None = None
+    basket_id: str | None = None
     bag_display: str
+    image_path: str | None = None
     roast_level: str | None = None
     machine_name: str | None = None
     grinder_name: str | None = None
@@ -72,6 +85,7 @@ class BrewLogPageOut(BaseModel):
 class DashboardBagOut(BaseModel):
     bag_id: str
     display_name: str
+    image_path: str | None = None
     roast_level: str | None = None
     days_since_last_shot: int | None = None
     last_shot: dict[str, Any] | None = None
@@ -95,6 +109,7 @@ class DefaultsOut(BaseModel):
     storage_method: str | None = None
     dose_in_g: str | None = None
     yield_out_g: str | None = None  # ← NEW (T004): basket-history Level 0 lookup
+    time_sec: str | None = None
     grind_setting: str | None = None
 
 

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Kaapi Kadai — filter coffee davara and tumbler">
+  <g fill="currentColor">
+    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="6.5">
+      <path d="M90 44 q-9 -9 0 -18 q9 -9 0 -18" opacity="0.5"></path>
+      <path d="M110 44 q9 -9 0 -18 q-9 -9 0 -16" opacity="0.32"></path>
+    </g>
+    <path d="M48 121 C46 150 54 177 64 181 L136 181 C146 177 154 150 152 121 Z"></path>
+    <ellipse cx="100" cy="119" rx="68" ry="14"></ellipse>
+    <path d="M72 59 C70 82 80 112 86 119 L114 119 C120 112 130 82 128 59 Z"></path>
+    <ellipse cx="100" cy="57" rx="36" ry="9.5"></ellipse>
+    <ellipse cx="100" cy="56" rx="23" ry="5.5" fill="#f59e0b"></ellipse>
+  </g>
+</svg>

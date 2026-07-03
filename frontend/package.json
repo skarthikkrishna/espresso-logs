@@ -9,11 +9,12 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "vitest run --reporter=verbose",
+    "test": "npm run test:tokens && vitest run --reporter=verbose",
     "test:watch": "vitest",
     "lint": "eslint src --report-unused-disable-directives --max-warnings 0",
     "test:e2e": "playwright test",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e:report": "playwright show-report",
+    "test:tokens": "node scripts/check-token-unification.mjs && node scripts/check-tone-guards.mjs"
   },
   "dependencies": {
     "@gsap/react": "2.1.2",
@@ -28,6 +29,7 @@
     "react": "^19.2.7",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^19.2.7",
+    "react-markdown": "10.1.0",
     "react-router-dom": "^7.16.0",
     "three": "0.184.0"
   },

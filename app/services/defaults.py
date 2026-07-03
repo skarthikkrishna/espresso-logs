@@ -24,6 +24,7 @@ _FIELD_MAP = {
     "Storage_Method": "storage_method",
     "Dose_In_g": "dose_in_g",
     "Yield_Out_g": "yield_out_g",  # BE-2: added; handled via _extract_defaults(), not ad-hoc
+    "Time_Sec": "time_sec",
     "Grind_Setting": "grind_setting",
 }
 
@@ -60,7 +61,7 @@ async def get_defaults(
     Returns:
         A dict with zero or more of:
         ``machine_id``, ``grinder_id``, ``basket_id``, ``storage_method``,
-        ``dose_in_g``, ``yield_out_g``, ``grind_setting``.
+        ``dose_in_g``, ``yield_out_g``, ``time_sec``, ``grind_setting``.
 
         Returns ``{}`` when no suitable prior shots are found (Level 4).
         ``shot_eligibility`` is **never** a key in the response.

@@ -17,15 +17,19 @@ export interface InventoryBag {
   roast_date?: string;
   roast_level?: string;
   catalog_id: string; // route key only — NEVER displayed
-  status: 'Active' | 'Finished';
+  status: 'Active' | 'Resting' | 'Finished';
   storage_method?: string;
 }
 
 export interface HardwareItem {
   hardware_id: string; // route key only — NEVER displayed
   category: 'Machine' | 'Grinder' | 'Basket' | 'Storage';
+  maker?: string | null;
   name: string;
-  image_path?: string;
+  purchase_date?: string | null;
+  notes?: string | null;
+  product_url?: string | null;
+  image_path?: string | null;
 }
 
 export interface MaintenanceEvent {
@@ -39,8 +43,13 @@ export interface MaintenanceEvent {
 
 export interface BrewLogEntry {
   shot_id: string; // route key only — NEVER displayed
+  bag_id?: string | null; // route key only — NEVER displayed
+  machine_id?: string | null; // route key only — NEVER displayed
+  grinder_id?: string | null; // route key only — NEVER displayed
+  basket_id?: string | null; // route key only — NEVER displayed
   date: string;
   bag_display: string; // "Roaster — Bean name"
+  image_path?: string;
   roast_level?: string;
   machine_name?: string;
   grinder_name?: string;
@@ -59,6 +68,7 @@ export interface BrewLogEntry {
 export interface DashboardBag {
   bag_id: string; // route key only — NEVER displayed
   display_name: string;
+  image_path?: string;
   roast_level?: string;
   days_since_last_shot?: number;
   last_shot?: {
@@ -76,6 +86,7 @@ export interface DefaultsPayload {
   storage_method?: string;
   dose_in_g?: number | string;
   yield_out_g?: number | string; // NEW — from basket-history Level 0 lookup
+  time_sec?: number | string;
   grind_setting?: string;
 }
 

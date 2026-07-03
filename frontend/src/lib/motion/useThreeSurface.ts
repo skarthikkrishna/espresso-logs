@@ -46,11 +46,14 @@ export interface ThreeSurfaceContext {
 
 export interface UseThreeSurfaceOptions {
   enabled?: boolean
+  animate?: boolean
   onInit?: (context: ThreeSurfaceContext) => void | (() => void)
   onFrame?: (context: ThreeSurfaceContext, delta: number, elapsed: number) => void
+  onContextLost?: () => void
+  onUnavailable?: () => void
 }
 
-export function useThreeSurface({ enabled = true, onInit, onFrame }: UseThreeSurfaceOptions = {}) {
+export function useThreeSurface({ enabled = true, animate = true, onInit, onFrame, onContextLost, onUnavailable }: UseThreeSurfaceOptions = {}) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const support = useWebGLSupport()
@@ -64,7 +67,13 @@ export function useThreeSurface({ enabled = true, onInit, onFrame }: UseThreeSur
       return undefined
     }
 
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' })
+    let renderer: THREE.WebGLRenderer
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' })
+    } catch {
+      onUnavailable?.()
+      return undefined
+    }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
 
     const resourceTracker = new ResourceTracker()
@@ -96,6 +105,11 @@ export function useThreeSurface({ enabled = true, onInit, onFrame }: UseThreeSur
       }
     }
 
+    const handleContextLost = (event: Event) => {
+      event.preventDefault()
+      onContextLost?.()
+    }
+
     const resizeObserver = new ResizeObserver(resize)
     const intersectionObserver = new IntersectionObserver(([entry]) => {
       onscreen = entry?.isIntersecting ?? true
@@ -107,15 +121,23 @@ export function useThreeSurface({ enabled = true, onInit, onFrame }: UseThreeSur
     resizeObserver.observe(container)
     intersectionObserver.observe(container)
     document.addEventListener('visibilitychange', handleVisibility)
+    canvas.addEventListener('webglcontextlost', handleContextLost)
     resize()
     const cleanupInit = onInit?.(context)
-    setReady(true)
-    frameId = window.requestAnimationFrame(tick)
+    queueMicrotask(() => {
+      if (!disposed) setReady(true)
+    })
+    if (animate) {
+      frameId = window.requestAnimationFrame(tick)
+    } else {
+      onFrame?.(context, 0, clock.elapsedTime)
+    }
 
     return () => {
       disposed = true
       window.cancelAnimationFrame(frameId)
       document.removeEventListener('visibilitychange', handleVisibility)
+      canvas.removeEventListener('webglcontextlost', handleContextLost)
       resizeObserver.disconnect()
       intersectionObserver.disconnect()
       cleanupInit?.()
@@ -124,7 +146,7 @@ export function useThreeSurface({ enabled = true, onInit, onFrame }: UseThreeSur
       renderer.forceContextLoss()
       setReady(false)
     }
-  }, [enabled, onFrame, onInit, support.supported])
+  }, [animate, enabled, onContextLost, onFrame, onInit, onUnavailable, support.supported])
 
   return { containerRef, canvasRef, ready, webGLSupport: support }
 }

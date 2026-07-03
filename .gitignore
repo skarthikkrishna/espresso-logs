@@ -60,3 +60,10 @@ Thumbs.db
 
 screenshots/
 tmp/
+
+# Local governance hub pointer — never commit
+.squad/hub.local
+
+# spec-043 local evidence harness artifacts (do not commit)
+.logs/
+frontend/e2e/__screenshots__/

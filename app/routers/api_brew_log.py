@@ -96,6 +96,7 @@ def _resolve_names_from_dicts(
     return {
         **shot,
         "bag_display": bag_display or bag_id or "",
+        "image_path": catalog_row.get("Local_Image_Path") or None,
         "roast_level": bag_row.get("RoastLevel") or catalog_row.get("Roast_Level") or None,
         "machine_name": hardware.get(machine_id, {}).get("Name") or None,
         "grinder_name": hardware.get(grinder_id, {}).get("Name") or None,
@@ -107,7 +108,12 @@ def _shot_to_out(shot: dict[str, Any], names: dict[str, Any]) -> BrewLogEntryOut
     return BrewLogEntryOut(
         shot_id=shot.get("Shot_ID", ""),
         date=shot.get("Date", ""),
+        bag_id=shot.get("Bag_ID") or None,
+        machine_id=shot.get("Machine_ID") or None,
+        grinder_id=shot.get("Grinder_ID") or None,
+        basket_id=shot.get("Basket_ID") or None,
         bag_display=names["bag_display"],
+        image_path=names.get("image_path"),
         roast_level=names.get("roast_level"),
         machine_name=names.get("machine_name"),
         grinder_name=names.get("grinder_name"),
@@ -181,6 +187,8 @@ async def api_brew_log_detail(
 
 
 class _BrewLogCreateBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     bag_id: str
     machine_id: str = ""
     grinder_id: str = ""

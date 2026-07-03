@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import ExtractionBrewVizFallback from './ExtractionBrewVizFallback'
 import { usePrefersReducedMotion, useWebGLSupport } from '../../lib/motion'
+import { COPY } from '../../copy'
 
 const LazyExtractionBrewViz3D = lazy(() => import('./ExtractionBrewViz3D'))
 
@@ -21,15 +22,15 @@ export default function ExtractionBrewVizMotion({ doseGrams, yieldGrams, timeSec
       <div data-testid="extraction-brew-viz-summary" className="grid grid-cols-3 gap-2 text-center">
         <div className="rounded-[var(--bevel-radius)] border border-white/10 bg-black/10 p-3">
           <p className="text-2xl font-bold text-amber-100">{doseGrams}g</p>
-          <p className="text-xs uppercase tracking-[0.16em] text-amber-200/55">Dose</p>
+          <p className="text-xs uppercase tracking-[0.16em] text-amber-200/55">{COPY.fields.dose}</p>
         </div>
         <div className="rounded-[var(--bevel-radius)] border border-white/10 bg-black/10 p-3">
           <p className="text-2xl font-bold text-amber-100">{yieldGrams}g</p>
-          <p className="text-xs uppercase tracking-[0.16em] text-amber-200/55">Yield</p>
+          <p className="text-xs uppercase tracking-[0.16em] text-amber-200/55">{COPY.fields.yield}</p>
         </div>
         <div className="rounded-[var(--bevel-radius)] border border-white/10 bg-black/10 p-3">
           <p className="text-2xl font-bold text-amber-100">{timeSeconds}s</p>
-          <p className="text-xs uppercase tracking-[0.16em] text-amber-200/55">Time</p>
+          <p className="text-xs uppercase tracking-[0.16em] text-amber-200/55">{COPY.fields.time}</p>
         </div>
       </div>
       {canUse3D ? (

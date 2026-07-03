@@ -21,12 +21,14 @@ import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query'
+import { MemoryRouter } from 'react-router-dom'
 
 // ---------------------------------------------------------------------------
 // Module mocks — hoisted before any import of the mocked module
 // ---------------------------------------------------------------------------
 
 const searchParamsMock = vi.hoisted(() => ({ value: new URLSearchParams() }))
+const routeEnterMock = vi.hoisted(() => vi.fn())
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
@@ -55,12 +57,20 @@ vi.mock('../api/defaults', () => ({
 }))
 
 vi.mock('../api/brewLog', () => ({
+  brewLogDetailQueryKey: (id: string, householdId?: string | null) => ['households', householdId ?? 'no-household', 'brew-log-detail', id],
+  getBrewLogDetail: vi.fn(),
   submitShot: vi.fn().mockResolvedValue({ shot_id: 'SH-TEST-001' }),
 }))
 
 vi.mock('../contexts/AuthContext', () => ({
   useAuth: () => ({ activeHouseholdId: 'hh-1' }),
   useHouseholdQueryScope: () => 'hh-1',
+}))
+
+vi.mock('../lib/motion', () => ({
+  useKaapiMotion: () => ({
+    routeEnter: (target: Element) => routeEnterMock(target),
+  }),
 }))
 
 // ---------------------------------------------------------------------------
@@ -70,7 +80,8 @@ vi.mock('../contexts/AuthContext', () => ({
 import { listInventory } from '../api/inventory'
 import { listHardware } from '../api/hardware'
 import { getDefaults } from '../api/defaults'
-import { submitShot } from '../api/brewLog'
+import { getBrewLogDetail, submitShot } from '../api/brewLog'
+import { defaultsQueryKey } from '../api/queryKeys'
 import BrewLogAdd from './BrewLogAdd'
 
 // ---------------------------------------------------------------------------
@@ -97,22 +108,25 @@ const SECOND_FAKE_BAG = {
 }
 
 /** Wraps component in a fresh QueryClientProvider (retries disabled for fast tests). */
-function renderWithQuery(ui: React.ReactElement) {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-      mutations: { retry: false },
-    },
-  })
+function renderWithQuery(ui: React.ReactElement, queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { retry: false },
+    mutations: { retry: false },
+  },
+})) {
   const rendered = render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>{ui}</MemoryRouter>
+    </QueryClientProvider>
   )
   return {
     queryClient,
     ...rendered,
     rerender: (nextUi: React.ReactElement) =>
       rendered.rerender(
-        <QueryClientProvider client={queryClient}>{nextUi}</QueryClientProvider>
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter>{nextUi}</MemoryRouter>
+        </QueryClientProvider>
       ),
   }
 }
@@ -131,6 +145,11 @@ beforeEach(() => {
     { hardware_id: 'B01', category: 'Basket', name: 'IMS' },
   ])
   vi.mocked(getDefaults).mockResolvedValue({})
+  vi.mocked(getBrewLogDetail).mockResolvedValue({
+    shot_id: 'shot-similar',
+    date: '2026-06-24',
+    bag_display: 'Blue Bottle — Kenya Kiambu',
+  })
 })
 
 // ===========================================================================
@@ -155,6 +174,20 @@ describe('BrewLogAdd', () => {
     expect(screen.getByLabelText('Grind setting')).toBeInTheDocument()
     expect(screen.getByLabelText('Storage method')).toBeInTheDocument()
     expect(screen.getByLabelText('Notes')).toBeInTheDocument()
+  })
+
+  it('does not replay the page enter animation while typing after load', async () => {
+    renderWithQuery(<BrewLogAdd />)
+
+    const doseInput = await screen.findByLabelText('Dose (g)')
+    await waitFor(() => {
+      expect(routeEnterMock).toHaveBeenCalledTimes(1)
+    })
+
+    fireEvent.change(doseInput, { target: { value: '18' } })
+
+    expect(doseInput).toHaveValue(18)
+    expect(routeEnterMock).toHaveBeenCalledTimes(1)
   })
 
   // ── Test 1: Basket select renders with hardware query options ─────────────
@@ -195,6 +228,7 @@ describe('BrewLogAdd', () => {
     vi.mocked(getDefaults).mockResolvedValue({
       dose_in_g: '18',
       yield_out_g: '36',
+      time_sec: '28',
       grind_setting: '12',
     })
 
@@ -208,6 +242,63 @@ describe('BrewLogAdd', () => {
     // Wait for defaults to apply to the dose field
     await waitFor(() => {
       expect(screen.getByLabelText('Dose (g)')).toHaveValue(18)
+      expect(screen.getByLabelText('Time (s)')).toHaveValue(28)
+    })
+  })
+
+  it('refetches stale cached defaults so newly added time_sec hydrates the Time field', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false, staleTime: 60_000 },
+        mutations: { retry: false },
+      },
+    })
+    queryClient.setQueryData(defaultsQueryKey(FAKE_BAG.bag_id, '', 'hh-1'), {
+      dose_in_g: '18',
+      yield_out_g: '36',
+    })
+    vi.mocked(getDefaults).mockResolvedValue({
+      dose_in_g: '18',
+      yield_out_g: '36',
+      time_sec: '28',
+    })
+
+    renderWithQuery(<BrewLogAdd />, queryClient)
+
+    const bagSelect = await screen.findByRole('combobox', { name: 'Bag' })
+    fireEvent.change(bagSelect, { target: { value: FAKE_BAG.bag_id } })
+
+    await waitFor(() => {
+      expect(vi.mocked(getDefaults)).toHaveBeenCalledWith(FAKE_BAG.bag_id, undefined)
+      expect(screen.getByLabelText('Time (s)')).toHaveValue(28)
+    })
+  })
+
+  it('does not overwrite a dirty Time field when defaults with time_sec arrive late', async () => {
+    let resolveDefaults!: (value: Awaited<ReturnType<typeof getDefaults>>) => void
+    vi.mocked(getDefaults).mockReturnValue(new Promise((resolve) => {
+      resolveDefaults = resolve
+    }))
+
+    renderWithQuery(<BrewLogAdd />)
+
+    const bagSelect = await screen.findByRole('combobox', { name: 'Bag' })
+    fireEvent.change(bagSelect, { target: { value: FAKE_BAG.bag_id } })
+    await waitFor(() => {
+      expect(vi.mocked(getDefaults)).toHaveBeenCalledWith(FAKE_BAG.bag_id, undefined)
+    })
+
+    const timeInput = screen.getByLabelText('Time (s)')
+    fireEvent.change(timeInput, { target: { value: '31' } })
+    resolveDefaults({
+      dose_in_g: '18',
+      yield_out_g: '36',
+      time_sec: '28',
+    })
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Dose (g)')).toHaveValue(18)
+      expect(timeInput).toHaveValue(31)
     })
   })
 
@@ -251,6 +342,78 @@ describe('BrewLogAdd', () => {
 
     expect(await screen.findByText(/finished or unavailable/i)).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Bag' })).toBeInTheDocument()
+  })
+
+  it('prefills a reload-safe similar shot from route-key IDs and recipe fields', async () => {
+    searchParamsMock.value = new URLSearchParams('similar_shot_id=shot-similar')
+    vi.mocked(listHardware).mockResolvedValue([
+      { hardware_id: 'B01', category: 'Basket', name: 'IMS' },
+      { hardware_id: 'M01', category: 'Machine', name: 'Linea Mini' },
+      { hardware_id: 'G01', category: 'Grinder', name: 'P64' },
+      { hardware_id: 'S01', category: 'Storage', name: 'Frozen — Glass Tube' },
+    ])
+    vi.mocked(getBrewLogDetail).mockResolvedValue({
+      shot_id: 'shot-similar',
+      date: '2026-06-24',
+      bag_id: 'BB-2024-01-L-001',
+      machine_id: 'M01',
+      grinder_id: 'G01',
+      basket_id: 'B01',
+      bag_display: 'Blue Bottle — Kenya Kiambu',
+      dose_in_g: 18,
+      yield_out_g: 40,
+      time_sec: 29,
+      grind_setting: '4.2',
+      storage_method: 'Frozen — Glass Tube',
+      shot_eligibility: 'Good Espresso',
+      taste_summary: 'Sweet & Balanced',
+      user_notes: 'Repeat this recipe',
+    })
+
+    renderWithQuery(<BrewLogAdd />)
+
+    expect(await screen.findByRole('combobox', { name: 'Bag' })).toHaveValue('BB-2024-01-L-001')
+    await waitFor(() => {
+      expect(screen.getByLabelText('Dose (g)')).toHaveValue(18)
+      expect(screen.getByLabelText('Yield (g)')).toHaveValue(40)
+      expect(screen.getByLabelText('Time (s)')).toHaveValue(29)
+      expect(screen.getByLabelText('Basket')).toHaveValue('B01')
+      expect(screen.getByLabelText(/shot eligibility/i)).toHaveValue('Good Espresso')
+      expect(screen.getByLabelText('Machine')).toHaveValue('M01')
+      expect(screen.getByLabelText('Grinder')).toHaveValue('G01')
+      expect(screen.getByLabelText('Grind setting')).toHaveValue('4.2')
+      expect(screen.getByLabelText('Storage method')).toHaveValue('Frozen — Glass Tube')
+      expect(screen.getByLabelText('Notes')).toHaveValue('Repeat this recipe')
+    })
+  })
+
+  it('does not overwrite a dirty field when similar-shot prefill arrives late', async () => {
+    searchParamsMock.value = new URLSearchParams('similar_shot_id=shot-similar')
+    let resolveSimilar!: (value: Awaited<ReturnType<typeof getBrewLogDetail>>) => void
+    vi.mocked(getBrewLogDetail).mockReturnValue(new Promise((resolve) => {
+      resolveSimilar = resolve
+    }))
+
+    renderWithQuery(<BrewLogAdd />)
+
+    const bagSelect = await screen.findByRole('combobox', { name: 'Bag' })
+    fireEvent.change(bagSelect, { target: { value: 'BB-2024-01-L-001' } })
+    const doseInput = screen.getByLabelText('Dose (g)')
+    fireEvent.change(doseInput, { target: { value: '20' } })
+
+    resolveSimilar({
+      shot_id: 'shot-similar',
+      date: '2026-06-24',
+      bag_id: 'BB-2024-01-L-001',
+      bag_display: 'Blue Bottle — Kenya Kiambu',
+      dose_in_g: 18,
+      yield_out_g: 36,
+    })
+
+    await waitFor(() => {
+      expect(doseInput).toHaveValue(20)
+      expect(screen.getByLabelText('Yield (g)')).toHaveValue(36)
+    })
   })
 
   // ── Test 4: Dirty dose field is protected after bag is already selected ─────
@@ -444,7 +607,7 @@ describe('BrewLogAdd', () => {
 
     // Wait for onSettled to reset isSubmittingRef (error message appears)
     await waitFor(() => {
-      expect(document.querySelector('.text-error')).not.toBeNull()
+      expect(document.querySelector('[role="alert"]')).not.toBeNull()
     })
 
     // Second submit — retry
@@ -525,7 +688,7 @@ describe('BrewLogAdd', () => {
     })
     // Wait for error state so isSubmittingRef is reset
     await waitFor(() => {
-      expect(document.querySelector('.text-error')).not.toBeNull()
+      expect(document.querySelector('[role="alert"]')).not.toBeNull()
     })
     const firstKey = vi.mocked(submitShot).mock.calls[0][0].idempotency_key
 
@@ -558,8 +721,10 @@ describe('BrewLogAdd', () => {
 
     await waitFor(() => {
       // Ensure compass label is actually rendered (fails fast if label renamed/removed)
-      const compassLabel = screen.getByText('Extraction compass')
+      const compassLabel = screen.getAllByText('Extraction compass')[0]
       expect(compassLabel).not.toBeNull()
+      expect(document.querySelector('.kk-compass-zone-selector')).toBeNull()
+      expect(screen.getAllByRole('gridcell')).toHaveLength(9)
 
       // H-4 fix: Tailwind responsive prefixes are literal class tokens.
       // classList.contains('grid-cols-2') returns FALSE for 'md:grid-cols-2'.

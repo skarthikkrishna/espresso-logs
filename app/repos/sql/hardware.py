@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 from typing import Any
 
 from sqlalchemy import select
@@ -9,6 +10,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.hardware import Hardware
 from app.repos.sql.tenant import household_read_scope, row_household_id_or_context
+
+
+def _to_date(val: Any) -> datetime.date | None:
+    try:
+        return datetime.date.fromisoformat(str(val)) if val not in (None, "") else None
+    except ValueError:
+        return None
 
 
 class SqlHardwareRepo:
@@ -36,6 +44,9 @@ class SqlHardwareRepo:
             existing.household_id = household_id
             existing.name = row.get("Name", "")
             existing.category = row.get("Category", "")
+            existing.maker = row.get("Maker") or None
+            existing.purchase_date = _to_date(row.get("Purchase_Date"))
+            existing.notes = row.get("Notes")
             existing.product_url = row.get("Product_URL")
             existing.local_image_path = row.get("Local_Image_Path")
         else:
@@ -44,6 +55,9 @@ class SqlHardwareRepo:
                 sheets_id=sheets_id,
                 name=row.get("Name", ""),
                 category=row.get("Category", ""),
+                maker=row.get("Maker") or None,
+                purchase_date=_to_date(row.get("Purchase_Date")),
+                notes=row.get("Notes"),
                 product_url=row.get("Product_URL"),
                 local_image_path=row.get("Local_Image_Path"),
             )
@@ -90,7 +104,9 @@ class SqlHardwareRepo:
             "Hardware_ID": row.sheets_id or "",
             "Name": row.name or "",
             "Category": row.category or "",
+            "Maker": row.maker or "",
+            "Purchase_Date": row.purchase_date.isoformat() if row.purchase_date else "",
+            "Notes": row.notes or "",
             "Product_URL": row.product_url or "",
             "Local_Image_Path": row.local_image_path or "",
-            "Notes": row.notes or "",
         }

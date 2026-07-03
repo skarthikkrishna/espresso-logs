@@ -17,6 +17,7 @@ export function getAppShellBackgroundToken(pathname: string): string {
   if (pathname === '/') return 'bg-dashboard'
   if (pathname.startsWith('/brew-log')) return 'bg-brew-log'
   if (pathname.startsWith('/catalog')) return 'bg-catalog'
+  if (pathname.startsWith('/import')) return 'bg-catalog'
   if (pathname.startsWith('/hardware')) return 'bg-hardware'
   if (pathname.startsWith('/profile')) return 'bg-profile-household'
   if (pathname.startsWith('/household/settings')) return 'bg-household-settings'

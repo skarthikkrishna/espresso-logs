@@ -15,13 +15,14 @@ from app.repos.sql.hardware import SqlHardwareRepo
 async def test_upsert_creates_row(db_session: AsyncSession, test_household_id) -> None:
     """upsert() inserts a row with correct field mapping."""
     repo = SqlHardwareRepo(db=db_session)
-    row = {"Name": "Decent DE1", "Category": "Machine"}
+    row = {"Name": "Decent DE1", "Category": "Machine", "Maker": "Decent Espresso"}
     await repo.upsert(row)
 
     result = await db_session.execute(select(Hardware).where(Hardware.name == "Decent DE1"))
     item = result.scalar_one()
     assert item.name == "Decent DE1"
     assert item.category == "Machine"
+    assert item.maker == "Decent Espresso"
     assert item.household_id == test_household_id
 
 
@@ -76,24 +77,60 @@ async def test_next_id_returns_empty_string(db_session: AsyncSession) -> None:
 async def test_list_returns_inserted_row(db_session: AsyncSession) -> None:
     """list() returns a dict with correct field mapping for an upserted row."""
     repo = SqlHardwareRepo(db=db_session)
-    await repo.upsert({"Hardware_ID": "HW-001", "Name": "Decent DE1", "Category": "Machine"})
+    await repo.upsert(
+        {
+            "Hardware_ID": "HW-001",
+            "Name": "Decent DE1",
+            "Category": "Machine",
+            "Maker": "Decent Espresso",
+        }
+    )
     results = await repo.list()
     assert len(results) == 1
     row = results[0]
     assert row["Hardware_ID"] == "HW-001"
     assert row["Name"] == "Decent DE1"
     assert row["Category"] == "Machine"
+    assert row["Maker"] == "Decent Espresso"
 
 
 async def test_get_returns_inserted_row(db_session: AsyncSession) -> None:
     """get() returns a dict with correct field mapping for an upserted row."""
     repo = SqlHardwareRepo(db=db_session)
-    await repo.upsert({"Hardware_ID": "HW-002", "Name": "Niche Zero", "Category": "Grinder"})
+    await repo.upsert(
+        {"Hardware_ID": "HW-002", "Name": "Niche Zero", "Category": "Grinder", "Maker": "Niche"}
+    )
     result = await repo.get("HW-002")
     assert result is not None
     assert result["Hardware_ID"] == "HW-002"
     assert result["Name"] == "Niche Zero"
     assert result["Category"] == "Grinder"
+    assert result["Maker"] == "Niche"
+
+
+async def test_get_returns_hardware_detail_fields(db_session: AsyncSession) -> None:
+    """get() returns hardware-owned detail fields as API-ready strings."""
+    repo = SqlHardwareRepo(db=db_session)
+    await repo.upsert(
+        {
+            "Hardware_ID": "HW-043-MACHINE",
+            "Name": "La Marzocco Linea Micra",
+            "Category": "Machine",
+            "Maker": "La Marzocco",
+            "Purchase_Date": "2025-11-15",
+            "Notes": "9 bar reference profile; steam wand cleaned after milk drinks.",
+            "Product_URL": "https://lamarzocco.com/linea-micra/",
+            "Local_Image_Path": "/static/spa/static/e2e-assets/spec-043/espresso-machine.jpg",
+        }
+    )
+
+    result = await repo.get("HW-043-MACHINE")
+
+    assert result is not None
+    assert result["Maker"] == "La Marzocco"
+    assert result["Purchase_Date"] == "2025-11-15"
+    assert result["Notes"] == "9 bar reference profile; steam wand cleaned after milk drinks."
+    assert result["Product_URL"] == "https://lamarzocco.com/linea-micra/"
 
 
 async def _create_household(db_session: AsyncSession, name: str) -> uuid.UUID:

@@ -56,7 +56,7 @@ _CATALOG_ROW = {
     "Bean_Name": "Seabright",
     "Roast_Level": "Medium",
     "Product_URL": "",
-    "Local_Image_Path": "",
+    "Local_Image_Path": "https://cdn.example.test/catalog/CAT001.jpg",
 }
 
 _HARDWARE_ROW = {
@@ -197,6 +197,8 @@ async def test_brew_log_list_reads_each_repo_exactly_once():
             resp = await client.get("/api/brew-log")
 
     assert resp.status_code == 200
+    data = resp.json()
+    assert data["items"][0]["image_path"] == _CATALOG_ROW["Local_Image_Path"]
     # Exactly one bulk-fetch of all inventory bags — not one per shot
     assert inv_repo.list_all.call_count == 1
     # Per-item lookup must never be used
@@ -248,6 +250,7 @@ async def test_brew_log_list_handles_missing_bag_id():
     assert len(data["items"]) == 1
     # bag_display must be "" or the raw id — never an unhandled exception
     assert data["items"][0]["bag_display"] in ("", shot_no_bag["Bag_ID"])
+    assert data["items"][0]["image_path"] is None
 
 
 @pytest.mark.asyncio
@@ -327,6 +330,7 @@ async def test_brew_log_detail_reads_each_repo_exactly_once():
             resp = await client.get("/api/brew-log/SH-001")
 
     assert resp.status_code == 200
+    assert resp.json()["image_path"] == _CATALOG_ROW["Local_Image_Path"]
     assert inv_repo.list_all.call_count == 1
     # inventory_repo.get() must never be called — only brew_log_repo.get() is fine
     inv_repo.get.assert_not_called()

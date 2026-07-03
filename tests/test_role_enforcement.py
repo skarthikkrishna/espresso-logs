@@ -250,7 +250,7 @@ async def test_admin_can_rename_household(real_auth_client: AsyncMock) -> None:
 
 
 async def test_member_cannot_access_import_wizard(real_auth_client: AsyncMock) -> None:
-    """Members cannot access the import wizard start route."""
+    """Members cannot access the import wizard start API route."""
     _ = real_auth_client
     user_id = uuid.uuid4()
     household_id = uuid.uuid4()
@@ -266,7 +266,7 @@ async def test_member_cannot_access_import_wizard(real_auth_client: AsyncMock) -
         MockHHRepo.return_value.get_memberships_for_user = AsyncMock(return_value=[member])
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            resp = await client.get("/import", headers={"Authorization": f"Bearer {token}"})
+            resp = await client.get("/api/import", headers={"Authorization": f"Bearer {token}"})
 
     assert resp.status_code == 403, (
         f"Member must not access import wizard, got {resp.status_code}: {resp.text}"

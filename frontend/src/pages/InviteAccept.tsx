@@ -5,10 +5,12 @@ import { getMe } from '../api/auth'
 import { acceptInvitation, declineInvitation, getInvitationPreview, type InvitationPreview } from '../api/invitations'
 import { useAuth } from '../contexts/AuthContext'
 import StandaloneHouseholdShell from '../components/StandaloneHouseholdShell'
+import { Button, LayerTransition } from '../components/ui'
+import { COPY } from '../copy'
 
 function formatExpiry(value: string): string {
   const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'soon'
+  if (Number.isNaN(date.getTime())) return COPY.invite.expirySoon
   return date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
 
@@ -50,7 +52,7 @@ export default function InviteAccept() {
           navigate(route, { replace: true })
           return
         }
-        setError('Could not load this invitation. Please retry or ask the household admin for a new link.')
+        setError(COPY.invite.loadError)
       })
       .finally(() => {
         if (!cancelled) setIsLoadingPreview(false)
@@ -85,7 +87,7 @@ export default function InviteAccept() {
         navigate('/', { replace: true })
         return
       }
-      setError('Failed to accept the invitation. Please try again.')
+      setError(COPY.invite.acceptFailed)
     } finally {
       setIsAccepting(false)
     }
@@ -104,7 +106,7 @@ export default function InviteAccept() {
         navigate(route, { replace: true })
         return
       }
-      setError('Could not dismiss the invitation. You can still leave this page without accepting.')
+      setError(COPY.invite.declineFailed)
     } finally {
       setIsDeclining(false)
     }
@@ -113,9 +115,9 @@ export default function InviteAccept() {
   if (authLoading || isLoadingPreview) {
     return (
       <StandaloneHouseholdShell background="bg-invite-accept" align="right">
-        <div className="glass-card card-bevel w-full max-w-sm p-6 text-center" role="status" aria-live="polite">
-          <span className="loading loading-spinner loading-lg text-primary" aria-label="Loading invitation" />
-          <p className="mt-4 text-sm text-base-content/70">Loading invitation…</p>
+        <div className="kaapi-content-surface w-full max-w-sm p-6 text-center" role="status" aria-live="polite">
+          <span className="loading loading-spinner loading-lg text-primary" aria-label={COPY.invite.loadingAria} />
+          <p className="mt-4 text-sm text-[var(--kaapi-content-muted)]">{COPY.invite.loadingBody}</p>
         </div>
       </StandaloneHouseholdShell>
     )
@@ -125,48 +127,51 @@ export default function InviteAccept() {
 
   return (
     <StandaloneHouseholdShell background="bg-invite-accept" align="right" labelledBy="invite-heading">
-      <div className="w-full max-w-md">
-        <div className="glass-card card-bevel p-6 space-y-5">
+      <LayerTransition variant="route" className="w-full max-w-md">
+        <div className="kaapi-content-surface p-6 space-y-5">
           <div className="space-y-2 text-center">
-            <p className="text-xs uppercase tracking-[0.22em] text-amber-300/70">Household invitation</p>
-            <h1 id="invite-heading" className="text-2xl font-display text-amber-100">Join {preview.household_name}</h1>
-            <p className="text-sm text-base-content/75">
-              {preview.inviter_display_name} invited you to join as a <span className="text-amber-200">{preview.invited_role}</span>.
+            <p className="text-xs uppercase tracking-[0.22em] text-[var(--kaapi-content-muted)]">{COPY.invite.eyebrow}</p>
+            <h1 id="invite-heading" className="text-2xl font-display text-[var(--kaapi-content-content)]">{COPY.invite.joinHeading(preview.household_name)}</h1>
+            <p className="text-sm text-[var(--kaapi-content-muted)]">
+              {COPY.invite.invitedBy(preview.inviter_display_name, preview.invited_role)}
             </p>
-            <p className="text-xs text-base-content/55">Expires {formatExpiry(preview.expires_at)}</p>
+            <p className="text-xs text-[var(--kaapi-content-muted)]">{COPY.invite.expires(formatExpiry(preview.expires_at))}</p>
           </div>
 
           {declined ? (
             <div className="alert alert-info card-bevel text-sm" role="status">
-              <span>Invitation dismissed. The link was not consumed; you can revisit it before expiry if you change your mind.</span>
+              <span>{COPY.invite.dismissedBanner}</span>
             </div>
           ) : null}
 
           {error ? <p className="text-error text-sm text-center" role="alert">{error}</p> : null}
 
           <div className="grid gap-2">
-            <button
+            <Button
               type="button"
+              variant="primary"
+              fullWidth
               onClick={() => { void handleAccept() }}
               disabled={isAccepting || declined}
-              className="btn btn-primary w-full btn-bevel"
             >
-              {isAccepting ? 'Joining…' : 'Accept invitation'}
-            </button>
-            <button
+              {isAccepting ? COPY.invite.joining : COPY.invite.accept}
+            </Button>
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
+              fullWidth
               onClick={() => { void handleDecline() }}
               disabled={isDeclining || declined}
-              className="btn btn-ghost btn-sm w-full"
             >
-              {isDeclining ? 'Dismissing…' : 'Decline without accepting'}
-            </button>
+              {isDeclining ? COPY.invite.dismissing : COPY.invite.decline}
+            </Button>
             <Link to="/" className="btn btn-outline btn-sm btn-bevel w-full no-underline">
-              Go to dashboard
+              {COPY.invite.goToDashboard}
             </Link>
           </div>
         </div>
-      </div>
+      </LayerTransition>
     </StandaloneHouseholdShell>
   )
 }

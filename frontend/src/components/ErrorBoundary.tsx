@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from 'react'
+import { COPY } from '../copy'
 
 interface Props {
   children: ReactNode
@@ -26,7 +27,7 @@ export default class ErrorBoundary extends Component<Props, State> {
         this.props.fallback ?? (
           <div className="p-6">
             <div className="alert alert-error">
-              <span>Something went wrong. Please refresh the page.</span>
+              <span>{COPY.appError.boundary}</span>
             </div>
           </div>
         )

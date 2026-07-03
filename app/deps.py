@@ -62,6 +62,10 @@ if _E2E_AUTH_BYPASS:
             f"(got APP_ENV={_app_env!r}). Remove E2E_AUTH_BYPASS before deploying to "
             "staging, preview, or production environments."
         )
+    if os.environ.get("USE_POSTGRES", "").lower() in {"1", "true", "yes"}:
+        from app.e2e_safety import assert_e2e_database_is_isolated
+
+        assert_e2e_database_is_isolated()
 
 
 # ---------------------------------------------------------------------------

@@ -54,6 +54,9 @@ export const submitShot = (data: SubmitShotPayload) =>
 export const updateBrewLogEntry = (id: string, data: BrewLogCorrectionPayload) =>
   apiClient.patch<BrewLogEntry>(`/api/brew-log/${id}`, data).then((r) => r.data)
 
+export const deleteBrewLogEntry = (id: string) =>
+  apiClient.delete(`/api/brew-log/${id}`).then(() => undefined)
+
 export const getBrewLogFeedback = (id: string) =>
   apiClient.get<{ ai_feedback: string | null }>(`/api/brew-log/${id}/feedback`).then((r) => r.data)
 

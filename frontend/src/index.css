@@ -22,7 +22,11 @@
   --color-base-200: #22160b;
   --color-base-300: #2d1f0e;
   --color-base-content: #f5e6d3;
-  --color-info: #3b82f6;
+  /* spec-043 T003: info teal #0e7490 (was #3b82f6) — restrained semantic cool,
+     WCAG AA with white content (~4.7:1). Blast radius: every alert-info/badge-info
+     app-wide (Login/Register/InviteAccept notices). */
+  --color-info: #0e7490;
+  --color-info-content: #ffffff;
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-error: #ef4444;
@@ -59,12 +63,24 @@
   --input-focus-ring: 0 0 0 2px rgba(217, 119, 6, 0.6);
   --input-label-gap: 0.375rem;
 
-  /* Mobile bottom stack */
-  --mobile-bottom-nav-height: 4.25rem;
-  --mobile-household-strip-height: 3.25rem;
-  --mobile-bottom-stack-height: calc(var(--mobile-bottom-nav-height) + var(--mobile-household-strip-height) + env(safe-area-inset-bottom));
+  /* spec-043 T004: form controls on solid light content surfaces. White field on
+     the warm card reads as an input; amber focus ring stays the brand affordance
+     (tokenized, reused from --input-focus-ring). Scoped via descendant selectors
+     so dark default inputs on un-migrated pages are untouched. */
+  --kaapi-content-input-bg: #ffffff;
+  --kaapi-content-input-border: 1px solid rgba(120, 53, 15, 0.28);
+  --kaapi-content-input-text: #2d1608;
+  --kaapi-content-input-placeholder: #6b4a2f;
+
+  /* Mobile bottom stack — Aria Item 7: household strip merged into nav bar.
+     Nav now includes a context row (~2.75rem for WCAG touch targets) above
+     the primary nav items (~3.5rem), eliminating the separate strip element.
+     Stack savings: was 7.5rem + safe-area → now 6.25rem + safe-area. */
+  --mobile-bottom-nav-height: 6.25rem; /* context row + nav items; was 4.25rem */
+  --mobile-household-strip-height: 0rem; /* no longer a separate element */
+  --mobile-bottom-stack-height: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom));
   --mobile-fab-offset: calc(var(--mobile-bottom-stack-height) + 1rem);
-  --mobile-content-bottom-padding: calc(var(--mobile-bottom-stack-height) + 5.5rem);
+  --mobile-content-bottom-padding: calc(var(--mobile-bottom-stack-height) + 9rem);
 
   /* Kaapi Kadai section/glow accents */
   --kaapi-section-accent-width: 0.1875rem;
@@ -72,6 +88,264 @@
   --kaapi-glow-amber: 0 0 28px rgba(245,158,11,0.22);
   --kaapi-glow-coral: 0 0 28px rgba(180,83,9,0.20);
   --kaapi-gradient-warm: linear-gradient(135deg, #b45309 0%, #f59e0b 52%, #f5e6d3 100%);
+
+  /* ── spec-043: Warm Editorial Instrument Calm — hybrid base + surface contract ──
+     Kept in :root (not the DaisyUI theme block) because multi-layer shadows and
+     gradients are comma-truncated by the theme plugin. Mirrors the token table in
+     docs/requirements/design-language.md (Surface / Cool Accent / Ambient sections).
+     Amber (--color-primary #b45309) remains the brand/CTA anchor; cool tokens are
+     restrained semantic/depth tools, never a method-color wash. */
+
+  /* Espresso-dark frame/chrome tokens — identity layer */
+  --kaapi-frame-bg: #120b06;
+  --kaapi-frame-surface: #1a1209;
+
+  /* Solid, light, elevated warm operational content surfaces — AA-safe without
+     help from photography, blur, ambient darkness, or translucency.
+     #2d1608 text on #fff7ed ≈ 13:1; --kaapi-content-muted on surface ≈ 5.6:1. */
+  --kaapi-content-surface: #fff7ed;
+  --kaapi-content-surface-2: #f7ead8;
+  --kaapi-content-border: rgba(120, 53, 15, 0.18);
+  --kaapi-content-content: #2d1608;
+  --kaapi-content-muted: #6b4a2f;
+  /* On-light semantic text (spec-043 T022). DaisyUI --color-error #ef4444 ≈ 3.54:1
+     and --color-warning #f59e0b ≈ 2.02:1 on #fff7ed both fail WCAG AA for normal
+     text. These darker tints restore AA on the cream content surface while staying
+     unmistakably red / amber: error #b91c1c ≈ 6.09:1, warning #92400e ≈ 6.68:1
+     (both ≥ 4.5:1 normal, ≥ 3:1 large). Scoped to content surfaces only — the
+     lighter DaisyUI values remain correct on the espresso-dark frame. */
+  --kaapi-content-error: #b91c1c;
+  --kaapi-content-warning: #92400e;
+  --kaapi-content-shadow: 0 18px 44px rgba(18, 11, 6, 0.28), 0 2px 8px rgba(18, 11, 6, 0.18), inset 0 1px 0 rgba(255,255,255,0.72);
+  --kaapi-content-surface-dark: #2A241B;
+  --kaapi-content-surface-dark-2: #2d1f0e;
+  --kaapi-content-content-dark: #f5e6d3;
+  --kaapi-content-muted-dark: #cdbba6;
+  --kaapi-content-border-dark: rgba(245, 230, 211, 0.16);
+  --kaapi-content-shadow-dark: 0 20px 48px rgba(0, 0, 0, 0.52), 0 2px 10px rgba(18, 11, 6, 0.42), inset 0 1px 0 rgba(255, 247, 237, 0.08);
+  --kaapi-frame-scrim-dark-t2: rgba(18, 11, 6, 0.68);
+  --kk-page-bg-scrim-neutral: linear-gradient(var(--kaapi-frame-scrim-dark-t2), rgba(18, 11, 6, 0.68));
+  --kk-page-bg-overlay: linear-gradient(rgba(18, 11, 6, 0.76), rgba(18, 11, 6, 0.76));
+  --kk-page-bg-overlay-base: linear-gradient(var(--kaapi-frame-scrim-dark-t2, rgba(18, 11, 6, 0.68)), rgba(18, 11, 6, 0.68));
+  --kk-page-bg-overlay-dashboard: linear-gradient(rgba(18, 11, 6, 0.76), rgba(18, 11, 6, 0.76));
+  --kk-page-bg-overlay-brew: linear-gradient(rgba(18, 11, 6, 0.76), rgba(18, 11, 6, 0.76));
+  --kk-page-bg-overlay-catalog: linear-gradient(rgba(18, 11, 6, 0.76), rgba(18, 11, 6, 0.76));
+  --kk-page-bg-overlay-hardware: linear-gradient(rgba(18, 11, 6, 0.76), rgba(18, 11, 6, 0.76));
+  --kk-main-veil-bg: rgba(14, 9, 4, 0.38);
+  --kk-main-veil-blur: blur(4px);
+  --kk-page-frost-blur: blur(4px);
+  --kk-scrim-dashboard-start: rgba(6, 4, 2, 0.32);
+  --kk-scrim-dashboard-end: rgba(8, 5, 2, 0.48);
+  --kk-scrim-brew-start: rgba(8, 5, 2, 0.45);
+  --kk-scrim-catalog-start: rgba(8, 5, 2, 0.40);
+  --kk-scrim-hardware-start: rgba(8, 5, 2, 0.40);
+  --kaapi-card-title-family: var(--font-display);
+  --kaapi-card-title-size: clamp(0.90rem, 0.86rem + 0.16vw, 1.00rem);
+  --kaapi-card-title-weight: 700;
+  --kaapi-card-title-line-height: 1.18;
+  --kaapi-card-title-letter-spacing: -0.01em;
+  --kaapi-card-meta-family: Inter, var(--font-body), system-ui, sans-serif;
+  --kaapi-card-meta-size: 0.8125rem;
+  --kaapi-card-meta-weight: 500;
+  --kaapi-card-meta-line-height: 1.35;
+
+  /* CANONICAL CARD SURFACE — single source of truth
+     The background, fallback solid, border, shadow, and blur below must move
+     together; all repeated entity cards consume these tokens directly instead
+     of --kk-tc-surface, --kk-surface-*, or --kaapi-content-surface. */
+  --kk-card-surface-bg: rgba(250, 245, 239, 0.86);
+  --kk-card-surface-bg-solid: #faf5ef;
+  --kk-card-surface-border: 1px solid rgba(139, 90, 43, 0.14);
+  --kk-card-surface-shadow: 0 10px 28px -20px rgba(45, 22, 8, 0.24);
+  --kk-card-surface-blur: 20px;
+  --kk-card-surface-filter: blur(var(--kk-card-surface-blur));
+  --kk-primary-btn-radius: 6px;
+  --kk-primary-btn-padding: 8px 16px;
+
+  /* Restrained accent slots. Teal hue is quarantined to --color-info only. */
+  --kaapi-accent-teal: #734a37;
+  --kaapi-accent-teal-content: #fffaf3;
+  --kaapi-accent-cyan: #d26946;
+  --kaapi-accent-violet: #a78bfa;
+  --kaapi-depth-teal: #4b2f23;
+  --kaapi-glint-cool: #be9757;
+
+  /* Shared app-shell ambient depth tokens + static fallback (KaapiAmbientLayer,
+     T006). Subtle calm depth only — never fog/smoke/particle spectacle. */
+  --kaapi-ambient-clear: #120b06;
+  --kaapi-ambient-vignette: rgba(6, 4, 2, 0.58);
+  --kaapi-ambient-warm-fog: rgba(180, 83, 9, 0.18);
+  --kaapi-ambient-deep-fog: rgba(45, 31, 14, 0.72);
+  --kaapi-ambient-cool-glint: rgba(190, 151, 87, 0.14);
+  --kaapi-ambient-depth-teal: rgba(115, 74, 55, 0.16);
+  --kaapi-ambient-static-gradient: radial-gradient(circle at 18% 22%, rgba(180, 83, 9, 0.18), transparent 34%), radial-gradient(circle at 78% 18%, rgba(190, 151, 87, 0.10), transparent 28%), radial-gradient(circle at 55% 82%, rgba(115, 74, 55, 0.12), transparent 36%), linear-gradient(135deg, #120b06 0%, #1a1209 42%, #22160b 72%, #0f0905 100%);
+
+  /* Option C extraction compass — visualization-only tokens. Operational cards,
+     controls, and readout stay on solid warm surfaces; depth/glint is quarantined
+     inside the instrument renderer. */
+  --kk-compass-instrument-bg: radial-gradient(circle at 28% 24%, rgba(245, 158, 11, 0.18), transparent 34%), radial-gradient(circle at 76% 78%, rgba(190, 151, 87, 0.12), transparent 32%), linear-gradient(145deg, #120b06 0%, #1a1209 48%, #24160a 100%);
+  --kk-compass-instrument-border: rgba(245, 230, 211, 0.16);
+  --kk-compass-instrument-shadow: inset 0 1px 0 rgba(255, 247, 237, 0.08), inset 0 -22px 54px rgba(0, 0, 0, 0.28);
+  --kk-compass-zone-0-0: #78350f;
+  --kk-compass-zone-0-1: #b45309;
+  --kk-compass-zone-0-2: #7f1d1d;
+  --kk-compass-zone-1-0: #734a37;
+  --kk-compass-zone-1-1: #f59e0b;
+  --kk-compass-zone-1-2: #92400e;
+  --kk-compass-zone-2-0: #0e7490;
+  --kk-compass-zone-2-1: #0891b2;
+  --kk-compass-zone-2-2: #4b2f23;
+  --kk-compass-groove: #f5e6d3;
+  --kk-compass-live-dot: #fff7ed;
+  --kk-compass-taste-ring: #be9757;
+  --kk-compass-contact-shadow: #000000;
+  --kk-compass-key-light: #f59e0b;
+  --kk-compass-rim-light: #be9757;
+  --kk-compass-ambient-light: #1a1209;
+  --kk-compass-zone-label: #fff7ed;
+  --kk-compass-zone-label-shadow: 0 1px 5px rgba(0, 0, 0, 0.72);
+  --kk-compass-marker-bg: rgba(18, 11, 6, 0.7);
+  --kk-compass-marker-text: rgba(255, 247, 237, 0.92);
+  --kk-compass-computed-border: rgba(255, 247, 237, 0.72);
+  --kk-compass-computed-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.55), 0 0 22px rgba(245, 158, 11, 0.16);
+  --kk-compass-selected-fill: rgba(190, 151, 87, 0.12);
+  --kk-compass-svg-zone-weak-sour-fill: rgba(103, 232, 249, 0.18);
+  --kk-compass-svg-zone-weak-sour-stroke: rgba(103, 232, 249, 0.42);
+  --kk-compass-svg-zone-sour-fill: rgba(103, 232, 249, 0.22);
+  --kk-compass-svg-zone-sour-stroke: rgba(103, 232, 249, 0.48);
+  --kk-compass-svg-zone-astringent-sour-fill: rgba(14, 116, 144, 0.22);
+  --kk-compass-svg-zone-astringent-sour-stroke: rgba(14, 116, 144, 0.50);
+  --kk-compass-svg-zone-weak-sweet-fill: rgba(20, 184, 166, 0.18);
+  --kk-compass-svg-zone-weak-sweet-stroke: rgba(20, 184, 166, 0.42);
+  --kk-compass-svg-zone-sweet-balanced-fill: rgba(245, 158, 11, 0.24);
+  --kk-compass-svg-zone-sweet-balanced-stroke: rgba(245, 158, 11, 0.56);
+  --kk-compass-svg-zone-bitter-astringent-fill: rgba(220, 38, 38, 0.20);
+  --kk-compass-svg-zone-bitter-astringent-stroke: rgba(220, 38, 38, 0.48);
+  --kk-compass-svg-zone-weak-bitter-fill: rgba(180, 83, 9, 0.18);
+  --kk-compass-svg-zone-weak-bitter-stroke: rgba(180, 83, 9, 0.42);
+  --kk-compass-svg-zone-bitter-fill: rgba(217, 119, 6, 0.22);
+  --kk-compass-svg-zone-bitter-stroke: rgba(217, 119, 6, 0.50);
+  --kk-compass-svg-zone-harsh-bitter-fill: rgba(185, 28, 28, 0.22);
+  --kk-compass-svg-zone-harsh-bitter-stroke: rgba(185, 28, 28, 0.52);
+  --kk-compass-svg-label: #fff7ed;
+  --kk-compass-svg-label-halo: rgba(18, 11, 6, 0.92);
+  --kk-compass-svg-muted-label: rgba(245, 230, 211, 0.72);
+  --kk-compass-svg-axis-stroke: rgba(200, 134, 10, 0.24);
+  --kk-compass-svg-selection-outer: rgba(245, 230, 211, 0.90);
+  --kk-compass-svg-selection-inner: #d97706;
+  --kk-compass-svg-agreement-fill: rgba(255, 255, 255, 0.10);
+  --kk-compass-svg-selected-fill: rgba(255, 255, 255, 0.06);
+  --kk-compass-svg-zone-bloom: rgba(255, 247, 237, 0.16);
+  --kk-compass-svg-live-ping: #f59e0b;
+  --kk-compass-svg-live-ring: #d97706;
+  --kk-compass-svg-live-dot: #fff7ed;
+  --kk-compass-svg-out-of-range: #fbbf24;
+  --kk-compass-svg-mesh-amber-start: rgba(245, 158, 11, 0.22);
+  --kk-compass-svg-mesh-amber-end: rgba(217, 119, 6, 0);
+  --kk-compass-svg-mesh-rust-start: rgba(185, 28, 28, 0.16);
+  --kk-compass-svg-mesh-rust-end: rgba(185, 28, 28, 0);
+  --kk-compass-svg-mesh-cerulean-start: rgba(103, 232, 249, 0.14);
+  --kk-compass-svg-mesh-cerulean-end: rgba(103, 232, 249, 0);
+  --kk-compass-svg-mesh-slate-start: rgba(15, 118, 110, 0.12);
+  --kk-compass-svg-mesh-slate-end: rgba(15, 118, 110, 0);
+  --kk-compass-svg-aurora-start: rgba(217, 119, 6, 0.18);
+  --kk-compass-svg-aurora-end: rgba(217, 119, 6, 0);
+
+  /* Named motion / fluidity grammar (wired into primitives + ambient in T006).
+     Values per handoff: instant 100 / micro 160 / enter 340 / route 560 /
+     ambient-settle 900ms; card stagger 36ms, section stagger 70ms; clip reveal
+     0.45em; hover depth cap 4px desktop / 2px mobile; scroll-y cap 18 / 8px. */
+  --motion-duration-instant: 100ms;
+  --motion-duration-micro: 160ms;
+  --motion-duration-enter: 340ms;
+  --motion-duration-route: 560ms;
+  --motion-duration-ambient-settle: 900ms;
+  --motion-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --motion-ease-press: cubic-bezier(0.34, 0, 0.4, 1);
+  --motion-stagger-card: 36ms;
+  --motion-stagger-section: 70ms;
+  --motion-clip-reveal-distance: 0.45em;
+  --motion-depth-hover-max: 4px;
+  --motion-depth-hover-max-mobile: 2px;
+  --motion-scroll-depth-max: 18px;
+  --motion-scroll-depth-max-mobile: 8px;
+
+  /* spec-043 prototype redo tokens — only consumed by .kk-proto-043 scoped rules. */
+  --kaapi-content-radius: var(--bevel-radius);
+  --kaapi-content-surface-shadow-hover: 0 22px 52px rgba(18, 11, 6, 0.30), 0 4px 12px rgba(18, 11, 6, 0.20), inset 0 1px 0 rgba(255,255,255,0.76);
+  --btn-surface-shadow-rest: 0 8px 18px rgba(45, 22, 8, 0.18), 0 2px 5px rgba(45, 22, 8, 0.16), inset 0 1px 0 rgba(255,255,255,0.24);
+  --btn-surface-shadow-hover: 0 10px 22px rgba(45, 22, 8, 0.22), 0 3px 8px rgba(45, 22, 8, 0.18), inset 0 1px 0 rgba(255,255,255,0.30);
+  --btn-surface-shadow-active: inset 0 2px 5px rgba(45, 22, 8, 0.24), 0 1px 2px rgba(45, 22, 8, 0.18);
+  --btn-focus-ring: 0 0 0 3px rgba(180, 83, 9, 0.36);
+  --btn-outline-bg: rgba(255, 247, 237, 0.92);
+  --btn-outline-bg-hover: rgba(180, 83, 9, 0.10);
+  --btn-outline-border: rgba(120, 53, 15, 0.34);
+  --btn-outline-border-hover: rgba(180, 83, 9, 0.50);
+  --btn-ghost-bg-hover: rgba(45, 22, 8, 0.08);
+  --page-header-scrim: linear-gradient(90deg, rgba(18, 11, 6, 0.76) 0%, rgba(18, 11, 6, 0.54) 54%, rgba(18, 11, 6, 0.10) 100%);
+  --page-header-title: #fff7ed;
+  --page-header-meta: #fbbf24;
+  --chip-on-cream-bg: rgba(247, 234, 216, 0.92);
+  --chip-on-cream-border: rgba(120, 53, 15, 0.24);
+  --chip-on-cream-text: #2d1608;
+  --chip-success-bg: rgba(16, 185, 129, 0.14);
+  --chip-success-text: #065f46;
+  --chip-info-bg: rgba(14, 116, 144, 0.14);
+  --chip-info-text: #155e75;
+  --chip-warning-bg: rgba(146, 64, 14, 0.14);
+  --chip-warning-text: #92400e;
+  --chip-danger-bg: rgba(185, 28, 28, 0.12);
+  --chip-danger-text: #b91c1c;
+  --viz-metric-bg: var(--kaapi-content-surface-2);
+  --viz-metric-text: var(--kaapi-content-content);
+  --viz-metric-muted: var(--kaapi-content-muted);
+  --viz-frame-bg: linear-gradient(135deg, #f7ead8 0%, #fff7ed 52%, #ead8c0 100%);
+
+  /* spec-043 v2 prototype: warm translucent surface (merged cream+glass system).
+     CRITICAL: --kaapi-warm-translucent-shadow is a comma-separated multi-layer
+     value — must live in :root, NOT inside @plugin "daisyui/theme" which truncates
+     comma-separated values to the last entry. */
+  --kaapi-warm-translucent: rgba(250, 245, 239, 0.94);  /* spec-043 v5: updated to match #faf5ef eggshell surface */
+  --kaapi-warm-translucent-blur: blur(8px);
+  --kaapi-warm-translucent-shadow: 0 12px 32px rgba(18, 11, 6, 0.22), 0 2px 6px rgba(18, 11, 6, 0.14), inset 0 1px 0 rgba(255,255,255,0.60);
+  --kaapi-warm-translucent-border: rgba(120, 53, 15, 0.12);
+
+  /* spec-043 v6: Warm coffee palette — amber CTA + copper accent.
+     Teal is quarantined to info/status semantics. Extends --kk-tc-* / --kk-il-*;
+     does NOT fork a parallel system. Multi-value values (none here) must stay in
+     :root per the DaisyUI @plugin comma-truncation constraint (documented above).
+     Light mode token set: */
+  --kaapi-palette-bg:              #faf5ef;
+  --kaapi-palette-surface:         #faf5ef;
+  --kaapi-palette-surface-elevated:#f5ece4;
+  --kaapi-palette-text-primary:    #2d1608;
+  --kaapi-palette-text-secondary:  #5c3d1e;
+  --kaapi-palette-text-muted:      #8b6b4a;
+  --kaapi-palette-border:          rgba(120, 53, 15, 0.14);
+  --kaapi-palette-accent-warm:     #734a37;
+  --kaapi-palette-accent-cool:     #0e7490;
+  --kaapi-palette-sidebar-bg:      #f5ebdc;     /* light: warm cream */
+  --kaapi-palette-sidebar-text:    #5c3d1e;     /* light: bark */
+  --kaapi-palette-sidebar-border:  rgba(115, 74, 55, 0.15);
+  /* Dark mode sidebar tokens (light-mode overrides live in html:has() blocks): */
+  --kaapi-palette-sidebar-bg-dark:    #2d1608;  /* dark: espresso */
+  --kaapi-palette-sidebar-text-dark:  #f5e6d3;  /* dark: warm cream */
+  --kaapi-palette-sidebar-border-dark:rgba(245, 230, 211, 0.08);
+  --section-header-text: var(--kaapi-content-content);
+  --section-header-size: clamp(1.125rem, 1rem + 0.55vw, 1.375rem);
+  --section-header-weight: 650;
+  --section-header-tracking: -0.01em;
+  --section-header-gap: 0.75rem;
+}
+
+[data-typography-variant="A"] {
+  --kaapi-card-title-family: var(--font-display);
+  --kaapi-card-title-size: clamp(0.90rem, 0.86rem + 0.16vw, 1.00rem);
+  --kaapi-card-title-weight: 650;
+  --kaapi-card-title-line-height: 1.18;
+  --kaapi-card-title-letter-spacing: -0.01em;
 }
 
 /* ── Custom font families (Tailwind v4 @theme creates utility classes) ─── */
@@ -116,16 +390,20 @@ h1, h2, .font-display {
   .page-content.page-enter { animation: none; -webkit-animation: none; }
 }
 
-/* Full-bleed background photo */
+/* Full-bleed background photo.
+   spec-043 density-keyed scrims (photography kept, never blanket-removed):
+   - Sparse standalone flows (login/welcome/recovery/guest) keep photography
+     visibly warm — lighter scrims, handled by the household/auth tokens below.
+   - Dense app/admin/list flows (dashboard/brew-log/catalog/hardware) keep the
+     photo as receded mood behind a deeper scrim so solid light content reads.
+   The shared KaapiAmbientLayer sits behind this; content sits on solid surfaces. */
 .app-bg {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background-image:
-    linear-gradient(rgba(6, 4, 2, 0.32), rgba(8, 5, 2, 0.48)),
-    /* @vite-ignore */
-    url('/static/img/hero-dashboard.jpg');
+  background-image: var(--kk-page-bg-overlay), url('/static/img/hero-dashboard.jpg');
   background-size: cover;
+  overflow: hidden;
   background-position: center 40%;
   /*
    * Chrome desktop fix: pre-promote to a GPU compositor layer so the layer
@@ -141,33 +419,61 @@ h1, h2, .font-display {
   will-change: transform;
 }
 
-/* Per-page background overrides */
+/* Dense app routes share one neutral dark scrim; only photo position changes per route. */
 .app-bg.bg-dashboard {
-  background-image:
-    linear-gradient(rgba(6, 4, 2, 0.32), rgba(8, 5, 2, 0.48)),
-    /* @vite-ignore */
-    url('/static/img/hero-dashboard.jpg');
   background-position: center 40%;
 }
 .app-bg.bg-brew-log {
-  background-image:
-    linear-gradient(rgba(8, 5, 2, 0.45), rgba(8, 5, 2, 0.62)),
-    /* @vite-ignore */
-    url('/static/img/hero-brew.jpg');
   background-position: center 40%;
 }
 .app-bg.bg-catalog {
-  background-image:
-    linear-gradient(rgba(8, 5, 2, 0.40), rgba(8, 5, 2, 0.52)),
-    /* @vite-ignore */
-    url('/static/img/hero-catalog.jpg');
   background-position: center 55%;
 }
 .app-bg.bg-hardware {
-  background-image:
-    linear-gradient(rgba(8, 5, 2, 0.40), rgba(8, 5, 2, 0.52)),
-    /* @vite-ignore */
-    url('/static/img/hero-hardware.jpg');
+  background-position: center 20%;
+}
+
+/* ── Background photo blur — Option B (::before pseudo, inset -12px) ────────
+   Photo lives on ::before so filter:blur(5px) never touches .app-bg itself.
+   Preserves the GPU compositor layer (will-change:transform on .app-bg) and
+   ensures #main-content's backdrop-filter samples .app-bg unfiltered.
+   inset:-12px extends the pseudo 12px past each viewport edge, hiding the
+   blurred boundary off-screen on all four sides (no edge halo). */
+.app-bg::before {
+  content: none;
+  display: none;
+  position: absolute;
+  inset: -12px;
+  /* @vite-ignore */
+  background-image: url('/static/img/hero-dashboard.jpg');
+  background-size: cover;
+  background-position: center 40%;
+  filter: blur(5px);
+  z-index: 0;
+}
+.app-bg::after {
+  content: none;
+  display: none;
+}
+
+.app-bg.bg-dashboard::before {
+  /* @vite-ignore */
+  background-image: url('/static/img/hero-dashboard.jpg');
+  background-position: center 40%;
+}
+.app-bg.bg-brew-log::before {
+  /* @vite-ignore */
+  background-image: url('/static/img/hero-brew.jpg');
+  background-position: center 40%;
+}
+.app-bg.bg-catalog::before {
+  /* @vite-ignore */
+  background-image: url('/static/img/hero-catalog.jpg');
+  background-position: center 55%;
+}
+.app-bg.bg-hardware::before {
+  /* @vite-ignore */
+  background-image: url('/static/img/hero-hardware.jpg');
   background-position: center 20%;
 }
 
@@ -277,17 +583,43 @@ h1, h2, .font-display {
   }
 }
 
-/* Frosted glass main content panel */
+/* AppShell content panel — baseline chrome glass tier (design-language §iOS
+   Readiness: "Baseline #main-content and modal backdrop glass" gets both prefixes
+   on all engines). This is chrome, not an operational reading plane; the tuned
+   subtle blur(4px) veil is kept for WebKit-safe compositor stability. The
+   progressive 16px tier below is reserved for overlay/sheet/chrome classes. */
 #main-content {
   position: relative;
   z-index: 1;
-  background: rgba(14, 9, 4, 0.38);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: var(--kk-main-veil-bg);
+  backdrop-filter: var(--kk-main-veil-blur);
+  -webkit-backdrop-filter: var(--kk-main-veil-blur);
   box-shadow:
     inset  1px 0 0 rgba(200, 134, 10, 0.10),
     inset -1px 0 0 rgba(200, 134, 10, 0.10),
     0 0 80px rgba(0, 0, 0, 0.30);
+}
+
+/* ── spec-043 surface contract: solid, light, elevated warm content surface ──
+   The canonical operational content plane. AA-safe on its own (dark text on
+   #fff7ed), blur-free, and independent of photography/ambient/translucency.
+   Migrated cards, rows, forms, modal bodies, hero frames, and the GlassCard
+   content variant (T004) consume this. Text defaults to the dark content token
+   so migrated children read correctly without per-element color overrides. */
+.kaapi-content-surface {
+  position: relative;
+  z-index: 1;
+  background: var(--kaapi-content-surface);
+  color: var(--kaapi-content-content);
+  border: 1px solid var(--kaapi-content-border);
+  border-radius: var(--bevel-radius);
+  box-shadow: var(--kaapi-content-shadow);
+  /* Surface contract: operational content never blurs. */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.kaapi-content-surface--elevated {
+  background: var(--kaapi-content-surface-2);
 }
 
 /* Frosted glass card */
@@ -301,9 +633,136 @@ h1, h2, .font-display {
   -webkit-backdrop-filter: none;
 }
 
+/* spec-043 T004: GlassCard content variant — solid light operational surface.
+   Keeps the .glass-card + .card-bevel hooks (so the primitive contract holds) but
+   the compound selector (0,2,0) overrides the dark glass background/border/shadow
+   with the AA-safe content tokens and a dark default text colour. Blur-free per
+   the surface contract; the matching :hover keeps the warm shadow (never the dark
+   bevel-hover shadow). Consumed opt-in via <GlassCard variant="content">. */
+.glass-card.glass-card--content {
+  background: var(--kaapi-content-surface);
+  color: var(--kaapi-content-content);
+  border: 1px solid var(--kaapi-content-border);
+  box-shadow: var(--kaapi-content-shadow);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.glass-card.glass-card--content.card-bevel {
+  box-shadow: var(--kaapi-content-shadow);
+}
+.glass-card.glass-card--content.card-bevel:hover {
+  box-shadow: var(--kaapi-content-shadow);
+}
+
+/* ── spec-043 T005: HeroVisualFrame — solid elevated hero content surface ──
+   design-language §Component → Visual mapping: HeroVisualFrame / .hero-visual-frame
+   is "Solid elevated hero content surface; no progressive blur". It is deliberately
+   absent from the @supports progressive-blur allowlist below — the frame and its
+   five visual states (active / idle / loading / fallback / error) never blur. The
+   fallback poster is a warm token gradient so a missing/failed WebGL layer is never
+   a blank or dark box. */
+.hero-visual-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--bevel-radius);
+  background: var(--kaapi-content-surface);
+  border: 1px solid var(--kaapi-content-border);
+  box-shadow: var(--kaapi-content-shadow);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.hero-visual-frame__fallback {
+  background:
+    radial-gradient(circle at 50% 34%, rgba(245, 158, 11, 0.20), rgba(247, 234, 216, 0.10) 46%, rgba(255, 247, 237, 0) 100%);
+}
+
+/* ── spec-043 T007: shared modal footer — solid light, Button-variant actions ──
+   design-language §Surface contract + component table (Modal/dialog): modal body and
+   footer content sit on the solid light content surface; only the backdrop/shell may
+   blur. Mobile-first — actions stack with a full-width primary on top; at ≥640px they
+   become a right-aligned row (destructive pushed left). No raw DaisyUI footer buttons:
+   actions are <Button> variants, so every footer shares one bevel/shape contract. */
+.kaapi-modal-footer {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--kaapi-content-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.kaapi-modal-footer__status {
+  color: var(--kaapi-content-muted);
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+}
+.kaapi-modal-footer__actions {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.5rem;
+}
+.kaapi-modal-footer__actions > .btn {
+  width: 100%;
+}
+@media (min-width: 640px) {
+  .kaapi-modal-footer__actions {
+    flex-direction: row;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+  .kaapi-modal-footer__actions > .btn {
+    width: auto;
+  }
+  .kaapi-modal-footer__actions > .kaapi-modal-footer__destructive {
+    margin-right: auto;
+  }
+}
+
+/* ── Chrome / overlay / sheet glass surfaces (design-language §Liquid Glass) ──
+   Allowed blur surfaces only. Inner operational content stays solid (above).
+   Fallback depth (bg + border + shadow) is mandatory and defined on each so the
+   blur tier is purely additive — no contrast decision depends on blur. */
+.glass-chrome,
+.glass-overlay,
+.glass-sheet {
+  background: var(--glass-bg);
+  border-top: 1px solid var(--glass-border);
+  border-left: 1px solid var(--glass-border);
+  box-shadow: var(--glass-highlight), var(--bevel-shadow-raised);
+}
+
+/* Progressive blur — EXACT chrome/overlay/sheet gate. The capability check
+   confirms unprefixed backdrop-filter; (not (-webkit-touch-callout: none))
+   excludes WebKit so Safari/iOS keep the safe shadow/gradient baseline. The
+   progressive tier reuses var(--glass-blur) and stays unprefixed by design. */
+@supports (backdrop-filter: blur(1px)) and (not (-webkit-touch-callout: none)) {
+  .glass-chrome,
+  .glass-overlay,
+  .glass-sheet,
+  .modal-backdrop {
+    backdrop-filter: var(--glass-blur);
+  }
+}
+
+/* Reduced transparency — drop progressive blur, keep fallback depth. Never
+   substitute opacity changes that reduce contrast. */
+@media (prefers-reduced-transparency: reduce) {
+  #main-content,
+  .glass-chrome,
+  .glass-overlay,
+  .glass-sheet,
+  .modal-backdrop {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
 .nav-shell {
-  background: rgba(26, 18, 9, 0.93);
-  border-color: rgba(217, 119, 6, 0.18);
+  /* spec-043 v6 — warm sidebar; teal is reserved for info/status semantics only.
+     Dark default is espresso chrome; light/beige switches to warm cream.
+     Light-mode override lives in html:has([data-tone="beige"]) .nav-shell rules below. */
+  background: var(--kaapi-palette-sidebar-bg-dark);
+  border-color: var(--kaapi-palette-sidebar-border-dark);
+  color: var(--kaapi-palette-sidebar-text-dark);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
@@ -316,104 +775,223 @@ h1, h2, .font-display {
   padding-bottom: max(env(safe-area-inset-bottom), 1rem);
 }
 
-/* ── Liquid Glass Card — Catalog & Hardware cards ──────────────────────── */
-.liquid-card {
-  position: relative;
-  background: rgba(14, 9, 5, 0.50);
-  border: 1px solid rgba(200, 134, 10, 0.10);
-  border-radius: var(--bevel-radius);
-  box-shadow: var(--bevel-shadow-raised);
-  overflow: hidden;
-  cursor: pointer;
-  transition: box-shadow 200ms ease, border-color 200ms ease, transform 150ms ease;
-  text-decoration: none;
-  display: block;
-}
-.liquid-card:hover {
-  box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(200, 134, 10, 0.25),
-    inset 0 1px 0 rgba(255, 200, 80, 0.06);
-  border-color: rgba(200, 134, 10, 0.30);
-  transform: translateY(-1px);
+/* ── Nav-shell tone-awareness (spec-043 v6 warm palette) ───────────────────
+   Desktop sidebar is solid in both tones:
+   - Default/dark: espresso #2d1608 with cream text
+   - Light/beige: warm cream #f5ebdc with bark text and copper active state
+   Mobile bottom nav follows the same warm palette when the current page is beige.
+
+   Mechanism: CSS :has() detects [data-tone="beige"] anywhere in the document.
+   Token hardcoding is intentional: .nav-shell sits outside any [data-tone]
+   ancestor, so --kk-tc-* custom properties would not resolve.
+   AA verification:
+   #6b5344 "Profile" on #f5ebdc ≈ 6.04:1 ✓ AA
+   #c9b89e "Profile" on #2d1608 ≈ 8.96:1 ✓ AA
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* Light-mode desktop sidebar surface + text */
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) {
+  background: var(--kaapi-palette-sidebar-bg);
+  border-color: var(--kaapi-palette-sidebar-border);
+  color: var(--kaapi-palette-sidebar-text);
 }
 
-.liquid-card-figure {
-  height: 11rem;
-  overflow: hidden;
-  border-radius: var(--bevel-radius) var(--bevel-radius) 0 0;
-  background: linear-gradient(
-    180deg,
-    rgba(28, 20, 12, 0.92) 0%,
-    rgba(14, 10, 6, 0.96) 100%
-  );
-  display: flex;
+/* Light-mode desktop sidebar: inactive nav links */
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) a,
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) button:not(.kk-sidebar-household-btn) {
+  color: #5c3d1e;
+}
+
+/* Light-mode desktop sidebar: active nav link (React Router aria-current="page") */
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) a[aria-current="page"] {
+  color: #734a37;
+}
+
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) .kk-sidebar-wordmark__kaapi {
+  color: var(--kaapi-palette-sidebar-text);
+}
+
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) .kk-sidebar-wordmark__kadai,
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) .kk-sidebar-wordmark__medallion {
+  color: #734a37;
+}
+
+/* Light-mode mobile bottom nav + household strip → same warm palette */
+html:has([data-tone="beige"]) .nav-shell.mobile-nav,
+html:has([data-tone="beige"]) .mobile-household-strip {
+  background: #f5ebdc;
+  border-color: rgba(115, 74, 55, 0.15);
+}
+
+/* Safe-area zone adopts the surface color — eliminates the dark afterthought gap */
+html:has([data-tone="beige"]) .nav-shell.mobile-nav {
+  padding-bottom: env(safe-area-inset-bottom, 0.5rem);
+}
+
+/* Inactive mobile nav items */
+html:has([data-tone="beige"]) .nav-shell.mobile-nav a,
+html:has([data-tone="beige"]) .nav-shell.mobile-nav button {
+  color: #5c3d1e;
+}
+
+/* Active mobile nav item (React Router sets aria-current="page" on the active NavLink) */
+html:has([data-tone="beige"]) .nav-shell.mobile-nav a[aria-current="page"] {
+  color: #734a37;
+}
+
+/* Household strip buttons in beige */
+html:has([data-tone="beige"]) .mobile-household-strip button,
+html:has([data-tone="beige"]) .mobile-household-strip a {
+  color: #5c3d1e;
+}
+
+/* Household name WCAG AA on warm sidebar. Use token-matched fixed values because
+   nav-shell sits outside any [data-tone] ancestor.
+   Dark:  #f5e6d3 on #2d1608  → AAA ✓
+   Beige: #5c3d1e on #f5ebdc  → AAA ✓
+   Selector updated: household name now lives inside .nav-shell.mobile-nav
+   (merged from separate .mobile-household-strip — Aria Item 7). */
+.kk-household-name {
+  color: #f5e6d3;
+}
+html:has([data-tone="beige"]) .nav-shell.mobile-nav .kk-household-name {
+  color: #5c3d1e;
+}
+
+.kk-brand-mark-glyph {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.kk-sidebar-wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  font-family: var(--font-display, "Playfair Display", Georgia, serif);
+  font-size: 1.375rem;
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+
+.kk-sidebar-wordmark__word {
+  white-space: nowrap;
+}
+
+.kk-sidebar-wordmark__kaapi {
+  color: var(--kaapi-palette-sidebar-text-dark);
+}
+
+.kk-sidebar-wordmark__kadai,
+.kk-sidebar-wordmark__medallion {
+  color: #fbbf24;
+}
+
+.kk-sidebar-wordmark__medallion {
+  flex: none;
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 50%;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  user-select: none;
-  box-shadow: inset 0 -12px 24px rgba(4, 2, 1, 0.70);
+  border: 1px solid rgba(251, 191, 36, 0.34);
 }
 
-.liquid-card-figure.hardware {
-  height: 10rem;
-  background: linear-gradient(
-    180deg,
-    rgba(22, 16, 10, 0.94) 0%,
-    rgba(12, 8, 4, 0.97) 100%
-  );
+.kk-sidebar-wordmark__glyph {
+  width: 66%;
+  height: 66%;
 }
 
-.liquid-card-monogram {
-  font-family: var(--font-display, 'Playfair Display', Georgia, serif);
-  font-size: 3rem;
-  font-weight: 700;
-  color: rgba(253, 230, 138, 0.40);
-  transition: color 150ms ease;
-  line-height: 1;
-}
-.liquid-card:hover .liquid-card-monogram {
-  color: rgba(253, 230, 138, 0.62);
+.kk-sidebar-nav-link {
+  color: #f5e6d3;
+  border: 1px solid transparent;
+  font-size: var(--kk-tc-body-size);
+  font-weight: var(--kk-tc-value-weight);
+  line-height: 1.25;
 }
 
-.liquid-card-icon {
-  width: 4rem;
-  height: 4rem;
-  color: rgba(200, 190, 180, 0.55);
-  transition: color 150ms ease;
-}
-.liquid-card:hover .liquid-card-icon {
-  color: rgba(220, 210, 200, 0.75);
+.kk-sidebar-nav-link:hover {
+  background: rgba(251, 191, 36, 0.10);
+  color: #f5e6d3;
 }
 
-.liquid-card-body {
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+.kk-sidebar-nav-link--active {
+  background: rgba(251, 191, 36, 0.18);
+  border-color: rgba(251, 191, 36, 0.24);
+  box-shadow: inset 3px 0 0 #fbbf24;
+  color: #fbbf24;
 }
 
-/* ── Frosted brew-log row cards ─────────────────────────────────────────── */
-.frosted-brew-card {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: var(--bevel-radius);
-  background: rgba(14, 9, 4, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: background 150ms ease, border-color 150ms ease;
-  cursor: pointer;
-  text-align: left;
-}
-.frosted-brew-card:hover {
-  background: rgba(14, 9, 4, 0.60);
-  border-color: rgba(200, 134, 10, 0.20);
+.kk-sidebar-profile {
+  color: #f5e6d3;
+  border-color: rgba(245, 230, 211, 0.10);
 }
 
-@media (min-width: 768px) {
-  .frosted-brew-card {
-    padding: 1.25rem 1.5rem;
-  }
+.kk-sidebar-profile-name {
+  font-size: var(--kk-tc-body-size);
+  font-weight: var(--kk-tc-value-weight);
+  line-height: 1.25;
+}
+
+.kk-sidebar-profile:hover,
+.kk-sidebar-profile--active {
+  background: rgba(245, 230, 211, 0.05);
+  color: #f5e6d3;
+}
+
+.kk-sidebar-profile-label {
+  color: #c9b89e;
+  font-size: var(--kk-tc-label-size);
+  line-height: 1.3;
+}
+
+.kk-sidebar-profile-monogram {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fcd34d;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  font-size: var(--kk-tc-label-size);
+  font-weight: 650;
+}
+
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) .kk-sidebar-nav-link {
+  color: #5c3d1e;
+}
+
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) .kk-sidebar-nav-link:hover {
+  background: rgba(146, 64, 14, 0.07);
+  color: #5c3d1e;
+}
+
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) .kk-sidebar-nav-link--active {
+  background: rgba(115, 74, 55, 0.10);
+  border-color: rgba(115, 74, 55, 0.24);
+  box-shadow: inset 3px 0 0 #734a37;
+  color: #734a37;
+}
+
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) .kk-sidebar-profile {
+  color: #5c3d1e;
+  border-color: rgba(115, 74, 55, 0.16);
+}
+
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) .kk-sidebar-profile:hover,
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) .kk-sidebar-profile--active {
+  background: rgba(115, 74, 55, 0.05);
+  color: #5c3d1e;
+}
+
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) .kk-sidebar-profile-label {
+  color: #6b5344;
+}
+
+html:has([data-tone="beige"]) .nav-shell:not(.mobile-nav) .kk-sidebar-profile-monogram {
+  background: rgba(115, 74, 55, 0.12);
+  color: var(--kaapi-palette-sidebar-text);
+  border-color: rgba(115, 74, 55, 0.18);
 }
 
 /* Sentence-case override for DaisyUI file-input placeholder text */
@@ -454,7 +1032,7 @@ input[type="file"]::file-selector-button {
   overflow: hidden;
   text-decoration: none;
   -webkit-tap-highlight-color: transparent;
-  transition: box-shadow 150ms ease, opacity 100ms ease;
+  transition: box-shadow var(--motion-duration-micro) var(--motion-ease-standard), opacity var(--motion-duration-instant) var(--motion-ease-standard);
 }
 /* Preserve btn-circle's 50% radius — only apply bevel-radius to non-circular buttons */
 .btn-bevel:not(.btn-circle) {
@@ -469,7 +1047,7 @@ input[type="file"]::file-selector-button {
 .btn-bevel:focus-visible {
   box-shadow: var(--btn-rest-shadow), var(--input-focus-ring);
   outline: none;
-  transition: opacity 100ms ease;
+  transition: opacity var(--motion-duration-instant) var(--motion-ease-standard);
 }
 .btn-bevel:disabled,
 .btn-bevel[disabled] {
@@ -477,6 +1055,381 @@ input[type="file"]::file-selector-button {
   opacity: var(--btn-disabled-opacity);
   cursor: not-allowed;
   transition: none;
+}
+
+/* ── spec-043 prototype redo: scoped to Catalog detail + Brew-log detail only ── */
+.kk-proto-043 {
+  color: var(--kaapi-content-content);
+}
+
+.kk-proto-043 .kk-proto-header-zone {
+  max-width: min(100%, 46rem);
+  padding: 1rem;
+  border-radius: var(--kaapi-content-radius);
+  background: var(--page-header-scrim);
+}
+
+.kk-proto-043 .kk-proto-header-zone > .mb-6 {
+  margin-bottom: 0;
+}
+
+.kk-proto-043 .kk-proto-header-zone h1 {
+  max-width: 18ch;
+  color: var(--page-header-title);
+  line-height: 0.95;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.kk-proto-043 .kk-proto-header-zone p {
+  color: var(--page-header-meta);
+  letter-spacing: 0.14em;
+}
+
+/* spec-043 v2: warm translucent surface — cream base with 6% alpha, merged system.
+   Baseline (always): 94% opaque cream guarantees ~12:1 text contrast over any bg.
+   Progressive blur is additive only — text stays legible without it. */
+.kk-proto-043 .kaapi-content-surface,
+.kk-proto-043 .glass-card.glass-card--content,
+.kk-proto-043 .kk-warm-surface {
+  background: var(--kaapi-warm-translucent);
+  color: var(--kaapi-content-content);
+  border: 1px solid var(--kaapi-warm-translucent-border);
+  border-radius: var(--kaapi-content-radius);
+  box-shadow: var(--kaapi-warm-translucent-shadow);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* Progressive: backdrop-filter on capable browsers */
+@supports (backdrop-filter: blur(1px)) {
+  .kk-proto-043 .kaapi-content-surface,
+  .kk-proto-043 .glass-card.glass-card--content,
+  .kk-proto-043 .kk-warm-surface {
+    -webkit-backdrop-filter: var(--kaapi-warm-translucent-blur);
+    backdrop-filter: var(--kaapi-warm-translucent-blur);
+  }
+}
+
+/* Reduced transparency: solid fallback, no blur */
+@media (prefers-reduced-transparency: reduce) {
+  .kk-proto-043 .kaapi-content-surface,
+  .kk-proto-043 .glass-card.glass-card--content,
+  .kk-proto-043 .kk-warm-surface {
+    background: var(--kaapi-content-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Cards are static on warm surface — no hover shadow lift */
+.kk-proto-043 .glass-card.glass-card--content.card-bevel:hover {
+  box-shadow: var(--kaapi-warm-translucent-shadow);
+}
+
+/* spec-043 v2 §4.3: Section headers on warm content surfaces.
+   .kk-section-header may be the SectionHeading wrapper <div> OR a plain <h2>.
+   When it is the wrapper div: target the child h2 and hide the dark-chrome accent.
+   When it is the h2 itself: style directly. */
+.kk-proto-043 .kk-section-header h2 {
+  font-family: var(--font-display);
+  font-size: var(--section-header-size);
+  font-weight: var(--section-header-weight);
+  letter-spacing: var(--section-header-tracking);
+  text-transform: none;
+  color: var(--section-header-text);
+}
+
+/* Hide the decorative amber accent bar — designed for dark chrome, orphans on cream */
+.kk-proto-043 .kk-section-header h2 > span[aria-hidden] {
+  display: none;
+}
+
+.kk-proto-043 h2.kk-section-header {
+  font-family: var(--font-display);
+  font-size: var(--section-header-size);
+  font-weight: var(--section-header-weight);
+  letter-spacing: var(--section-header-tracking);
+  text-transform: none;
+  color: var(--section-header-text);
+  margin-bottom: var(--section-header-gap);
+}
+
+.kk-proto-043 .btn-bevel {
+  min-height: 44px;
+  box-shadow: var(--btn-surface-shadow-rest);
+  transition:
+    transform var(--motion-duration-micro) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-micro) var(--motion-ease-standard),
+    background-color var(--motion-duration-micro) var(--motion-ease-standard),
+    border-color var(--motion-duration-micro) var(--motion-ease-standard),
+    color var(--motion-duration-micro) var(--motion-ease-standard),
+    opacity var(--motion-duration-instant) var(--motion-ease-standard);
+}
+
+.kk-proto-043 .btn-bevel:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--btn-surface-shadow-hover);
+}
+
+.kk-proto-043 .btn-bevel:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: var(--btn-surface-shadow-active);
+}
+
+.kk-proto-043 .btn-bevel:focus-visible {
+  outline: none;
+  box-shadow: var(--btn-surface-shadow-rest), var(--btn-focus-ring);
+}
+
+.kk-proto-043 .btn-bevel:disabled,
+.kk-proto-043 .btn-bevel[disabled] {
+  transform: none;
+  box-shadow: none;
+}
+
+.kk-proto-043 .btn-outline.btn-bevel {
+  background: var(--btn-outline-bg);
+  color: var(--kaapi-content-content);
+  border-color: var(--btn-outline-border);
+}
+
+.kk-proto-043 .btn-outline.btn-bevel:hover:not(:disabled) {
+  background: var(--btn-outline-bg-hover);
+  color: var(--kaapi-content-content);
+  border-color: var(--btn-outline-border-hover);
+}
+
+.kk-proto-043 .btn-ghost {
+  min-height: 44px;
+  color: var(--kaapi-content-muted);
+}
+
+.kk-proto-043 .btn-ghost:hover:not(:disabled) {
+  background: var(--btn-ghost-bg-hover);
+  color: var(--kaapi-content-content);
+}
+
+.kk-proto-043 .btn-ghost:focus-visible {
+  outline: none;
+  box-shadow: var(--btn-focus-ring);
+}
+
+.kk-proto-043 .btn-ghost:active:not(:disabled) {
+  background: var(--btn-ghost-bg-hover);
+  color: var(--kaapi-content-content);
+}
+
+.kk-proto-043 .btn-ghost:disabled,
+.kk-proto-043 .btn-ghost[disabled] {
+  opacity: var(--btn-disabled-opacity);
+  cursor: not-allowed;
+}
+
+.kk-proto-043 .kk-btn-outline-danger {
+  min-height: 44px;
+  background: var(--btn-outline-bg);
+  color: var(--kaapi-content-error);
+  border: 1px solid rgba(185, 28, 28, 0.34);
+  box-shadow: var(--btn-surface-shadow-rest);
+}
+
+.kk-proto-043 .kk-btn-outline-danger:hover:not(:disabled) {
+  background: var(--chip-danger-bg);
+  color: var(--kaapi-content-error);
+  border-color: rgba(185, 28, 28, 0.50);
+  transform: translateY(-1px);
+  box-shadow: var(--btn-surface-shadow-hover);
+}
+
+.kk-proto-043 .kk-btn-outline-danger:focus-visible {
+  outline: none;
+  box-shadow: var(--btn-surface-shadow-rest), var(--btn-focus-ring);
+}
+
+.kk-proto-043 .kk-btn-outline-danger:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: var(--btn-surface-shadow-active);
+}
+
+.kk-proto-043 .kk-btn-outline-danger:disabled,
+.kk-proto-043 .kk-btn-outline-danger[disabled] {
+  transform: none;
+  box-shadow: none;
+  opacity: var(--btn-disabled-opacity);
+  cursor: not-allowed;
+}
+
+.kk-proto-043 .kk-chip {
+  border-color: var(--chip-on-cream-border);
+  background: var(--chip-on-cream-bg);
+  color: var(--chip-on-cream-text);
+}
+
+.kk-proto-043 .kk-chip--success {
+  border-color: rgba(16, 185, 129, 0.28);
+  background: var(--chip-success-bg);
+  color: var(--chip-success-text);
+}
+
+.kk-proto-043 .kk-chip--info {
+  border-color: rgba(14, 116, 144, 0.28);
+  background: var(--chip-info-bg);
+  color: var(--chip-info-text);
+}
+
+.kk-proto-043 .kk-chip--warning {
+  border-color: rgba(146, 64, 14, 0.28);
+  background: var(--chip-warning-bg);
+  color: var(--chip-warning-text);
+}
+
+.kk-proto-043 .kk-chip--danger {
+  border-color: rgba(185, 28, 28, 0.28);
+  background: var(--chip-danger-bg);
+  color: var(--chip-danger-text);
+}
+
+.kk-proto-043 .kk-catalog-placeholder {
+  background: var(--viz-frame-bg);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.72);
+}
+
+.kk-proto-043 .kk-catalog-placeholder__glyph {
+  font-family: var(--font-body);
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--kaapi-content-muted);
+}
+
+.kk-proto-043 .kk-catalog-placeholder__monogram {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  letter-spacing: 0.16em;
+  color: var(--kaapi-content-muted);
+}
+
+.kk-proto-043 .kk-extraction-readout {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  padding: 0.875rem;
+  border: 1px solid var(--kaapi-content-border);
+  border-radius: var(--kaapi-content-radius);
+  background: var(--viz-metric-bg);
+  color: var(--viz-metric-text);
+}
+
+.kk-proto-043 .kk-extraction-readout__metric,
+.kk-proto-043 .kk-extraction-readout__zone {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.kk-proto-043 .kk-extraction-readout__eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--viz-metric-muted);
+}
+
+.kk-proto-043 .kk-extraction-readout__value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: clamp(1.5rem, 6vw, 2rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--viz-metric-text);
+}
+
+.kk-proto-043 .kk-zone-chip {
+  width: fit-content;
+  border: 1px solid var(--chip-on-cream-border);
+  border-radius: var(--kaapi-content-radius);
+  background: var(--chip-on-cream-bg);
+  color: var(--chip-on-cream-text);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.kk-proto-043 .kk-zone-chip--under {
+  border-color: rgba(14, 116, 144, 0.30);
+  background: rgba(103, 232, 249, 0.18);
+  color: #155e75;
+}
+
+.kk-proto-043 .kk-zone-chip--balanced {
+  border-color: rgba(217, 119, 6, 0.34);
+  background: rgba(245, 158, 11, 0.18);
+  color: #92400e;
+}
+
+.kk-proto-043 .kk-zone-chip--over {
+  border-color: rgba(185, 28, 28, 0.30);
+  background: rgba(185, 28, 28, 0.12);
+  color: #b91c1c;
+}
+
+.kk-proto-043 .kk-extraction-readout__guidance {
+  color: var(--kaapi-content-muted);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+
+@media (min-width: 640px) {
+  .kk-proto-043 .kk-extraction-readout {
+    grid-template-columns: minmax(8rem, 0.75fr) minmax(0, 1.25fr);
+    align-items: center;
+  }
+}
+
+/* spec-043 v2 §5: Desktop responsiveness — constrained centered reading column.
+   Mobile default: full-width, 1rem padding (handled in BrewLogDetail className).
+   Tablet/Desktop: centered column, intentional side margins and max-width. */
+@media (min-width: 640px) {
+  .kk-proto-043 {
+    padding: 1.5rem 2rem;
+    max-width: 40rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  .kk-proto-043 {
+    padding: 2rem 3rem;
+    max-width: 48rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  /* Increase vertical card gap at desktop for intentional breathing room */
+  .kk-proto-043 .space-y-6 > * + * {
+    margin-top: 2rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .kk-proto-043 {
+    max-width: 52rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kk-proto-043 .btn-bevel,
+  .kk-proto-043 .btn-ghost,
+  .kk-proto-043 .kk-btn-outline-danger {
+    transition: none;
+    transform: none;
+  }
+  .kk-proto-043 .btn-bevel:hover:not(:disabled),
+  .kk-proto-043 .btn-bevel:active:not(:disabled),
+  .kk-proto-043 .kk-btn-outline-danger:hover:not(:disabled),
+  .kk-proto-043 .kk-btn-outline-danger:active:not(:disabled) {
+    transform: none;
+  }
 }
 
 /* ── Border suppression — remove DaisyUI btn-primary/btn-secondary border on all
@@ -520,11 +1473,52 @@ textarea.input-styled:focus {
   box-shadow: var(--input-focus-ring);
 }
 
+/* spec-043 T004: form controls on solid light content surfaces. Descendant
+   selectors (0,2,0) win over the dark .input-styled default (0,1,0) only when a
+   field sits inside .kaapi-content-surface — un-migrated dark pages are
+   untouched. White field + content border + dark text; the amber focus ring
+   token is reused so the brand affordance is identical across surfaces. */
+.kaapi-content-surface .input-styled,
+.kaapi-content-surface select.input-styled,
+.kaapi-content-surface textarea.input-styled {
+  background: var(--kaapi-content-input-bg);
+  border: var(--kaapi-content-input-border);
+  color: var(--kaapi-content-input-text);
+}
+.kaapi-content-surface .input-styled::placeholder,
+.kaapi-content-surface textarea.input-styled::placeholder {
+  color: var(--kaapi-content-input-placeholder);
+}
+.kaapi-content-surface .input-styled:focus,
+.kaapi-content-surface .input-styled:focus-visible,
+.kaapi-content-surface select.input-styled:focus,
+.kaapi-content-surface textarea.input-styled:focus {
+  outline: none;
+  box-shadow: var(--input-focus-ring);
+}
+
+/* spec-043 T022: on-light semantic text. The cream content surface ships in two
+   forms — the .kaapi-content-surface utility and the .glass-card--content
+   primitive variant — both at #fff7ed. Descendant selectors (0,2,0) win over the
+   DaisyUI .text-error / .text-warning utilities (0,1,0) only inside those light
+   surfaces, so FormField errors and semantic eyebrows meet WCAG AA on cream
+   (#b91c1c ≈ 6.09:1, #92400e ≈ 6.68:1) while error/warning text on the
+   espresso-dark frame keeps the lighter DaisyUI values. */
+.kaapi-content-surface .text-error,
+.glass-card--content .text-error {
+  color: var(--kaapi-content-error);
+}
+.kaapi-content-surface .text-warning,
+.glass-card--content .text-warning {
+  color: var(--kaapi-content-warning);
+}
+
 /* ── Bevel card surface ──────────────────────────────────────────────────── */
 .card-bevel {
   box-shadow: var(--bevel-shadow-raised);
   border-radius: var(--bevel-radius);
   overflow: hidden;
+  transition: box-shadow var(--motion-duration-micro) var(--motion-ease-standard);
 }
 .card-bevel:hover {
   box-shadow: var(--btn-hover-shadow);
@@ -557,7 +1551,5103 @@ select.input-styled,
 /* ── Reduced motion overrides ────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .btn-bevel,
+  .btn-bevel:focus-visible,
   .card-bevel {
     transition: none;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   spec-043 v3 — Brew-Log Detail Takeover Card
+   Scoped entirely to .kk-b-page (brew-log detail only).
+   CatalogDetail (.kk-proto-043 without .kk-b-page) is UNAFFECTED.
+   Multi-value comma-separated shadow tokens live in :root per DaisyUI constraint.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── :root — geometry, typography, and bevel shadow tokens ───────────────── */
+:root {
+  /* Takeover card geometry */
+  --kk-tc-radius: 16px;
+  --kk-tc-padding-x: 24px;
+  --kk-tc-padding-y: 32px;
+  --kk-tc-max-width: 1200px;
+
+  /* Typography scale */
+  --kk-tc-title-size: clamp(1.18rem, 1rem + 0.45vw, 1.55rem);
+  --kk-tc-title-weight: 700;
+  --kk-tc-subtitle-size: 14px;
+  --kk-tc-section-header-size: clamp(1.125rem, 1rem + 0.55vw, 1.375rem);
+  --kk-tc-section-header-weight: 650;
+  --kk-tc-section-header-tracking: -0.01em;
+  --kk-tc-section-header-margin-bottom: 12px;
+  --kk-tc-body-size: 15px;
+  --kk-tc-body-line-height: 1.6;
+  --kk-tc-label-size: 12px;
+  --kk-tc-value-size: 15px;
+  --kk-tc-value-weight: 500;
+  --kk-tc-section-gap: 32px;
+
+
+  /* Back-link tokens — amber on dark surfaces (AA ~5.5:1) */
+  --kk-tc-back-link-color: #fbbf24;
+  --kk-tc-back-link-hover: #fcd34d;
+  --kk-tc-back-link-chip-bg: transparent;
+  --kk-tc-back-link-chip-border: transparent;
+  --kk-tc-back-link-chip-blur: none;
+  --kk-tc-nav-text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+  --kk-tc-tone-btn-bg: transparent;
+  --kk-tc-tone-btn-text: rgba(255, 247, 237, 0.95);
+  --kk-tc-tone-btn-border: transparent;
+  --kk-tc-tone-btn-hover-bg: rgba(255, 247, 237, 0.10);
+  --kk-tc-tone-btn-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+
+/* ── Reset kk-proto-043 responsive constraints for detail pages ──────────── */
+.kk-b-page.kk-proto-043 {
+  padding: 0;
+  max-width: none;
+  margin: 0;
+  color: inherit;
+}
+@media (min-width: 640px) {
+  .kk-b-page.kk-proto-043 {
+    padding: 0;
+    max-width: none;
+    margin: 0;
+  }
+}
+@media (min-width: 1024px) {
+  .kk-b-page.kk-proto-043 {
+    padding: 0;
+    max-width: none;
+    margin: 0;
+  }
+}
+@media (min-width: 1280px) {
+  .kk-b-page.kk-proto-043 {
+    max-width: none;
+  }
+}
+
+/* Detail takeovers do all card frosting; the page shell stays transparent. */
+#main-content:has(.kk-b-page),
+#main-content:has([data-tone]),
+#main-content:has(.immersive-list-shell[data-tone]) {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+
+/* ── Nav row: back link + tone toggle ───────────────────────────────────── */
+.kk-b-page__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 16px 16px 0;
+  max-width: min(var(--kk-il-content-max-width, var(--kk-tc-max-width)), calc(100% - 32px));
+  width: calc(100% - 32px);
+  margin: 0 auto;
+}
+
+.kk-tc-back-link {
+  font-size: 14px;
+  color: var(--kk-tc-back-link-color, #fbbf24);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  background: var(--kk-tc-back-link-chip-bg, rgba(20, 12, 6, 0.68));
+  border: 1px solid var(--kk-tc-back-link-chip-border, transparent);
+  border-radius: 6px;
+  padding: 8px 0;
+  min-height: 44px;
+  backdrop-filter: var(--kk-tc-back-link-chip-blur, none);
+  -webkit-backdrop-filter: var(--kk-tc-back-link-chip-blur, none);
+  text-shadow: var(--kk-tc-nav-text-shadow, none);
+  transition: color 150ms, background 150ms;
+}
+.kk-tc-back-link:hover {
+  color: var(--kk-tc-back-link-hover, #fcd34d);
+}
+.kk-tc-back-link:focus-visible {
+  outline: 2px solid var(--kk-tc-back-link-color, #fbbf24);
+  outline-offset: 2px;
+}
+
+.kk-tc-tone-toolbar {
+  position: static;
+  z-index: 1;
+  overflow: hidden;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+}
+
+.kk-tc-tone-btn {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 16px;
+  min-height: 44px;
+  border-radius: 6px;
+  background: var(--kk-tc-tone-btn-bg, rgba(20, 12, 6, 0.68));
+  color: var(--kk-tc-tone-btn-text, rgba(255, 247, 237, 0.95));
+  border: 1px solid var(--kk-tc-tone-btn-border, transparent);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  text-shadow: var(--kk-tc-tone-btn-text-shadow, none);
+  cursor: pointer;
+  transition: background 150ms;
+}
+.kk-tc-tone-btn:hover {
+  background: var(--kk-tc-tone-btn-hover-bg, rgba(30, 16, 7, 0.80));
+}
+.kk-tc-tone-btn:focus-visible {
+  outline: 2px solid var(--kk-tc-tone-btn-text, rgba(255, 247, 237, 0.95));
+  outline-offset: 2px;
+}
+
+/* ── Takeover card — base (applies to both tones) ───────────────────────── */
+.kk-takeover-card {
+  border-radius: var(--kk-tc-radius);
+  padding: var(--kk-tc-padding-y) var(--kk-tc-padding-x);
+  max-width: var(--kk-tc-max-width);
+  width: calc(100% - 32px);
+  margin: 16px auto 48px;
+  backdrop-filter: var(--kk-card-surface-filter);
+  -webkit-backdrop-filter: var(--kk-card-surface-filter);
+  background: var(--kk-card-surface-bg);
+  color: var(--kk-text-primary);
+  box-shadow: var(--kk-card-surface-shadow);
+  border: var(--kk-card-surface-border);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .kk-takeover-card {
+    background: var(--kk-card-surface-bg-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* ── Fallback: no backdrop-filter support ───────────────────────────────── */
+@media (prefers-reduced-transparency: reduce) {
+  .kk-takeover-card {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* ── Section layout — spacing only, no boxes/dividers ───────────────────── */
+.kk-tc-section {
+  margin-top: var(--kk-tc-section-gap);
+}
+.kk-tc-section:first-child {
+  margin-top: 0;
+}
+
+/* ── Title section — flex row with optional leading icon ───────────────── */
+.kk-tc-section--title {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 16px;
+}
+.kk-tc-title-icon {
+  width: 64px;
+  height: 64px;
+  min-width: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: color-mix(in srgb, var(--kk-text-primary) 8%, transparent);
+}
+.kk-tc-title-icon-placeholder {
+  width: 64px;
+  height: 64px;
+  min-width: 64px;
+  border-radius: 8px;
+  background: var(--kk-monogram-tile-bg, color-mix(in srgb, var(--kk-text-primary) 12%, transparent));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: var(--kk-text-tertiary);
+}
+.kk-tc-title-icon-monogram {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: var(--kk-text-primary);
+  user-select: none;
+}
+.hardware-detail-image-action {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  min-height: 44px;
+}
+.hardware-detail-image-status {
+  position: absolute;
+  left: 0.5rem;
+  right: 0.5rem;
+  bottom: 3.5rem;
+  max-width: calc(100% - 1rem);
+  font-size: 13px;
+  line-height: 1.35;
+  border-radius: 8px;
+  background: var(--kk-card-surface-bg-solid);
+  padding: 0.35rem 0.5rem;
+}
+.hardware-detail-notes {
+  margin-top: 20px;
+}
+.hardware-detail-compact-params .kk-tc-param-grid {
+  grid-template-columns: max-content minmax(0, max-content);
+  justify-content: start;
+  align-items: baseline;
+  gap: 8px 12px;
+}
+.hardware-detail-compact-params .kk-tc-param-value {
+  max-width: min(100%, 28rem);
+}
+.hardware-maintenance-list {
+  display: flex;
+  flex-direction: column;
+}
+.hardware-maintenance-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--kk-text-primary) 10%, transparent);
+}
+.hardware-maintenance-row:first-child {
+  padding-top: 0;
+}
+.hardware-maintenance-row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.hardware-maintenance-date {
+  font-weight: 600;
+}
+.hardware-maintenance-copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+@media (min-width: 640px) {
+  .hardware-maintenance-row {
+    grid-template-columns: minmax(8rem, 0.38fr) 1fr;
+  }
+}
+.kk-tc-title-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kk-card-gap-text-text);
+  min-width: 0;
+}
+
+/* ── Typography ─────────────────────────────────────────────────────────── */
+.kk-tc-title {
+  font-family: var(--font-display);
+  font-size: var(--kk-tc-title-size);
+  font-weight: var(--kk-tc-title-weight);
+  line-height: 1.2;
+  color: var(--kk-text-primary);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+
+.kk-detail-header .kk-tc-title {
+  font-size: clamp(1.5rem, 1.2rem + 1.4vw, 2rem);
+  line-height: 1.08;
+}
+.kk-tc-subtitle {
+  font-size: var(--kk-tc-subtitle-size);
+  color: var(--kk-text-secondary);
+  margin: 0;
+}
+.kk-tc-section-header {
+  font-family: var(--font-display);
+  font-size: var(--kk-tc-section-header-size);
+  font-weight: var(--kk-tc-section-header-weight);
+  letter-spacing: var(--kk-tc-section-header-tracking);
+  line-height: 1.12;
+  text-transform: none;
+  color: var(--kk-text-primary);
+  margin: 0 0 var(--kk-tc-section-header-margin-bottom);
+  /* No border, no background, no padding box */
+}
+.kk-tc-body {
+  font-size: var(--kk-tc-body-size);
+  line-height: var(--kk-tc-body-line-height);
+  color: var(--kk-text-primary);
+  margin: 0;
+}
+.kk-tc-body-muted {
+  font-size: var(--kk-tc-body-size);
+  line-height: var(--kk-tc-body-line-height);
+  color: var(--kk-text-secondary);
+  margin: 0;
+}
+
+/* ── Tone-aware form field label — Principle 5 (AA Legibility) ──────────── */
+/* Used by ToneInput / ToneSelect / ToneTextarea in the shared tone-system library.
+   Color resolves via inherited --kk-text-secondary from the enclosing card tone. */
+.kk-tc-field-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--kk-text-secondary, #4a3728);
+  margin-bottom: 0.375rem;
+}
+
+/* ── Markdown prose container — AI summary styled per card tone ─────────── */
+.kk-takeover-card .kk-tc-markdown {
+  color: var(--kk-text-primary);
+  font-size: var(--kk-tc-body-size, 0.9375rem);
+  line-height: 1.65;
+}
+.kk-takeover-card .kk-tc-markdown h1,
+.kk-takeover-card .kk-tc-markdown h2,
+.kk-takeover-card .kk-tc-markdown h3,
+.kk-takeover-card .kk-tc-markdown h4,
+.kk-takeover-card .kk-tc-markdown h5,
+.kk-takeover-card .kk-tc-markdown h6 {
+  font-family: var(--font-body);
+  color: var(--kk-text-secondary);
+  font-weight: 500;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+  line-height: 1.35;
+}
+.kk-takeover-card .kk-tc-markdown h1 { font-size: 1.1em; }
+.kk-takeover-card .kk-tc-markdown h2 { font-size: 1.05em; }
+.kk-takeover-card .kk-tc-markdown h3 { font-size: 1em; }
+.kk-takeover-card .kk-tc-markdown h4,
+.kk-takeover-card .kk-tc-markdown h5,
+.kk-takeover-card .kk-tc-markdown h6 { font-size: 0.9375em; }
+.kk-takeover-card .kk-tc-markdown h1:first-child,
+.kk-takeover-card .kk-tc-markdown h2:first-child,
+.kk-takeover-card .kk-tc-markdown h3:first-child {
+  margin-top: 0;
+}
+.kk-takeover-card .kk-tc-markdown p {
+  margin-bottom: 1em;
+}
+.kk-takeover-card .kk-tc-markdown p:last-child {
+  margin-bottom: 0;
+}
+.kk-takeover-card .kk-tc-markdown strong,
+.kk-takeover-card .kk-tc-markdown b {
+  font-weight: 600;
+  color: var(--kk-text-primary);
+}
+.kk-takeover-card .kk-tc-markdown em,
+.kk-takeover-card .kk-tc-markdown i {
+  font-style: italic;
+  color: var(--kk-text-secondary);
+}
+.kk-takeover-card .kk-tc-markdown ul,
+.kk-takeover-card .kk-tc-markdown ol {
+  margin-bottom: 1em;
+  padding-left: 1.5em;
+}
+.kk-takeover-card .kk-tc-markdown li {
+  margin-bottom: 0.35em;
+  color: var(--kk-text-primary);
+}
+.kk-takeover-card .kk-tc-markdown ul {
+  list-style-type: disc;
+}
+.kk-takeover-card .kk-tc-markdown ul li::marker {
+  color: var(--kk-text-tertiary);
+}
+.kk-takeover-card .kk-tc-markdown ol {
+  list-style-type: decimal;
+}
+.kk-takeover-card .kk-tc-markdown ol li::marker {
+  color: var(--kk-text-secondary);
+  font-weight: 500;
+}
+.kk-takeover-card .kk-tc-markdown ul ul,
+.kk-takeover-card .kk-tc-markdown ol ol,
+.kk-takeover-card .kk-tc-markdown ul ol,
+.kk-takeover-card .kk-tc-markdown ol ul {
+  margin-top: 0.35em;
+  margin-bottom: 0;
+}
+.kk-takeover-card .kk-tc-markdown a {
+  color: var(--kk-tc-link);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  transition: opacity 0.15s ease;
+}
+.kk-takeover-card .kk-tc-markdown a:hover {
+  opacity: 0.8;
+}
+.kk-takeover-card .kk-tc-markdown code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.875em;
+  background: color-mix(in srgb, var(--kk-text-primary) 8%, transparent);
+  color: var(--kk-text-secondary);
+  padding: 0.125em 0.375em;
+  border-radius: 4px;
+}
+.kk-takeover-card .kk-tc-markdown pre {
+  background: color-mix(in srgb, var(--kk-text-primary) 6%, transparent);
+  padding: 1em;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin-bottom: 1em;
+}
+.kk-takeover-card .kk-tc-markdown pre code {
+  background: none;
+  padding: 0;
+  font-size: 0.8125em;
+}
+.kk-takeover-card .kk-tc-markdown hr {
+  border: none;
+  border-top: 1px solid color-mix(in srgb, var(--kk-text-primary) 15%, transparent);
+  margin: 1.5em 0;
+}
+.kk-takeover-card .kk-tc-markdown blockquote {
+  border-left: 3px solid var(--kk-text-tertiary);
+  padding-left: 1em;
+  margin-left: 0;
+  margin-bottom: 1em;
+  color: var(--kk-text-secondary);
+  font-style: italic;
+}
+.kk-tc-error {
+  font-size: 13px;
+  color: var(--kk-tc-btn-danger-text);
+}
+.kk-tc-form-hint {
+  margin-bottom: 12px;
+}
+
+/* ── Parameter grid ─────────────────────────────────────────────────────── */
+.kk-tc-param-grid {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: clamp(12px, 2vw, 16px);
+  row-gap: 8px;
+  align-items: baseline;
+}
+.kk-tc-param-label {
+  font-size: var(--kk-tc-label-size);
+  font-weight: 500;
+  color: var(--kk-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.kk-tc-param-value {
+  font-size: var(--kk-tc-value-size);
+  font-weight: var(--kk-tc-value-weight);
+  color: var(--kk-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.detail-panel .kk-tc-param-value {
+  color: var(--kk-chip-neutral-text);
+}
+
+/* Table row separator using tone-aware token */
+.kk-tc-table-row {
+  border-bottom: 1px solid color-mix(in srgb, var(--kk-text-primary) 10%, transparent);
+}
+
+/* ── Action area ────────────────────────────────────────────────────────── */
+.kk-tc-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: var(--kk-tc-section-gap);
+  margin-bottom: var(--kk-tc-section-gap);
+}
+.kk-tc-actions-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.kk-tc-actions-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ── Chips ─────────────────────────────────────────────────────────────── */
+.kk-tc-chip {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  justify-self: flex-start;
+  flex: 0 0 auto;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--kk-chip-bg);
+  color: var(--kk-chip-text);
+  border: var(--kk-chip-border);
+}
+/* Eligibility tone variants — map EligibilityTone to chip visual */
+.kk-tc-chip--success {
+  background: var(--kk-chip-success-bg, var(--kk-chip-success-bg));
+  color: var(--kk-chip-success-text, var(--kk-chip-success-text));
+  border-color: var(--kk-chip-success-border, transparent);
+}
+.kk-tc-chip--brand {
+  background: var(--kk-chip-brand-bg, var(--kk-chip-brand-bg));
+  color: var(--kk-chip-brand-text, var(--kk-chip-brand-text));
+  border-color: var(--kk-chip-brand-border, transparent);
+}
+.kk-tc-chip--warning {
+  background: var(--kk-chip-warning-bg, var(--kk-chip-brand-bg));
+  color: var(--kk-chip-warning-text, var(--kk-chip-brand-text));
+  border-color: var(--kk-chip-warning-border, transparent);
+}
+.kk-tc-chip--danger {
+  background: var(--kk-chip-danger-bg, var(--kk-chip-danger-bg));
+  color: var(--kk-chip-danger-text, var(--kk-chip-danger-text));
+  border-color: var(--kk-chip-danger-border, transparent);
+}
+.kk-tc-chip--neutral {
+  background: var(--kk-chip-neutral-bg, var(--kk-chip-bg));
+  color: var(--kk-chip-neutral-text, var(--kk-chip-text));
+  border-color: var(--kk-chip-neutral-border, currentColor);
+}
+
+.extraction-chip {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  flex: 0 0 auto;
+  width: fit-content;
+  min-width: max-content;
+  border-radius: 9999px;
+  padding: 4px 12px;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.extraction-chip--brand {
+  background: var(--kk-chip-brand-bg);
+  color: var(--kk-chip-brand-text);
+  border: 1px solid var(--kk-chip-brand-border);
+}
+.extraction-chip--neutral {
+  background: var(--kk-chip-neutral-bg);
+  color: var(--kk-chip-neutral-text);
+  border: 1px solid var(--kk-chip-neutral-border);
+}
+.kk-tc-chip--status-active {
+  background: var(--kk-chip-success-bg);
+  color: var(--kk-chip-success-text);
+  border-color: transparent;
+}
+.kk-tc-chip--status-resting {
+  background: var(--kk-chip-brand-bg);
+  color: var(--kk-chip-brand-text);
+  border-color: transparent;
+}
+.kk-tc-chip--status-finished {
+  background: var(--kk-chip-bg);
+  color: var(--kk-text-tertiary, var(--kk-chip-text));
+  border-color: transparent;
+  opacity: 0.72;
+}
+
+/* ── Roast-level gradient chips ─────────────────────────────────────────── */
+.kk-tc-chip--roast {
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.kk-tc-chip--roast-light {
+  background: var(--kk-tc-roast-light-bg, rgba(255, 247, 237, 0.88));
+  color: var(--kk-tc-roast-light-text, #2d1608);
+  border-color: var(--kk-roast-light-border, transparent);
+}
+.kk-tc-chip--roast-light-medium {
+  background: var(--kk-tc-roast-light-medium-bg, rgba(251, 191, 36, 0.34));
+  color: var(--kk-tc-roast-light-medium-text, #2d1608);
+  border-color: var(--kk-roast-light-medium-border, transparent);
+}
+.kk-tc-chip--roast-medium {
+  background: var(--kk-tc-roast-medium-bg, rgba(180, 83, 9, 0.38));
+  color: var(--kk-tc-roast-medium-text, #fff7ed);
+  border-color: var(--kk-roast-medium-border, transparent);
+}
+.kk-tc-chip--roast-medium-dark {
+  background: var(--kk-tc-roast-medium-dark-bg, rgba(120, 53, 15, 0.72));
+  color: var(--kk-tc-roast-medium-dark-text, #fff7ed);
+  border-color: var(--kk-roast-medium-dark-border, transparent);
+}
+.kk-tc-chip--roast-dark {
+  background: var(--kk-tc-roast-dark-bg, rgba(45, 22, 8, 0.90));
+  color: var(--kk-tc-roast-dark-text, #fff7ed);
+  border-color: var(--kk-roast-dark-border, transparent);
+}
+
+/* ── Action buttons — intensify on hover, no color-flip ────────────────── */
+/* DaisyUI's btn/btn-outline/btn-ghost classes are NOT used here: native
+   buttons with kk-tc-btn ensure no DaisyUI state re-introduces inversion. */
+.kk-tc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+  border-style: solid;
+  border-width: 1px;
+}
+.kk-tc-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.kk-tc-btn--edit {
+  background: var(--kk-tc-btn-edit-bg);
+  color: var(--kk-tc-btn-edit-text);
+  border-color: var(--kk-tc-btn-edit-border);
+}
+.kk-tc-btn--edit:hover:not(:disabled) {
+  background: var(--kk-tc-btn-edit-hover-bg);
+  color: var(--kk-tc-btn-edit-hover-text);
+  border-color: var(--kk-tc-btn-edit-hover-border);
+}
+.kk-tc-btn--edit:active:not(:disabled) {
+  background: var(--kk-tc-btn-edit-active-bg);
+  color: var(--kk-tc-btn-edit-active-text);
+  border-color: var(--kk-tc-btn-edit-active-border);
+}
+.kk-tc-btn--edit:focus-visible {
+  outline: none;
+  box-shadow: var(--kk-tc-btn-focus-ring);
+}
+.kk-tc-btn--danger {
+  background: var(--kk-tc-btn-danger-bg);
+  color: var(--kk-tc-btn-danger-text);
+  border-color: var(--kk-tc-btn-danger-border);
+}
+.kk-tc-btn--danger:hover:not(:disabled) {
+  background: var(--kk-tc-btn-danger-hover-bg);
+  color: var(--kk-tc-btn-danger-hover-text);
+  border-color: var(--kk-tc-btn-danger-hover-border);
+}
+.kk-tc-btn--danger:active:not(:disabled) {
+  background: var(--kk-tc-btn-danger-active-bg);
+  color: var(--kk-tc-btn-danger-active-text);
+  border-color: var(--kk-tc-btn-danger-active-border);
+}
+.kk-tc-btn--danger:focus-visible {
+  outline: none;
+  box-shadow: var(--kk-tc-btn-danger-focus-ring);
+}
+
+/* ── Primary action button — warm amber (dark) / espresso (beige) ──────── */
+.kk-tc-primary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--kk-primary-btn-bg);
+  color: var(--kk-primary-btn-text);
+  border: 1px solid var(--kk-primary-btn-border);
+  border-radius: var(--kk-primary-btn-radius);
+  padding: var(--kk-primary-btn-padding);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.kk-tc-primary-btn:hover:not(:disabled),
+.kk-tc-primary-btn:focus-visible:not(:disabled) {
+  background: var(--kk-primary-btn-hover-bg);
+  color: var(--kk-primary-btn-hover-text);
+  border-color: var(--kk-primary-btn-hover-border);
+}
+.kk-tc-primary-btn:active:not(:disabled) {
+  background: var(--kk-primary-btn-active-bg);
+  color: var(--kk-primary-btn-active-text);
+  border-color: var(--kk-primary-btn-active-border);
+}
+.kk-tc-primary-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--kk-primary-btn-focus-ring);
+}
+.kk-tc-primary-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Ghost / tertiary action button — text-only, no fill, no border ─────── */
+/* Hierarchy: primary (solid fill) > edit/secondary (border) > ghost (text). */
+.kk-tc-btn--ghost {
+  background: var(--kk-tc-btn-edit-bg);
+  color: var(--kk-tc-btn-ghost-text, var(--kk-text-secondary));
+  border-color: var(--kk-tc-btn-edit-border);
+}
+.kk-tc-btn--ghost:hover:not(:disabled) {
+  background: var(--kk-tc-btn-ghost-hover-bg, var(--kk-tc-btn-edit-hover-bg));
+  color: var(--kk-tc-btn-ghost-hover-text, var(--kk-text-primary));
+}
+.kk-tc-btn--ghost:focus-visible {
+  outline: none;
+  box-shadow: var(--kk-tc-btn-focus-ring);
+}
+
+/* ── Roaster link — inherits per-tone link color ─────────────────────────── */
+.kk-tc-roaster-link {
+  font-size: 14px;
+  color: var(--kk-tc-link);
+  text-decoration: none;
+  transition: color 150ms;
+}
+.kk-tc-roaster-link:hover {
+  color: var(--kk-tc-link-hover);
+}
+
+/* ── Catalog image placeholder — adapt to takeover card surface ────────── */
+.kk-takeover-card .kk-catalog-placeholder {
+  background: var(--kk-chip-bg);
+  box-shadow: none;
+}
+.kk-takeover-card .kk-catalog-placeholder__glyph,
+.kk-takeover-card .kk-catalog-placeholder__monogram {
+  color: var(--kk-text-tertiary);
+}
+
+/* ── Form input legibility — per-tone via inherited tokens ─────────────── */
+/* Scoped to takeover card so other .input-styled fields are unaffected.
+   Higher specificity (0,3,0) overrides .kaapi-content-surface .input-styled
+   and .input-styled defaults (0,2,0 and 0,1,0 respectively). */
+.kk-takeover-card .input-styled,
+.kk-takeover-card .select.input-styled,
+.kk-takeover-card select.input-styled,
+.kk-takeover-card .textarea.input-styled,
+.kk-takeover-card textarea.input-styled {
+  background: var(--kk-tc-input-bg);
+  border: var(--kk-tc-input-border);
+  border-radius: 8px;
+  color: var(--kk-tc-input-text);
+}
+.kk-takeover-card .input-styled::placeholder,
+.kk-takeover-card .textarea.input-styled::placeholder,
+.kk-takeover-card textarea.input-styled::placeholder {
+  color: var(--kk-tc-input-placeholder);
+}
+.kk-takeover-card .input-styled:focus,
+.kk-takeover-card .input-styled:focus-visible,
+.kk-takeover-card .select.input-styled:focus,
+.kk-takeover-card select.input-styled:focus,
+.kk-takeover-card .textarea.input-styled:focus,
+.kk-takeover-card textarea.input-styled:focus {
+  outline: none;
+  border-color: var(--kk-tc-input-focus-border);
+  box-shadow: var(--kk-tc-input-focus-ring);
+}
+
+/* FormField label + hint text — adapt to current tone */
+.kk-takeover-card .label-text {
+  color: var(--kk-text-secondary);
+}
+.kk-takeover-card .text-base-content\/50 {
+  color: var(--kk-text-tertiary);
+  opacity: 1;
+}
+/* FormField error text — use per-tone danger color (not DaisyUI text-error) */
+.kk-takeover-card .text-error {
+  color: var(--kk-tc-btn-danger-text);
+}
+
+/* ── ExtractionReadout — two-column grid, no inset well on the card ──────── */
+/* Restores the BREW RATIO | EXTRACTION ZONE two-column layout from the
+   northstar. The kk-proto-043 grid rules don't apply here (no proto-043 wrapper
+   on BrewLogDetail), so all structural + typographic rules are mirrored here. */
+.kk-takeover-card .kk-extraction-readout {
+  display: grid;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin-top: 0;
+  color: var(--kk-text-primary);
+  gap: 0.75rem;
+}
+@media (min-width: 640px) {
+  .kk-takeover-card .kk-extraction-readout {
+    grid-template-columns: minmax(8rem, 0.75fr) minmax(0, 1.25fr);
+    align-items: start;
+  }
+}
+.kk-takeover-card .kk-extraction-readout__metric,
+.kk-takeover-card .kk-extraction-readout__zone {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.kk-takeover-card .kk-extraction-readout__eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--kk-text-tertiary);
+}
+.kk-takeover-card .kk-extraction-readout__value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: clamp(1.5rem, 6vw, 2rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--kk-text-primary);
+}
+.kk-takeover-card .kk-extraction-readout__guidance {
+  color: var(--kk-text-tertiary);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  margin-top: 0.25rem;
+}
+
+/* Zone chips within the takeover card — compact chip + per-tone colors */
+.kk-takeover-card .kk-zone-chip {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border: 1px solid var(--kk-chip-border);
+  border-radius: var(--kaapi-content-radius);
+  background: var(--kk-chip-bg);
+  color: var(--kk-chip-text);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+.kk-takeover-card .kk-zone-chip--under {
+  border-color: transparent;
+  background: rgba(14, 116, 144, 0.18);
+  color: var(--kk-chip-success-text, #86efac);
+}
+.kk-takeover-card.kk-tc--beige .kk-zone-chip--under {
+  background: rgba(14, 116, 144, 0.12);
+  color: #0e7490;
+}
+.kk-takeover-card .kk-zone-chip--balanced {
+  border-color: transparent;
+  background: var(--kk-chip-brand-bg);
+  color: var(--kk-chip-brand-text);
+}
+.kk-takeover-card .kk-zone-chip--over {
+  border-color: transparent;
+  background: var(--kk-chip-danger-bg);
+  color: var(--kk-chip-danger-text);
+}
+
+
+/* ── No-uber detail pages + text-over-photo backing ─────────────────────── */
+.kk-detail-page {
+  min-height: 100%;
+  padding-bottom: var(--mobile-content-bottom-padding);
+}
+.kk-detail-shell {
+  max-width: min(var(--kk-il-content-max-width, var(--kk-tc-max-width)), calc(100% - 32px));
+  width: calc(100% - 32px);
+  margin: 16px auto 48px;
+  color: var(--kk-text-primary);
+  overflow-x: clip;
+}
+.kk-detail-header {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: var(--kk-tc-section-gap);
+}
+.kk-detail-header .kk-tc-title { color: var(--kk-text-primary); }
+.kk-detail-header .kk-tc-subtitle { color: var(--kk-text-secondary); }
+.kk-detail-header .kk-tc-section--title { gap: 1rem; }
+
+.kk-detail-header--unified {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: clamp(1rem, 2vw, 1.5rem);
+}
+.kk-detail-header__media {
+  position: relative;
+  width: clamp(144px, 22vw, 256px);
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 12px;
+  border: var(--kk-card-surface-border);
+  box-shadow: var(--kk-card-surface-shadow);
+  background: var(--kk-card-surface-bg);
+}
+.kk-detail-header__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.kk-detail-header__media > .kk-tc-btn,
+.kk-detail-header__media > .kk-tc-primary-btn {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  z-index: 1;
+}
+.kk-detail-header__media-placeholder {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--kk-text-primary) 10%, transparent);
+  color: var(--kk-text-secondary);
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 8vw, 3.5rem);
+  font-weight: 700;
+}
+.kk-detail-header__eyebrow {
+  margin: 0;
+  color: var(--kk-text-eyebrow);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+.kk-detail-header__main {
+  min-width: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+.kk-detail-header__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+.kk-detail-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+.detail-panel {
+  background: var(--kk-card-surface-bg);
+  color: var(--kk-text-primary);
+  border: var(--kk-card-surface-border);
+  border-radius: 14px;
+  box-shadow: var(--kk-card-surface-shadow);
+  backdrop-filter: var(--kk-card-surface-filter);
+  -webkit-backdrop-filter: var(--kk-card-surface-filter);
+  padding: 0.875rem 1rem;
+}
+.kk-detail-shell .kk-tc-section { margin-top: var(--kk-tc-section-gap); }
+.kk-detail-shell .kk-tc-section:first-child { margin-top: 0; }
+.kk-detail-shell .kk-tc-section:not(.detail-panel):not(.kk-detail-header) {
+  color: var(--kk-text-primary);
+}
+.kk-detail-shell .kk-tc-section:not(.detail-panel):not(.kk-detail-header) .kk-tc-section-header { color: var(--kk-text-primary); }
+.kk-detail-shell .kk-tc-section:not(.detail-panel):not(.kk-detail-header) .kk-tc-body { color: var(--kk-text-primary); }
+.kk-detail-shell .kk-tc-section:not(.detail-panel):not(.kk-detail-header) .kk-tc-body-muted { color: var(--kk-text-secondary); }
+.kk-detail-shell .kk-tc-body,
+.kk-detail-shell .kk-tc-markdown {
+  max-width: 72ch;
+}
+.kk-ai-summary {
+  border-top: 1px solid color-mix(in srgb, var(--kk-text-primary) 18%, transparent);
+  padding-top: 1rem;
+}
+.kk-detail-shell .kk-tc-markdown { color: var(--kk-text-primary); font-size: var(--kk-tc-body-size, 0.9375rem); line-height: 1.65; }
+.kk-detail-shell .kk-tc-markdown h1,.kk-detail-shell .kk-tc-markdown h2,.kk-detail-shell .kk-tc-markdown h3,.kk-detail-shell .kk-tc-markdown h4,.kk-detail-shell .kk-tc-markdown h5,.kk-detail-shell .kk-tc-markdown h6 { font-family: var(--font-body); color: var(--kk-text-secondary); font-size: 1.05em; }
+.kk-detail-shell .kk-tc-markdown a { color: var(--kk-tc-link); }
+.kk-detail-shell .kk-extraction-readout { display: grid; gap: 0.75rem; color: var(--kk-text-primary); }
+@media (min-width: 640px) { .kk-detail-shell .kk-extraction-readout { grid-template-columns: minmax(8rem, 0.75fr) minmax(0, 1.25fr); align-items: start; } }
+.kk-detail-shell .kk-extraction-readout__metric,.kk-detail-shell .kk-extraction-readout__zone { display:flex; flex-direction:column; gap:0.35rem; }
+.kk-detail-shell .kk-extraction-readout__eyebrow { font-size:0.6875rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--kk-text-secondary); }
+.kk-detail-shell .kk-extraction-readout__value { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: clamp(1.5rem, 6vw, 2rem); font-weight: 700; line-height: 1; color: var(--kk-text-primary); }
+.kk-detail-shell .kk-extraction-readout__guidance { color: var(--kk-text-secondary); font-size:0.8125rem; line-height:1.35; margin-top:0.25rem; }
+.kk-detail-shell .kk-zone-chip { display:inline-flex; width:fit-content; border:var(--kk-chip-border); border-radius:9999px; background:var(--kk-chip-bg); color:var(--kk-chip-text); padding:0.35rem 0.65rem; font-size:0.75rem; font-weight:700; }
+.kk-detail-shell .kk-zone-chip--under { background:var(--kk-chip-success-bg); color:var(--kk-chip-success-text); border-color:var(--kk-chip-success-border); }
+.kk-detail-shell .kk-zone-chip--balanced { background:var(--kk-chip-brand-bg); color:var(--kk-chip-brand-text); border-color:var(--kk-chip-brand-border); }
+.kk-detail-shell .kk-zone-chip--over { background:var(--kk-chip-danger-bg); color:var(--kk-chip-danger-text); border-color:var(--kk-chip-danger-border); }
+@supports not (backdrop-filter: blur(1px)) { .detail-panel { background: var(--kk-card-surface-bg-solid); backdrop-filter:none; -webkit-backdrop-filter:none; } }
+
+/* ── Mobile responsive ──────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .kk-detail-shell {
+    --kk-tc-section-gap: 24px;
+    width: calc(100% - 32px);
+    margin: 12px auto 32px;
+  }
+  .kk-takeover-card {
+    --kk-tc-padding-x: 16px;
+    --kk-tc-padding-y: 24px;
+    --kk-tc-section-gap: 24px;
+    --kk-tc-title-size: 20px;
+    width: calc(100% - 24px);
+    margin: 12px auto 32px;
+  }
+  .kk-b-page__nav {
+    padding: 12px 16px 0;
+    margin: 0 auto;
+    width: calc(100% - 32px);
+  }
+
+  .kk-detail-header--unified {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .kk-detail-header__media {
+    width: clamp(144px, 46vw, 200px);
+    max-width: none;
+  }
+  .kk-detail-header__actions {
+    justify-content: flex-start;
+  }
+  .kk-detail-header__actions .kk-tc-btn,
+  .kk-detail-header__actions .kk-tc-primary-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .bag-card-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .bag-card-row__action {
+    justify-content: flex-start;
+  }
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .kk-tc-btn,
+  .kk-tc-tone-btn,
+  .kk-tc-back-link {
+    transition: none;
+  }
+}
+
+/* ── Mobile back-link legibility bump (Point 7) ──────────────────────────── */
+@media (max-width: 639px) {
+  .kk-tc-back-link {
+    font-size: 15px;
+    font-weight: 500;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   spec-043 v4 — Immersive List Shell + EntityCard
+   List pages are card-less + immersive; entity items are glass cards.
+   All tokens live in :root (geometry) and [data-tone] (color).
+   CRITICAL: --kk-tc-bevel-shadow and multi-layer box-shadows in [data-tone]
+   blocks are regular CSS (NOT @plugin "daisyui/theme") so comma-values work.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── :root — shared layout + card geometry tokens ───────────────────────── */
+:root {
+  --kk-layout-gutter: 1rem;
+  --kk-layout-section-gap: 1.5rem;
+
+  /* Immersive List Shell geometry */
+  --kk-il-frost-blur: 24px;
+  --kk-il-content-max-width: 1200px;
+  --kk-il-content-padding: var(--kk-layout-gutter);
+
+  /* EntityCard geometry */
+  --kk-ec-radius: 12px;
+  --kk-ec-padding: 12px;
+  --kk-ec-figure-radius: 8px;
+  --kk-ec-max-width: 320px;
+
+  /* Canonical content-spacing tokens (spec-043) */
+  --kk-card-gap-eyebrow-title: 0.25rem;
+  --kk-card-gap-text-text: 0.25rem;
+  --kk-card-gap-text-chip: 0.5rem;
+  --kk-card-gap-chip-text: 0.5rem;
+  --kk-card-gap-chip-inline: 0.5rem;
+}
+
+/* ── [data-tone="dark"] — DARK tone color tokens (single surface source) */
+[data-tone="dark"] {
+  /* Surface tokens — needed by wizard/stepper components */
+  --kaapi-content-surface: #2A241B;
+  --kaapi-content-surface-2: #2d1f0e;
+  --kaapi-content-content: #f5e6d3;
+  --kaapi-content-muted: #cdbba6;
+  --kaapi-content-border: rgba(245, 230, 211, 0.16);
+
+  /* Immersive frost tint */
+  --kk-il-frost-tint: rgba(24, 16, 10, 0.45);
+  --kk-il-frost-tint-solid: rgba(24, 16, 10, 0.85);
+  --kk-il-text-primary: #fff7ed;
+  --kk-il-text-secondary: #d6cbbf;
+  --kk-il-text-tertiary: #a89585;
+
+  --kk-card-surface-bg: rgba(34, 28, 22, 0.72);
+  --kk-card-surface-bg-solid: #221c16;
+  --kk-card-surface-border: 1px solid rgba(245, 230, 211, 0.14);
+  --kk-card-surface-shadow: 0 10px 28px -18px rgba(0, 0, 0, 0.62);
+  --kk-card-surface-blur: 8px;
+  --kk-card-surface-filter: blur(var(--kk-card-surface-blur));
+
+  --kk-text-primary: #fff7ed;
+  --kk-text-secondary: #d6cbbf;
+  --kk-text-tertiary: #a89585;
+  --kk-text-eyebrow: #e8ddd4;
+  --kk-tc-link: #fbbf24;
+  --kk-tc-link-hover: #fcd34d;
+  --kk-tc-input-bg: rgba(45, 32, 22, 0.6);
+  --kk-tc-input-border: 1px solid rgba(255, 247, 237, 0.15);
+  --kk-tc-input-text: #fff7ed;
+  --kk-tc-input-placeholder: rgba(255, 247, 237, 0.5);
+  --kk-tc-input-focus-border: rgba(251, 191, 36, 0.6);
+  --kk-tc-input-focus-ring: 0 0 0 3px rgba(251, 191, 36, 0.15);
+
+  --kk-chip-bg: rgba(255, 247, 237, 0.20);
+  --kk-chip-text: #e8ddd4;
+  --kk-chip-border: 1px solid rgba(255, 247, 237, 0.30);
+  --kk-chip-neutral-bg: rgba(255, 247, 237, 0.20);
+  --kk-chip-neutral-text: #e8ddd4;
+  --kk-chip-neutral-border: rgba(255, 247, 237, 0.30);
+  --kk-chip-success-bg: rgba(34, 197, 94, 0.16);
+  --kk-chip-success-text: #86efac;
+  --kk-chip-success-border: rgba(34, 197, 94, 0.32);
+  --kk-chip-brand-bg: rgba(251, 191, 36, 0.20);
+  --kk-chip-brand-text: #fde68a;
+  --kk-chip-brand-border: rgba(251, 191, 36, 0.38);
+  --kk-chip-warning-bg: rgba(148, 163, 184, 0.16);
+  --kk-chip-warning-text: #94a3b8;
+  --kk-chip-warning-border: rgba(148, 163, 184, 0.30);
+  --kk-tc-roast-amber-on-dark-text: #fef3c7;
+  --kk-tc-roast-light-medium-text: var(--kk-tc-roast-amber-on-dark-text);
+  --kk-chip-danger-bg: rgba(239, 68, 68, 0.13);
+  --kk-chip-danger-text: #fca5a5;
+  --kk-chip-danger-border: rgba(239, 68, 68, 0.30);
+
+  --kk-tc-btn-edit-bg: #F6D58B;
+  --kk-tc-btn-edit-text: #3A2208;
+  --kk-tc-btn-edit-border: #C97A12;
+  --kk-tc-btn-edit-hover-bg: rgba(255, 247, 237, 0.26);
+  --kk-tc-btn-edit-hover-text: #fff7ed;
+  --kk-tc-btn-edit-hover-border: rgba(255, 247, 237, 0.42);
+  --kk-tc-btn-edit-active-bg: rgba(255, 247, 237, 0.34);
+  --kk-tc-btn-edit-active-text: #fff7ed;
+  --kk-tc-btn-edit-active-border: rgba(255, 247, 237, 0.52);
+  --kk-tc-btn-focus-ring: 0 0 0 3px rgba(251, 191, 36, 0.25);
+  --kk-tc-btn-danger-bg: rgba(239, 68, 68, 0.20);
+  --kk-tc-btn-danger-text: #fca5a5;
+  --kk-tc-btn-danger-border: rgba(239, 68, 68, 0.36);
+  --kk-tc-btn-danger-hover-bg: rgba(239, 68, 68, 0.28);
+  --kk-tc-btn-danger-hover-text: #fecaca;
+  --kk-tc-btn-danger-hover-border: rgba(239, 68, 68, 0.50);
+  --kk-tc-btn-danger-active-bg: rgba(239, 68, 68, 0.32);
+  --kk-tc-btn-danger-active-text: #fee2e2;
+  --kk-tc-btn-danger-active-border: rgba(239, 68, 68, 0.50);
+  --kk-tc-btn-danger-focus-ring: 0 0 0 3px rgba(239, 68, 68, 0.25);
+
+  --kk-primary-btn-bg: #fbbf24;
+  --kk-primary-btn-text: #2d1608;
+  --kk-primary-btn-border: rgba(251, 191, 36, 0.85);
+  --kk-primary-btn-hover-bg: #fcd34d;
+  --kk-primary-btn-hover-text: #2d1608;
+  --kk-primary-btn-hover-border: rgba(252, 211, 77, 0.95);
+  --kk-primary-btn-active-bg: #f59e0b;
+  --kk-primary-btn-active-text: #2d1608;
+  --kk-primary-btn-active-border: rgba(245, 158, 11, 0.95);
+  --kk-primary-btn-focus-ring: 0 0 0 3px rgba(251, 191, 36, 0.35);
+
+  --kk-monogram-tile-bg: rgba(245, 158, 11, 0.15);
+  --kk-roast-light-border: transparent;
+  --kk-roast-light-medium-border: transparent;
+  --kk-roast-medium-border: transparent;
+  --kk-roast-medium-dark-border: transparent;
+  --kk-roast-dark-border: rgba(255, 247, 237, 0.15);
+
+  --kk-tc-back-link-color: #fbbf24;
+  --kk-tc-back-link-hover: #fcd34d;
+  --kk-tc-back-link-chip-bg: transparent;
+  --kk-tc-back-link-chip-border: transparent;
+  --kk-tc-back-link-chip-blur: none;
+  --kk-tc-nav-text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+  --kk-tc-tone-btn-bg: transparent;
+  --kk-tc-tone-btn-text: rgba(255, 247, 237, 0.95);
+  --kk-tc-tone-btn-border: transparent;
+  --kk-tc-tone-btn-hover-bg: rgba(255, 247, 237, 0.10);
+  --kk-tc-tone-btn-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --kk-scrim-brew-end: rgba(8, 5, 2, 0.62);
+  --kk-scrim-catalog-end: rgba(8, 5, 2, 0.52);
+  --kk-scrim-hardware-end: rgba(8, 5, 2, 0.52);
+  --kk-page-bg-overlay: linear-gradient(rgba(18, 11, 6, 0.76), rgba(18, 11, 6, 0.76));
+  --kk-page-bg-overlay-base: linear-gradient(var(--kaapi-frame-scrim-dark-t2, rgba(18, 11, 6, 0.68)), rgba(18, 11, 6, 0.68));
+  --kk-page-bg-overlay-dashboard: linear-gradient(rgba(18, 11, 6, 0.76), rgba(18, 11, 6, 0.76));
+  --kk-page-bg-overlay-brew: linear-gradient(rgba(18, 11, 6, 0.76), rgba(18, 11, 6, 0.76));
+  --kk-page-bg-overlay-catalog: linear-gradient(rgba(18, 11, 6, 0.76), rgba(18, 11, 6, 0.76));
+  --kk-page-bg-overlay-hardware: linear-gradient(rgba(18, 11, 6, 0.76), rgba(18, 11, 6, 0.76));
+}
+[data-tone="beige"] {
+  /* Immersive frost tint */
+  --kk-il-frost-tint: transparent;
+  --kk-il-frost-tint-solid: rgba(245, 235, 220, 0.92);
+  --kk-il-text-primary: #2d1608;
+  --kk-il-text-secondary: #5c3d1e;
+  --kk-il-text-tertiary: #8b6b4a;
+
+  --kk-card-surface-bg: rgba(250, 245, 239, 0.86);
+  --kk-card-surface-bg-solid: #faf5ef;
+  --kk-card-surface-border: 1px solid rgba(139, 90, 43, 0.14);
+  --kk-card-surface-shadow: 0 10px 28px -20px rgba(45, 22, 8, 0.24);
+  --kk-card-surface-blur: 20px;
+  --kk-card-surface-filter: blur(var(--kk-card-surface-blur));
+
+  --kk-text-primary: #2d1608;
+  --kk-text-secondary: #5c3d1e;
+  --kk-text-tertiary: #8b6b4a;
+  --kk-text-eyebrow: #5c3d1e;
+  --kk-tc-link: #78350f;
+  --kk-tc-link-hover: #5c2e0b;
+  --kk-tc-input-bg: rgba(235, 220, 200, 0.7);
+  --kk-tc-input-border: 1px solid rgba(139, 90, 43, 0.2);
+  --kk-tc-input-text: #2d1608;
+  --kk-tc-input-placeholder: rgba(45, 22, 8, 0.45);
+  --kk-tc-input-focus-border: rgba(146, 64, 14, 0.6);
+  --kk-tc-input-focus-ring: 0 0 0 3px rgba(146, 64, 14, 0.12);
+
+  --kk-chip-bg: rgba(45, 22, 8, 0.08);
+  --kk-chip-text: #4a3728;
+  --kk-chip-border: 1px solid rgba(45, 22, 8, 0.12);
+  --kk-chip-neutral-bg: rgba(45, 22, 8, 0.08);
+  --kk-chip-neutral-text: #4a3728;
+  --kk-chip-neutral-border: rgba(45, 22, 8, 0.12);
+  --kk-chip-success-bg: rgba(22, 163, 74, 0.12);
+  --kk-chip-success-text: #166534;
+  --kk-chip-success-border: rgba(22, 163, 74, 0.26);
+  --kk-chip-brand-bg: rgba(146, 64, 14, 0.12);
+  --kk-chip-brand-text: #92400e;
+  --kk-chip-brand-border: rgba(146, 64, 14, 0.26);
+  --kk-chip-warning-bg: rgba(82, 82, 82, 0.10);
+  --kk-chip-warning-text: #4b5563;
+  --kk-chip-warning-border: rgba(82, 82, 82, 0.22);
+  --kk-tc-roast-light-medium-text: #92400e;
+  --kk-chip-danger-bg: rgba(185, 28, 28, 0.10);
+  --kk-chip-danger-text: #b91c1c;
+  --kk-chip-danger-border: rgba(185, 28, 28, 0.24);
+
+  --kk-tc-btn-edit-bg: #F6D58B;
+  --kk-tc-btn-edit-text: #3A2208;
+  --kk-tc-btn-edit-border: #C97A12;
+  --kk-tc-btn-edit-hover-bg: rgba(45, 22, 8, 0.14);
+  --kk-tc-btn-edit-hover-text: #2d1608;
+  --kk-tc-btn-edit-hover-border: rgba(45, 22, 8, 0.20);
+  --kk-tc-btn-edit-active-bg: rgba(45, 22, 8, 0.20);
+  --kk-tc-btn-edit-active-text: #2d1608;
+  --kk-tc-btn-edit-active-border: rgba(45, 22, 8, 0.28);
+  --kk-tc-btn-focus-ring: 0 0 0 3px rgba(146, 64, 14, 0.15);
+  --kk-tc-btn-danger-bg: rgba(185, 28, 28, 0.10);
+  --kk-tc-btn-danger-text: #b91c1c;
+  --kk-tc-btn-danger-border: rgba(185, 28, 28, 0.15);
+  --kk-tc-btn-danger-hover-bg: rgba(185, 28, 28, 0.18);
+  --kk-tc-btn-danger-hover-text: #991b1b;
+  --kk-tc-btn-danger-hover-border: rgba(185, 28, 28, 0.25);
+  --kk-tc-btn-danger-active-bg: rgba(185, 28, 28, 0.26);
+  --kk-tc-btn-danger-active-text: #7f1d1d;
+  --kk-tc-btn-danger-active-border: rgba(185, 28, 28, 0.35);
+  --kk-tc-btn-danger-focus-ring: 0 0 0 3px rgba(185, 28, 28, 0.15);
+
+  --kk-primary-btn-bg: #fbbf24;
+  --kk-primary-btn-text: #2d1608;
+  --kk-primary-btn-border: rgba(251, 191, 36, 0.85);
+  --kk-primary-btn-hover-bg: #fcd34d;
+  --kk-primary-btn-hover-text: #2d1608;
+  --kk-primary-btn-hover-border: rgba(252, 211, 77, 0.95);
+  --kk-primary-btn-active-bg: #f59e0b;
+  --kk-primary-btn-active-text: #2d1608;
+  --kk-primary-btn-active-border: rgba(245, 158, 11, 0.95);
+  --kk-primary-btn-focus-ring: 0 0 0 3px rgba(251, 191, 36, 0.35);
+
+  --kk-monogram-tile-bg: rgba(120, 53, 15, 0.10);
+  --kk-roast-light-border: rgba(45, 22, 8, 0.2);
+  --kk-roast-light-medium-border: rgba(45, 22, 8, 0.15);
+  --kk-roast-medium-border: transparent;
+  --kk-roast-medium-dark-border: transparent;
+  --kk-roast-dark-border: transparent;
+
+  --kk-tc-back-link-color: #78350f;
+  --kk-tc-back-link-hover: #5c2e0b;
+  --kk-tc-back-link-chip-bg: transparent;
+  --kk-tc-back-link-chip-border: transparent;
+  --kk-tc-back-link-chip-blur: none;
+  --kk-tc-nav-text-shadow: none;
+  --kk-tc-tone-btn-bg: transparent;
+  --kk-tc-tone-btn-text: #4a3728;
+  --kk-tc-tone-btn-border: transparent;
+  --kk-tc-tone-btn-hover-bg: rgba(45, 22, 8, 0.08);
+  --kk-tc-tone-btn-text-shadow: none;
+  --kk-scrim-brew-end: rgba(8, 5, 2, 0.62);
+  --kk-scrim-catalog-end: rgba(8, 5, 2, 0.52);
+  --kk-scrim-hardware-end: rgba(8, 5, 2, 0.52);
+  --kk-main-veil-blur: blur(18px);
+  --kk-page-frost-blur: blur(18px) saturate(1.08);
+  --kk-page-bg-overlay: linear-gradient(160deg, rgba(245, 235, 220, 0.86), rgba(232, 210, 180, 0.90));
+  --kk-page-bg-overlay-base: linear-gradient(160deg, rgba(245, 235, 220, 0.18), rgba(232, 210, 180, 0.28));
+  --kk-page-bg-overlay-dashboard: linear-gradient(160deg, rgba(245, 235, 220, 0.86), rgba(232, 210, 180, 0.90));
+  --kk-page-bg-overlay-brew: linear-gradient(160deg, rgba(245, 235, 220, 0.86), rgba(232, 210, 180, 0.90));
+  --kk-page-bg-overlay-catalog: linear-gradient(160deg, rgba(245, 235, 220, 0.86), rgba(232, 210, 180, 0.90));
+  --kk-page-bg-overlay-hardware: linear-gradient(160deg, rgba(245, 235, 220, 0.86), rgba(232, 210, 180, 0.90));
+  --kk-compass-instrument-bg: radial-gradient(circle at 28% 24%, rgba(180, 83, 9, 0.12), transparent 34%), radial-gradient(circle at 76% 78%, rgba(14, 116, 144, 0.10), transparent 32%), linear-gradient(145deg, #fff7ed 0%, #f7ead8 50%, #ead8c0 100%);
+  --kk-compass-instrument-border: rgba(120, 53, 15, 0.24);
+  --kk-compass-instrument-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), inset 0 -22px 54px rgba(120, 53, 15, 0.10);
+  --kk-compass-zone-0-0: #ead0b8;
+  --kk-compass-zone-0-1: #e3b879;
+  --kk-compass-zone-0-2: #e5b4ae;
+  --kk-compass-zone-1-0: #ddd0bd;
+  --kk-compass-zone-1-1: #f4c76f;
+  --kk-compass-zone-1-2: #d6b193;
+  --kk-compass-zone-2-0: #b9dde4;
+  --kk-compass-zone-2-1: #a9d7e2;
+  --kk-compass-zone-2-2: #d2c2b4;
+  --kk-compass-groove: #6b4a2f;
+  --kk-compass-live-dot: #2d1608;
+  --kk-compass-taste-ring: #92400e;
+  --kk-compass-contact-shadow: #6b4a2f;
+  --kk-compass-key-light: #fff7ed;
+  --kk-compass-rim-light: #b45309;
+  --kk-compass-ambient-light: #fff7ed;
+  --kk-compass-zone-label: #2d1608;
+  --kk-compass-zone-label-shadow: 0 1px 2px rgba(255, 247, 237, 0.90), 0 0 6px rgba(255, 247, 237, 0.72);
+  --kk-compass-marker-bg: rgba(255, 247, 237, 0.92);
+  --kk-compass-marker-text: #2d1608;
+  --kk-compass-computed-border: rgba(120, 53, 15, 0.78);
+  --kk-compass-computed-shadow: inset 0 0 0 1px rgba(146, 64, 14, 0.50), 0 0 18px rgba(146, 64, 14, 0.12);
+  --kk-compass-selected-fill: rgba(146, 64, 14, 0.10);
+  --kk-compass-svg-zone-weak-sour-fill: rgba(14, 116, 144, 0.16);
+  --kk-compass-svg-zone-weak-sour-stroke: rgba(14, 116, 144, 0.38);
+  --kk-compass-svg-zone-sour-fill: rgba(14, 116, 144, 0.20);
+  --kk-compass-svg-zone-sour-stroke: rgba(14, 116, 144, 0.46);
+  --kk-compass-svg-zone-astringent-sour-fill: rgba(21, 94, 117, 0.20);
+  --kk-compass-svg-zone-astringent-sour-stroke: rgba(21, 94, 117, 0.48);
+  --kk-compass-svg-zone-weak-sweet-fill: rgba(22, 101, 52, 0.14);
+  --kk-compass-svg-zone-weak-sweet-stroke: rgba(22, 101, 52, 0.34);
+  --kk-compass-svg-zone-sweet-balanced-fill: rgba(146, 64, 14, 0.18);
+  --kk-compass-svg-zone-sweet-balanced-stroke: rgba(146, 64, 14, 0.46);
+  --kk-compass-svg-zone-bitter-astringent-fill: rgba(185, 28, 28, 0.14);
+  --kk-compass-svg-zone-bitter-astringent-stroke: rgba(185, 28, 28, 0.40);
+  --kk-compass-svg-zone-weak-bitter-fill: rgba(120, 53, 15, 0.14);
+  --kk-compass-svg-zone-weak-bitter-stroke: rgba(120, 53, 15, 0.36);
+  --kk-compass-svg-zone-bitter-fill: rgba(146, 64, 14, 0.18);
+  --kk-compass-svg-zone-bitter-stroke: rgba(146, 64, 14, 0.44);
+  --kk-compass-svg-zone-harsh-bitter-fill: rgba(127, 29, 29, 0.16);
+  --kk-compass-svg-zone-harsh-bitter-stroke: rgba(127, 29, 29, 0.42);
+  --kk-compass-svg-label: #2d1608;
+  --kk-compass-svg-label-halo: rgba(255, 247, 237, 0.94);
+  --kk-compass-svg-muted-label: #5c3d1e;
+  --kk-compass-svg-axis-stroke: rgba(120, 53, 15, 0.38);
+  --kk-compass-svg-selection-outer: rgba(45, 22, 8, 0.70);
+  --kk-compass-svg-selection-inner: #92400e;
+  --kk-compass-svg-agreement-fill: rgba(255, 247, 237, 0.34);
+  --kk-compass-svg-selected-fill: rgba(146, 64, 14, 0.08);
+  --kk-compass-svg-live-ping: #92400e;
+  --kk-compass-svg-live-ring: #78350f;
+  --kk-compass-svg-live-dot: #2d1608;
+  --kk-compass-svg-out-of-range: #92400e;
+  --kk-compass-svg-mesh-amber-start: rgba(146, 64, 14, 0.14);
+  --kk-compass-svg-mesh-amber-end: rgba(146, 64, 14, 0);
+  --kk-compass-svg-mesh-rust-start: rgba(185, 28, 28, 0.10);
+  --kk-compass-svg-mesh-rust-end: rgba(185, 28, 28, 0);
+  --kk-compass-svg-mesh-cerulean-start: rgba(14, 116, 144, 0.10);
+  --kk-compass-svg-mesh-cerulean-end: rgba(14, 116, 144, 0);
+  --kk-compass-svg-mesh-slate-start: rgba(22, 101, 52, 0.08);
+  --kk-compass-svg-mesh-slate-end: rgba(22, 101, 52, 0);
+  --kk-compass-svg-aurora-start: rgba(146, 64, 14, 0.14);
+  --kk-compass-svg-aurora-end: rgba(146, 64, 14, 0);
+}
+
+
+/* ── Immersive list route scrim ──────────────────────────────────────────── */
+.app-bg.bg-dashboard:has(~ main [data-tone]) {
+  background-image: var(--kk-page-bg-overlay-dashboard), url('/static/img/hero-dashboard.jpg');
+}
+.app-bg.bg-brew-log:has(~ main [data-tone]) {
+  background-image: var(--kk-page-bg-overlay-brew), url('/static/img/hero-brew.jpg');
+}
+.app-bg.bg-catalog:has(~ main [data-tone]) {
+  background-image: var(--kk-page-bg-overlay-catalog), url('/static/img/hero-catalog.jpg');
+}
+.app-bg.bg-hardware:has(~ main [data-tone]) {
+  background-image: var(--kk-page-bg-overlay-hardware), url('/static/img/hero-hardware.jpg');
+}
+.app-bg:has(~ main [data-tone="beige"]) {
+  --kk-page-bg-overlay: linear-gradient(160deg, rgba(245, 235, 220, 0.86), rgba(232, 210, 180, 0.90));
+  --kk-page-bg-overlay-dashboard: linear-gradient(160deg, rgba(245, 235, 220, 0.86), rgba(232, 210, 180, 0.90));
+  --kk-page-bg-overlay-brew: linear-gradient(160deg, rgba(245, 235, 220, 0.86), rgba(232, 210, 180, 0.90));
+  --kk-page-bg-overlay-catalog: linear-gradient(160deg, rgba(245, 235, 220, 0.86), rgba(232, 210, 180, 0.90));
+  --kk-page-bg-overlay-hardware: linear-gradient(160deg, rgba(245, 235, 220, 0.86), rgba(232, 210, 180, 0.90));
+}
+
+/* ── Immersive List Shell layout ─────────────────────────────────────────── */
+.immersive-list-shell {
+  min-height: 100%;
+}
+
+.immersive-list-content {
+  position: relative;
+  z-index: 1;
+  max-width: var(--kk-il-content-max-width);
+  margin: 0 auto;
+  padding: 1.5rem var(--kk-il-content-padding) var(--mobile-content-bottom-padding);
+}
+
+.immersive-nav-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+/* ── ListPageHeader ──────────────────────────────────────────────────────── */
+.list-page-header {
+  margin-bottom: var(--kk-layout-section-gap);
+}
+.list-page-header-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--kk-il-text-tertiary);
+  margin: 0 0 0.25rem;
+}
+.list-page-header-title {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 700;
+  color: var(--kk-il-text-primary);
+  line-height: 1.1;
+  margin: 0 0 0.5rem;
+}
+.dashboard-home .list-page-header-title {
+  margin-bottom: 0.875rem;
+}
+.kk-home-wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(0.16em, 0.5vw, 0.30em);
+  flex-wrap: nowrap;
+  max-width: min(100%, calc(100vw - 2rem));
+  font-family: var(--font-display, "Playfair Display", Georgia, serif);
+  font-weight: 800;
+  font-size: clamp(3rem, 13vw, 7rem);
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+}
+
+.kk-home-wordmark__word {
+  white-space: nowrap;
+}
+
+.kk-home-wordmark__kaapi {
+  color: var(--kk-text-primary);
+}
+
+.kk-home-wordmark__kadai {
+  color: var(--kk-tc-link);
+}
+
+.kk-home-wordmark__medallion {
+  flex: none;
+  width: 0.92em;
+  height: 0.92em;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--kk-tc-link);
+  border: 0.024em solid color-mix(in srgb, var(--kk-tc-link) 42%, transparent);
+}
+
+.kk-home-wordmark__medallion svg {
+  width: 66%;
+  height: 66%;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.dashboard-home .list-page-header-section {
+  color: var(--kk-il-text-secondary);
+  font-size: clamp(0.875rem, 0.82rem + 0.22vw, 1rem);
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: none;
+}
+@media (min-width: 768px) {
+  .kk-home-wordmark {
+    font-size: clamp(3.8rem, 10vw, 8.5rem);
+  }
+}
+.kk-section-heading-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.125rem, 1rem + 0.55vw, 1.375rem);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.12;
+  color: var(--kk-il-text-primary, var(--kk-text-primary));
+  margin: 0;
+  text-transform: none;
+}
+.list-page-header-section {
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--kk-il-text-secondary);
+  margin: 0;
+}
+.list-page-header > .kk-tc-primary-btn {
+  margin-top: 0.875rem;
+}
+
+@media (max-width: 430px) {
+  .kk-home-wordmark {
+    max-width: calc(100vw - 2rem);
+    font-size: clamp(2.5rem, 13vw, 3.8rem);
+    gap: 0.14em;
+    letter-spacing: -0.018em;
+  }
+}
+
+/* spec-043 v5: text-shadow removed — legibility from darker scrim + eggshell surfaces */
+
+/* ── EntityCard — solid card for list items ─────────────────────────────── */
+/* Principle 3 (Surface Discipline): repeated cards are opaque instruments.
+   Principle 2 (Single Surface): no nested glass sub-cards.
+   Principle 8 (INTENSIFY states): hover brightens, active scales down. */
+.entity-card {
+  display: block;
+  text-decoration: none;
+  border-radius: var(--kk-ec-radius);
+  overflow: hidden;
+  background: var(--kk-card-surface-bg);
+  box-shadow: var(--kk-card-surface-shadow);
+  border: var(--kk-card-surface-border);
+  backdrop-filter: var(--kk-card-surface-filter);
+  -webkit-backdrop-filter: var(--kk-card-surface-filter);
+  color: var(--kk-text-primary);
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+  height: auto;
+}
+.entity-card--button {
+  width: 100%;
+  padding: 0;
+  appearance: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+.entity-card:hover {
+  filter: brightness(1.05);
+  box-shadow: var(--kk-card-surface-shadow), 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+.entity-card:focus-visible {
+  outline: 2px solid var(--kk-text-primary);
+  outline-offset: 2px;
+}
+.entity-card:active {
+  transform: scale(0.98);
+  filter: brightness(0.95);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .entity-card {
+    background: var(--kk-card-surface-bg-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .entity-card {
+    background: var(--kk-card-surface-bg-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entity-card {
+    transition: none;
+  }
+}
+
+.entity-card-figure {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--kk-text-primary) 8%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.entity-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Compact monogram fill — shown when no imageUrl is provided.
+   Transparent background so the card's glass surface reads as one continuous
+   surface across figure and body — no two-tone tinted-panel split. The compact
+   centred monogram letter (--kk-text-primary) sits directly on the card
+   glass and is AA-legible on both tones (cream on dark glass; espresso on
+   beige glass). --kk-monogram-tile-bg is intentionally NOT used here
+   to avoid the off-tone amber/brown block; that token is preserved for the
+   detail-page TitleIcon (.kk-tc-title-icon-placeholder) which is unaffected. */
+.entity-card-monogram-fill {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+.entity-card-image-placeholder {
+  width: 100%;
+  height: 100%;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--kk-text-primary) 10%, transparent), transparent 55%),
+    color-mix(in srgb, var(--kk-text-primary) 6%, transparent);
+}
+
+/* Strip the figure's image-placeholder tint when a monogram fill is active,
+   so the whole card is one even glass surface (no figure-vs-body tonal split).
+   Compact card rules below override this to a square top-right media slot so
+   monograms and photos share the same skeleton. */
+.entity-card-figure:has(.entity-card-monogram-fill) {
+  background: transparent;
+  aspect-ratio: 3 / 2;
+}
+
+.entity-card-monogram {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 6vw, 3.5rem);  /* spec-043 v5: was clamp(3rem, 8vw, 5rem) — ~30% smaller, less dominant */
+  font-weight: 700;
+  color: var(--kk-text-primary);
+  line-height: 1;
+  user-select: none;
+}
+
+.entity-card-body {
+  padding: var(--kk-ec-padding);
+  display: flex;
+  flex-direction: column;
+  gap: var(--kk-card-gap-text-text);
+}
+
+.entity-card-eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--kk-text-tertiary);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entity-card-title {
+  font-family: var(--kaapi-card-title-family);
+  font-size: var(--kaapi-card-title-size);
+  font-weight: var(--kaapi-card-title-weight);
+  color: var(--kk-text-primary);
+  line-height: var(--kaapi-card-title-line-height);
+  letter-spacing: var(--kaapi-card-title-letter-spacing);
+  margin: 0;
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.entity-card-date {
+  color: var(--kk-text-secondary);
+  font-family: var(--kaapi-card-meta-family);
+  font-size: var(--kaapi-card-meta-size);
+  font-weight: var(--kaapi-card-meta-weight);
+  line-height: var(--kaapi-card-meta-line-height);
+}
+
+.entity-card-chip-slot {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+  gap: var(--kk-card-gap-chip-inline);
+  margin-top: var(--kk-card-gap-text-chip);
+  min-height: 1.75rem;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.entity-card-chip-row-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+.entity-card-chip,
+.entity-card-chip-slot > .kk-tc-chip {
+  flex: 0 0 auto;
+  min-width: max-content;
+}
+
+.entity-card-chip-measure {
+  position: absolute;
+  inset: 0 auto auto 0;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--kk-card-gap-chip-inline);
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+  visibility: hidden;
+  white-space: nowrap;
+}
+
+/* ── EntityCard responsive grid ─────────────────────────────────────────── */
+.entity-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+@media (min-width: 768px) {
+  .entity-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, var(--kk-ec-max-width)));
+    justify-content: start;
+    gap: 1rem;
+  }
+}
+
+/* ── Immersive search input — glass pill on the frost ───────────────────── */
+.immersive-search-wrapper {
+  margin-bottom: 1.5rem;
+}
+.immersive-search-input {
+  background: var(--kk-tc-input-bg);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: var(--kk-tc-input-border);
+  border-radius: var(--kk-input-radius, 10px);
+  padding: 0.75rem 1rem;
+  color: var(--kk-tc-input-text);
+  width: 100%;
+  max-width: 400px;
+  font-size: 0.9375rem;
+  display: block;
+}
+.immersive-search-input::placeholder {
+  color: var(--kk-tc-input-placeholder);
+}
+.immersive-search-input:focus {
+  outline: none;
+  border-color: var(--kk-tc-input-focus-border);
+  box-shadow: var(--kk-tc-input-focus-ring);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .immersive-search-input {
+    background: var(--kk-card-surface-bg-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .immersive-search-input {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--kk-card-surface-bg-solid);
+  }
+}
+
+/* ── ImmersiveEmptyState ─────────────────────────────────────────────────── */
+.immersive-empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+.immersive-empty-state-icon {
+  font-size: 3rem;
+  line-height: 1;
+  margin-bottom: 1rem;
+  opacity: 0.6;
+  display: block;
+  color: var(--kk-il-text-tertiary, var(--kk-text-tertiary));
+}
+.immersive-empty-state-title {
+  font-family: var(--font-display);
+  font-size: var(--kk-tc-title-size);
+  font-weight: var(--kk-tc-title-weight);
+  line-height: 1.2;
+  color: var(--kk-il-text-primary, var(--kk-text-primary));
+  margin: 0;
+}
+.immersive-empty-state-description {
+  color: var(--kk-il-text-secondary, var(--kk-text-tertiary));
+  font-size: var(--kk-tc-body-size);
+  font-weight: 400;
+  line-height: var(--kk-tc-body-line-height);
+  max-width: 34rem;
+  margin: var(--kk-card-gap-text-text) auto 0;
+}
+.immersive-empty-state-description + *,
+.immersive-empty-state-title + :not(.immersive-empty-state-description) {
+  margin-top: var(--kk-card-gap-text-chip);
+}
+.immersive-empty-state .kk-tc-primary-btn,
+.immersive-empty-state .kk-tc-btn {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ── ToneStateCard — canonical standalone state surface ─────────────────── */
+.tone-state-card {
+  --tone-state-accent: var(--color-info);
+  --tone-state-accent-soft: color-mix(in srgb, var(--tone-state-accent) 14%, transparent);
+
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(2.75rem, auto) minmax(0, 1fr);
+  gap: 1rem;
+  width: 100%;
+  max-width: 44rem;
+  margin: 1rem auto;
+  padding: 1rem;
+  overflow: hidden;
+  background: var(--kaapi-content-surface);
+  color: var(--kaapi-content-content);
+  border: 1px solid var(--kaapi-content-border);
+  border-radius: var(--bevel-radius);
+  box-shadow: var(--kaapi-content-shadow);
+}
+
+[data-tone="dark"] .tone-state-card {
+  background: var(--kaapi-content-surface-dark);
+  color: var(--kaapi-content-content-dark);
+  border-color: var(--kaapi-content-border-dark);
+  box-shadow: var(--kaapi-content-shadow-dark);
+}
+
+.tone-state-card--compact {
+  max-width: none;
+  margin: 0;
+  padding: 0.875rem;
+  align-items: center;
+}
+
+.tone-state-card--error {
+  --tone-state-accent: var(--kaapi-content-error, var(--color-error));
+}
+.tone-state-card--warning {
+  --tone-state-accent: var(--kaapi-content-warning, var(--color-warning));
+}
+.tone-state-card--success {
+  --tone-state-accent: var(--color-success);
+}
+.tone-state-card--empty,
+.tone-state-card--readonly,
+.tone-state-card--not-found {
+  --tone-state-accent: var(--kaapi-content-muted);
+}
+
+.tone-state-card.tone-state-card--empty {
+  grid-template-columns: 3rem minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.tone-state-card__accent {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0.375rem;
+  background: var(--tone-state-accent);
+}
+
+.tone-state-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  min-width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  background: var(--tone-state-accent-soft);
+  color: var(--tone-state-accent);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.tone-state-card__body {
+  min-width: 0;
+}
+
+.tone-state-card--empty .tone-state-card__body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+
+.tone-state-card__title {
+  margin: 0;
+  color: var(--kaapi-content-content);
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  line-height: 1.25;
+}
+
+.tone-state-card__message {
+  margin-top: 0.35rem;
+  color: var(--kaapi-content-muted);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.tone-state-card__action {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.875rem;
+}
+
+.tone-state-card__action .kk-tc-btn,
+.tone-state-card__action .kk-tc-primary-btn {
+  min-height: 2.75rem;
+}
+
+.tone-state-card--empty .tone-state-card__icon {
+  width: 3rem;
+  min-width: 3rem;
+  height: 3rem;
+  color: var(--kk-text-tertiary, var(--kaapi-content-muted));
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.tone-state-card--empty .tone-state-card__title {
+  font-family: var(--font-display);
+  font-size: var(--kk-tc-title-size);
+  font-weight: var(--kk-tc-title-weight);
+  line-height: 1.2;
+  color: var(--kk-text-primary, var(--kaapi-content-content));
+}
+
+.tone-state-card--empty .tone-state-card__message {
+  margin-top: var(--kk-card-gap-text-text);
+  color: var(--kk-text-tertiary, var(--kaapi-content-muted));
+  font-size: var(--kk-tc-body-size);
+  font-weight: 400;
+  line-height: var(--kk-tc-body-line-height);
+}
+
+.tone-state-card--empty .tone-state-card__action {
+  gap: var(--kk-card-gap-chip-inline);
+  margin-top: var(--kk-card-gap-text-chip);
+}
+
+.tone-state-card--empty .tone-state-card__action .kk-tc-btn,
+.tone-state-card--empty .tone-state-card__action .kk-tc-primary-btn {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.tone-state-card__skeleton,
+.brew-log-loading-list {
+  margin-top: 1rem;
+}
+
+.tone-state-card__skeleton {
+  display: grid;
+  gap: 0.625rem;
+}
+
+.tone-state-card__skeleton span {
+  display: block;
+  height: 0.875rem;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--kaapi-content-muted) 12%, transparent),
+    color-mix(in srgb, var(--kaapi-content-muted) 22%, transparent),
+    color-mix(in srgb, var(--kaapi-content-muted) 12%, transparent)
+  );
+  background-size: 180% 100%;
+  animation: tone-state-card-shimmer var(--motion-duration-slow, 1200ms) var(--motion-ease-standard, ease) infinite;
+}
+
+.tone-state-card__skeleton span:nth-child(1) {
+  width: 85%;
+}
+.tone-state-card__skeleton span:nth-child(2) {
+  width: 64%;
+}
+.tone-state-card__skeleton span:nth-child(3) {
+  width: 48%;
+}
+
+.tone-state-toast {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(var(--mobile-nav-height) + 1rem);
+  left: 1rem;
+  z-index: 50;
+}
+
+.tone-state-toast .tone-state-card__title {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+}
+
+.tone-state-toast .tone-state-card__action {
+  margin-top: 0.5rem;
+}
+
+@keyframes tone-state-card-shimmer {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+
+@media (min-width: 640px) {
+  .tone-state-card {
+    grid-template-columns: 3rem minmax(0, 1fr);
+    gap: 1.25rem;
+    padding: 1.25rem;
+  }
+
+  .tone-state-card__icon {
+    width: 3rem;
+    min-width: 3rem;
+    height: 3rem;
+  }
+
+  .tone-state-toast {
+    right: 1.5rem;
+    bottom: 1.5rem;
+    left: auto;
+    width: min(24rem, calc(100vw - 3rem));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tone-state-card__skeleton span {
+    animation: none;
+  }
+}
+
+/* ── Canonical entity form shell ─────────────────────────────────────────── */
+.kk-form-page {
+  overflow-x: clip;
+  padding-bottom: var(--mobile-content-bottom-padding);
+}
+
+.kk-form-page__shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.kk-form-page__form,
+.kk-form-page__body {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.kk-form-page__status,
+.kk-form-page__error {
+  border-radius: 12px;
+  border: var(--kk-card-surface-border);
+  background: var(--kk-card-surface-bg);
+  box-shadow: var(--kk-card-surface-shadow);
+  color: var(--kk-text-primary);
+  padding: 0.875rem 1rem;
+}
+
+.kk-form-page__error {
+  color: var(--kaapi-content-error, var(--kk-tc-error-color, #fca5a5));
+}
+
+.kk-form-page__actions {
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .kk-form-page__shell,
+  .kk-form-page__form,
+  .kk-form-page__body {
+    gap: 1.25rem;
+  }
+}
+
+/* ── Canonical entity form actions ───────────────────────────────────────── */
+.entity-form-actions {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.entity-form-actions__status,
+.entity-form-actions__error {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.entity-form-actions__status {
+  color: var(--kk-text-secondary);
+}
+
+.entity-form-actions__error {
+  color: var(--kaapi-content-error, var(--kk-tc-error-color, #fca5a5));
+}
+
+.entity-form-actions__buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.entity-form-actions__button {
+  min-height: 2.75rem;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+@media (min-width: 640px) {
+  .entity-form-actions__buttons {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .entity-form-actions__button {
+    width: auto;
+  }
+}
+
+  /* ── Canonical entity form sections ──────────────────────────────────────── */
+  .kk-entity-form-section {
+    --kk-form-section-title-gap: 0.75rem;
+    display: grid;
+    gap: var(--kk-form-section-title-gap);
+    min-width: 0;
+  }
+
+  .kk-entity-form-section .kk-tc-section-header {
+    margin-left: 0;
+  }
+
+  .kk-entity-form-section__body {
+    display: grid;
+    gap: 0.75rem;
+    min-width: 0;
+    padding-left: 0;
+  }
+
+  [data-tone="dark"] .brew-log-add-form {
+    --kk-tc-input-bg: #2d2016;
+    --kk-tc-input-border: 1px solid rgba(255, 247, 237, 0.28);
+    --kk-tc-input-placeholder: rgba(255, 247, 237, 0.72);
+    --kk-compass-panel-bg: #221c16;
+    --kk-compass-instrument-readable-bg: #18100a;
+    --kk-compass-title-text: #fff7ed;
+    --kk-compass-body-text: #f5e6d3;
+    --kk-compass-muted-text: #d6cbbf;
+    --kk-compass-tertiary-text: #c9b89e;
+    --kk-compass-zone-label: #fff7ed;
+    --kk-compass-zone-label-halo: rgba(18, 11, 6, 0.96);
+    --kk-compass-computed-dot: #fff7ed;
+    --kk-compass-computed-ring: #fbbf24;
+    --kk-compass-computed-ring-shadow: rgba(251, 191, 36, 0.32);
+    --kk-compass-taste-marker: #9fb7a7;
+    --kk-compass-taste-marker-bg: rgba(159, 183, 167, 0.16);
+    --kk-compass-agree-marker: #bbf7d0;
+    --kk-compass-svg-label: var(--kk-compass-zone-label);
+    --kk-compass-svg-label-halo: var(--kk-compass-zone-label-halo);
+    --kk-compass-svg-muted-label: var(--kk-compass-muted-text);
+    --kk-compass-svg-selection-outer: var(--kk-compass-taste-marker);
+    --kk-compass-svg-selection-inner: var(--kk-compass-computed-ring);
+    --kk-compass-svg-selected-fill: rgba(159, 183, 167, 0.10);
+    --kk-chip-neutral-bg: #35261a;
+    --kk-chip-neutral-text: #fff7ed;
+    --kk-chip-neutral-border: rgba(255, 247, 237, 0.30);
+    --kk-chip-success-bg: #12351f;
+    --kk-chip-success-text: #bbf7d0;
+    --kk-chip-success-border: rgba(187, 247, 208, 0.32);
+    --kk-chip-brand-bg: #4a2e0b;
+    --kk-chip-brand-text: #fde68a;
+    --kk-chip-brand-border: rgba(253, 230, 138, 0.34);
+    --kk-chip-danger-bg: #441818;
+    --kk-chip-danger-text: #fecaca;
+    --kk-chip-danger-border: rgba(254, 202, 202, 0.34);
+  }
+
+  [data-tone="beige"] .brew-log-add-form {
+    --kk-tc-input-bg: #ffffff;
+    --kk-tc-input-border: 1px solid rgba(120, 53, 15, 0.28);
+    --kk-tc-input-placeholder: #6b4a2f;
+    --kk-compass-panel-bg: #faf5ef;
+    --kk-compass-instrument-readable-bg: #f7ead8;
+    --kk-compass-title-text: #2d1608;
+    --kk-compass-body-text: #2d1608;
+    --kk-compass-muted-text: #5c3d1e;
+    --kk-compass-tertiary-text: #6b4a2f;
+    --kk-compass-zone-label: #2d1608;
+    --kk-compass-zone-label-halo: rgba(255, 247, 237, 0.92);
+    --kk-compass-computed-dot: #2d1608;
+    --kk-compass-computed-ring: #92400e;
+    --kk-compass-computed-ring-shadow: rgba(146, 64, 14, 0.24);
+    --kk-compass-taste-marker: #4f6f64;
+    --kk-compass-taste-marker-bg: rgba(79, 111, 100, 0.14);
+    --kk-compass-agree-marker: #166534;
+    --kk-compass-svg-label: var(--kk-compass-zone-label);
+    --kk-compass-svg-label-halo: var(--kk-compass-zone-label-halo);
+    --kk-compass-svg-muted-label: var(--kk-compass-muted-text);
+    --kk-compass-svg-selection-outer: var(--kk-compass-taste-marker);
+    --kk-compass-svg-selection-inner: var(--kk-compass-computed-ring);
+    --kk-compass-svg-selected-fill: rgba(79, 111, 100, 0.10);
+    --kk-chip-neutral-bg: #f7ead8;
+    --kk-chip-neutral-text: #2d1608;
+    --kk-chip-neutral-border: rgba(120, 53, 15, 0.22);
+    --kk-chip-success-bg: #dcfce7;
+    --kk-chip-success-text: #14532d;
+    --kk-chip-success-border: rgba(20, 83, 45, 0.24);
+    --kk-chip-brand-bg: #fef3c7;
+    --kk-chip-brand-text: #78350f;
+    --kk-chip-brand-border: rgba(120, 53, 15, 0.28);
+    --kk-chip-danger-bg: #fee2e2;
+    --kk-chip-danger-text: #7f1d1d;
+    --kk-chip-danger-border: rgba(127, 29, 29, 0.24);
+  }
+
+  [data-tone="dark"] .brew-log-add-form__advanced-toggle {
+    border-color: rgba(255, 247, 237, 0.30);
+    background: #2d2016;
+    color: #fff7ed;
+    box-shadow: 0 8px 20px -16px rgba(0, 0, 0, 0.72);
+  }
+
+  [data-tone="dark"] .brew-log-add-form__advanced-toggle:hover {
+    border-color: rgba(255, 247, 237, 0.42);
+    background: #3a2a1d;
+    color: #fff7ed;
+  }
+
+  .kk-form-page .input-styled,
+  .kk-form-page .select.input-styled,
+  .kk-form-page select.input-styled,
+  .kk-form-page .textarea.input-styled,
+  .kk-form-page textarea.input-styled {
+    background: var(--kk-tc-input-bg);
+    border: var(--kk-tc-input-border);
+    border-radius: var(--kk-input-radius, 10px);
+    color: var(--kk-tc-input-text);
+    min-height: 2.75rem;
+    font-size: 1rem;
+  }
+
+  .kk-form-page .input-styled::placeholder,
+  .kk-form-page textarea.input-styled::placeholder {
+    color: var(--kk-tc-input-placeholder);
+  }
+
+  .kk-form-page .input-styled:focus,
+  .kk-form-page .input-styled:focus-visible,
+  .kk-form-page select.input-styled:focus,
+  .kk-form-page textarea.input-styled:focus {
+    outline: none;
+    border-color: var(--kk-tc-input-focus-border);
+    box-shadow: var(--kk-tc-input-focus-ring);
+  }
+
+  .brew-log-add-form__main,
+  .brew-log-add-form__recipe-stack,
+  .brew-log-add-form__field-grid {
+    display: grid;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .brew-log-add-form__main {
+    gap: 1rem;
+  }
+
+  .brew-log-add-form__advanced-toggle {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+    justify-content: space-between;
+    gap: 0.5rem;
+    border: 1px solid rgba(120, 53, 15, 0.30);
+    background: rgba(247, 234, 216, 0.98);
+    color: var(--kk-text-primary);
+    box-shadow: 0 8px 20px -18px rgba(45, 22, 8, 0.32);
+  }
+
+  .brew-log-add-form__advanced-toggle:hover {
+    border-color: rgba(120, 53, 15, 0.40);
+    background: rgba(180, 83, 9, 0.10);
+    color: var(--kk-text-primary);
+  }
+
+  .brew-log-add-form__advanced-toggle:focus-visible {
+    outline: none;
+    box-shadow: var(--kk-tc-input-focus-ring), 0 8px 20px -18px rgba(45, 22, 8, 0.32);
+  }
+
+  .brew-log-add-form__field-helper {
+    font-size: 0.8125rem;
+  }
+
+  .kk-compass-panel {
+    display: grid;
+    gap: 0.875rem;
+    width: 100%;
+    min-width: 0;
+    border: var(--kk-card-surface-border);
+    border-radius: 14px;
+    background: var(--kk-card-surface-bg);
+    backdrop-filter: var(--kk-card-surface-filter);
+    -webkit-backdrop-filter: var(--kk-card-surface-filter);
+    box-shadow: var(--kk-card-surface-shadow);
+    color: var(--kk-compass-title-text, var(--kk-text-primary));
+    padding: 0.75rem;
+  }
+
+  .kk-compass-panel__body,
+  .kk-compass-panel__instrument,
+  .kk-compass-panel__readout {
+    display: grid;
+    gap: 0.875rem;
+    min-width: 0;
+  }
+
+  .kk-compass-panel__instrument {
+    overflow: hidden;
+    border: 1px solid var(--kk-compass-instrument-border);
+    border-radius: var(--kk-input-radius, 10px);
+    background: var(--kk-compass-instrument-readable-bg, var(--kk-compass-instrument-bg));
+    box-shadow: var(--kk-compass-instrument-shadow);
+    padding: 0.5rem;
+    isolation: isolate;
+  }
+
+  .kk-compass-panel__fallback-note {
+    margin: 0;
+    color: var(--kk-compass-tertiary-text, var(--kk-text-tertiary));
+    font-size: 0.75rem;
+    line-height: 1.35;
+    text-align: center;
+  }
+
+  .kk-compass-3d {
+    position: relative;
+    min-height: 17.5rem;
+    overflow: hidden;
+    border: 1px solid var(--kk-compass-instrument-border);
+    border-radius: var(--kk-input-radius, 10px);
+    background: var(--kk-compass-instrument-bg);
+    box-shadow: var(--kk-compass-instrument-shadow);
+    isolation: isolate;
+  }
+
+  .kk-compass-3d__canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .kk-compass-3d__labels {
+    position: absolute;
+    inset: 1rem 0.75rem 0.9rem;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(3.25rem, 1fr));
+    gap: 0.25rem;
+    transform: perspective(32rem) rotateX(8deg) rotateY(-4deg);
+    transform-origin: center;
+  }
+
+  .kk-compass-3d__zone-button {
+    display: flex;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    border: 1px solid transparent;
+    border-radius: calc(var(--kk-input-radius, 10px) * 0.75);
+    background: transparent;
+    color: var(--kk-compass-zone-label);
+    cursor: pointer;
+    font: inherit;
+    padding: 0.3rem;
+    text-align: center;
+    text-shadow: var(--kk-compass-zone-label-shadow);
+  }
+
+  .kk-compass-3d__zone-button:focus-visible {
+    outline: 2px solid var(--kk-compass-taste-ring);
+    outline-offset: 2px;
+  }
+
+  .kk-compass-3d__zone-button[data-computed="true"] {
+    border-color: var(--kk-compass-computed-border);
+    box-shadow: var(--kk-compass-computed-shadow);
+  }
+
+  .kk-compass-3d__zone-button[data-selected="true"] {
+    border-color: var(--kk-compass-taste-ring);
+    background: var(--kk-compass-selected-fill);
+  }
+
+  .kk-compass-3d__zone-label {
+    max-width: 6.5rem;
+    font-size: clamp(0.62rem, 2.7vw, 0.75rem);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.05;
+  }
+
+  .kk-compass-3d__marker-label {
+    border-radius: 999px;
+    background: var(--kk-compass-marker-bg);
+    color: var(--kk-compass-marker-text);
+    font-size: 0.55rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    padding: 0.17rem 0.28rem;
+    text-transform: uppercase;
+  }
+
+  .kk-compass-taste-note {
+    display: grid;
+    gap: 0.45rem;
+    border-top: var(--kk-card-surface-border);
+    padding-top: 0.75rem;
+  }
+
+  .kk-compass-taste-note__summary,
+  .kk-compass-taste-note__agreement {
+    margin: 0;
+    color: var(--kk-compass-muted-text, var(--kk-text-secondary));
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+
+  .kk-compass-taste-note__summary span {
+    color: var(--kk-compass-muted-text, var(--kk-text-tertiary));
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .kk-compass-taste-note__summary strong {
+    color: var(--kk-compass-title-text, var(--kk-text-primary));
+    font-weight: 800;
+  }
+
+  .kk-compass-taste-note__clear {
+    width: fit-content;
+    min-height: 2.75rem;
+    border: 1px solid var(--kaapi-content-border);
+    border-radius: var(--kk-input-radius, 10px);
+    background: var(--kaapi-content-surface-2);
+    color: var(--kk-compass-title-text, var(--kk-text-primary));
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 800;
+    padding: 0.55rem 0.8rem;
+  }
+
+  .kk-compass-chart,
+  .kk-compass-guidance {
+    display: grid;
+    min-width: 0;
+  }
+
+  .kk-compass-chart {
+    gap: 0.25rem;
+  }
+
+  .kk-compass-chart__grid-wrap {
+    position: relative;
+  }
+
+  .kk-compass-chart__grid {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+  }
+
+  .kk-compass-chart__grid-row {
+    display: contents;
+  }
+
+  .kk-compass-chart__grid-cell {
+    position: absolute;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: transparent;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .kk-compass-chart__grid-cell:hover,
+  .kk-compass-chart__grid-cell[data-selected="true"] {
+    box-shadow: inset 0 0 0 2px var(--kk-compass-taste-marker);
+  }
+
+  .kk-compass-chart__grid-cell:focus-visible {
+    outline: 2px solid var(--kk-compass-taste-marker);
+    outline-offset: 2px;
+    box-shadow: var(--kk-tc-input-focus-ring), inset 0 0 0 2px var(--kk-compass-taste-marker);
+  }
+
+  .kk-compass-chart__subtitle,
+  .kk-compass-guidance__advice,
+  .kk-compass-guidance__note,
+  .kk-compass-guidance__legend {
+    margin: 0;
+    text-align: center;
+    line-height: 1.35;
+  }
+
+  .kk-compass-chart__subtitle {
+    color: var(--kk-compass-body-text, var(--kk-text-secondary));
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
+  .kk-compass-chart__svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .kk-compass-chart__zone-bloom {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .kk-compass-chart__zone-label-svg {
+    fill: var(--kk-compass-svg-label);
+    stroke: var(--kk-compass-svg-label-halo);
+    stroke-linejoin: round;
+    stroke-width: 2px;
+    paint-order: stroke fill;
+    font-weight: 800;
+    line-height: 1.05;
+  }
+
+  .kk-compass-chart__axis-label-svg,
+  .kk-compass-chart__axis-value-svg {
+    fill: var(--kk-compass-svg-muted-label);
+    stroke: var(--kk-compass-svg-label-halo);
+    stroke-linejoin: round;
+    stroke-width: 1.5px;
+    paint-order: stroke fill;
+  }
+
+  .kk-compass-chart__recipe-badge-svg,
+  .kk-compass-chart__taste-badge-svg {
+    stroke: var(--kk-compass-svg-label-halo);
+    stroke-linejoin: round;
+    stroke-width: 1.5px;
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    paint-order: stroke fill;
+    text-transform: uppercase;
+  }
+
+  .kk-compass-chart__recipe-badge-svg {
+    fill: var(--kk-compass-computed-ring);
+  }
+
+  .kk-compass-chart__taste-badge-svg {
+    fill: var(--kk-compass-taste-marker);
+  }
+
+  .kk-compass-chart__out-of-range-svg {
+    fill: var(--kk-compass-svg-out-of-range);
+    stroke: var(--kk-compass-svg-label-halo);
+    stroke-linejoin: round;
+    stroke-width: 1.5px;
+    paint-order: stroke fill;
+  }
+
+  .kk-compass-guidance {
+    gap: 0.25rem;
+  }
+
+  .kk-compass-guidance__advice {
+    min-height: 2.5rem;
+    color: var(--kk-compass-body-text, var(--kk-text-primary));
+    font-size: 1rem;
+    overflow-wrap: anywhere;
+  }
+
+  .kk-compass-guidance__note {
+    color: var(--kk-compass-muted-text, var(--kk-text-secondary));
+    font-size: 0.8125rem;
+  }
+
+  .kk-compass-guidance__legend {
+    color: var(--kk-compass-tertiary-text, var(--kk-text-tertiary));
+    font-size: 0.75rem;
+  }
+
+  .kk-form-page .kk-extraction-readout {
+    display: grid;
+    gap: 0.75rem;
+    border-top: var(--kk-card-surface-border);
+    padding-top: 0.875rem;
+  }
+
+  .kk-form-page .kk-extraction-readout__metric,
+  .kk-form-page .kk-extraction-readout__zone {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+
+  .kk-form-page .kk-extraction-readout__eyebrow {
+    color: var(--kk-compass-muted-text, var(--kk-text-tertiary));
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .kk-form-page .kk-extraction-readout__value {
+    color: var(--kk-compass-title-text, var(--kk-text-primary));
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: clamp(1.5rem, 6vw, 2rem);
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .kk-form-page .kk-extraction-readout__guidance,
+  .kk-form-page .kk-extraction-readout__note {
+    color: var(--kk-compass-body-text, var(--kk-text-secondary));
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+
+  .kk-form-page .kk-extraction-readout__note {
+    color: var(--kk-compass-muted-text, var(--kk-text-tertiary));
+    font-size: 0.8125rem;
+  }
+
+  .kk-form-page .kk-zone-chip {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    border: var(--kk-chip-border);
+    border-radius: var(--kk-input-radius, 10px);
+    background: var(--kk-chip-bg);
+    color: var(--kk-chip-text);
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .kk-form-page .kk-zone-chip--under {
+    border-color: transparent;
+    background: var(--kk-chip-success-bg);
+    color: var(--kk-chip-success-text);
+  }
+
+  .kk-form-page .kk-zone-chip--balanced {
+    border-color: transparent;
+    background: var(--kk-chip-brand-bg);
+    color: var(--kk-chip-brand-text);
+  }
+
+  .kk-form-page .kk-zone-chip--over {
+    border-color: transparent;
+    background: var(--kk-chip-danger-bg);
+    color: var(--kk-chip-danger-text);
+  }
+
+  @media (min-width: 640px) {
+    .brew-log-add-form__field-grid--three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .kk-form-page .kk-extraction-readout {
+      grid-template-columns: minmax(7rem, 0.75fr) minmax(0, 1.25fr);
+      align-items: start;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .brew-log-add-form__field-grid--two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .kk-compass-3d {
+      min-height: 19rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .brew-log-add-form__main {
+      grid-template-columns: minmax(0, 1fr) minmax(24rem, 1fr);
+      grid-template-areas:
+        "recipe compass"
+        "advanced-toggle compass"
+        "advanced-fields compass";
+      align-items: start;
+      gap: 0.75rem 1.5rem;
+    }
+
+    .brew-log-add-form__recipe-stack {
+      display: contents;
+    }
+
+    .brew-log-add-form__recipe-section {
+      grid-area: recipe;
+    }
+
+    .brew-log-add-form__advanced-toggle {
+      grid-area: advanced-toggle;
+    }
+
+    .brew-log-add-form__advanced-fields {
+      grid-area: advanced-fields;
+    }
+
+    .brew-log-add-form__compass-section {
+      grid-area: compass;
+      align-self: start;
+    }
+
+    .brew-log-add-form__compass-section .kk-compass-panel {
+      padding: 1rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .compass-ping {
+      animation: none;
+    }
+
+    .kk-compass-chart__zone-bloom {
+      transform: none;
+    }
+
+    .kk-compass-3d__zone-button,
+    .kk-compass-chart__grid-cell,
+    .kk-compass-taste-note__clear {
+      transition: none;
+    }
+  }
+
+  /* ── Brew-log canonical list composition ────────────────────────────────── */
+  .brew-log-card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+.tone-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.tone-pagination .kk-tc-btn,
+.tone-pagination .kk-tc-primary-btn {
+  min-height: 2.75rem;
+  font-size: 1rem;
+}
+
+.tone-pagination__pages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tone-pagination__page {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  justify-content: center;
+}
+
+.tone-pagination__ellipsis {
+  padding: 0 0.25rem;
+  color: var(--kk-il-text-secondary);
+  font-size: 1rem;
+}
+
+@media (min-width: 768px) {
+  .brew-log-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, var(--kk-ec-max-width)));
+    justify-content: start;
+    gap: 1rem;
+  }
+}
+
+/* ── Immersive error card — subtle glass for fetch errors ───────────────── */
+.immersive-error-card {
+  background: var(--kk-card-surface-bg);
+  backdrop-filter: var(--kk-card-surface-filter);
+  -webkit-backdrop-filter: var(--kk-card-surface-filter);
+  border: var(--kk-card-surface-border);
+  box-shadow: var(--kk-card-surface-shadow);
+  border-radius: var(--kk-ec-radius);
+  padding: 1.5rem;
+  text-align: center;
+  max-width: 400px;
+  margin: 2rem auto 0;
+}
+.immersive-error-message {
+  font-weight: 500;
+  color: var(--kk-il-text-primary);
+  margin: 0 0 0.375rem;
+}
+.immersive-error-detail {
+  font-size: 0.875rem;
+  color: var(--kk-il-text-secondary);
+  margin: 0 0 1rem;
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .immersive-error-card {
+    background: var(--kk-card-surface-bg-solid);
+  }
+}
+
+/* ── ImmersiveFab — floating action button via createPortal to body ──────── */
+/* Uses data-tone directly on the element (portalled outside [data-tone] tree)
+   so --kk-tc-* tokens resolve via [data-tone] inheritance from itself. */
+.immersive-fab {
+  position: fixed;
+  bottom: var(--mobile-fab-offset);
+  right: max(1rem, env(safe-area-inset-right));
+  z-index: 50;
+
+  background: var(--kk-card-surface-bg);
+  backdrop-filter: var(--kk-card-surface-filter);
+  -webkit-backdrop-filter: var(--kk-card-surface-filter);
+  box-shadow: var(--kk-card-surface-shadow);
+  border: var(--kk-card-surface-border);
+
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+
+  color: var(--kk-text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.immersive-fab:hover {
+  filter: brightness(1.05);
+  transform: scale(1.05);
+}
+.immersive-fab:active {
+  transform: scale(0.95);
+}
+.immersive-fab:focus-visible {
+  outline: 2px solid var(--kk-text-primary);
+  outline-offset: 2px;
+}
+@media (min-width: 768px) {
+  .immersive-fab {
+    bottom: 1.5rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .immersive-fab {
+    transition: none;
+  }
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .immersive-fab {
+    background: var(--kk-card-surface-bg-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .immersive-fab {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--kk-card-surface-bg-solid);
+  }
+}
+
+/* ── HeroVisualFrame: tone-aware border/shadow in immersive shell ────────── */
+/* The frame is a solid, never-blurred viz surface (by design). When it sits
+   inside ImmersiveListShell, it needs subtle tone-aware treatment so it reads
+   on the frosted background in both tones. */
+.immersive-list-shell[data-tone="dark"] .hero-visual-frame {
+  border-color: rgba(255, 248, 240, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+.immersive-list-shell[data-tone="beige"] .hero-visual-frame {
+  border-color: rgba(92, 64, 51, 0.12);
+  box-shadow: 0 4px 16px rgba(92, 64, 51, 0.15);
+}
+
+/* ── Dashboard hero section — hero content on frost (no card wrapper) ─────── */
+.dashboard-hero-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1rem 0 1.5rem;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+/* ── Dashboard sections wrapper (active bags + recent shots) ──────────────── */
+.dashboard-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.dashboard-section-heading {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--kk-il-text-secondary);
+  margin: 0 0 0.75rem;
+}
+
+/* ── StatTile ────────────────────────────────────────────────────────────── */
+/* Principle 13 (Affordance Matches Interactivity): StatTiles are informational
+   only — no card chrome (border, border-radius, solid bg) that implies
+   tappability. Typography-only treatment distinguishes them from EntityCards.
+   Equal-width grid + left-alignment preserved for clean grouped stat layout. */
+.stat-tile-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 0.5rem 0;
+  text-align: left;
+
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  cursor: default;
+}
+
+.stat-tile__value {
+  font-size: 1.5rem;          /* 24px per Aria Item 2 spec */
+  font-weight: 600;           /* semibold per Aria Item 2; was 700 (bold) */
+  color: var(--kk-text-primary);
+  line-height: 1.2;
+}
+
+.stat-tile__label {
+  font-size: 0.75rem;         /* 12px per Aria Item 2; was 0.6875rem (11px) */
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--kk-il-text-secondary);
+  margin-top: 0.25rem;
+}
+
+/* StatTile skeleton */
+.stat-tile--skeleton {
+  pointer-events: none;
+}
+
+.stat-tile__skeleton-value {
+  display: block;
+  width: 2rem;
+  height: 1.5rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--kk-text-primary) 12%, transparent);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.stat-tile__skeleton-label {
+  display: block;
+  width: 3.5rem;
+  height: 0.625rem;
+  border-radius: 3px;
+  margin-top: 0.375rem;
+  background: color-mix(in srgb, var(--kk-text-primary) 8%, transparent);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* ── EntityCard meta slot ────────────────────────────────────────────────── */
+.entity-card__meta {
+  font-size: 0.6875rem;
+  color: var(--kk-text-secondary);
+  margin-top: var(--kk-card-gap-chip-text);
+  line-height: 1.4;
+}
+
+/* EntityCard loading skeleton */
+.entity-card--skeleton {
+  pointer-events: none;
+  min-height: 7rem;
+  background: var(--kk-card-surface-bg);
+  border: var(--kk-card-surface-border);
+  border-radius: 12px;
+  box-shadow: var(--kk-card-surface-shadow);
+  backdrop-filter: var(--kk-card-surface-filter);
+  -webkit-backdrop-filter: var(--kk-card-surface-filter);
+  padding: 0.75rem;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.entity-card--skeleton .entity-card__skeleton-line {
+  height: 0.75rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--kk-text-primary) 10%, transparent);
+  margin-bottom: 0.5rem;
+}
+
+/* ── ShotRow ─────────────────────────────────────────────────────────────── */
+/* Compact solid row — same operational surface family as EntityCard. */
+.shot-row-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.shot-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  gap: 0.75rem;
+
+  background: var(--kk-card-surface-bg);
+  border: var(--kk-card-surface-border);
+  border-radius: 12px;
+  box-shadow: var(--kk-card-surface-shadow);
+  backdrop-filter: var(--kk-card-surface-filter);
+  -webkit-backdrop-filter: var(--kk-card-surface-filter);
+
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.shot-row:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--kk-card-surface-shadow), 0 2px 8px color-mix(in srgb, var(--kk-text-primary) 15%, transparent);
+}
+
+.shot-row:active {
+  transform: scale(0.99);
+}
+
+.shot-row:focus-visible {
+  outline: 2px solid var(--kk-text-primary);
+  outline-offset: 2px;
+}
+
+.shot-row__body {
+  display: grid;
+  gap: var(--kk-card-gap-text-text);
+  min-width: 0;
+}
+
+.shot-row__bag {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--kk-text-primary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shot-row__date {
+  font-size: 0.75rem;
+  color: var(--kk-il-text-secondary);
+}
+
+.shot-row__chip {
+  flex-shrink: 0;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.6875rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  background: var(--kk-chip-bg);
+  color: var(--kk-chip-text);
+  border: var(--kk-chip-border);
+}
+
+.shot-row__chip-line {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--kk-card-gap-chip-inline);
+  margin-top: var(--kk-card-gap-text-chip);
+  min-height: 1.5rem;
+}
+
+.shot-row__arrow {
+  color: var(--kk-il-text-secondary);
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+  opacity: 0.7;
+}
+
+/* ShotRow skeleton */
+.shot-row--skeleton {
+  pointer-events: none;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.shot-row__skeleton-bag {
+  display: block;
+  flex: 1;
+  height: 0.875rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--kk-text-primary) 12%, transparent);
+  min-width: 0;
+  max-width: 12rem;
+}
+
+.shot-row__skeleton-date {
+  display: block;
+  width: 4rem;
+  height: 0.75rem;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--kk-text-primary) 8%, transparent);
+  flex-shrink: 0;
+}
+
+.shot-row__skeleton-chip {
+  display: block;
+  width: 5rem;
+  height: 1.5rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--kk-text-primary) 8%, transparent);
+  flex-shrink: 0;
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .entity-card--skeleton,
+  .shot-row {
+    background: var(--kk-card-surface-bg-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .entity-card--skeleton,
+  .shot-row {
+    background: var(--kk-card-surface-bg-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shot-row {
+    transition: none;
+  }
+}
+
+/* ── Canonical entity wrappers: BagCard + ShotCard ───────────────────────── */
+.bag-card-row,
+.shot-card-list {
+  background: var(--kk-card-surface-bg);
+  color: var(--kk-text-primary);
+  border: var(--kk-card-surface-border);
+  border-radius: 14px;
+  box-shadow: var(--kk-card-surface-shadow);
+  backdrop-filter: var(--kk-card-surface-filter);
+  -webkit-backdrop-filter: var(--kk-card-surface-filter);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .bag-card-row,
+  .shot-card-list {
+    background: var(--kk-card-surface-bg-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .bag-card-row,
+  .shot-card-list {
+    background: var(--kk-card-surface-bg-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+.bag-card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+}
+
+.bag-card-stack {
+  display: grid;
+  gap: 0.875rem;
+}
+
+.bag-card-compact {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 6.25rem;
+  padding: 0.9375rem 1rem;
+  text-decoration: none;
+  color: var(--kk-text-primary);
+  background: var(--kk-card-surface-bg);
+  border: var(--kk-card-surface-border);
+  border-radius: 16px;
+  box-shadow: var(--kk-card-surface-shadow);
+  backdrop-filter: var(--kk-card-surface-filter);
+  -webkit-backdrop-filter: var(--kk-card-surface-filter);
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .bag-card-compact {
+    background: var(--kk-card-surface-bg-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .bag-card-compact {
+    background: var(--kk-card-surface-bg-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+.entity-card.bag-card-compact,
+.entity-card.shot-card-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 4.25rem;
+  align-items: start;
+  gap: 1rem;
+  min-height: 0;
+  padding: 0.9375rem 1rem;
+  height: auto;
+}
+
+
+.entity-card.entity-card--no-media {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.entity-card.bag-card-compact .entity-card-body,
+.entity-card.shot-card-list .entity-card-body {
+  min-width: 0;
+  padding: 0;
+}
+
+.entity-card.bag-card-compact .entity-card-figure,
+.entity-card.shot-card-list .entity-card-figure {
+  width: 4.25rem;
+  height: 4.25rem;
+  aspect-ratio: 1;
+  border-radius: 14px;
+}
+
+.entity-card.bag-card-compact .entity-card-monogram,
+.entity-card.shot-card-list .entity-card-monogram {
+  font-size: 1.25rem;
+}
+
+.hardware-card {
+  width: 100%;
+  appearance: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.entity-card.hardware-card {
+  display: block;
+  padding: 0;
+  height: 100%;
+}
+
+.entity-card.hardware-card .entity-card-figure {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  border-radius: 0;
+}
+
+.entity-card.hardware-card .entity-card-body {
+  min-width: 0;
+}
+
+[data-tone="dark"] .bag-card-compact {
+  color: var(--kk-text-primary);
+}
+
+.bag-card-compact:hover {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+}
+
+.bag-card-compact:active {
+  filter: brightness(0.96);
+  transform: scale(0.99);
+}
+
+.bag-card-compact:focus-visible {
+  outline: 2px solid var(--kk-text-primary);
+  outline-offset: 2px;
+}
+
+.bag-card-compact__body {
+  min-width: 0;
+}
+
+.bag-card-compact__eyebrow {
+  color: var(--kk-text-secondary);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  line-height: 1.2;
+  margin: 0 0 var(--kk-card-gap-eyebrow-title);
+  text-transform: uppercase;
+}
+
+.bag-card-compact__title {
+  color: inherit;
+  font-family: var(--kaapi-card-title-family);
+  font-size: var(--kaapi-card-title-size);
+  font-weight: var(--kaapi-card-title-weight);
+  line-height: var(--kaapi-card-title-line-height);
+  letter-spacing: var(--kaapi-card-title-letter-spacing);
+  margin: 0;
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.bag-card-compact__details {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  flex-wrap: wrap;
+  gap: var(--kk-card-gap-chip-text);
+  margin-top: var(--kk-card-gap-text-chip);
+  min-height: 1.5rem;
+}
+
+.bag-card-compact__chip-line {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--kk-card-gap-chip-inline);
+  min-height: 1.5rem;
+}
+
+.bag-card-compact__meta {
+  color: var(--kk-text-secondary);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--kk-card-gap-chip-inline);
+}
+
+.bag-card-compact__monogram {
+  display: grid;
+  flex: 0 0 3.5rem;
+  width: 3.5rem;
+  height: 3.5rem;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--kk-monogram-tile-bg);
+  color: #734a37;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+[data-tone="dark"] .bag-card-compact__monogram {
+  color: var(--kk-text-primary);
+}
+
+.bag-card-row__body,
+.shot-card-list__identity {
+  min-width: 0;
+}
+
+.bag-card-row__title,
+.shot-card-list__title {
+  color: inherit;
+  font-family: var(--kaapi-card-title-family);
+  font-size: var(--kaapi-card-title-size);
+  font-weight: var(--kaapi-card-title-weight);
+  line-height: var(--kaapi-card-title-line-height);
+  letter-spacing: var(--kaapi-card-title-letter-spacing);
+  margin: 0;
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.bag-card-row__meta,
+.shot-card-list__hardware {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  color: var(--kk-text-secondary);
+  font-family: var(--kaapi-card-meta-family);
+  font-size: var(--kaapi-card-meta-size);
+  font-weight: var(--kaapi-card-meta-weight);
+  line-height: var(--kaapi-card-meta-line-height);
+}
+
+.bag-card-row__chip-line {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--kk-card-gap-chip-inline);
+  margin-top: var(--kk-card-gap-text-chip);
+  min-height: 1.5rem;
+}
+
+.bag-card-row__action {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.bag-card-reference {
+  color: var(--kk-tc-link, #734a37);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.shot-card-list {
+  gap: 0.875rem;
+  text-decoration: none;
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+.shot-card-summary__figure {
+  grid-area: media;
+  justify-self: end;
+  width: 4.25rem;
+  height: 4.25rem;
+  aspect-ratio: 1;
+  flex: 0 0 4.25rem;
+  border-radius: 14px;
+}
+
+.shot-card-summary__figure .entity-card-monogram {
+  font-size: 1.25rem;
+}
+
+.shot-card-list:hover {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+}
+
+.shot-card-list:focus-visible,
+.bag-card-reference:focus-visible {
+  outline: 2px solid var(--kk-text-primary);
+  outline-offset: 2px;
+}
+
+.shot-card-list__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 4.25rem;
+  grid-template-areas:
+    "identity media"
+    "rating media";
+  align-items: flex-start;
+  gap: 0.625rem 0.875rem;
+}
+
+.shot-card-list__identity {
+  grid-area: identity;
+}
+
+.shot-card-list__eyebrow-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: 0.75rem;
+  min-height: 1rem;
+  margin-bottom: var(--kk-card-gap-eyebrow-title);
+}
+
+.shot-card-list__eyebrow {
+  color: var(--kk-text-secondary);
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  margin: 0;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shot-card-list__date {
+  color: var(--kk-text-secondary);
+  font-family: var(--kaapi-card-meta-family);
+  font-size: 0.6875rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.shot-card-list__rating-slot {
+  grid-area: rating;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+.shot-card-list__rating-slot .kk-tc-chip {
+  width: max-content;
+  max-width: 100%;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.entity-card.shot-card-list .entity-card-chip-slot .kk-tc-chip {
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.kk-tc-metric-chip {
+  border-radius: 9999px;
+  background: var(--kk-chip-bg);
+  color: var(--kk-chip-text);
+  border: var(--kk-chip-border);
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 550;
+}
+
+.kk-tc-metric-chip--mono {
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+
+.shot-card-list__chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--kk-card-gap-chip-inline);
+  margin-top: var(--kk-card-gap-text-chip);
+  min-height: 1.5rem;
+}
+
+.shot-card-list__hardware {
+  gap: 0.75rem;
+}
+
+.shot-card-detail-header__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kk-card-gap-chip-inline);
+  margin-top: var(--kk-card-gap-text-chip);
+  margin-bottom: var(--kk-card-gap-chip-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shot-card-list {
+    transition: none;
+  }
+}
+
+/* ── Dashboard Layout: summary row + stacked horizontal rails ────────────── */
+.dashboard-layout {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.75rem, 4vw, 3rem);
+}
+
+.dashboard-hero-grid {
+  display: grid;
+  gap: clamp(1.25rem, 4vw, 2rem);
+  margin-bottom: clamp(1.75rem, 5vw, 3.25rem);
+}
+
+.dashboard-page-header {
+  margin-bottom: 0;
+}
+
+.dashboard-hero-copy {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.dashboard-home .list-page-header-title {
+  color: var(--kk-il-text-primary);
+}
+
+.dashboard-rails {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.75rem, 3vw, 2.25rem);
+}
+
+.dashboard-card-section {
+  min-width: 0;
+  container-type: inline-size;
+}
+
+.dashboard-card-section .kk-tc-section-header {
+  font-family: var(--font-display);
+  font-size: clamp(1.125rem, 1rem + 0.55vw, 1.375rem);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.12;
+  text-transform: none;
+  color: var(--kk-il-text-primary);
+  margin-bottom: 0;
+}
+
+.dashboard-section-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dashboard-view-all-link {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  color: var(--kk-il-text-primary);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  text-underline-offset: 0.2em;
+  white-space: nowrap;
+}
+
+.dashboard-view-all-link:hover {
+  text-decoration: underline;
+}
+
+.dashboard-view-all-link:focus-visible {
+  border-radius: 9999px;
+  outline: 2px solid var(--kk-il-text-primary);
+  outline-offset: 3px;
+}
+
+[data-tone="beige"].dashboard-home .hero-actions .kk-tc-btn--edit,
+[data-tone="beige"] .dashboard-home .hero-actions .kk-tc-btn--edit {
+  background: var(--kk-tc-btn-edit-bg);
+  color: var(--kk-tc-btn-edit-text);
+  border-color: var(--kk-tc-btn-edit-border);
+}
+
+[data-tone="beige"].dashboard-home .hero-actions .kk-tc-btn--edit:hover:not(:disabled),
+[data-tone="beige"] .dashboard-home .hero-actions .kk-tc-btn--edit:hover:not(:disabled) {
+  background: var(--kk-tc-btn-edit-hover-bg);
+  color: var(--kk-tc-btn-edit-hover-text);
+  border-color: var(--kk-tc-btn-edit-hover-border);
+}
+
+.dashboard-entity-card-stack {
+  gap: clamp(0.875rem, 2vw, 1rem);
+}
+
+.dashboard-fit-rail {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: start;
+  gap: clamp(0.875rem, 2vw, 1rem);
+  overflow: visible;
+  padding: 0.125rem 0;
+}
+
+.dashboard-fit-rail > * {
+  min-width: 0;
+}
+
+.dashboard-fit-rail > .entity-card {
+  display: grid;
+}
+
+.dashboard-fit-rail > .shot-card-list {
+  display: grid;
+}
+
+.dashboard-fit-rail > .entity-card--skeleton {
+  display: block;
+}
+
+.dashboard-fit-rail .entity-card,
+.dashboard-fit-rail .shot-card-list {
+  width: 100%;
+}
+
+.dashboard-fit-rail > :nth-child(n + 4) {
+  display: none;
+}
+
+@container (min-width: 36rem) {
+  .dashboard-fit-rail {
+    grid-template-columns: repeat(auto-fill, minmax(280px, var(--kk-ec-max-width)));
+    justify-content: start;
+  }
+
+  .dashboard-fit-rail > .entity-card {
+    display: grid;
+  }
+
+  .dashboard-fit-rail > .shot-card-list {
+    display: grid;
+  }
+
+  .dashboard-fit-rail > .entity-card--skeleton {
+    display: block;
+  }
+
+  .dashboard-fit-rail > :nth-child(n + 3) {
+    display: none;
+  }
+}
+
+@container (min-width: 58rem) {
+  .dashboard-fit-rail {
+    grid-template-columns: repeat(auto-fill, minmax(280px, var(--kk-ec-max-width)));
+    justify-content: start;
+  }
+
+  .dashboard-fit-rail > .entity-card {
+    display: grid;
+  }
+
+  .dashboard-fit-rail > .shot-card-list {
+    display: grid;
+  }
+
+  .dashboard-fit-rail > .entity-card--skeleton {
+    display: block;
+  }
+
+  .dashboard-fit-rail > :nth-child(n + 4) {
+    display: none;
+  }
+}
+
+@container (min-width: 76rem) {
+  .dashboard-fit-rail {
+    grid-template-columns: repeat(auto-fill, minmax(280px, var(--kk-ec-max-width)));
+    justify-content: start;
+  }
+
+  .dashboard-fit-rail > .entity-card {
+    display: grid;
+  }
+
+  .dashboard-fit-rail > .shot-card-list {
+    display: grid;
+  }
+
+  .dashboard-fit-rail > .entity-card--skeleton {
+    display: block;
+  }
+
+  .dashboard-fit-rail > :nth-child(n + 5) {
+    display: none;
+  }
+}
+
+.dashboard-panel {
+  background: var(--kaapi-frame-surface);
+  border: 1px solid rgba(245, 230, 211, 0.10);
+  border-radius: 18px;
+  box-shadow: 0 18px 44px rgba(18, 11, 6, 0.30), inset 0 1px 0 rgba(255, 247, 237, 0.06);
+  padding: clamp(1.5rem, 3vw, 1.875rem);
+  min-height: 100%;
+}
+
+.dashboard-panel .kk-tc-section-header {
+  font-family: var(--font-display);
+  font-size: clamp(1.125rem, 1rem + 0.55vw, 1.375rem);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.12;
+  text-transform: none;
+  color: var(--kk-text-primary);
+  margin-bottom: 1.125rem;
+}
+
+.dashboard-panel .entity-card-grid {
+  grid-template-columns: 1fr;
+}
+
+.dashboard-panel .entity-card,
+.dashboard-panel .shot-row,
+.dashboard-panel .shot-card-list {
+  box-shadow: var(--kk-card-surface-shadow);
+}
+
+.dashboard-panel .bag-card-stack,
+.dashboard-panel .shot-row-list {
+  gap: 0.875rem;
+}
+
+.dashboard-panel .bag-card-compact,
+.dashboard-panel .shot-row,
+.dashboard-panel .shot-card-list {
+  background: var(--kk-card-surface-bg);
+  border: var(--kk-card-surface-border);
+  border-radius: 16px;
+  box-shadow: var(--kk-card-surface-shadow);
+  padding: 0.875rem 1rem;
+  backdrop-filter: var(--kk-card-surface-filter);
+  -webkit-backdrop-filter: var(--kk-card-surface-filter);
+}
+
+.dashboard-panel .bag-card-compact {
+  color: var(--kk-text-primary);
+}
+
+.dashboard-panel .bag-card-compact:hover,
+.dashboard-panel .shot-row:hover,
+.dashboard-panel .shot-card-list:hover {
+  box-shadow: var(--kk-card-surface-shadow), 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.dashboard-panel .bag-card-compact__eyebrow {
+  margin-bottom: var(--kk-card-gap-eyebrow-title);
+}
+
+.dashboard-panel .bag-card-compact__monogram {
+  background: var(--kk-monogram-tile-bg);
+  color: var(--kk-text-secondary);
+  box-shadow: none;
+}
+
+.dashboard-panel .bag-card-compact .entity-card-body {
+  padding: 0;
+}
+
+.dashboard-panel .bag-card-compact .entity-card-figure {
+  width: 4.25rem;
+  height: 4.25rem;
+  aspect-ratio: 1;
+  border-radius: 14px;
+}
+
+.dashboard-panel .bag-card-compact .entity-card-monogram {
+  font-size: 1.25rem;
+}
+
+.dashboard-panel .shot-row-list {
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+}
+
+
+.dashboard-stats-panel {
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  justify-items: start;
+  gap: clamp(1.5rem, 4vw, 2rem);
+}
+
+.dashboard-hero-grid--stats-underbar {
+  display: block;
+  margin-bottom: clamp(1.75rem, 5vw, 3.25rem);
+}
+
+.dashboard-stats-panel--underbar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, max-content));
+  align-items: start;
+  justify-content: start;
+  column-gap: clamp(1.25rem, 4vw, 3rem);
+  row-gap: 0.75rem;
+  margin-top: clamp(0.75rem, 2vw, 1rem);
+  padding: 0;
+}
+
+.dashboard-stats-panel--underbar .stat-tile {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 0.2rem;
+  padding: 0;
+  color: var(--kk-text-secondary);
+}
+
+.dashboard-stats-panel--underbar .stat-tile__value {
+  color: var(--kk-text-primary);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.dashboard-stats-panel--underbar .stat-tile__label {
+  margin-top: 0;
+  color: var(--kk-text-secondary);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 430px) {
+  .dashboard-stats-panel--underbar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .dashboard-stats-panel--underbar .stat-tile {
+    padding: 0.25rem 0;
+  }
+
+  .dashboard-stats-panel--underbar .stat-tile__value {
+    font-size: clamp(1.25rem, 8vw, 1.625rem);
+  }
+
+  .dashboard-stats-panel--underbar .stat-tile__label {
+    font-size: 0.625rem;
+    letter-spacing: 0.08em;
+  }
+}
+
+/* Home proof: individual entity cards consume the canonical card surface.
+   The stats summary is cardless floating text per Aria's v2 contract. */
+.dashboard-home .entity-card,
+.dashboard-home .shot-card-list,
+.dashboard-home .shot-row,
+.dashboard-home .entity-card--skeleton {
+  background: var(--kk-card-surface-bg);
+  border: var(--kk-card-surface-border);
+  box-shadow: var(--kk-card-surface-shadow);
+  backdrop-filter: var(--kk-card-surface-filter);
+  -webkit-backdrop-filter: var(--kk-card-surface-filter);
+}
+
+.dashboard-home .entity-card,
+.dashboard-home .shot-card-list,
+.dashboard-home .shot-row,
+.dashboard-home .entity-card--skeleton {
+  border-radius: 14px;
+}
+
+.dashboard-home .entity-card:hover,
+.dashboard-home .shot-card-list:hover,
+.dashboard-home .shot-row:hover {
+  box-shadow: var(--kk-card-surface-shadow), 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .dashboard-home .entity-card,
+  .dashboard-home .shot-card-list,
+  .dashboard-home .shot-row,
+  .dashboard-home .entity-card--skeleton {
+    background: var(--kk-card-surface-bg-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .dashboard-home .entity-card,
+  .dashboard-home .shot-card-list,
+  .dashboard-home .shot-row,
+  .dashboard-home .entity-card--skeleton {
+    background: var(--kk-card-surface-bg-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* ── Nav context row — household merged into nav (Aria Item 7) ──────────── */
+/* Was a separate .mobile-household-strip fixed above the nav bar.
+   Now a compact row within the same nav element — reduces bottom chrome
+   from two stacked elements to one cohesive bar.
+   Inherits tone-aware background from the parent .nav-shell.mobile-nav rules. */
+.kk-nav-context-row {
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+html:has([data-tone="beige"]) .kk-nav-context-row {
+  border-bottom-color: rgba(115, 74, 55, 0.14);
+}
+
+.kk-nav-profile-btn {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.375rem 0.75rem;
+  min-height: 2.75rem; /* 44px WCAG touch target */
+  border-radius: 9999px;
+  background: transparent;
+  color: currentColor;
+  opacity: 0.7;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.kk-nav-profile-btn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+html:has([data-tone="beige"]) .kk-nav-profile-btn:hover {
+  background: rgba(146, 64, 14, 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kk-nav-profile-btn {
+    transition: none;
+  }
+}
+
+/* ── Shared pulse keyframe (if not already defined by Tailwind) ──────────── */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+
+/* spec-043 v2 corrected: peer entity cards stretch uniformly; compact chip clusters stay one row. */
+.entity-card-grid,
+.brew-log-card-grid,
+.dashboard-fit-rail {
+  align-items: stretch;
+}
+.entity-card-grid > .entity-card,
+.brew-log-card-grid > .entity-card,
+.dashboard-fit-rail > .entity-card,
+.dashboard-fit-rail > .shot-card-list {
+  height: 100%;
+  min-height: 8.25rem;
+}
+.shot-card-list__chips,
+.shot-row__chip-line,
+.bag-card-row__chip-line,
+.bag-card-compact__chip-line {
+  flex-wrap: nowrap;
+  overflow: hidden;
+  max-height: 1.75rem;
+}
+.shot-card-list__chips .kk-tc-chip,
+.shot-card-list__chips .kk-tc-metric-chip,
+.shot-row__chip-line .kk-tc-chip,
+.bag-card-row__chip-line .kk-tc-chip,
+.bag-card-compact__chip-line .kk-tc-chip {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.entity-card:hover,
+.shot-card-list:hover,
+.bag-card-compact:hover,
+.shot-row:hover,
+.dashboard-home .entity-card:hover,
+.dashboard-home .shot-card-list:hover,
+.dashboard-home .shot-row:hover,
+.dashboard-panel .bag-card-compact:hover,
+.dashboard-panel .shot-row:hover,
+.dashboard-panel .shot-card-list:hover {
+  box-shadow: var(--kk-card-surface-shadow);
+}
+
+/* spec-043 compass redesign — elegant warm editorial instrument */
+:root {
+  --kk-compass-sage: #5f7f72;
+  --kk-compass-sage-soft: #d7dfcc;
+  --kk-compass-sage-dark: #234f4c;
+  --kk-compass-amber-core: #f59e0b;
+  --kk-compass-copper: #b45309;
+  --kk-compass-rust: #7f1d1d;
+}
+
+[data-tone="beige"] .brew-log-add-form {
+  --kk-compass-computed-dot: var(--kk-text-primary);
+  --kk-compass-computed-ring: var(--color-secondary);
+  --kk-compass-computed-marker-bg: rgba(146, 64, 14, 0.12);
+  --kk-compass-taste-marker: var(--color-info);
+  --kk-compass-taste-marker-bg: rgba(14, 116, 144, 0.14);
+  --kk-compass-instrument-readable-bg: var(--kaapi-content-surface-2);
+  --kk-compass-zone-label-bg: var(--kaapi-content-surface);
+  --kk-compass-cell-border: rgba(120, 53, 15, 0.32);
+  --kk-compass-grid-line: rgba(255, 247, 237, 0.54);
+  --kk-compass-focus-ring: rgba(146, 64, 14, 0.36);
+  --kk-compass-matrix-field:
+    radial-gradient(circle at 50% 52%, rgba(245, 158, 11, 0.48) 0 16%, rgba(245, 158, 11, 0.22) 30%, transparent 46%),
+    linear-gradient(90deg, rgba(95, 127, 114, 0.54) 0%, rgba(215, 223, 204, 0.46) 28%, rgba(245, 158, 11, 0.34) 51%, rgba(180, 83, 9, 0.50) 73%, rgba(127, 29, 29, 0.58) 100%),
+    linear-gradient(180deg, rgba(120, 53, 15, 0.30) 0%, rgba(247, 234, 216, 0.14) 48%, rgba(95, 127, 114, 0.32) 100%),
+    var(--kk-card-surface-bg-solid);
+}
+
+[data-tone="dark"] .brew-log-add-form {
+  --kk-compass-computed-dot: var(--kk-text-primary);
+  --kk-compass-computed-ring: var(--color-accent);
+  --kk-compass-computed-marker-bg: rgba(251, 191, 36, 0.16);
+  --kk-compass-taste-marker: var(--kaapi-accent-cyan);
+  --kk-compass-taste-marker-bg: rgba(103, 232, 249, 0.16);
+  --kk-compass-instrument-readable-bg: var(--color-base-100);
+  --kk-compass-zone-label-bg: var(--color-base-100);
+  --kk-compass-cell-border: rgba(245, 230, 211, 0.22);
+  --kk-compass-grid-line: rgba(255, 247, 237, 0.20);
+  --kk-compass-focus-ring: rgba(251, 191, 36, 0.36);
+  --kk-compass-matrix-field:
+    radial-gradient(circle at 50% 52%, rgba(251, 191, 36, 0.46) 0 15%, rgba(180, 83, 9, 0.24) 31%, transparent 47%),
+    linear-gradient(90deg, rgba(35, 79, 76, 0.62) 0%, rgba(75, 74, 45, 0.42) 30%, rgba(180, 83, 9, 0.34) 51%, rgba(146, 64, 14, 0.52) 74%, rgba(127, 29, 29, 0.68) 100%),
+    linear-gradient(180deg, rgba(120, 53, 15, 0.56) 0%, rgba(34, 28, 22, 0.18) 48%, rgba(35, 79, 76, 0.56) 100%),
+    var(--kk-card-surface-bg-solid);
+}
+
+.kk-form-page .kk-compass-panel {
+  gap: 1rem;
+  border: var(--kk-card-surface-border);
+  border-radius: 14px;
+  background: var(--kk-card-surface-bg);
+  backdrop-filter: var(--kk-card-surface-filter);
+  -webkit-backdrop-filter: var(--kk-card-surface-filter);
+  box-shadow: var(--kk-card-surface-shadow);
+  padding: clamp(1rem, 2vw, 1.5rem);
+}
+
+.kk-compass-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.kk-compass-panel__legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.625rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--kk-text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+}
+
+.kk-compass-panel__legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.kk-compass-panel__legend-symbol {
+  display: inline-grid;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 1rem;
+}
+
+.kk-compass-panel__legend-symbol--recipe {
+  border: 2px solid var(--kk-compass-computed-ring);
+  border-radius: 999px;
+}
+
+.kk-compass-panel__legend-symbol--recipe::after {
+  content: "";
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 999px;
+  background: var(--kk-compass-computed-dot);
+}
+
+.kk-compass-panel__legend-symbol--taste {
+  border: 2px solid var(--kk-compass-taste-marker);
+  border-radius: 5px;
+  background: var(--kk-compass-taste-marker-bg);
+  transform: rotate(45deg) scale(0.82);
+}
+
+.kk-compass-panel__body,
+.kk-compass-panel__instrument,
+.kk-compass-panel__readout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.kk-form-page .kk-compass-panel__instrument {
+  overflow: visible;
+  background: var(--kk-compass-instrument-readable-bg);
+  box-shadow: none;
+  padding: clamp(0.75rem, 1.8vw, 1rem);
+}
+
+.kk-compass-chart {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.kk-compass-chart__axis-label-row,
+.kk-compass-chart__matrix-wrap,
+.kk-compass-chart__x-axis {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  gap: 0.375rem;
+  align-items: center;
+  color: var(--kk-text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.kk-compass-chart__matrix-wrap {
+  align-items: stretch;
+}
+
+.kk-compass-chart__y-axis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.kk-compass-chart__matrix {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, 1fr);
+  aspect-ratio: 1;
+  gap: 1px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--kk-compass-matrix-field);
+}
+
+.kk-compass-chart__grid-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 2.75rem;
+  min-height: 0;
+  overflow: hidden;
+  background: transparent;
+  color: var(--kk-text-primary);
+  cursor: pointer;
+  font: inherit;
+  padding: 0.5rem;
+  text-align: center;
+  transition: transform var(--motion-duration-micro) var(--motion-ease-standard), box-shadow var(--motion-duration-micro) var(--motion-ease-standard);
+}
+
+.kk-compass-chart__grid-cell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at var(--glow-x, 50%) var(--glow-y, 50%),
+    rgba(255, 255, 255, 0.14) 0%,
+    transparent 55%
+  );
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.kk-compass-chart__grid-cell:hover::after {
+  opacity: 1;
+}
+
+
+.kk-compass-chart__grid-cell:hover {
+  transform: translateY(-1px);
+}
+
+.kk-compass-chart__grid-cell[data-computed="true"] {
+  box-shadow: inset 0 0 0 2px var(--kk-compass-computed-ring);
+}
+
+.kk-compass-chart__grid-cell[data-selected="true"] {
+  box-shadow: inset 0 0 0 2px var(--kk-compass-taste-marker);
+}
+
+.kk-compass-chart__grid-cell:focus-visible {
+  outline: 2px solid var(--kk-compass-focus-ring);
+  outline-offset: 2px;
+}
+
+.kk-compass-chart__cell-label {
+  position: relative;
+  z-index: 1;
+  display: block;
+  max-width: calc(100% - 1rem);
+  background: transparent;
+  color: var(--kk-text-primary);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  line-height: 1.25;
+  text-align: center;
+}
+
+[data-tone="dark"] .kk-compass-chart__cell-label {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+}
+
+.kk-compass-chart__recipe-marker-wrap {
+  position: absolute;
+  z-index: 3;
+  left: 0.5rem;
+  top: 0.5rem;
+  transform: none;
+  pointer-events: none;
+}
+
+.kk-compass-chart__recipe-marker {
+  display: grid;
+  place-items: center;
+  width: 0.625rem;
+  height: 0.625rem;
+  border: 1.5px solid var(--kk-compass-computed-ring);
+  border-radius: 999px;
+  background: var(--kk-compass-computed-marker-bg);
+}
+
+.kk-compass-chart__recipe-marker::after {
+  content: "";
+  width: 0.25rem;
+  height: 0.25rem;
+  border-radius: 999px;
+  background: var(--kk-compass-computed-dot);
+}
+
+.kk-compass-chart__recipe-tag,
+.kk-compass-chart__taste-tag {
+  display: none;
+}
+
+.kk-compass-chart__recipe-tag {
+  left: 1.5rem;
+  top: -1.8rem;
+  background: var(--kk-compass-computed-marker-bg);
+  color: var(--kk-compass-computed-ring);
+}
+
+.kk-compass-chart__taste-marker {
+  position: absolute;
+  z-index: 2;
+  right: 0.5rem;
+  top: 0.5rem;
+  width: 0.625rem;
+  height: 0.625rem;
+  border: 1.5px solid var(--kk-compass-taste-marker);
+  border-radius: 3px;
+  background: var(--kk-compass-taste-marker-bg);
+  transform: rotate(45deg);
+}
+
+.kk-compass-chart__taste-tag {
+  right: 2.625rem;
+  top: 0.875rem;
+  background: var(--kk-compass-taste-marker-bg);
+  color: var(--kk-compass-taste-marker);
+}
+
+.kk-compass-chart__out-of-range,
+.kk-compass-chart__null-dose {
+  border-radius: 999px;
+  background: var(--kk-compass-computed-marker-bg);
+  color: var(--kk-compass-computed-ring);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 0.55rem;
+}
+
+.kk-compass-chart__out-of-range {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 0.25rem);
+  transform: translateX(-50%);
+}
+
+.kk-compass-chart__null-dose {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 4;
+  margin: 0;
+  transform: translate(-50%, -50%);
+}
+
+.kk-compass-chart__x-axis-values {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  color: var(--kk-text-tertiary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: center;
+  text-transform: none;
+}
+
+.kk-form-page .kk-extraction-readout {
+  display: grid;
+  gap: 0.75rem;
+  width: 100%;
+  border: var(--kk-card-surface-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--kk-card-surface-bg-solid) 96%, var(--kk-tc-link) 4%);
+  color: var(--kk-text-primary);
+  padding: 0.875rem 1rem;
+}
+
+.kk-extraction-readout__eyebrow {
+  margin: 0;
+  color: var(--kk-text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.kk-form-page .kk-extraction-readout__metric-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.kk-form-page .kk-extraction-readout__metric {
+  display: grid;
+  gap: 0.3125rem;
+  min-width: 0;
+  padding: 0;
+}
+
+.kk-form-page .kk-extraction-readout__metric-label {
+  color: var(--kk-text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.kk-form-page .kk-extraction-readout__metric-value {
+  color: var(--kk-text-primary);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.kk-form-page .kk-extraction-readout__guidance {
+  margin: 0;
+  color: var(--kk-text-primary);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 450;
+  line-height: 1.5;
+}
+
+.kk-form-page .kk-extraction-readout__action-chip {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--kk-chip-brand-border);
+  border-radius: 999px;
+  background: var(--kk-chip-brand-bg);
+  color: var(--kk-chip-brand-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3125rem 0.625rem;
+}
+
+@media (min-width: 640px) {
+  .kk-form-page .kk-extraction-readout__metric-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+  }
+
+  .kk-form-page .kk-extraction-readout__metric + .kk-extraction-readout__metric {
+    border-left: var(--kk-card-surface-border);
+    padding-left: 0.75rem;
+  }
+
+  .kk-form-page .kk-extraction-readout__metric:not(:first-child) {
+    margin-left: 0.75rem;
+  }
+}
+
+@media (min-width: 721px) {
+  .kk-compass-chart__cell-label {
+    font-size: 0.8125rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .kk-compass-panel__body {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .kk-compass-panel__legend {
+    justify-content: flex-start;
+  }
+
+  .kk-compass-chart__axis-label-row,
+  .kk-compass-chart__matrix-wrap,
+  .kk-compass-chart__x-axis {
+    grid-template-columns: 1fr;
+  }
+
+  .kk-compass-chart__y-axis {
+    display: none;
+  }
+}
+
+@media (min-width: 640px) {
+  .kk-form-page .kk-extraction-readout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 1024px) {
+  .brew-log-add-form__main {
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(1.25rem, 3vw, 2rem);
+    align-items: start;
+  }
+
+  .brew-log-add-form__compass-section {
+    width: 100%;
+  }
+
+  .brew-log-add-form__compass-section .kk-compass-panel {
+    padding: clamp(1rem, 2vw, 1.5rem);
+  }
+
+  .kk-form-page .kk-extraction-readout__guidance {
+    font-size: 1rem;
+  }
+}
+
+/* ── Wizard shell layout extension ──────────────────────────────────────── */
+
+/*
+ * .kk-wizard-shell is always co-applied with .kk-form-page.
+ * No additional root-level rules needed — kk-form-page handles overflow and
+ * padding-bottom. This class exists as a semantic marker and future-proof hook.
+ */
+.kk-wizard-shell {}
+
+/*
+ * Suppress the browser focus ring on the programmatically-focused heading span
+ * (tabIndex={-1}) used for accessible step-transition focus management.
+ * :focus-visible is NOT triggered by JS .focus(), so :focus:not(:focus-visible)
+ * targets only programmatic focus — keyboard focus outlines are unaffected.
+ */
+.kk-wizard-shell__shell .kk-tc-title [tabindex="-1"]:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Stepper region: breathing space above and below the stepper row. */
+.kk-wizard-shell__stepper {
+  padding-block: 0.25rem;
+}
+
+/*
+ * Content region: single column by default (mobile-first).
+ * Transitions to two-column on large screens when aside is present.
+ */
+.kk-wizard-shell__content {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.kk-wizard-shell__body {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.kk-wizard-shell__aside {
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .kk-wizard-shell__content--with-aside {
+    grid-template-columns: 2fr 1fr;
+    align-items: start;
+    gap: 1.5rem;
+  }
+
+  .kk-wizard-shell__content {
+    gap: 1.25rem;
+  }
+
+  .kk-wizard-shell__body {
+    gap: 1.25rem;
+  }
+}
+
+/* ── ToneStepper ──────────────────────────────────────────────────────────── */
+
+/* Outer <nav> — no visual styles; just clears list margin */
+.kk-tone-stepper {}
+
+/* <ol> inside nav */
+.kk-tone-stepper__list {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* <li> — base styles shared across all states */
+.kk-tone-stepper__step {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: var(--bevel-radius);
+  border: 1px solid transparent;
+  padding: 0.5rem 0.75rem;
+}
+
+/* Circular marker — number or checkmark */
+.kk-tone-stepper__marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  font-size: var(--kk-tc-label-size);
+  font-weight: var(--kk-tc-section-header-weight);
+}
+
+/* Visible label */
+.kk-tone-stepper__label {
+  font-size: var(--kk-tc-body-size);
+  font-weight: var(--kk-tc-value-weight);
+  line-height: 1.2;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Screenreader-only state announcement */
+.kk-tone-stepper__sr-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ── State modifiers on .kk-tone-stepper__step ── */
+
+.kk-tone-stepper__step--current {
+  background: var(--kaapi-content-surface);
+  border-color: var(--kk-primary-btn-border);
+  color: var(--kaapi-content-content);
+}
+
+.kk-tone-stepper__step--completed {
+  background: var(--kaapi-content-surface-2);
+  border-color: var(--kaapi-content-border);
+  color: var(--kaapi-content-content);
+}
+
+.kk-tone-stepper__step--upcoming {
+  background: var(--kaapi-content-surface);
+  border-color: var(--kaapi-content-border);
+  color: var(--kaapi-content-muted);
+}
+
+/* ── State modifiers on .kk-tone-stepper__marker ── */
+
+.kk-tone-stepper__marker--current {
+  background: var(--kk-primary-btn-bg);
+  color: var(--kk-primary-btn-text);
+}
+
+.kk-tone-stepper__marker--completed {
+  background: var(--kk-chip-success-bg);
+  color: var(--kk-chip-success-text);
+  border: 1px solid var(--kk-chip-success-border);
+}
+
+.kk-tone-stepper__marker--upcoming {
+  background: var(--kaapi-content-surface-2);
+  color: var(--kaapi-content-muted);
+  border: 1px solid var(--kaapi-content-border);
+}
+
+/* ── ImportWizard flat rows and canonical type roles ─────────────────────── */
+
+.kk-wizard-shell .kaapi-content-surface .kk-tc-btn--edit {
+  background: var(--kk-tc-btn-edit-bg);
+  color: var(--kk-tc-btn-edit-text);
+  border-color: var(--kk-tc-btn-edit-border);
+}
+
+.kk-wizard-shell .kaapi-content-surface .kk-tc-btn--edit:hover:not(:disabled) {
+  background: var(--kk-tc-btn-edit-hover-bg);
+  color: var(--kk-tc-btn-edit-hover-text);
+  border-color: var(--kk-tc-btn-edit-hover-border);
+}
+
+.kk-wizard-shell .kaapi-content-surface .kk-tc-btn--edit:focus-visible {
+  box-shadow: var(--kk-tc-btn-focus-ring);
+}
+
+.kk-import-subtitle-household {
+  color: var(--kaapi-content-content);
+  font-weight: var(--kk-tc-value-weight);
+}
+
+.kk-wizard-shell__heading-focus-target:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.kk-import-guidance-group-label {
+  color: var(--kk-text-primary);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 650;
+  letter-spacing: 0.005em;
+  line-height: 1.3;
+  text-transform: none;
+}
+
+.kk-import-guidance-row {
+  padding-block: 0.875rem;
+  border-block-start: 1px solid var(--kaapi-content-border);
+}
+
+.kk-import-guidance-row:first-of-type {
+  border-block-start: 0;
+  padding-block-start: 0;
+}
+
+.kk-import-guidance-field-name {
+  color: var(--kk-text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: var(--kk-tc-body-line-height);
+  margin: 0;
+  text-transform: none;
+}
+
+.kk-import-guidance-definition {
+  color: var(--kaapi-content-muted);
+  font-weight: 400;
+}
+
+.kk-import-guidance-copy {
+  margin-top: 0.25rem;
+}
+
+.kk-import-caption {
+  color: var(--kaapi-content-muted);
+  font-size: var(--kk-tc-label-size);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.kk-import-guidance-row .kk-import-caption {
+  margin-top: 0.5rem;
+}
+
+.kk-import-caption-strong,
+.kk-import-code {
+  color: var(--kaapi-content-content);
+}
+
+.kk-import-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.kk-import-file-hint {
+  margin-bottom: 0.5rem;
+}
+
+.kk-import-file-row {
+  align-items: stretch;
+  padding-block: 0.5rem;
+}
+
+.kk-import-inline-hint,
+.kk-import-inline-status {
+  padding-block: 0.25rem;
+}
+
+.kk-import-inline-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.kk-import-result-title {
+  color: var(--kaapi-content-content);
+  font-family: var(--font-display);
+  font-size: var(--kk-tc-title-size);
+  font-weight: var(--kk-tc-title-weight);
+  line-height: 1.15;
+  margin: 0;
+}
+
+/* ── ImportPreviewRows ───────────────────────────────────────────────────── */
+
+.kk-import-preview {
+  display: grid;
+  gap: 0;
+}
+
+/* Header row — desktop only */
+.kk-import-preview__header-row {
+  display: none;
+  padding: 0.5rem 1rem;
+  color: var(--kaapi-content-muted);
+  font-size: var(--kk-tc-label-size);
+  font-weight: var(--kk-tc-section-header-weight);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Data rows — mobile default: single block (stacked) */
+.kk-import-preview__row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.375rem;
+  padding: 0.75rem 1rem;
+  border-block-start: 1px solid var(--kaapi-content-border);
+  color: var(--kaapi-content-content);
+}
+
+.kk-import-preview__row:first-of-type {
+  border-top: none;
+}
+
+/* Individual cells — shared base */
+.kk-import-preview__cell {
+  font-size: var(--kk-tc-body-size);
+  line-height: var(--kk-tc-body-line-height);
+  min-width: 0;
+}
+
+.kk-import-preview__cell--index {
+  font-size: var(--kk-tc-label-size);
+  font-weight: var(--kk-tc-value-weight);
+  color: var(--kaapi-content-muted);
+}
+
+/* "Row " prefix — visible on mobile, hidden on desktop */
+.kk-import-preview__mobile-label {
+  font-weight: 400;
+}
+
+.kk-import-preview__cell--summary {
+  word-break: break-word;
+  color: var(--kaapi-content-content);
+}
+
+/* Full-width error text */
+.kk-import-preview__error-text {
+  font-size: var(--kk-tc-label-size);
+  line-height: 1.4;
+  color: var(--kaapi-content-error);
+  margin: 0;
+}
+
+/* ── Desktop table layout (≥768px) ──────────────────────────────────────── */
+@media (min-width: 768px) {
+  .kk-import-preview__header-row {
+    display: grid;
+    grid-template-columns: 3rem 8rem 1fr auto;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .kk-import-preview__row {
+    grid-template-columns: 3rem 8rem 1fr auto;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.625rem 1rem;
+  }
+
+  .kk-import-preview__mobile-label {
+    display: none;
+  }
+
+  .kk-import-preview__cell--index {
+    font-size: var(--kk-tc-body-size);
+  }
+
+  .kk-import-preview__cell--summary {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Error text spans all 4 columns */
+  .kk-import-preview__error-text {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Empty state */
+.kk-import-preview--empty {
+  display: block;
+}
+
+.kk-import-preview__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 0;
+  text-align: center;
+}
+
+.kk-import-preview__empty-icon {
+  font-size: 1.875rem;
+  line-height: 1;
+}
+
+.kk-import-preview__empty-title {
+  font-weight: var(--kk-tc-value-weight);
+  color: var(--kaapi-content-content);
+  margin: 0;
+  font-size: var(--kk-tc-body-size);
+}
+
+.kk-import-preview__empty-body {
+  font-size: var(--kk-tc-body-size);
+  color: var(--kaapi-content-muted);
+  margin: 0;
 }

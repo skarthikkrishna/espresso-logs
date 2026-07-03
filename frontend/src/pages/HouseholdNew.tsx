@@ -15,10 +15,12 @@ import { getMe } from '../api/auth'
 import { createHousehold } from '../api/households'
 import { useAuth } from '../contexts/AuthContext'
 import StandaloneHouseholdShell from '../components/StandaloneHouseholdShell'
+import { Button, FormField, Input, LayerTransition } from '../components/ui'
+import { COPY } from '../copy'
 
 function validateName(value: string): string | null {
-  if (!value.trim()) return 'Household name is required'
-  if (value.trim().length > 64) return 'Name must be 64 characters or less'
+  if (!value.trim()) return COPY.onboarding.nameRequired
+  if (value.trim().length > 64) return COPY.onboarding.nameTooLong
   return null
 }
 
@@ -52,14 +54,14 @@ export default function HouseholdNew() {
     } catch (err) {
       if (axios.isAxiosError(err)) {
         if (err.response?.status === 409) {
-          setNameError('A household with this name already exists.')
+          setNameError(COPY.householdNew.duplicateName)
         } else if (!err.response) {
-          setSubmitError('Unable to connect. Please check your connection.')
+          setSubmitError(COPY.householdNew.offline)
         } else {
-          setSubmitError('Failed to create household. Please try again.')
+          setSubmitError(COPY.householdNew.createFailed)
         }
       } else {
-        setSubmitError('An unexpected error occurred.')
+        setSubmitError(COPY.householdNew.unexpected)
       }
     } finally {
       setIsSubmitting(false)
@@ -68,72 +70,65 @@ export default function HouseholdNew() {
 
   return (
     <StandaloneHouseholdShell background="bg-household-onboarding" align="center" labelledBy="household-new-heading">
-      <div className="w-full max-w-sm">
-        <div className="glass-card card-bevel p-6 space-y-5">
+      <LayerTransition variant="route" className="w-full max-w-sm">
+        <div className="kaapi-content-surface p-6 space-y-5">
           <div className="text-center">
-            <p className="text-xs uppercase tracking-[0.22em] text-amber-300/70">New workspace</p>
-            <h1 id="household-new-heading" className="text-xl font-display text-amber-100">Create a household</h1>
-            <p className="text-base-content/60 text-sm mt-1">
-              Give your household a name to get started.
+            <p className="text-xs uppercase tracking-[0.22em] text-[var(--kaapi-content-muted)]">
+              {COPY.householdNew.eyebrow}
+            </p>
+            <h1 id="household-new-heading" className="text-xl font-display text-[var(--kaapi-content-content)]">
+              {COPY.householdNew.title}
+            </h1>
+            <p className="mt-1 text-sm text-[var(--kaapi-content-muted)]">
+              {COPY.onboarding.nameHint}
             </p>
           </div>
 
           <form onSubmit={(e) => { void handleSubmit(e) }} noValidate className="space-y-4">
-            <div className="form-control">
-              <label className="label" htmlFor="household-name">
-                <span className="label-text text-sm font-medium">Household name</span>
-              </label>
-              <input
+            <FormField label={COPY.onboarding.nameLabel} htmlFor="household-name" error={nameError} errorId="name-error">
+              <Input
                 id="household-name"
                 name="name"
                 type="text"
                 autoComplete="off"
                 required
                 maxLength={64}
-                className={`input input-bordered input-styled w-full ${nameError ? 'input-error' : ''}`}
+                error={Boolean(nameError)}
                 aria-invalid={nameError ? 'true' : 'false'}
                 aria-describedby={nameError ? 'name-error' : undefined}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 onBlur={handleBlur}
-                placeholder="e.g. Home, The Office, Studio…"
+                placeholder={COPY.onboarding.namePlaceholder}
               />
-              {nameError && (
-                <p id="name-error" className="text-error text-sm mt-1" role="alert" aria-live="polite">
-                  {nameError}
-                </p>
-              )}
-            </div>
+            </FormField>
 
             {submitError && (
               <p className="text-error text-sm text-center" role="alert">{submitError}</p>
             )}
 
-            <button
+            <Button
               type="submit"
-              className="btn btn-primary w-full btn-bevel"
-              disabled={isSubmitting}
+              variant="primary"
+              fullWidth
+              loading={isSubmitting}
+              loadingText={COPY.householdNew.creating}
             >
-              {isSubmitting ? (
-                <>
-                  <span className="loading loading-spinner loading-sm" />
-                  Creating…
-                </>
-              ) : (
-                'Create household'
-              )}
-            </button>
+              {COPY.householdNew.submit}
+            </Button>
           </form>
 
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
+            fullWidth
             onClick={() => navigate(-1)}
-            className="btn btn-ghost btn-sm w-full"
           >
-            Cancel
-          </button>
+            {COPY.householdNew.cancel}
+          </Button>
         </div>
-      </div>
+      </LayerTransition>
     </StandaloneHouseholdShell>
   )
 }

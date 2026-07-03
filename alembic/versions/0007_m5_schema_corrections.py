@@ -144,14 +144,14 @@ def upgrade() -> None:
     # ------------------------------------------------------------------
     # 7. app_admin role with BYPASSRLS (operational tooling ONLY).
     #
-    # SECURITY: app_admin (BYPASSRLS) must NEVER be granted to
-    # the non-bypass application runtime role. Doing so would defeat all RLS
+    # SECURITY: app_admin (BYPASSRLS) must NEVER be granted to the
+    # app_runtime service role. Doing so would defeat all RLS
     # policies and allow the application to read/write any household's data.
     # app_admin is reserved exclusively for out-of-band operational scripts
     # run by a human operator (e.g., backfill jobs, data migrations).
     #
     # The correct runtime isolation model is:
-    #   the non-bypass application runtime role (no BYPASSRLS)  →  SET LOCAL app.current_household_id
+    #   app_runtime (no BYPASSRLS)  →  SET LOCAL app.current_household_id
     #   → RLS policy filters rows to the active household automatically.
     # ------------------------------------------------------------------
     op.execute(
@@ -167,7 +167,7 @@ def upgrade() -> None:
         END $$
         """
     )
-    # NOTE: Do NOT grant app_admin to the non-bypass application runtime role.
+    # NOTE: Do NOT grant app_admin to app_runtime.
     # That grant was intentionally removed (Maya review 2026-05-21) because
     # BYPASSRLS on the runtime role defeats DB-level tenant isolation.
 

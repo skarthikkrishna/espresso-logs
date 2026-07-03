@@ -1,11 +1,12 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
 import {
   brewLogDetailQueryKey,
   brewLogFeedbackQueryKey,
+  deleteBrewLogEntry,
   generateBrewLogFeedback,
   getBrewLogDetail,
   getBrewLogFeedback,
@@ -15,21 +16,33 @@ import type { BrewLogCorrectionPayload } from '../api/brewLog'
 import { brewLogListQueryKey, dashboardQueryKey } from '../api/queryKeys'
 import type { BrewLogPage } from '../api/brewLog'
 import LoadingSpinner from '../components/LoadingSpinner'
-import Chip from '../components/Chip'
-import ExtractionBrewVizMotion from '../components/motion/ExtractionBrewVizMotion'
-import { Button, GlassCard, FormField, Input, PageHeader, SectionHeading, Select, Textarea } from '../components/ui'
+import AccessibleDialog from '../components/AccessibleDialog'
+import ExtractionReadout from '../components/ExtractionReadout'
+import { Button } from '../components/ui'
 import type { BrewLogEntry } from '../types/entities'
 import { useHouseholdQueryScope } from '../contexts/AuthContext'
-
-function eligibilityBadgeClasses(eligibility: string): string {
-  switch (eligibility) {
-    case 'God Shot':       return 'bg-amber-400/20 text-amber-300 border-amber-400/50'
-    case 'Good Espresso':  return 'bg-green-800/30 text-green-300 border-green-600/40'
-    case 'Passable':       return 'bg-zinc-700/40 text-zinc-300 border-zinc-500/40'
-    case 'Reject':         return 'bg-red-900/30 text-red-300 border-red-600/40'
-    default:               return 'bg-zinc-700/40 text-zinc-300 border-zinc-500/40'
-  }
-}
+import { ToneProvider } from '../contexts/ToneContext'
+import { useKaapiMotion } from '../lib/motion'
+import { COPY, LOCKED_LABELS } from '../copy/registry'
+import { eligibilityBadgeTone } from '../utils/eligibility'
+import {
+  BackLink,
+  Chip,
+  DetailHeader,
+  FormSection,
+  MarkdownProse,
+  ParamGrid,
+  ParamPair,
+  Section,
+  SectionHeader,
+  RoastChip,
+  ToneButton,
+  ToneInput,
+  TonePageWrapper,
+  ToneSelect,
+  ToneTextarea,
+  ToneToggle,
+} from '../components/tone-system'
 
 type CachedBrewLogShot = {
   shot: BrewLogEntry
@@ -83,13 +96,24 @@ function apiErrorMessage(err: unknown, fallback: string): string {
 }
 
 export default function BrewLogDetail() {
+  return (
+    <ToneProvider>
+      <BrewLogDetailPage />
+    </ToneProvider>
+  )
+}
+
+function BrewLogDetailPage() {
   const { id } = useParams<{ id: string }>()
   const shotId = id ?? ''
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const rawBack = searchParams.get('back')
   // Security guard: accept only root-relative paths; reject protocol-relative (//evil.com)
   const backTarget = rawBack?.startsWith('/') && !rawBack?.startsWith('//') ? rawBack : '/brew-log'
   const [correctionOpen, setCorrectionOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [correctionForm, setCorrectionForm] = useState<CorrectionForm>({
     taste_summary: '',
     user_notes: '',
@@ -102,6 +126,8 @@ export default function BrewLogDetail() {
   const queryClient = useQueryClient()
   const activeHouseholdId = useHouseholdQueryScope()
   const cachedShot = findCachedBrewLogShot(queryClient, shotId, activeHouseholdId)
+  const routeRef = useRef<HTMLDivElement>(null)
+  const { routeEnter } = useKaapiMotion({ scope: routeRef })
 
   const { data: shot, isLoading, error } = useQuery({
     queryKey: brewLogDetailQueryKey(shotId, activeHouseholdId),
@@ -158,8 +184,33 @@ export default function BrewLogDetail() {
     },
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteBrewLogEntry(shotId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: brewLogListQueryKey(activeHouseholdId) })
+      queryClient.invalidateQueries({ queryKey: dashboardQueryKey(activeHouseholdId) })
+      queryClient.removeQueries({ queryKey: brewLogDetailQueryKey(shotId, activeHouseholdId) })
+      setDeleteOpen(false)
+      setDeleteError(null)
+      navigate(backTarget)
+    },
+    onError: (err) => {
+      setDeleteError(apiErrorMessage(err, COPY.brewLog.deleteError))
+    },
+  })
+
+  const confirmDelete = () => {
+    if (deleteMutation.isPending) return
+    setDeleteError(null)
+    deleteMutation.mutate()
+  }
+
+  useEffect(() => {
+    if (!isLoading && !error && routeRef.current) routeEnter(routeRef.current)
+  }, [isLoading, error, routeEnter])
+
   if (isLoading) return <LoadingSpinner />
-  if (error) return <div className="p-6 text-error">Failed to load shot.</div>
+  if (error) return <div className="p-6 text-error">{COPY.brewLogDetail.loadError}</div>
   if (!shot) return null
 
   const openCorrectionForm = () => {
@@ -199,243 +250,274 @@ export default function BrewLogDetail() {
   }
 
   return (
-    <div data-testid="brew-log-detail" className="p-4 md:p-6 space-y-6 max-w-2xl">
-      {/* AC-15: ← Back text confirmed */}
-      <Link to={backTarget} className="text-sm text-amber-400 hover:text-amber-300 inline-block">
-        ← Back
-      </Link>
+    <TonePageWrapper ref={routeRef} testId="brew-log-detail" className="kk-detail-page brew-detail-page">
 
-      <div>
-        <PageHeader title={shot.bag_display} subtitle={shot.date} />
-        <Chip label={shot.roast_level} />
-        {shot.shot_eligibility && (
-          <span
-            data-testid="eligibility-badge"
-            className={`badge badge-sm border ${eligibilityBadgeClasses(shot.shot_eligibility)}`}
-          >
-            {shot.shot_eligibility}
-          </span>
-        )}
-        {!correctionOpen && (
-          <Button
-            variant="outline"
-            size="xs"
-            onClick={openCorrectionForm}
-            className="mt-3 block"
-          >
-            Correct shot details
-          </Button>
-        )}
+      {/* ── Nav row: back link + tone toggle ─────────────────────────────── */}
+      <div className="kk-b-page__nav">
+        {/* AC-15: ← Back text confirmed */}
+        <BackLink to={backTarget} />
+        <ToneToggle />
       </div>
 
-      {correctionOpen && (
-        <GlassCard>
-          <h2 className="text-sm font-semibold text-amber-300 mb-1">Correct typo-safe fields</h2>
-          <p className="text-xs text-amber-200/60 mb-3">
-            Only notes, taste, grind setting, and shot eligibility can be corrected here.
-          </p>
-          <div className="space-y-3">
-            <FormField label="Taste summary" htmlFor="correction-taste-summary">
-              <Input
+      <div className="kk-detail-shell">
+        <DetailHeader
+          title={shot.bag_display}
+          subtitle={<time dateTime={shot.date}>{shot.date}</time>}
+          media={shot.image_path ? <img src={shot.image_path} alt={shot.bag_display} /> : undefined}
+          chips={(
+            <>
+              <RoastChip level={shot.roast_level} />
+              {shot.shot_eligibility ? (
+                <Chip variant={eligibilityBadgeTone(shot.shot_eligibility)} data-testid="eligibility-badge">
+                  {shot.shot_eligibility}
+                </Chip>
+              ) : null}
+            </>
+          )}
+          actions={!correctionOpen ? (
+            <>
+              <ToneButton variant="edit" onClick={openCorrectionForm}>
+                {COPY.brewLogDetail.correctTitle}
+              </ToneButton>
+              <ToneButton
+                variant="danger"
+                data-testid="delete-shot-trigger"
+                onClick={() => {
+                  setDeleteError(null)
+                  setDeleteOpen(true)
+                }}
+              >
+                {LOCKED_LABELS.delete}
+              </ToneButton>
+            </>
+          ) : undefined}
+        />
+
+        {/* Brew parameters section */}
+        <Section>
+          <SectionHeader>{COPY.brewLogDetail.shotParameters}</SectionHeader>
+          <div className="detail-panel">
+            <ParamGrid>
+              {shot.dose_in_g != null && (
+                <ParamPair label={COPY.fields.dose} value={`${shot.dose_in_g}g`} />
+              )}
+              {shot.yield_out_g != null && (
+                <ParamPair label={COPY.fields.yield} value={`${shot.yield_out_g}g`} />
+              )}
+              {shot.time_sec != null && (
+                <ParamPair label={COPY.fields.time} value={`${shot.time_sec}s`} />
+              )}
+              {shot.grind_setting && (
+                <ParamPair label={COPY.fields.grindSetting} value={shot.grind_setting} />
+              )}
+              {shot.taste_summary && (
+                <ParamPair
+                  label={COPY.fields.taste}
+                  value={shot.taste_summary}
+                  labelTestId="taste-summary-row"
+                />
+              )}
+              {shot.storage_method && (
+                <ParamPair label={COPY.fields.storage} value={shot.storage_method} />
+              )}
+            </ParamGrid>
+          </div>
+        </Section>
+
+        {/* Extraction readout section */}
+        {(shot.dose_in_g != null || shot.yield_out_g != null || shot.time_sec != null) && (
+          <Section>
+            <SectionHeader>{COPY.brewLogDetail.extractionShape}</SectionHeader>
+            <ExtractionReadout
+              doseG={shot.dose_in_g}
+              yieldG={shot.yield_out_g}
+              timeSec={shot.time_sec}
+            />
+          </Section>
+        )}
+
+        {/* AI feedback section */}
+        <Section className="kk-ai-summary">
+          <SectionHeader>{COPY.brewLogDetail.aiFeedback}</SectionHeader>
+          {visibleFeedback ? (
+            <MarkdownProse>{visibleFeedback}</MarkdownProse>
+          ) : (
+            <p className="kk-tc-body-muted">{COPY.brewLogDetail.noFeedback}</p>
+          )}
+          {feedbackError && (
+            <p role="alert" className="kk-tc-error mt-2">{feedbackError}</p>
+          )}
+          {feedbackMessage && !feedbackError && (
+            <p role="status" className="kk-tc-body-muted mt-2">{feedbackMessage}</p>
+          )}
+          <div className="mt-3">
+            <ToneButton
+              variant="edit"
+              onClick={() => {
+                if (feedbackInFlightRef.current || feedbackMutation.isPending) return
+                feedbackInFlightRef.current = true
+                feedbackMutation.mutate()
+              }}
+              disabled={feedbackMutation.isPending}
+            >
+              {feedbackMutation.isPending
+                ? 'Generating…'
+                : visibleFeedback ? 'Regenerate AI feedback' : 'Get AI feedback'}
+            </ToneButton>
+          </div>
+        </Section>
+
+        {/* Hardware section */}
+        {(shot.machine_name || shot.grinder_name || shot.basket_name) && (
+          <Section>
+            <SectionHeader>Hardware</SectionHeader>
+            <div className="detail-panel">
+              <ParamGrid>
+                {shot.machine_name && (
+                  <ParamPair label={COPY.fields.machine} value={shot.machine_name} />
+                )}
+                {shot.grinder_name && (
+                  <ParamPair label={COPY.fields.grinder} value={shot.grinder_name} />
+                )}
+                {shot.basket_name && (
+                  <ParamPair label={COPY.fields.basket} value={shot.basket_name} />
+                )}
+              </ParamGrid>
+            </div>
+          </Section>
+        )}
+
+        {/* Notes section */}
+        {shot.user_notes && (
+          <Section data-testid="notes-section">
+            <SectionHeader>Notes</SectionHeader>
+            <p className="kk-tc-body">{shot.user_notes}</p>
+          </Section>
+        )}
+
+        {/* Correction form section — shown inline when open */}
+        {correctionOpen && (
+          <Section>
+            <SectionHeader>{COPY.brewLogDetail.correctFormTitle}</SectionHeader>
+            <p className="kk-tc-body-muted kk-tc-form-hint">
+              {COPY.brewLogDetail.correctFormHint}
+            </p>
+            <FormSection>
+              <ToneInput
                 id="correction-taste-summary"
+                label="Taste summary"
                 type="text"
-                inputSize="sm"
                 value={correctionForm.taste_summary}
                 onChange={(e) => setCorrectionForm((prev) => ({ ...prev, taste_summary: e.target.value }))}
               />
-            </FormField>
-            <FormField label="Grind setting" htmlFor="correction-grind-setting">
-              <Input
+              <ToneInput
                 id="correction-grind-setting"
+                label="Grind setting"
                 type="text"
-                inputSize="sm"
                 value={correctionForm.grind_setting}
                 onChange={(e) => setCorrectionForm((prev) => ({ ...prev, grind_setting: e.target.value }))}
               />
-            </FormField>
-            <FormField
-              label="Shot eligibility"
-              htmlFor="correction-shot-eligibility"
-              error={!correctionEligibilityValid ? 'Choose a listed eligibility value.' : null}
-              errorId="correction-eligibility-error"
-            >
-              <Select
+              <ToneSelect
                 id="correction-shot-eligibility"
-                selectSize="sm"
+                label="Shot eligibility"
                 value={correctionForm.shot_eligibility}
                 onChange={(e) => {
                   setCorrectionForm((prev) => ({ ...prev, shot_eligibility: e.target.value }))
                   setCorrectionFieldError(null)
                 }}
+                error={!correctionEligibilityValid ? 'Choose a listed eligibility value.' : null}
+                errorId="correction-eligibility-error"
                 aria-invalid={!correctionEligibilityValid}
                 aria-describedby={!correctionEligibilityValid ? 'correction-eligibility-error' : undefined}
-                error={!correctionEligibilityValid}
               >
-                <option value="">No eligibility</option>
+                <option value="">{COPY.brewLogDetail.noEligibility}</option>
                 {ELIGIBILITY_OPTIONS.map((option) => (
                   <option key={option} value={option}>{option}</option>
                 ))}
-              </Select>
-            </FormField>
-            <FormField label="Notes" htmlFor="correction-user-notes">
-              <Textarea
+              </ToneSelect>
+              <ToneTextarea
                 id="correction-user-notes"
+                label="Notes"
                 rows={3}
-                textareaSize="sm"
                 value={correctionForm.user_notes}
                 onChange={(e) => setCorrectionForm((prev) => ({ ...prev, user_notes: e.target.value }))}
               />
-            </FormField>
-          </div>
-          {correctionFieldError && (
-            <p role="alert" className="text-xs text-red-400 mt-3">{correctionFieldError}</p>
+            </FormSection>
+            {correctionFieldError && (
+              <p role="alert" className="kk-tc-error mt-3">{correctionFieldError}</p>
+            )}
+            <div className="flex justify-end gap-2 mt-4">
+              <ToneButton
+                variant="edit"
+                onClick={() => {
+                  setCorrectionOpen(false)
+                  setCorrectionFieldError(null)
+                }}
+                disabled={correctionMutation.isPending}
+              >
+                Cancel
+              </ToneButton>
+              <ToneButton
+                variant="edit"
+                onClick={submitCorrections}
+                disabled={!hasCorrectionChanges || !correctionEligibilityValid || correctionMutation.isPending}
+              >
+                {correctionMutation.isPending ? 'Saving…' : COPY.brewLogDetail.saveCorrections}
+              </ToneButton>
+            </div>
+          </Section>
+        )}
+
+      </div>
+
+      {/* Delete dialog — lives outside the card */}
+      <AccessibleDialog
+        open={deleteOpen}
+        title={COPY.brewLog.deleteTitle}
+        description={COPY.brewLog.deleteBody}
+        size="sm"
+        onClose={() => {
+          if (deleteMutation.isPending) return
+          setDeleteOpen(false)
+          setDeleteError(null)
+        }}
+      >
+        <div
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault()
+              confirmDelete()
+            }
+          }}
+        >
+          {deleteError && (
+            <p role="alert" className="text-error text-sm mb-3">{deleteError}</p>
           )}
-          <div className="flex justify-end gap-2 mt-4">
+          <div className="flex justify-end gap-2">
             <Button
               variant="ghost"
-              size="xs"
+              size="sm"
               onClick={() => {
-                setCorrectionOpen(false)
-                setCorrectionFieldError(null)
+                setDeleteOpen(false)
+                setDeleteError(null)
               }}
-              disabled={correctionMutation.isPending}
+              disabled={deleteMutation.isPending}
             >
-              Cancel
+              {COPY.actions.cancel}
             </Button>
             <Button
-              variant="primary"
-              size="xs"
-              onClick={submitCorrections}
-              disabled={!hasCorrectionChanges || !correctionEligibilityValid || correctionMutation.isPending}
-              loading={correctionMutation.isPending}
-              loadingText="Saving…"
+              variant="danger"
+              size="sm"
+              onClick={confirmDelete}
+              disabled={deleteMutation.isPending}
+              loading={deleteMutation.isPending}
+              loadingText={COPY.brewLog.deleting}
             >
-              Save corrections
+              {LOCKED_LABELS.delete}
             </Button>
           </div>
-        </GlassCard>
-      )}
-
-      {/* Shot parameters */}
-      <GlassCard>
-        <h2 className="text-sm font-semibold text-amber-300 mb-3">Shot parameters</h2>
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-          {shot.dose_in_g != null && (
-            <>
-              <dt className="text-amber-200/60">Dose</dt>
-              <dd className="text-amber-100 font-mono">{shot.dose_in_g}g</dd>
-            </>
-          )}
-          {shot.yield_out_g != null && (
-            <>
-              <dt className="text-amber-200/60">Yield</dt>
-              <dd className="text-amber-100 font-mono">{shot.yield_out_g}g</dd>
-            </>
-          )}
-          {shot.time_sec != null && (
-            <>
-              <dt className="text-amber-200/60">Time</dt>
-              <dd className="text-amber-100 font-mono">{shot.time_sec}s</dd>
-            </>
-          )}
-          {shot.grind_setting && (
-            <>
-              <dt className="text-amber-200/60">Grind setting</dt>
-              <dd className="text-amber-100">{shot.grind_setting}</dd>
-            </>
-          )}
-          {shot.taste_summary && (
-            <>
-              <dt data-testid="taste-summary-row" className="text-amber-200/60">Taste</dt>
-              <dd className="text-amber-100">{shot.taste_summary}</dd>
-            </>
-          )}
-          {shot.storage_method && (
-            <>
-              <dt className="text-amber-200/60">Storage</dt>
-              <dd className="text-amber-100">{shot.storage_method}</dd>
-            </>
-          )}
-        </dl>
-      </GlassCard>
-
-      {shot.dose_in_g != null && shot.yield_out_g != null && shot.time_sec != null && (
-        <GlassCard>
-          <SectionHeading title="Extraction shape" />
-          <ExtractionBrewVizMotion
-            doseGrams={shot.dose_in_g}
-            yieldGrams={shot.yield_out_g}
-            timeSeconds={shot.time_sec}
-          />
-        </GlassCard>
-      )}
-
-      {/* Hardware */}
-      {(shot.machine_name || shot.grinder_name || shot.basket_name) && (
-        <GlassCard>
-          <h2 className="text-sm font-semibold text-amber-300 mb-3">Hardware</h2>
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-            {shot.machine_name && (
-              <>
-                <dt className="text-amber-200/60">Machine</dt>
-                <dd className="text-amber-100">{shot.machine_name}</dd>
-              </>
-            )}
-            {shot.grinder_name && (
-              <>
-                <dt className="text-amber-200/60">Grinder</dt>
-                <dd className="text-amber-100">{shot.grinder_name}</dd>
-              </>
-            )}
-            {shot.basket_name && (
-              <>
-                <dt className="text-amber-200/60">Basket</dt>
-                <dd className="text-amber-100">{shot.basket_name}</dd>
-              </>
-            )}
-          </dl>
-        </GlassCard>
-      )}
-
-      {/* Notes */}
-      {shot.user_notes && (
-        <GlassCard data-testid="notes-section">
-          <h2 className="text-sm font-semibold text-amber-300 mb-2">Notes</h2>
-          <p className="text-sm text-amber-100">{shot.user_notes}</p>
-        </GlassCard>
-      )}
-
-      {/* AI feedback */}
-      <GlassCard>
-        <h2 className="text-sm font-semibold text-amber-300 mb-3">AI feedback</h2>
-        {visibleFeedback ? (
-          <p className="text-sm text-amber-100">{visibleFeedback}</p>
-        ) : (
-          <p className="text-amber-200/50 text-sm mb-3">No feedback available yet.</p>
-        )}
-        {feedbackError && (
-          <p role="alert" className="text-xs text-red-400 mt-3">{feedbackError}</p>
-        )}
-        {feedbackMessage && !feedbackError && (
-          <p role="status" className="text-xs text-amber-300 mt-3">{feedbackMessage}</p>
-        )}
-        <div className="mt-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              if (feedbackInFlightRef.current || feedbackMutation.isPending) return
-              feedbackInFlightRef.current = true
-              feedbackMutation.mutate()
-            }}
-            disabled={feedbackMutation.isPending}
-            loading={feedbackMutation.isPending}
-            loadingText="Generating…"
-          >
-            {visibleFeedback ? 'Regenerate AI feedback' : 'Get AI feedback'}
-          </Button>
         </div>
-      </GlassCard>
-    </div>
+      </AccessibleDialog>
+    </TonePageWrapper>
   )
 }

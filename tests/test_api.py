@@ -67,7 +67,7 @@ _CATALOG_ROW = {
     "Bean_Name": "Kenya Kiambu",
     "Roast_Level": "Light",
     "Product_URL": "",
-    "Local_Image_Path": "",
+    "Local_Image_Path": "https://cdn.example.test/catalog/CAT001.jpg",
 }
 
 _INVENTORY_ROW = {
@@ -85,14 +85,22 @@ _HARDWARE_ROW = {
     "Hardware_ID": "HW001",
     "Category": "Machine",
     "Name": "Breville Barista Express",
-    "Image_URL": "",
+    "Maker": "Breville",
+    "Purchase_Date": "2024-02-03",
+    "Notes": "Factory OPV adjusted; descale quarterly.",
+    "Product_URL": "https://example.test/breville-barista-express",
+    "Local_Image_Path": "",
 }
 
 _GRINDER_ROW = {
     "Hardware_ID": "HW002",
     "Category": "Grinder",
     "Name": "Niche Zero",
-    "Image_URL": "",
+    "Maker": "Niche",
+    "Purchase_Date": "",
+    "Notes": "",
+    "Product_URL": "",
+    "Local_Image_Path": "",
 }
 
 # T019 (N-5): Storage row required for hardware Storage category tests
@@ -100,7 +108,11 @@ _STORAGE_ROW = {
     "Hardware_ID": "HW003",
     "Category": "Storage",
     "Name": "Frozen — Glass Tube",
-    "Image_URL": "",
+    "Maker": "",
+    "Purchase_Date": "",
+    "Notes": "",
+    "Product_URL": "",
+    "Local_Image_Path": "",
 }
 
 _SHOT_ROW = {
@@ -130,15 +142,19 @@ _MAINTENANCE_ROW = {
 }
 
 
-def _make_fake_client():
+def _make_fake_client(
+    catalog_rows: list[dict] | None = None, hardware_rows: list[dict] | None = None
+):
     """Return a FakeSheetsClient seeded with representative data."""
     from tests.doubles import FakeSheetsClient
 
     return FakeSheetsClient(
         {
-            "Catalog": [_CATALOG_ROW.copy()],
+            "Catalog": [row.copy() for row in (catalog_rows or [_CATALOG_ROW])],
             "Inventory": [_INVENTORY_ROW.copy()],
-            "Hardware": [_HARDWARE_ROW.copy(), _GRINDER_ROW.copy(), _STORAGE_ROW.copy()],
+            "Hardware": [
+                row.copy() for row in (hardware_rows or [_HARDWARE_ROW, _GRINDER_ROW, _STORAGE_ROW])
+            ],
             "Brew_Log": [_SHOT_ROW.copy()],
             "Maintenance": [_MAINTENANCE_ROW.copy()],
         }
@@ -175,6 +191,44 @@ async def _authed(method: str, path: str, **kwargs) -> tuple[int, object]:
         app.dependency_overrides.pop(get_sheets_client, None)
 
 
+async def _authed_with_catalog_row(
+    method: str, path: str, catalog_row: dict, **kwargs
+) -> tuple[int, object]:
+    from app.deps import get_sheets_client
+
+    fake = _make_fake_client(catalog_rows=[catalog_row])
+    app.dependency_overrides[get_sheets_client] = lambda: fake
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test", follow_redirects=False
+        ) as client:
+            client.cookies.set("session", _AUTHED_COOKIE)
+            fn = getattr(client, method.lower())
+            resp = await fn(path, **kwargs)
+        return resp.status_code, resp.json()
+    finally:
+        app.dependency_overrides.pop(get_sheets_client, None)
+
+
+async def _authed_with_hardware_rows(
+    method: str, path: str, hardware_rows: list[dict], **kwargs
+) -> tuple[int, object]:
+    from app.deps import get_sheets_client
+
+    fake = _make_fake_client(hardware_rows=hardware_rows)
+    app.dependency_overrides[get_sheets_client] = lambda: fake
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test", follow_redirects=False
+        ) as client:
+            client.cookies.set("session", _AUTHED_COOKIE)
+            fn = getattr(client, method.lower())
+            resp = await fn(path, **kwargs)
+        return resp.status_code, resp.json()
+    finally:
+        app.dependency_overrides.pop(get_sheets_client, None)
+
+
 # ===========================================================================
 # /api/dashboard
 # ===========================================================================
@@ -189,6 +243,15 @@ async def test_api_dashboard_authenticated():
         bag = data[0]
         assert "bag_id" in bag
         assert "display_name" in bag
+        assert bag["image_path"] == _CATALOG_ROW["Local_Image_Path"]
+
+
+@pytest.mark.asyncio
+async def test_api_dashboard_image_path_null_when_catalog_image_missing():
+    row_without_image = {**_CATALOG_ROW, "Local_Image_Path": ""}
+    status, data = await _authed_with_catalog_row("GET", "/api/dashboard", row_without_image)
+    assert status == 200
+    assert data[0]["image_path"] is None
 
 
 # ===========================================================================
@@ -207,6 +270,7 @@ async def test_api_catalog_list_authenticated():
     assert item["roaster"] == "Blue Bottle"
     assert item["bean_name"] == "Kenya Kiambu"
     assert item["roast_level"] == "Light"
+    assert item["image_path"] == _CATALOG_ROW["Local_Image_Path"]
     # catalog_id is a route key, not a display field — but it IS in the response model
     assert "catalog_id" in item
 
@@ -384,6 +448,10 @@ async def test_api_hardware_list_authenticated():
     assert "hardware_id" in item
     assert "name" in item
     assert "category" in item
+    assert item["maker"] == _HARDWARE_ROW["Maker"]
+    assert item["purchase_date"] == _HARDWARE_ROW["Purchase_Date"]
+    assert item["notes"] == _HARDWARE_ROW["Notes"]
+    assert item["product_url"] == _HARDWARE_ROW["Product_URL"]
 
 
 @pytest.mark.asyncio
@@ -402,6 +470,33 @@ async def test_api_hardware_detail_authenticated():
     assert "maintenance" in data
     assert data["item"]["name"] == "Breville Barista Express"
     assert data["item"]["category"] == "Machine"
+    assert data["item"]["maker"] == "Breville"
+    assert data["item"]["purchase_date"] == "2024-02-03"
+    assert data["item"]["notes"] == "Factory OPV adjusted; descale quarterly."
+    assert data["item"]["product_url"] == "https://example.test/breville-barista-express"
+
+
+@pytest.mark.asyncio
+async def test_api_hardware_detail_returns_spec043_item_fields():
+    spec043_machine = {
+        "Hardware_ID": "SPEC043_HW_MACHINE",
+        "Category": "Machine",
+        "Name": "La Marzocco Linea Micra Pearl White Home Espresso Machine",
+        "Maker": "La Marzocco",
+        "Purchase_Date": "2025-11-15",
+        "Notes": "9 bar reference profile; steam wand cleaned after milk drinks.",
+        "Product_URL": "https://lamarzocco.com/linea-micra/",
+        "Local_Image_Path": "/static/spa/static/e2e-assets/spec-043/espresso-machine.jpg",
+    }
+    status, data = await _authed_with_hardware_rows(
+        "GET", "/api/hardware/SPEC043_HW_MACHINE", [spec043_machine]
+    )
+
+    assert status == 200
+    assert data["item"]["maker"] == "La Marzocco"
+    assert data["item"]["purchase_date"] == "2025-11-15"
+    assert data["item"]["notes"] == "9 bar reference profile; steam wand cleaned after milk drinks."
+    assert data["item"]["product_url"] == "https://lamarzocco.com/linea-micra/"
 
 
 @pytest.mark.asyncio
@@ -415,11 +510,12 @@ async def test_api_hardware_create_authenticated():
     status, data = await _authed(
         "POST",
         "/api/hardware",
-        json={"category": "Grinder", "name": "Comandante C40"},
+        json={"category": "Grinder", "name": "Comandante C40", "maker": "Comandante"},
     )
     assert status == 201
     assert data["name"] == "Comandante C40"
     assert data["category"] == "Grinder"
+    assert data["maker"] == "Comandante"
 
 
 @pytest.mark.asyncio
@@ -427,10 +523,11 @@ async def test_api_hardware_update_authenticated():
     status, data = await _authed(
         "PUT",
         "/api/hardware/HW001",
-        json={"name": "Breville Barista Pro"},
+        json={"name": "Breville Barista Pro", "maker": "Breville"},
     )
     assert status == 200
     assert data["name"] == "Breville Barista Pro"
+    assert data["maker"] == "Breville"
 
 
 # ===========================================================================
@@ -455,8 +552,17 @@ async def test_api_brew_log_list_authenticated():
     assert "machine_name" in entry
     assert "grinder_name" in entry
     assert "basket_name" in entry
+    assert entry["image_path"] == _CATALOG_ROW["Local_Image_Path"]
     # bag_display should contain em dash format
     assert "—" in entry["bag_display"]
+
+
+@pytest.mark.asyncio
+async def test_api_brew_log_image_path_null_when_catalog_image_missing():
+    row_without_image = {**_CATALOG_ROW, "Local_Image_Path": ""}
+    status, data = await _authed_with_catalog_row("GET", "/api/brew-log", row_without_image)
+    assert status == 200
+    assert data["items"][0]["image_path"] is None
 
 
 @pytest.mark.asyncio
@@ -466,6 +572,7 @@ async def test_api_brew_log_detail_authenticated():
     assert data["shot_id"] == "SHOT001"
     assert "bag_display" in data
     assert "machine_name" in data
+    assert data["image_path"] == _CATALOG_ROW["Local_Image_Path"]
 
 
 @pytest.mark.asyncio
@@ -597,9 +704,12 @@ async def test_api_defaults_by_bag_authenticated():
         "basket_id",
         "storage_method",
         "dose_in_g",
+        "yield_out_g",
+        "time_sec",
         "grind_setting",
     ):
         assert key in data
+    assert data["time_sec"] == "28.0"
 
 
 @pytest.mark.asyncio
