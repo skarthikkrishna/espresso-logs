@@ -42,6 +42,8 @@ from app.routers.api_inventory import router as _inventory_router
 from app.repos.base import get_process_cache
 from tests.doubles import FakeSheetsClient
 
+pytestmark = pytest.mark.asyncio(loop_scope="module")
+
 
 _TEST_SECRET = "dev-insecure-secret-for-testing-only"
 _TEST_USER = {"email": "tester@example.com", "name": "Tester", "picture": ""}
