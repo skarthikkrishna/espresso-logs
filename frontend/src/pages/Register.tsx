@@ -16,7 +16,13 @@ import axios from 'axios'
 import { register, getMe } from '../api/auth'
 import { useAuth } from '../contexts/AuthContext'
 import StandaloneHouseholdShell from '../components/StandaloneHouseholdShell'
-import { Button, FormField, Input, LayerTransition } from '../components/ui'
+import { LayerTransition } from '../components/ui'
+import {
+  EntityFormActions,
+  TakeoverCard,
+  ToneInput,
+  ToneProvider,
+} from '../components/tone-system'
 import { COPY } from '../copy'
 
 // ---------------------------------------------------------------------------
@@ -184,128 +190,107 @@ export default function Register() {
   // -------------------------------------------------------------------------
 
   return (
-    <StandaloneHouseholdShell background="bg-auth-register" align="left" labelledBy="register-heading">
+    <StandaloneHouseholdShell background="bg-auth-register" align="center" labelledBy="register-heading">
       <LayerTransition variant="route" className="w-full max-w-sm">
-        <div className="kaapi-content-surface p-6">
-          <h1 id="register-heading" className="font-display text-2xl text-[var(--kaapi-content-content)] text-center mb-6">
-            {COPY.auth.createAccount}
-          </h1>
-
-          {inviteToken ? (
-            <div className="alert alert-info card-bevel mb-4 text-sm">
-              <span>{COPY.auth.registerInviteBanner}</span>
+        <ToneProvider lockedTone="dark">
+          <TakeoverCard className="space-y-5">
+            <div className="text-center">
+              <h1 id="register-heading" className="kk-tc-title text-2xl">
+                {COPY.auth.createAccount}
+              </h1>
             </div>
-          ) : null}
 
-          <form
-            onSubmit={(e) => {
-              void handleSubmit(e)
-            }}
-            noValidate
-            className="space-y-4"
-          >
-            <FormField
-              label={COPY.auth.usernameLabel}
-              htmlFor="reg-username"
-              error={errors.username}
-              errorId="reg-username-error"
+            {inviteToken ? (
+              <div className="kk-tc-section">
+                <p className="kk-tc-body-muted text-center">{COPY.auth.registerInviteBanner}</p>
+              </div>
+            ) : null}
+
+            <form
+              onSubmit={(e) => {
+                void handleSubmit(e)
+              }}
+              noValidate
+              className="space-y-4"
             >
-              <Input
+              <ToneInput
                 ref={usernameRef}
+                label={COPY.auth.usernameLabel}
                 id="reg-username"
                 name="username"
                 type="text"
                 autoComplete="username"
-                required
-                error={Boolean(errors.username)}
+                error={errors.username}
+                errorId="reg-username-error"
                 aria-invalid={errors.username ? 'true' : 'false'}
                 aria-describedby={errors.username ? 'reg-username-error' : undefined}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 onBlur={handleUsernameBlur}
               />
-            </FormField>
 
-            <FormField
-              label={COPY.auth.displayNameLabel}
-              htmlFor="reg-display-name"
-              hint={COPY.auth.displayNameHint}
-            >
-              <Input
+              <ToneInput
+                label={COPY.auth.displayNameLabel}
                 id="reg-display-name"
                 name="display_name"
                 type="text"
                 autoComplete="name"
+                hint={COPY.auth.displayNameHint}
                 aria-invalid="false"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
               />
-            </FormField>
 
-            <FormField
-              label={COPY.auth.passwordLabel}
-              htmlFor="reg-password"
-              error={errors.password}
-              errorId="reg-password-error"
-            >
-              <Input
+              <ToneInput
                 ref={passwordRef}
+                label={COPY.auth.passwordLabel}
                 id="reg-password"
                 name="password"
                 type="password"
                 autoComplete="new-password"
-                required
-                error={Boolean(errors.password)}
+                error={errors.password}
+                errorId="reg-password-error"
                 aria-invalid={errors.password ? 'true' : 'false'}
                 aria-describedby={errors.password ? 'reg-password-error' : undefined}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onBlur={handlePasswordBlur}
               />
-            </FormField>
 
-            <FormField
-              label={COPY.auth.confirmPasswordLabel}
-              htmlFor="reg-confirm-password"
-              error={errors.confirmPassword}
-              errorId="reg-confirm-error"
-            >
-              <Input
+              <ToneInput
                 ref={confirmRef}
+                label={COPY.auth.confirmPasswordLabel}
                 id="reg-confirm-password"
                 name="confirm_password"
                 type="password"
                 autoComplete="new-password"
-                required
-                error={Boolean(errors.confirmPassword)}
+                error={errors.confirmPassword}
+                errorId="reg-confirm-error"
                 aria-invalid={errors.confirmPassword ? 'true' : 'false'}
-                aria-describedby={
-                  errors.confirmPassword ? 'reg-confirm-error' : undefined
-                }
+                aria-describedby={errors.confirmPassword ? 'reg-confirm-error' : undefined}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 onBlur={handleConfirmBlur}
               />
-            </FormField>
 
-            <Button
-              type="submit"
-              variant="primary"
-              fullWidth
-              loading={isSubmitting}
-              loadingText={COPY.auth.creatingAccount}
-            >
-              {COPY.auth.createAccount}
-            </Button>
-          </form>
+              <EntityFormActions
+                primaryLabel={COPY.auth.createAccount}
+                primaryType="submit"
+                isSubmitting={isSubmitting}
+              />
+            </form>
 
-          <p className="text-center text-sm mt-6 text-[var(--kaapi-content-content)]">
-            {COPY.auth.haveAccountPrompt}{' '}
-            <Link to={authQuery ? `/login?${authQuery}` : '/login'} className="link link-hover font-medium text-[var(--kaapi-content-content)]">
-              {COPY.auth.signIn}
-            </Link>
-          </p>
-        </div>
+            <p className="kk-tc-body-muted text-center">
+              {COPY.auth.haveAccountPrompt}{' '}
+              <Link
+                to={authQuery ? `/login?${authQuery}` : '/login'}
+                className="link link-hover font-medium text-[var(--kk-tc-link)]"
+              >
+                {COPY.auth.signIn}
+              </Link>
+            </p>
+          </TakeoverCard>
+        </ToneProvider>
       </LayerTransition>
     </StandaloneHouseholdShell>
   )

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { ToneButton } from './ToneButton'
+import { ToneButton, type ToneButtonVariant } from './ToneButton'
 
 export interface EntityFormActionsProps {
   primaryLabel: string
@@ -7,6 +7,7 @@ export interface EntityFormActionsProps {
   onPrimary?: () => void
   secondaryLabel?: string
   onSecondary?: () => void
+  secondaryVariant?: ToneButtonVariant
   destructiveLabel?: string
   onDestructive?: () => void
   isSubmitting?: boolean
@@ -34,6 +35,7 @@ export function EntityFormActions({
   onPrimary,
   secondaryLabel,
   onSecondary,
+  secondaryVariant = 'edit',
   destructiveLabel,
   onDestructive,
   isSubmitting = false,
@@ -78,7 +80,7 @@ export function EntityFormActions({
 
         {secondaryLabel ? (
           <ToneButton
-            variant="edit"
+            variant={secondaryVariant}
             onClick={onSecondary}
             disabled={actionsDisabled}
             className="entity-form-actions__button"

@@ -27,7 +27,7 @@ export const ToneSelect = forwardRef<HTMLSelectElement, ToneSelectProps>(
       <select
         ref={ref}
         id={id}
-        className={['select select-bordered input-styled w-full select-sm', className]
+        className={['select select-bordered input-styled w-full', className]
           .filter(Boolean)
           .join(' ')}
         {...selectProps}

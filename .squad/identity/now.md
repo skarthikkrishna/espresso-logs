@@ -1,104 +1,72 @@
 ---
-updated_at: 2026-06-15T16:05:00Z
-focus_area: spec-043 component-rebuild PAUSED (2026-06-15) — home/dashboard + catalog-summary RED; detail pages GREEN
-milestone: foundation committed (71f60d2, GREEN); dashboard WIP committed (1c07b78, RED); rollout halted pending RED rework
-action: restart per docs/requirements/component-rebuild/00-HANDOFF.md ⛔ PAUSED section (fix RED pages: beige-grey frost, EntityCard presence, hero viz removal, bag monogram bug, CTA strength)
+updated_at: 2026-07-05T00:00:00Z
+focus_area: janus migration Phase 1 CLOSED — code-derived wrap-up ledger adjudicated; next = Phase 2 (coffee_tracker docs) then Phase 3 pilot under janus
+milestone: trunk = feat/043-completion == origin/household_fixes; side-branch triage complete; main 0 ahead / 4 behind trunk (cutover = fast-forward uber push)
+action: drive ledger L4 → L2 → L5 → L1 → L3 → L6 through janus gates (Phase 3); tracker at claude-janus/scratch/espresso-migration-tracker.md
 ---
 
-# Current Team Focus — 2026-06-15 (PAUSED)
+# Ground truth — 2026-07-05 (derived from code, operator-adjudicated)
 
-## ⛔ STATUS: PAUSED — spec-043 rollout halted; home/dashboard + catalog-summary marked RED
+This file was rewritten at migration Phase 1 close. Everything below was verified against the
+code on `feat/043-completion`; spec/.squad assertions were NOT trusted. The old squad workflow
+(personas, ceremonies, spec gates) is DEAD — the janus harness replaces it at Phase 3/4.
+Phase tracker + standing rules: `claude-janus/scratch/espresso-migration-tracker.md`.
+Ledger evidence detail: `claude-janus/scratch/espresso-phase1-ledger-draft.md`.
 
-- **Branch:** `feat/043-design-coherence` off `household_fixes` (local only, no push).
-- **Pause reason:** Operator ran out of time after identifying critical issues on home/dashboard + catalog-summary pages. Both pages need rework before rollout continues.
-- **Pause date/time:** 2026-06-15T16:05:00Z.
+## Branch state
 
-## Pages status
+- **Trunk = `feat/043-completion`**, tree-identical to `origin/household_fixes` (deliberate
+  upstream — the stand-in for main). `main` is 0 ahead / 4 behind; cutover = fast-forward.
+- Side-branch triage COMPLETE 2026-07-05: `feat/043-design-coherence` (tree-identical) and
+  `household_test_fixtures` (operator dual-instance A/B verdict: trunk wins, discarded wholesale)
+  are deleted; every pre-triage tip survives as a remote `pre-migration/<branch>` tag.
 
-### ✅ GREEN (approved, committed at 71f60d2)
-- **Brew-log detail:** glass takeover card, tone-aware, approved "almost perfect."
-- **Catalog detail:** glass takeover card, tone-aware, approved.
-- **Foundation (Phase 0/1/2a):** Tone system library + ToneContext + reusable components + shared EntityCard. Ready for production. Zero one-offs.
+## What is actually DONE (verified in code)
 
-### 🔴 RED (need rework — DO NOT proceed past)
-- **Home/Dashboard** (`/`, Dashboard.tsx):
-  1. Remove 2D coffee-graphics hero viz entirely (operator dislikes it).
-  2. Restore color/contrast (page reads monochromatic after immersive beige tone introduced).
-  3. BEIGE "light mode" reads GREY/muddy (immersive beige frost ~55% too transparent over blurred photo). Fix: raise opacity to match detail-page natural beige (~78%).
-  4. Bag monograms show "RE" (bug: should show per-bag initials).
-  5. "Log a shot" primary CTA weak (plain text, should be button).
-  6. EntityCards faint on dark tone (increase glass presence).
+- Spec-043 RED fixes all landed: hero viz out of render, "Log a shot" is a real ToneButton,
+  bag monograms derive from title (`entityMonogram`), immersive frost opacity raised.
+- Tone-system migrated pages: Dashboard, CatalogList, CatalogDetail, BrewLogList, BrewLogDetail,
+  BrewLogAdd, HardwarePage, ImportWizard.
+- Empty/zero-rows paths on all four core surfaces are guarded and use `ImmersiveEmptyState`;
+  backends return safe empty payloads (no 404/500 on zero rows).
+- Spec-042 US3 tenant read-scoping (except brew-log's divergent path — see L1).
 
-- **Catalog summary** (`/catalog`, CatalogList.tsx):
-  1. BEIGE "light mode" reads GREY/muddy (same immersive beige frost issue as home). Fix: raise opacity to natural beige (~78%).
-  2. EntityCards faint on dark tone (increase glass presence).
+## Wrap-up ledger (adjudicated 2026-07-05, order = pilot order)
 
-### 🚫 NOT STARTED (rollout phases p2b–p10 paused)
-- Hardware detail/list, Household detail/list, Brew-log add, Roast detail/list, Grinder detail/list, Settings, Onboarding, edge-case coverage.
+1. **L4 (M)** — finish tone-system rollout: HouseholdSettings, Login, Register, Welcome,
+   HouseholdNew, InviteAccept, HouseholdGuestView, Profile (+ minimal InviteExpired/InviteInvalid/
+   NotFound) still on `StandaloneHouseholdShell`/`components/ui`. First pilot item (stringent janus check).
+2. **L2 (L)** — M6 Sheets decommission: `app/config.py:53` still hard-requires SPREADSHEET_ID;
+   Sheets client + five `_DualWrite*` wrappers fully wired in `app/deps.py`; ~28 test files coupled.
+3. **L5 (S)** — dead-code prune: DashboardHero3D/DashboardHeroMotion/ExtractionBrewViz3D/
+   HeroVisualFrame, CharacterTile, duplicate `ui/EmptyState` vs `ImmersiveEmptyState`.
+4. **L1 (S/M)** — fresh-household failure signature (operator-observed): four divergent per-page
+   error UIs render one upstream failure as unrelated-looking errors; brew-log on divergent
+   tenancy path (raw `current_setting` + `resolve_guest_or_member` vs `household_read_scope` +
+   `current_household_membership`); catalog `data?.length === 0` edge. Runtime capture owed
+   (opportunistically during L4 evals).
+5. **L3 (M)** — household-invite email delivery: ABSENT (invite_url copy/share only;
+   `delivery.email_*` flags hardcoded False; no SMTP/provider code or config).
+6. **L6 (S, gated on L2)** — drop orphaned `sheets_id`/`sheets_hardware_id`/`sheets_catalog_id`
+   columns + `uq_*_household_sheets_id` constraints (migrations 0004-0006, 0016).
 
-## Root causes (operator findings)
+Flags: `use_postgres` defaults False in config (dev .env = true; default dies with L2);
+`brew_log_sync_alert` defaults False pending reconciliation.
 
-1. **Immersive BEIGE frost transparency:** ~55% `rgba(245,235,220,0.55)` over blurred dark photo lets dark bleed through → GREY muddy read. Detail takeover cards' ~78% `rgba(245,235,220,0.78)` are clean + natural. **Reusable component fix** (ImmersiveListShell) → fixes BOTH home + catalog simultaneously.
-2. **Hero viz visual clash:** 2D coffee graphics render as bright white/cream panel floating on dark tone → jarring, not immersive. Operator decision: remove entirely. (Aria fix-spec §B viz-integration is now moot.)
-3. **Monochromatic appearance:** Faint cards + low-contrast text + lack of warm accents (roast chips, etc.) on beige tone → reads washed-out. Restore contrast + ensure warm elements show.
-4. **Bag monogram bug:** Data derivation pulling "REady to brew" or wrong field instead of per-bag initials.
-
-## Open RED feedback consolidated (restart to-do list)
-
-**Catalog summary — RED:**
-1. Raise immersive beige opacity to natural beige (~78%) → fixes muddy GREY read. [Aria fix-spec §A, now docs/rebuild-plan]
-2. Increase EntityCard glass presence on dark tone. [Aria fix-spec §E, now docs/rebuild-plan]
-
-**Home/Dashboard — RED:**
-1. REMOVE hero viz entirely (DashboardHero3D, DashboardHeroMotion, DashboardHeroFallback, HeroVisualFrame).
-2. Restore color/contrast (beige opacity fix + card presence + warm accents visible).
-3. BEIGE opacity fix (same as catalog summary). [Aria fix-spec §A]
-4. Bag monogram bug fix (show per-bag initials, not "RE").
-5. "Log a shot" CTA → make it a proper primary button.
-6. EntityCard dark-tone presence. [Aria fix-spec §E]
-
-## Continuation point
-
-**READ THIS FIRST:** `docs/requirements/component-rebuild/00-HANDOFF.md` — scroll to ⛔ **PAUSED** section.
-
-This file has:
-- Full foundation summary + phase descriptions.
-- V2 surface map (62 endpoints, per-page coverage matrix).
-- Aria principles northstar (12 principles, palette snapshot, AA specs).
-- Maya technical architecture (4-layer hierarchy, shell definitions, ToneContext spec).
-- Tariq phase sequencing (p2b–p10, gating criteria).
-- Quinn northstar screenshots (8 images for visual regression baseline).
-- Aria fix-spec for §A (beige opacity) + §E (EntityCard dark presence) archived at `docs/requirements/component-rebuild/07-dashboard-and-beige-fixes.md`.
-
-## Restart workflow
-
-1. Apply Aria fix-spec fixes (docs/rebuild-plan §A + §E): immersive BEIGE frost opacity + EntityCard dark presence.
-2. Remove hero viz from Dashboard.tsx.
-3. Fix bag monogram derivation + "Log a shot" CTA button.
-4. Re-verify BOTH tones (beige natural not grey; color/contrast restored; cards present) on localhost.
-5. Get operator approval before resuming rollout (p2b–p10 per Tariq checklist).
-
-## Continuity notes
-
-- Do NOT skip the 00-HANDOFF.md. Next session resumes from the ⛔ PAUSED section.
-- Single PR to `household_fixes` (NOT main). Commits accumulate locally on feat/043-design-coherence.
-- Nothing has been pushed. All work is local.
-- Before any push: run all four local CI-equivalent checks (`ruff check`, `ruff format --check`, `mypy --strict`, pytest). All four must pass. Then ask operator explicitly for push approval.
-- No push, PR, or deploy authorized until explicit operator approval.
+**"Wrap-up complete" (= Phase 4 cutover trigger) = all six items shipped through janus gates.**
+Per-item acceptance criteria are written at Phase 3 requirements gates, live with operator.
 
 ---
 
 ## Preserved record — spec-042 US3 session close (2026-06-13, merged from household_fixes)
 
-> Carried across the `household_fixes` → `feat/043-design-coherence` merge because this branch's
-> `now.md` superseded the spec-042 close state before it reached any ledger. Historical record only;
-> the live state is the spec-043 PAUSED section above.
+> Historical record only; kept across rewrites.
 
 - Branch at close: `household_test_fixtures`, forked from `household_fixes`.
 - Focus completed: spec-042 US3 app-layer tenant-isolation remediation plus the spec-040 invitation-fixture fix across `espresso-logs` and the spec repo.
 - Completed spec-042 read-scoping tasks T027-T033: `HouseholdReadScope` helper; catalog, inventory, hardware, maintenance, and brew-log read and join scoping; startup and readiness runtime RLS assertions.
 - Completed SQL isolation coverage, RLS metadata checks, dashboard/defaults/fresh-household isolation coverage, and CI gate work for T034-T037 and T040.
 - Completed the spec-040 invitation-fixture time-bomb fix.
-- Completed per-household composite `sheets_id` uniqueness migration 0016 and write-path scoping for T038-T039 via Maya decision, Priya clarify, Quinn gate, and Alex implementation.
+- Completed per-household composite `sheets_id` uniqueness migration 0016 and write-path scoping for T038-T039.
 - Verification at close: ruff check, ruff format check, and mypy strict all passed; pytest 824 passed / 0 failed / 13 skipped; coverage 86.75%; Playwright 167 passed / 1 skipped.
-- PR `skarthikkrishna/espresso-logs#117` was opened against `household_fixes`; GitHub CI only runs on PRs to `main`, so local CI-parity plus Playwright were the gate for that branch.
+- PR #117 was opened against `household_fixes`; GitHub CI only runs on PRs to `main`, so local CI-parity plus Playwright were the gate for that branch.

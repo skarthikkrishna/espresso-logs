@@ -9,7 +9,15 @@ import { getMe } from '../api/auth'
 import { createHousehold } from '../api/households'
 import { useAuth } from '../contexts/AuthContext'
 import StandaloneHouseholdShell from '../components/StandaloneHouseholdShell'
-import { Button, FormField, Input, LayerTransition } from '../components/ui'
+import LoadingSpinner from '../components/LoadingSpinner'
+import { LayerTransition } from '../components/ui'
+import {
+  EntityFormActions,
+  TakeoverCard,
+  ToneButton,
+  ToneInput,
+  ToneProvider,
+} from '../components/tone-system'
 import { COPY } from '../copy'
 
 type WizardStep = 'choose' | 'create' | 'invite-instructions'
@@ -64,13 +72,12 @@ export default function Welcome() {
     }
   }
 
+  // Transition branch stays a non-tone sibling: a brief auth-loading state on
+  // the household-transition background, not part of the tone takeover card.
   if (isLoading) {
     return (
       <StandaloneHouseholdShell background="bg-household-transition" align="center">
-        <div className="kaapi-content-surface p-6 text-center" role="status" aria-live="polite">
-          <span className="loading loading-spinner loading-lg text-primary" aria-label={COPY.welcome.loadingAria} />
-          <p className="mt-3 text-sm text-[var(--kaapi-content-muted)]">{COPY.welcome.loadingBody}</p>
-        </div>
+        <LoadingSpinner message={COPY.welcome.loadingBody} />
       </StandaloneHouseholdShell>
     )
   }
@@ -86,61 +93,60 @@ export default function Welcome() {
   return (
     <StandaloneHouseholdShell background="bg-household-onboarding" align="center" labelledBy="welcome-heading">
       <LayerTransition variant="route" className="w-full max-w-md space-y-6">
-        <div className="kaapi-content-surface p-6 space-y-5">
-          {step === 'choose' ? (
-            <>
-              <div className="text-center space-y-3">
-                <p className="text-xs uppercase tracking-[0.22em] text-[var(--kaapi-content-muted)]">{COPY.welcome.eyebrow}</p>
-                <h1 id="welcome-heading" className="text-2xl font-display text-[var(--kaapi-content-content)]">{COPY.welcome.title}</h1>
-                <p className="text-[var(--kaapi-content-muted)] text-sm">
-                  {COPY.welcome.intro}
-                </p>
-              </div>
+        <ToneProvider lockedTone="dark">
+          <TakeoverCard className="space-y-5">
+            {step === 'choose' ? (
+              <>
+                <div className="text-center">
+                  <h1 id="welcome-heading" className="kk-tc-title text-2xl">{COPY.welcome.title}</h1>
+                  <div className="kk-tc-section">
+                    <p className="kk-tc-body-muted">
+                      {COPY.welcome.intro}
+                    </p>
+                  </div>
+                </div>
 
-              <Button
-                type="button"
-                variant="primary"
-                fullWidth
-                onClick={() => setStep('create')}
-              >
-                {COPY.welcome.createCta}
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                fullWidth
-                onClick={() => setStep('invite-instructions')}
-              >
-                {COPY.welcome.inviteCta}
-              </Button>
-            </>
-          ) : null}
-
-          {step === 'create' ? (
-            <>
-              <div className="space-y-2 text-center">
-                <h1 className="text-2xl font-display text-[var(--kaapi-content-content)]">{COPY.welcome.createTitle}</h1>
-                <p className="text-[var(--kaapi-content-muted)] text-sm">
-                  {COPY.onboarding.nameHint}
-                </p>
-              </div>
-
-              <form onSubmit={(e) => { void handleCreateSubmit(e) }} noValidate className="space-y-4">
-                <FormField
-                  label={COPY.onboarding.nameLabel}
-                  htmlFor="welcome-household-name"
-                  error={nameError}
-                  errorId="welcome-name-error"
+                <ToneButton
+                  type="button"
+                  variant="primary"
+                  className="w-full"
+                  onClick={() => setStep('create')}
                 >
-                  <Input
+                  {COPY.welcome.createCta}
+                </ToneButton>
+
+                <ToneButton
+                  type="button"
+                  variant="edit"
+                  className="w-full"
+                  onClick={() => setStep('invite-instructions')}
+                >
+                  {COPY.welcome.inviteCta}
+                </ToneButton>
+              </>
+            ) : null}
+
+            {step === 'create' ? (
+              <>
+                <div className="text-center">
+                  <h1 className="kk-tc-title text-2xl">{COPY.welcome.createTitle}</h1>
+                  <div className="kk-tc-section">
+                    <p className="kk-tc-body-muted">
+                      {COPY.onboarding.nameHint}
+                    </p>
+                  </div>
+                </div>
+
+                <form onSubmit={(e) => { void handleCreateSubmit(e) }} noValidate className="space-y-4">
+                  <ToneInput
+                    label={COPY.onboarding.nameLabel}
                     id="welcome-household-name"
                     name="name"
                     type="text"
                     autoComplete="off"
-                    required
                     maxLength={64}
-                    error={Boolean(nameError)}
+                    error={nameError}
+                    errorId="welcome-name-error"
                     aria-invalid={nameError ? 'true' : 'false'}
                     aria-describedby={nameError ? 'welcome-name-error' : undefined}
                     value={name}
@@ -150,62 +156,47 @@ export default function Welcome() {
                     }}
                     placeholder={COPY.onboarding.namePlaceholder}
                   />
-                </FormField>
 
-                {submitError ? (
-                  <p className="text-error text-sm text-center" role="alert" aria-live="polite">
-                    {submitError}
-                  </p>
-                ) : null}
+                  <EntityFormActions
+                    primaryLabel={COPY.welcome.submit}
+                    primaryType="submit"
+                    isSubmitting={isSubmitting}
+                    errorMessage={submitError ?? undefined}
+                    secondaryLabel={COPY.welcome.back}
+                    secondaryVariant="ghost"
+                    onSecondary={() => {
+                      setSubmitError(null)
+                      setNameError(null)
+                      setStep('choose')
+                    }}
+                  />
+                </form>
+              </>
+            ) : null}
 
-                <Button
-                  type="submit"
-                  variant="primary"
-                  fullWidth
-                  loading={isSubmitting}
-                  loadingText={COPY.welcome.creating}
+            {step === 'invite-instructions' ? (
+              <>
+                <div className="text-center">
+                  <h1 className="kk-tc-title text-2xl">{COPY.welcome.inviteTitle}</h1>
+                  <div className="kk-tc-section">
+                    <p className="kk-tc-body-muted">
+                      {COPY.welcome.inviteBody}
+                    </p>
+                  </div>
+                </div>
+
+                <ToneButton
+                  type="button"
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => setStep('create')}
                 >
-                  {COPY.welcome.submit}
-                </Button>
-              </form>
-
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                fullWidth
-                onClick={() => {
-                  setSubmitError(null)
-                  setNameError(null)
-                  setStep('choose')
-                }}
-              >
-                {COPY.welcome.back}
-              </Button>
-            </>
-          ) : null}
-
-          {step === 'invite-instructions' ? (
-            <>
-              <div className="space-y-3 text-center">
-                <h1 className="text-2xl font-display text-[var(--kaapi-content-content)]">{COPY.welcome.inviteTitle}</h1>
-                <p className="text-[var(--kaapi-content-muted)] text-sm">
-                  {COPY.welcome.inviteBody}
-                </p>
-              </div>
-
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                fullWidth
-                onClick={() => setStep('create')}
-              >
-                {COPY.welcome.inviteBack}
-              </Button>
-            </>
-          ) : null}
-        </div>
+                  {COPY.welcome.inviteBack}
+                </ToneButton>
+              </>
+            ) : null}
+          </TakeoverCard>
+        </ToneProvider>
 
         <p className="text-center text-xs text-base-content/40">
           {COPY.welcome.notYou}{' '}

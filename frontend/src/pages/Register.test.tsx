@@ -96,6 +96,15 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 
 describe('Register page', () => {
+  // FR2 / D11 / NFR3: the single TakeoverCard is the data-tone emitter, locked to dark.
+  // breaks: a beige-persisted user gets a beige register card on the dark auth background.
+  it('locks the takeover card to dark tone', () => {
+    const { container } = renderRegister()
+    const card = container.querySelector('.kk-takeover-card')
+    expect(card).not.toBeNull()
+    expect(card?.getAttribute('data-tone')).toBe('dark')
+  })
+
   it('renders register form with all four fields', () => {
     renderRegister()
     expect(screen.getByLabelText(/^username$/i)).toBeInTheDocument()

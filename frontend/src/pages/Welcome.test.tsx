@@ -96,6 +96,15 @@ describe('Welcome onboarding wizard', () => {
     expect(screen.queryByTestId('dashboard-page')).not.toBeInTheDocument()
   })
 
+  // FR3 / D11 / NFR3: the single TakeoverCard is the data-tone emitter, locked to dark.
+  // breaks: a non-locked provider → a beige-persisted user gets a beige onboarding card on the dark bg.
+  it('locks the takeover card to dark tone', () => {
+    const { container } = renderWelcome()
+    const card = container.querySelector('.kk-takeover-card')
+    expect(card).not.toBeNull()
+    expect(card?.getAttribute('data-tone')).toBe('dark')
+  })
+
   it('redirects to dashboard when user already has memberships', () => {
     mockUseAuth.mockReturnValue(
       buildAuthState({

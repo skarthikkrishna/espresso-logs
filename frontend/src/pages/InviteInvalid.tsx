@@ -1,27 +1,32 @@
 import { Link } from 'react-router-dom'
 import StandaloneHouseholdShell from '../components/StandaloneHouseholdShell'
 import { LayerTransition } from '../components/ui'
+import { ToneProvider, TonePageWrapper, ToneStateCard } from '../components/tone-system'
 import { COPY } from '../copy'
 
 export default function InviteInvalid() {
   return (
-    <StandaloneHouseholdShell background="bg-invite-recovery" align="left" labelledBy="invite-invalid-heading">
+    <StandaloneHouseholdShell background="bg-invite-recovery" align="center">
       <LayerTransition variant="route" className="w-full max-w-md">
-        <div className="kaapi-content-surface p-6 text-center space-y-4">
-          <p className="text-xs uppercase tracking-[0.22em] text-error">{COPY.invite.invalidEyebrow}</p>
-          <h1 id="invite-invalid-heading" className="text-2xl font-display text-[var(--kaapi-content-content)]">{COPY.invite.invalidTitle}</h1>
-          <p className="text-[var(--kaapi-content-muted)] text-sm">
-            {COPY.invite.invalidBody}
-          </p>
-          <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-            <Link to="/login" className="btn btn-primary btn-sm btn-bevel no-underline">
-              {COPY.invite.signIn}
-            </Link>
-            <Link to="/register" className="btn btn-outline btn-sm btn-bevel no-underline">
-              {COPY.invite.createAccount}
-            </Link>
-          </div>
-        </div>
+        <ToneProvider lockedTone="dark">
+          <TonePageWrapper>
+            <ToneStateCard
+              state="error"
+              title={COPY.invite.invalidTitle}
+              message={COPY.invite.invalidBody}
+              action={(
+                <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+                  <Link to="/login" className="kk-tc-primary-btn no-underline">
+                    {COPY.invite.signIn}
+                  </Link>
+                  <Link to="/register" className="kk-tc-btn kk-tc-btn--edit no-underline">
+                    {COPY.invite.createAccount}
+                  </Link>
+                </div>
+              )}
+            />
+          </TonePageWrapper>
+        </ToneProvider>
       </LayerTransition>
     </StandaloneHouseholdShell>
   )

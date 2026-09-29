@@ -15,7 +15,13 @@ import { getMe } from '../api/auth'
 import { createHousehold } from '../api/households'
 import { useAuth } from '../contexts/AuthContext'
 import StandaloneHouseholdShell from '../components/StandaloneHouseholdShell'
-import { Button, FormField, Input, LayerTransition } from '../components/ui'
+import { LayerTransition } from '../components/ui'
+import {
+  EntityFormActions,
+  TakeoverCard,
+  ToneInput,
+  ToneProvider,
+} from '../components/tone-system'
 import { COPY } from '../copy'
 
 function validateName(value: string): string | null {
@@ -32,10 +38,6 @@ export default function HouseholdNew() {
   const [nameError, setNameError] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const handleBlur = () => {
-    if (name) setNameError(validateName(name))
-  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -71,63 +73,51 @@ export default function HouseholdNew() {
   return (
     <StandaloneHouseholdShell background="bg-household-onboarding" align="center" labelledBy="household-new-heading">
       <LayerTransition variant="route" className="w-full max-w-sm">
-        <div className="kaapi-content-surface p-6 space-y-5">
-          <div className="text-center">
-            <p className="text-xs uppercase tracking-[0.22em] text-[var(--kaapi-content-muted)]">
-              {COPY.householdNew.eyebrow}
-            </p>
-            <h1 id="household-new-heading" className="text-xl font-display text-[var(--kaapi-content-content)]">
-              {COPY.householdNew.title}
-            </h1>
-            <p className="mt-1 text-sm text-[var(--kaapi-content-muted)]">
-              {COPY.onboarding.nameHint}
-            </p>
-          </div>
+        <ToneProvider lockedTone="dark">
+          <TakeoverCard className="space-y-5">
+            <div className="text-center">
+              <h1 id="household-new-heading" className="kk-tc-title text-2xl">
+                {COPY.householdNew.title}
+              </h1>
+              <div className="kk-tc-section">
+                <p className="kk-tc-body-muted">
+                  {COPY.onboarding.nameHint}
+                </p>
+              </div>
+            </div>
 
-          <form onSubmit={(e) => { void handleSubmit(e) }} noValidate className="space-y-4">
-            <FormField label={COPY.onboarding.nameLabel} htmlFor="household-name" error={nameError} errorId="name-error">
-              <Input
+            <form onSubmit={(e) => { void handleSubmit(e) }} noValidate className="space-y-4">
+              <ToneInput
+                label={COPY.onboarding.nameLabel}
                 id="household-name"
                 name="name"
                 type="text"
                 autoComplete="off"
-                required
                 maxLength={64}
-                error={Boolean(nameError)}
+                error={nameError}
+                errorId="name-error"
                 aria-invalid={nameError ? 'true' : 'false'}
                 aria-describedby={nameError ? 'name-error' : undefined}
                 value={name}
-                onChange={(e) => setName(e.target.value)}
-                onBlur={handleBlur}
+                onChange={(e) => {
+                  setName(e.target.value)
+                  if (nameError) setNameError(validateName(e.target.value))
+                }}
                 placeholder={COPY.onboarding.namePlaceholder}
               />
-            </FormField>
 
-            {submitError && (
-              <p className="text-error text-sm text-center" role="alert">{submitError}</p>
-            )}
-
-            <Button
-              type="submit"
-              variant="primary"
-              fullWidth
-              loading={isSubmitting}
-              loadingText={COPY.householdNew.creating}
-            >
-              {COPY.householdNew.submit}
-            </Button>
-          </form>
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            fullWidth
-            onClick={() => navigate(-1)}
-          >
-            {COPY.householdNew.cancel}
-          </Button>
-        </div>
+              <EntityFormActions
+                primaryLabel={COPY.householdNew.submit}
+                primaryType="submit"
+                isSubmitting={isSubmitting}
+                errorMessage={submitError ?? undefined}
+                secondaryLabel={COPY.householdNew.cancel}
+                secondaryVariant="ghost"
+                onSecondary={() => navigate(-1)}
+              />
+            </form>
+          </TakeoverCard>
+        </ToneProvider>
       </LayerTransition>
     </StandaloneHouseholdShell>
   )

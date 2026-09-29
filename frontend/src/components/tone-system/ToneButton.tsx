@@ -18,7 +18,7 @@
  */
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react'
 
-type ToneButtonVariant = 'edit' | 'danger' | 'primary' | 'ghost'
+export type ToneButtonVariant = 'edit' | 'danger' | 'primary' | 'ghost'
 
 interface ToneButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ToneButtonVariant

@@ -64,9 +64,11 @@ export const router = createBrowserRouter([
               { path: 'household/settings', element: <SuspenseWrapper><HouseholdSettings /></SuspenseWrapper> },
             ],
           },
-          { path: '*', element: <SuspenseWrapper><NotFound /></SuspenseWrapper> },
         ],
       },
+      // NotFound renders as a blank takeover OUTSIDE AppShell (no sidebar/nav) but stays
+      // ProtectedRoute-gated so auth behavior is unchanged (D9/D5).
+      { path: '*', element: <SuspenseWrapper><NotFound /></SuspenseWrapper> },
     ],
   },
 ])

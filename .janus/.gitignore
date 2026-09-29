@@ -1,0 +1,3 @@
+# janus: per-checkout state — never merged across worktrees. To track anyway, empty this file (do not delete it).
+.hooks-observed
+state.json

@@ -38,24 +38,33 @@ function readStoredTone(): Tone {
   return 'dark'
 }
 
-export function ToneProvider({ children }: { children: ReactNode }) {
-  const [tone, setToneState] = useState<Tone>(readStoredTone)
+/**
+ * `lockedTone` (D11): standalone pages pass a fixed tone. When set, the provider
+ * ignores persisted preference (never reads or writes localStorage) and setTone/
+ * toggleTone are no-ops, so a standalone visit can't mutate the app's saved tone.
+ * Omit it (the AppShell/Pattern-C default) to follow persisted tone (D8).
+ */
+export function ToneProvider({ children, lockedTone }: { children: ReactNode; lockedTone?: Tone }) {
+  // `?? readStoredTone` short-circuits when locked — no localStorage read.
+  const [tone, setToneState] = useState<Tone>(() => lockedTone ?? readStoredTone())
 
   const setTone = useCallback((next: Tone) => {
+    if (lockedTone) return
     setToneState(next)
     try {
       localStorage.setItem(STORAGE_KEY, next)
     } catch {
       // ignore localStorage write failures
     }
-  }, [])
+  }, [lockedTone])
 
   const toggleTone = useCallback(() => {
+    if (lockedTone) return
     setTone(tone === 'dark' ? 'beige' : 'dark')
-  }, [tone, setTone])
+  }, [tone, setTone, lockedTone])
 
   return (
-    <ToneContext.Provider value={{ tone, setTone, toggleTone }}>
+    <ToneContext.Provider value={{ tone: lockedTone ?? tone, setTone, toggleTone }}>
       {children}
     </ToneContext.Provider>
   )

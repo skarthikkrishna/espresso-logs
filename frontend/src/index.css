@@ -2299,13 +2299,14 @@ select.input-styled,
 /* ── Ghost / tertiary action button — text-only, no fill, no border ─────── */
 /* Hierarchy: primary (solid fill) > edit/secondary (border) > ghost (text). */
 .kk-tc-btn--ghost {
-  background: var(--kk-tc-btn-edit-bg);
-  color: var(--kk-tc-btn-ghost-text, var(--kk-text-secondary));
-  border-color: var(--kk-tc-btn-edit-border);
+  background: transparent;
+  color: var(--kk-tc-btn-ghost-text, var(--kk-tc-link));
+  border-color: var(--kk-tc-btn-ghost-border, var(--kk-tc-link));
 }
 .kk-tc-btn--ghost:hover:not(:disabled) {
-  background: var(--kk-tc-btn-ghost-hover-bg, var(--kk-tc-btn-edit-hover-bg));
-  color: var(--kk-tc-btn-ghost-hover-text, var(--kk-text-primary));
+  background: var(--kk-tc-btn-ghost-hover-bg, transparent);
+  color: var(--kk-tc-btn-ghost-hover-text, var(--kk-tc-link-hover));
+  border-color: var(--kk-tc-btn-ghost-hover-border, var(--kk-tc-link-hover));
 }
 .kk-tc-btn--ghost:focus-visible {
   outline: none;
@@ -3440,19 +3441,18 @@ select.input-styled,
   margin: 1rem auto;
   padding: 1rem;
   overflow: hidden;
-  background: var(--kaapi-content-surface);
-  color: var(--kaapi-content-content);
-  border: 1px solid var(--kaapi-content-border);
+  /* D10: shared frosted-glass surface — matches EntityCard/ShotCard/TakeoverCard. Tokens
+     redefine per :root / [data-tone="dark"] / [data-tone="beige"], so no per-tone override. */
+  background: var(--kk-card-surface-bg);
+  color: var(--kk-text-primary);
+  border: var(--kk-card-surface-border);
   border-radius: var(--bevel-radius);
-  box-shadow: var(--kaapi-content-shadow);
+  box-shadow: var(--kk-card-surface-shadow);
+  backdrop-filter: var(--kk-card-surface-filter);
+  -webkit-backdrop-filter: var(--kk-card-surface-filter);
 }
 
-[data-tone="dark"] .tone-state-card {
-  background: var(--kaapi-content-surface-dark);
-  color: var(--kaapi-content-content-dark);
-  border-color: var(--kaapi-content-border-dark);
-  box-shadow: var(--kaapi-content-shadow-dark);
-}
+@supports not (backdrop-filter: blur(1px)) { .tone-state-card { background: var(--kk-card-surface-bg-solid); backdrop-filter: none; -webkit-backdrop-filter: none; } }
 
 .tone-state-card--compact {
   max-width: none;

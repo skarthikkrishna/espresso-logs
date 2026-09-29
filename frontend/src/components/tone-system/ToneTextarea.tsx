@@ -26,7 +26,7 @@ export const ToneTextarea = forwardRef<HTMLTextAreaElement, ToneTextareaProps>(
       <textarea
         ref={ref}
         id={id}
-        className={['textarea textarea-bordered input-styled w-full textarea-sm', className]
+        className={['textarea textarea-bordered input-styled w-full', className]
           .filter(Boolean)
           .join(' ')}
         {...textareaProps}

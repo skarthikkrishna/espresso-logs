@@ -31,7 +31,7 @@ export const ToneInput = forwardRef<HTMLInputElement, ToneInputProps>(
       <input
         ref={ref}
         id={id}
-        className={['input input-bordered input-styled w-full input-sm', className]
+        className={['input input-bordered input-styled w-full', className]
           .filter(Boolean)
           .join(' ')}
         {...inputProps}

@@ -64,6 +64,43 @@ describe('ToneProvider', () => {
   })
 })
 
+// NFR3 / D11: standalone (non-AppShell) pages lock tone to dark; breaks: a
+// beige-persisted user lands on a beige auth/invite/404 card on the dark bg.
+describe('ToneProvider lockedTone (D11)', () => {
+  it('renders the locked tone', () => {
+    render(<ToneProvider lockedTone="dark"><ToneReadout /></ToneProvider>)
+    expect(screen.getByTestId('tone-value')).toHaveTextContent('dark')
+  })
+
+  it('setTone is a no-op while locked', () => {
+    render(<ToneProvider lockedTone="dark"><ToneReadout /></ToneProvider>)
+    act(() => { screen.getByTestId('set-beige-btn').click() })
+    expect(screen.getByTestId('tone-value')).toHaveTextContent('dark')
+  })
+
+  it('toggleTone is a no-op while locked', () => {
+    render(<ToneProvider lockedTone="dark"><ToneReadout /></ToneProvider>)
+    act(() => { screen.getByTestId('toggle-btn').click() })
+    expect(screen.getByTestId('tone-value')).toHaveTextContent('dark')
+  })
+
+  it('ignores a persisted beige preference (no localStorage read)', () => {
+    const getItem = vi.spyOn(Storage.prototype, 'getItem').mockReturnValue('beige')
+    render(<ToneProvider lockedTone="dark"><ToneReadout /></ToneProvider>)
+    expect(screen.getByTestId('tone-value')).toHaveTextContent('dark')
+    getItem.mockRestore()
+  })
+
+  it('never writes localStorage while locked (toggle attempt)', () => {
+    const setItem = vi.spyOn(Storage.prototype, 'setItem')
+    render(<ToneProvider lockedTone="dark"><ToneReadout /></ToneProvider>)
+    act(() => { screen.getByTestId('toggle-btn').click() })
+    act(() => { screen.getByTestId('set-beige-btn').click() })
+    expect(setItem).not.toHaveBeenCalled()
+    setItem.mockRestore()
+  })
+})
+
 
 
 
